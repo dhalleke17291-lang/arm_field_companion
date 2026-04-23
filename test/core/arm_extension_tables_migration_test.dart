@@ -29,6 +29,7 @@ import 'package:sqlite3/sqlite3.dart' as sqlite;
 const _kArmColumnMappings = 'arm_column_mappings';
 const _kArmAssessmentMetadata = 'arm_assessment_metadata';
 const _kArmSessionMetadata = 'arm_session_metadata';
+const _kArmTreatmentMetadata = 'arm_treatment_metadata';
 
 Future<Set<String>> _tableNames(AppDatabase db) async {
   final rows = await db
@@ -105,11 +106,13 @@ void main() {
     expect(names, contains(_kArmColumnMappings));
     expect(names, contains(_kArmAssessmentMetadata));
     expect(names, contains(_kArmSessionMetadata));
+    expect(names, contains(_kArmTreatmentMetadata));
 
-    // All three start empty — no seeding on fresh install.
+    // All four start empty — no seeding on fresh install.
     expect(await db.select(db.armColumnMappings).get(), isEmpty);
     expect(await db.select(db.armAssessmentMetadata).get(), isEmpty);
     expect(await db.select(db.armSessionMetadata).get(), isEmpty);
+    expect(await db.select(db.armTreatmentMetadata).get(), isEmpty);
   });
 
   test(
@@ -266,5 +269,96 @@ void main() {
           ),
       throwsA(anything),
     );
+
+    // Bogus treatment_id on treatment metadata → FK violation.
+    expect(
+      () => db.into(db.armTreatmentMetadata).insert(
+            ArmTreatmentMetadataCompanion.insert(
+              treatmentId: 99999,
+              armTypeCode: const Value('H'),
+            ),
+          ),
+      throwsA(anything),
+    );
+  });
+
+  // ── Phase 0b-treatments (v62) ──
+  test(
+    '61 → 62 upgrade: defensive createTable adds arm_treatment_metadata when absent',
+    () async {
+      final dbFile = File(p.join(docsPath, 'upgrade_61_to_62.db'));
+      if (await dbFile.exists()) await dbFile.delete();
+
+      var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+      await _tableNames(db);
+
+      // Simulate a v61 DB: drop only the new v62 table.
+      await db.customStatement('PRAGMA foreign_keys = OFF');
+      await db.customStatement('DROP TABLE IF EXISTS arm_treatment_metadata');
+      await db.customStatement('PRAGMA foreign_keys = ON');
+      await db.close();
+
+      _setUserVersion(dbFile.path, 61);
+
+      db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+      addTearDown(db.close);
+
+      final names = await _tableNames(db);
+      expect(names, contains(_kArmTreatmentMetadata));
+      expect(await db.select(db.armTreatmentMetadata).get(), isEmpty,
+          reason: 'Phase 0b-treatments does not backfill; no writer yet');
+    },
+  );
+
+  test('61 → 62 upgrade: idempotent when arm_treatment_metadata already exists',
+      () async {
+    final dbFile = File(p.join(docsPath, 'upgrade_62_idempotent.db'));
+    if (await dbFile.exists()) await dbFile.delete();
+
+    var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    await _tableNames(db);
+    await db.close();
+
+    _setUserVersion(dbFile.path, 61);
+
+    db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    addTearDown(db.close);
+
+    final names = await _tableNames(db);
+    expect(names, contains(_kArmTreatmentMetadata));
+  });
+
+  test('arm_treatment_metadata row references a valid core treatment',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    await db.customStatement('PRAGMA foreign_keys = ON');
+
+    final trialId = await db.into(db.trials).insert(
+          TrialsCompanion.insert(name: 'ARM Treatment Test'),
+        );
+    final treatmentId = await db.into(db.treatments).insert(
+          TreatmentsCompanion.insert(
+            trialId: trialId,
+            code: 'T1',
+            name: 'Test Herbicide',
+          ),
+        );
+
+    final metaId = await db.into(db.armTreatmentMetadata).insert(
+          ArmTreatmentMetadataCompanion.insert(
+            treatmentId: treatmentId,
+            armTypeCode: const Value('H'),
+            formConc: const Value(480),
+            formConcUnit: const Value('%W/V'),
+            formType: const Value('SC'),
+            armRowSortOrder: const Value(0),
+          ),
+        );
+    expect(metaId, greaterThan(0));
+
+    final rows = await db.select(db.armTreatmentMetadata).get();
+    expect(rows, hasLength(1));
+    expect(rows.single.formConcUnit, '%W/V');
   });
 }

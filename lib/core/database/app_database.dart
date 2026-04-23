@@ -1065,6 +1065,48 @@ class ArmSessionMetadata extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// Per-treatment ARM metadata (Phase 0b-treatments).
+///
+/// One optional row per core [Treatments] row. Holds ARM-specific coding
+/// from the ARM Treatments sheet that is **not** universal to every trial
+/// (Type code, formulation concentration / type / unit like `%W/W`). The
+/// universal fields (`productName`, `rate`, `rateUnit`) stay on
+/// [TreatmentComponents] because a researcher running a standalone trial
+/// naturally needs them. Standalone trials have **no row** here.
+///
+/// Phase 0b introduces the table only; the ARM Treatments-sheet importer
+/// (Phase 2) will write to it, and the ARM Protocol tab sub-section
+/// (Phase 6) will read it. Keeping the table empty now lets later phases
+/// land without a new migration each time a field is added — add columns
+/// as Phase 2 learns what the sheet actually ships.
+class ArmTreatmentMetadata extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get treatmentId => integer().references(Treatments, #id)();
+
+  /// ARM "Type" column (e.g. "H" = herbicide, "F" = fungicide). Free text
+  /// because ARM's list evolves; the mapping to a core concept (if any)
+  /// is a display concern.
+  TextColumn get armTypeCode => text().nullable()();
+
+  /// ARM "Form Conc" — formulation concentration as a real number
+  /// (e.g. 480). Paired with [formConcUnit].
+  RealColumn get formConc => real().nullable()();
+
+  /// ARM "Form Conc Unit" — formulation concentration unit string
+  /// (e.g. "%W/W", "%W/V", "G/L"). Stored verbatim so round-trip export
+  /// emits exactly what ARM provided.
+  TextColumn get formConcUnit => text().nullable()();
+
+  /// ARM "Form Type" — formulation type code (e.g. "SC", "EC", "WG").
+  TextColumn get formType => text().nullable()();
+
+  /// 0-based row position of the treatment in the ARM Treatments sheet.
+  /// Preserves the importer's original ordering for export.
+  IntColumn get armRowSortOrder => integer().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 @DriftDatabase(tables: [
   Users,
   Trials,
@@ -1108,6 +1150,7 @@ class ArmSessionMetadata extends Table {
   ArmAssessmentMetadata,
   ArmSessionMetadata,
   ArmTrialMetadata,
+  ArmTreatmentMetadata,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -1116,7 +1159,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 61;
+  int get schemaVersion => 62;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -2260,6 +2303,21 @@ WHERE pest_code IS NULL
                   'ALTER TABLE trial_assessments DROP COLUMN $col',
                 );
               }
+            }
+          }
+
+          if (from < 62) {
+            // ── Phase 0b-treatments: introduce arm_treatment_metadata as
+            //    the destination for ARM-specific treatment coding (Type,
+            //    Form Conc, Form Conc Unit, Form Type). Table only; no
+            //    backfill — no writer exists yet (Phase 2 adds one) and
+            //    no existing rows need rehoming. Idempotent: re-entry is
+            //    a no-op when the table is already present.
+            final tables62 = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!tables62.contains('arm_treatment_metadata')) {
+              await m.createTable(armTreatmentMetadata);
             }
           }
 

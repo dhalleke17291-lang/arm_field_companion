@@ -89,6 +89,7 @@ import '../features/arm_import/data/compatibility_profile_builder.dart';
 import '../features/arm_import/usecases/arm_import_usecase.dart';
 import '../data/arm/arm_column_mapping_repository.dart';
 import '../data/arm/arm_trial_metadata_repository.dart';
+import '../data/arm/arm_treatment_metadata_repository.dart';
 import '../features/arm_import/usecases/import_arm_rating_shell_usecase.dart';
 import '../features/arm_protocol/arm_protocol_tab.dart';
 import '../features/derived/domain/trial_statistics.dart';
@@ -240,6 +241,19 @@ final armTrialMetadataStreamProvider =
   return ref
       .watch(armTrialMetadataRepositoryProvider)
       .watchForTrial(trialId);
+});
+
+/// Persistence for per-treatment ARM coding (Phase 0b-treatments).
+///
+/// Scaffold only: no writer consumes this today. Phase 2 (ARM Treatments
+/// sheet import) will populate rows; the ARM Protocol tab Treatments
+/// sub-section (Phase 6) will read them. Registering the provider here —
+/// the DI composition root is already allow-listed to import
+/// `lib/data/arm/` — means later phases can wire in without touching
+/// the boundary test.
+final armTreatmentMetadataRepositoryProvider =
+    Provider<ArmTreatmentMetadataRepository>((ref) {
+  return ArmTreatmentMetadataRepository(ref.watch(databaseProvider));
 });
 
 /// Factory for building the ARM Protocol tab widget.

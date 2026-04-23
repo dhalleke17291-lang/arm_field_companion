@@ -31779,6 +31779,470 @@ class ArmTrialMetadataCompanion extends UpdateCompanion<ArmTrialMetadataData> {
   }
 }
 
+class $ArmTreatmentMetadataTable extends ArmTreatmentMetadata
+    with TableInfo<$ArmTreatmentMetadataTable, ArmTreatmentMetadataData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArmTreatmentMetadataTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _treatmentIdMeta =
+      const VerificationMeta('treatmentId');
+  @override
+  late final GeneratedColumn<int> treatmentId = GeneratedColumn<int>(
+      'treatment_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES treatments (id)'));
+  static const VerificationMeta _armTypeCodeMeta =
+      const VerificationMeta('armTypeCode');
+  @override
+  late final GeneratedColumn<String> armTypeCode = GeneratedColumn<String>(
+      'arm_type_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _formConcMeta =
+      const VerificationMeta('formConc');
+  @override
+  late final GeneratedColumn<double> formConc = GeneratedColumn<double>(
+      'form_conc', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _formConcUnitMeta =
+      const VerificationMeta('formConcUnit');
+  @override
+  late final GeneratedColumn<String> formConcUnit = GeneratedColumn<String>(
+      'form_conc_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _formTypeMeta =
+      const VerificationMeta('formType');
+  @override
+  late final GeneratedColumn<String> formType = GeneratedColumn<String>(
+      'form_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _armRowSortOrderMeta =
+      const VerificationMeta('armRowSortOrder');
+  @override
+  late final GeneratedColumn<int> armRowSortOrder = GeneratedColumn<int>(
+      'arm_row_sort_order', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        treatmentId,
+        armTypeCode,
+        formConc,
+        formConcUnit,
+        formType,
+        armRowSortOrder,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'arm_treatment_metadata';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<ArmTreatmentMetadataData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('treatment_id')) {
+      context.handle(
+          _treatmentIdMeta,
+          treatmentId.isAcceptableOrUnknown(
+              data['treatment_id']!, _treatmentIdMeta));
+    } else if (isInserting) {
+      context.missing(_treatmentIdMeta);
+    }
+    if (data.containsKey('arm_type_code')) {
+      context.handle(
+          _armTypeCodeMeta,
+          armTypeCode.isAcceptableOrUnknown(
+              data['arm_type_code']!, _armTypeCodeMeta));
+    }
+    if (data.containsKey('form_conc')) {
+      context.handle(_formConcMeta,
+          formConc.isAcceptableOrUnknown(data['form_conc']!, _formConcMeta));
+    }
+    if (data.containsKey('form_conc_unit')) {
+      context.handle(
+          _formConcUnitMeta,
+          formConcUnit.isAcceptableOrUnknown(
+              data['form_conc_unit']!, _formConcUnitMeta));
+    }
+    if (data.containsKey('form_type')) {
+      context.handle(_formTypeMeta,
+          formType.isAcceptableOrUnknown(data['form_type']!, _formTypeMeta));
+    }
+    if (data.containsKey('arm_row_sort_order')) {
+      context.handle(
+          _armRowSortOrderMeta,
+          armRowSortOrder.isAcceptableOrUnknown(
+              data['arm_row_sort_order']!, _armRowSortOrderMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ArmTreatmentMetadataData map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArmTreatmentMetadataData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      treatmentId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}treatment_id'])!,
+      armTypeCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}arm_type_code']),
+      formConc: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}form_conc']),
+      formConcUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}form_conc_unit']),
+      formType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}form_type']),
+      armRowSortOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}arm_row_sort_order']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $ArmTreatmentMetadataTable createAlias(String alias) {
+    return $ArmTreatmentMetadataTable(attachedDatabase, alias);
+  }
+}
+
+class ArmTreatmentMetadataData extends DataClass
+    implements Insertable<ArmTreatmentMetadataData> {
+  final int id;
+  final int treatmentId;
+
+  /// ARM "Type" column (e.g. "H" = herbicide, "F" = fungicide). Free text
+  /// because ARM's list evolves; the mapping to a core concept (if any)
+  /// is a display concern.
+  final String? armTypeCode;
+
+  /// ARM "Form Conc" — formulation concentration as a real number
+  /// (e.g. 480). Paired with [formConcUnit].
+  final double? formConc;
+
+  /// ARM "Form Conc Unit" — formulation concentration unit string
+  /// (e.g. "%W/W", "%W/V", "G/L"). Stored verbatim so round-trip export
+  /// emits exactly what ARM provided.
+  final String? formConcUnit;
+
+  /// ARM "Form Type" — formulation type code (e.g. "SC", "EC", "WG").
+  final String? formType;
+
+  /// 0-based row position of the treatment in the ARM Treatments sheet.
+  /// Preserves the importer's original ordering for export.
+  final int? armRowSortOrder;
+  final DateTime createdAt;
+  const ArmTreatmentMetadataData(
+      {required this.id,
+      required this.treatmentId,
+      this.armTypeCode,
+      this.formConc,
+      this.formConcUnit,
+      this.formType,
+      this.armRowSortOrder,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['treatment_id'] = Variable<int>(treatmentId);
+    if (!nullToAbsent || armTypeCode != null) {
+      map['arm_type_code'] = Variable<String>(armTypeCode);
+    }
+    if (!nullToAbsent || formConc != null) {
+      map['form_conc'] = Variable<double>(formConc);
+    }
+    if (!nullToAbsent || formConcUnit != null) {
+      map['form_conc_unit'] = Variable<String>(formConcUnit);
+    }
+    if (!nullToAbsent || formType != null) {
+      map['form_type'] = Variable<String>(formType);
+    }
+    if (!nullToAbsent || armRowSortOrder != null) {
+      map['arm_row_sort_order'] = Variable<int>(armRowSortOrder);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ArmTreatmentMetadataCompanion toCompanion(bool nullToAbsent) {
+    return ArmTreatmentMetadataCompanion(
+      id: Value(id),
+      treatmentId: Value(treatmentId),
+      armTypeCode: armTypeCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armTypeCode),
+      formConc: formConc == null && nullToAbsent
+          ? const Value.absent()
+          : Value(formConc),
+      formConcUnit: formConcUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(formConcUnit),
+      formType: formType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(formType),
+      armRowSortOrder: armRowSortOrder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armRowSortOrder),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ArmTreatmentMetadataData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArmTreatmentMetadataData(
+      id: serializer.fromJson<int>(json['id']),
+      treatmentId: serializer.fromJson<int>(json['treatmentId']),
+      armTypeCode: serializer.fromJson<String?>(json['armTypeCode']),
+      formConc: serializer.fromJson<double?>(json['formConc']),
+      formConcUnit: serializer.fromJson<String?>(json['formConcUnit']),
+      formType: serializer.fromJson<String?>(json['formType']),
+      armRowSortOrder: serializer.fromJson<int?>(json['armRowSortOrder']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'treatmentId': serializer.toJson<int>(treatmentId),
+      'armTypeCode': serializer.toJson<String?>(armTypeCode),
+      'formConc': serializer.toJson<double?>(formConc),
+      'formConcUnit': serializer.toJson<String?>(formConcUnit),
+      'formType': serializer.toJson<String?>(formType),
+      'armRowSortOrder': serializer.toJson<int?>(armRowSortOrder),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ArmTreatmentMetadataData copyWith(
+          {int? id,
+          int? treatmentId,
+          Value<String?> armTypeCode = const Value.absent(),
+          Value<double?> formConc = const Value.absent(),
+          Value<String?> formConcUnit = const Value.absent(),
+          Value<String?> formType = const Value.absent(),
+          Value<int?> armRowSortOrder = const Value.absent(),
+          DateTime? createdAt}) =>
+      ArmTreatmentMetadataData(
+        id: id ?? this.id,
+        treatmentId: treatmentId ?? this.treatmentId,
+        armTypeCode: armTypeCode.present ? armTypeCode.value : this.armTypeCode,
+        formConc: formConc.present ? formConc.value : this.formConc,
+        formConcUnit:
+            formConcUnit.present ? formConcUnit.value : this.formConcUnit,
+        formType: formType.present ? formType.value : this.formType,
+        armRowSortOrder: armRowSortOrder.present
+            ? armRowSortOrder.value
+            : this.armRowSortOrder,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  ArmTreatmentMetadataData copyWithCompanion(
+      ArmTreatmentMetadataCompanion data) {
+    return ArmTreatmentMetadataData(
+      id: data.id.present ? data.id.value : this.id,
+      treatmentId:
+          data.treatmentId.present ? data.treatmentId.value : this.treatmentId,
+      armTypeCode:
+          data.armTypeCode.present ? data.armTypeCode.value : this.armTypeCode,
+      formConc: data.formConc.present ? data.formConc.value : this.formConc,
+      formConcUnit: data.formConcUnit.present
+          ? data.formConcUnit.value
+          : this.formConcUnit,
+      formType: data.formType.present ? data.formType.value : this.formType,
+      armRowSortOrder: data.armRowSortOrder.present
+          ? data.armRowSortOrder.value
+          : this.armRowSortOrder,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArmTreatmentMetadataData(')
+          ..write('id: $id, ')
+          ..write('treatmentId: $treatmentId, ')
+          ..write('armTypeCode: $armTypeCode, ')
+          ..write('formConc: $formConc, ')
+          ..write('formConcUnit: $formConcUnit, ')
+          ..write('formType: $formType, ')
+          ..write('armRowSortOrder: $armRowSortOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, treatmentId, armTypeCode, formConc,
+      formConcUnit, formType, armRowSortOrder, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArmTreatmentMetadataData &&
+          other.id == this.id &&
+          other.treatmentId == this.treatmentId &&
+          other.armTypeCode == this.armTypeCode &&
+          other.formConc == this.formConc &&
+          other.formConcUnit == this.formConcUnit &&
+          other.formType == this.formType &&
+          other.armRowSortOrder == this.armRowSortOrder &&
+          other.createdAt == this.createdAt);
+}
+
+class ArmTreatmentMetadataCompanion
+    extends UpdateCompanion<ArmTreatmentMetadataData> {
+  final Value<int> id;
+  final Value<int> treatmentId;
+  final Value<String?> armTypeCode;
+  final Value<double?> formConc;
+  final Value<String?> formConcUnit;
+  final Value<String?> formType;
+  final Value<int?> armRowSortOrder;
+  final Value<DateTime> createdAt;
+  const ArmTreatmentMetadataCompanion({
+    this.id = const Value.absent(),
+    this.treatmentId = const Value.absent(),
+    this.armTypeCode = const Value.absent(),
+    this.formConc = const Value.absent(),
+    this.formConcUnit = const Value.absent(),
+    this.formType = const Value.absent(),
+    this.armRowSortOrder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ArmTreatmentMetadataCompanion.insert({
+    this.id = const Value.absent(),
+    required int treatmentId,
+    this.armTypeCode = const Value.absent(),
+    this.formConc = const Value.absent(),
+    this.formConcUnit = const Value.absent(),
+    this.formType = const Value.absent(),
+    this.armRowSortOrder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : treatmentId = Value(treatmentId);
+  static Insertable<ArmTreatmentMetadataData> custom({
+    Expression<int>? id,
+    Expression<int>? treatmentId,
+    Expression<String>? armTypeCode,
+    Expression<double>? formConc,
+    Expression<String>? formConcUnit,
+    Expression<String>? formType,
+    Expression<int>? armRowSortOrder,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (treatmentId != null) 'treatment_id': treatmentId,
+      if (armTypeCode != null) 'arm_type_code': armTypeCode,
+      if (formConc != null) 'form_conc': formConc,
+      if (formConcUnit != null) 'form_conc_unit': formConcUnit,
+      if (formType != null) 'form_type': formType,
+      if (armRowSortOrder != null) 'arm_row_sort_order': armRowSortOrder,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ArmTreatmentMetadataCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? treatmentId,
+      Value<String?>? armTypeCode,
+      Value<double?>? formConc,
+      Value<String?>? formConcUnit,
+      Value<String?>? formType,
+      Value<int?>? armRowSortOrder,
+      Value<DateTime>? createdAt}) {
+    return ArmTreatmentMetadataCompanion(
+      id: id ?? this.id,
+      treatmentId: treatmentId ?? this.treatmentId,
+      armTypeCode: armTypeCode ?? this.armTypeCode,
+      formConc: formConc ?? this.formConc,
+      formConcUnit: formConcUnit ?? this.formConcUnit,
+      formType: formType ?? this.formType,
+      armRowSortOrder: armRowSortOrder ?? this.armRowSortOrder,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (treatmentId.present) {
+      map['treatment_id'] = Variable<int>(treatmentId.value);
+    }
+    if (armTypeCode.present) {
+      map['arm_type_code'] = Variable<String>(armTypeCode.value);
+    }
+    if (formConc.present) {
+      map['form_conc'] = Variable<double>(formConc.value);
+    }
+    if (formConcUnit.present) {
+      map['form_conc_unit'] = Variable<String>(formConcUnit.value);
+    }
+    if (formType.present) {
+      map['form_type'] = Variable<String>(formType.value);
+    }
+    if (armRowSortOrder.present) {
+      map['arm_row_sort_order'] = Variable<int>(armRowSortOrder.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArmTreatmentMetadataCompanion(')
+          ..write('id: $id, ')
+          ..write('treatmentId: $treatmentId, ')
+          ..write('armTypeCode: $armTypeCode, ')
+          ..write('formConc: $formConc, ')
+          ..write('formConcUnit: $formConcUnit, ')
+          ..write('formType: $formType, ')
+          ..write('armRowSortOrder: $armRowSortOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -31845,6 +32309,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ArmSessionMetadataTable(this);
   late final $ArmTrialMetadataTable armTrialMetadata =
       $ArmTrialMetadataTable(this);
+  late final $ArmTreatmentMetadataTable armTreatmentMetadata =
+      $ArmTreatmentMetadataTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -31890,7 +32356,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         armColumnMappings,
         armAssessmentMetadata,
         armSessionMetadata,
-        armTrialMetadata
+        armTrialMetadata,
+        armTreatmentMetadata
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -34007,6 +34474,24 @@ class $$TreatmentsTableFilterComposer
                 $$TrialApplicationEventsTableFilterComposer(ComposerState(
                     $state.db,
                     $state.db.trialApplicationEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter armTreatmentMetadataRefs(
+      ComposableFilter Function($$ArmTreatmentMetadataTableFilterComposer f)
+          f) {
+    final $$ArmTreatmentMetadataTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.armTreatmentMetadata,
+            getReferencedColumn: (t) => t.treatmentId,
+            builder: (joinBuilder, parentComposers) =>
+                $$ArmTreatmentMetadataTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.armTreatmentMetadata,
                     joinBuilder,
                     parentComposers)));
     return f(composer);
@@ -46446,6 +46931,191 @@ class $$ArmTrialMetadataTableOrderingComposer
   }
 }
 
+typedef $$ArmTreatmentMetadataTableCreateCompanionBuilder
+    = ArmTreatmentMetadataCompanion Function({
+  Value<int> id,
+  required int treatmentId,
+  Value<String?> armTypeCode,
+  Value<double?> formConc,
+  Value<String?> formConcUnit,
+  Value<String?> formType,
+  Value<int?> armRowSortOrder,
+  Value<DateTime> createdAt,
+});
+typedef $$ArmTreatmentMetadataTableUpdateCompanionBuilder
+    = ArmTreatmentMetadataCompanion Function({
+  Value<int> id,
+  Value<int> treatmentId,
+  Value<String?> armTypeCode,
+  Value<double?> formConc,
+  Value<String?> formConcUnit,
+  Value<String?> formType,
+  Value<int?> armRowSortOrder,
+  Value<DateTime> createdAt,
+});
+
+class $$ArmTreatmentMetadataTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ArmTreatmentMetadataTable,
+    ArmTreatmentMetadataData,
+    $$ArmTreatmentMetadataTableFilterComposer,
+    $$ArmTreatmentMetadataTableOrderingComposer,
+    $$ArmTreatmentMetadataTableCreateCompanionBuilder,
+    $$ArmTreatmentMetadataTableUpdateCompanionBuilder> {
+  $$ArmTreatmentMetadataTableTableManager(
+      _$AppDatabase db, $ArmTreatmentMetadataTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$ArmTreatmentMetadataTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$ArmTreatmentMetadataTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> treatmentId = const Value.absent(),
+            Value<String?> armTypeCode = const Value.absent(),
+            Value<double?> formConc = const Value.absent(),
+            Value<String?> formConcUnit = const Value.absent(),
+            Value<String?> formType = const Value.absent(),
+            Value<int?> armRowSortOrder = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ArmTreatmentMetadataCompanion(
+            id: id,
+            treatmentId: treatmentId,
+            armTypeCode: armTypeCode,
+            formConc: formConc,
+            formConcUnit: formConcUnit,
+            formType: formType,
+            armRowSortOrder: armRowSortOrder,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int treatmentId,
+            Value<String?> armTypeCode = const Value.absent(),
+            Value<double?> formConc = const Value.absent(),
+            Value<String?> formConcUnit = const Value.absent(),
+            Value<String?> formType = const Value.absent(),
+            Value<int?> armRowSortOrder = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ArmTreatmentMetadataCompanion.insert(
+            id: id,
+            treatmentId: treatmentId,
+            armTypeCode: armTypeCode,
+            formConc: formConc,
+            formConcUnit: formConcUnit,
+            formType: formType,
+            armRowSortOrder: armRowSortOrder,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$ArmTreatmentMetadataTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ArmTreatmentMetadataTable> {
+  $$ArmTreatmentMetadataTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get armTypeCode => $state.composableBuilder(
+      column: $state.table.armTypeCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get formConc => $state.composableBuilder(
+      column: $state.table.formConc,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get formConcUnit => $state.composableBuilder(
+      column: $state.table.formConcUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get formType => $state.composableBuilder(
+      column: $state.table.formType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get armRowSortOrder => $state.composableBuilder(
+      column: $state.table.armRowSortOrder,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TreatmentsTableFilterComposer get treatmentId {
+    final $$TreatmentsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.treatmentId,
+        referencedTable: $state.db.treatments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TreatmentsTableFilterComposer(ComposerState($state.db,
+                $state.db.treatments, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$ArmTreatmentMetadataTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ArmTreatmentMetadataTable> {
+  $$ArmTreatmentMetadataTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get armTypeCode => $state.composableBuilder(
+      column: $state.table.armTypeCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get formConc => $state.composableBuilder(
+      column: $state.table.formConc,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get formConcUnit => $state.composableBuilder(
+      column: $state.table.formConcUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get formType => $state.composableBuilder(
+      column: $state.table.formType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get armRowSortOrder => $state.composableBuilder(
+      column: $state.table.armRowSortOrder,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TreatmentsTableOrderingComposer get treatmentId {
+    final $$TreatmentsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.treatmentId,
+        referencedTable: $state.db.treatments,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TreatmentsTableOrderingComposer(ComposerState($state.db,
+                $state.db.treatments, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -46537,4 +47207,6 @@ class $AppDatabaseManager {
       $$ArmSessionMetadataTableTableManager(_db, _db.armSessionMetadata);
   $$ArmTrialMetadataTableTableManager get armTrialMetadata =>
       $$ArmTrialMetadataTableTableManager(_db, _db.armTrialMetadata);
+  $$ArmTreatmentMetadataTableTableManager get armTreatmentMetadata =>
+      $$ArmTreatmentMetadataTableTableManager(_db, _db.armTreatmentMetadata);
 }
