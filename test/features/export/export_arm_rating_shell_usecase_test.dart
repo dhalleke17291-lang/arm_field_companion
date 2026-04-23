@@ -180,6 +180,10 @@ Future<String> writeArmShellFixture(
   String? plotDataSizeUnit,
   /// Row 39 (0-based) — `033EAB` Assessed By.
   String? plotDataAssessedBy,
+
+  /// Optional **Applications** sheet: one inner list per application column
+  /// (C, D, …), each of length **79** (`row01`…`row79`).
+  List<List<String?>>? applicationSheetColumns,
 }) async {
   final excel = Excel.createExcel();
   excel.rename('Sheet1', 'Plot Data');
@@ -259,6 +263,31 @@ Future<String> writeArmShellFixture(
     final row = 48 + i;
     setInt(row, 0, 1);
     setInt(row, 1, plotNumbers[i]);
+  }
+
+  if (applicationSheetColumns != null &&
+      applicationSheetColumns.isNotEmpty) {
+    final appSheet = excel['Applications'];
+    void appSetText(int r, int c, String t) {
+      appSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: r))
+          .value = TextCellValue(t);
+    }
+    for (var i = 0; i < applicationSheetColumns.length; i++) {
+      final col = 2 + i;
+      final vals = applicationSheetColumns[i];
+      if (vals.length != 79) {
+        throw ArgumentError(
+          'applicationSheetColumns[$i] must have length 79, got ${vals.length}',
+        );
+      }
+      for (var r = 0; r < 79; r++) {
+        final v = vals[r];
+        if (v != null && v.isNotEmpty) {
+          appSetText(r, col, v);
+        }
+      }
+    }
   }
 
   final path = '$tempDir/shell_${DateTime.now().microsecondsSinceEpoch}.xlsx';

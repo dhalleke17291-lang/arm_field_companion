@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/excel_column_letters.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 
@@ -13,6 +14,7 @@ import '../../core/widgets/loading_error_widgets.dart';
 ///  - Import summary (source file, ARM version, import date)
 ///  - Shell link (linked shell file, link date)
 ///  - ARM assessments (columns, SE codes, rating dates)
+///  - Applications sheet (imported application blocks, read-only)
 ///  - Pinned import session
 ///
 /// Lives under `lib/features/arm_protocol/` (ARM subtree). Trial hub accesses
@@ -114,6 +116,7 @@ class _ArmProtocolContent extends ConsumerWidget {
         if (meta.armLinkedShellPath != null || meta.armLinkedShellAt != null)
           _ShellLinkCard(meta: meta),
         ArmTreatmentsSection(trialId: trialId),
+        ArmApplicationsSection(trialId: trialId),
         _ArmAssessmentsSection(trialId: trialId),
         if (meta.armImportSessionId != null)
           _ImportSessionCard(sessionId: meta.armImportSessionId!),
@@ -419,6 +422,183 @@ class _ArmTreatmentRow extends StatelessWidget {
     }
 
     return parts.isEmpty ? null : parts.join(' • ');
+  }
+}
+
+// ─── ARM Applications Section ────────────────────────────────────────────────
+//
+// Phase 3d: read-only view of `arm_applications` + core
+// `trial_application_events` (Applications sheet import). Events without an
+// ARM extension row are omitted here — they still appear on the main
+// Applications tab.
+
+/// Read-only Applications sub-section of the ARM Protocol tab. Public for
+/// widget tests (same pattern as [ArmTreatmentsSection]).
+class ArmApplicationsSection extends ConsumerWidget {
+  const ArmApplicationsSection({super.key, required this.trialId});
+
+  final int trialId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rowsAsync = ref.watch(armSheetApplicationsForTrialProvider(trialId));
+
+    return rowsAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(AppDesignTokens.spacing16),
+        child: Center(child: CircularProgressIndicator.adaptive()),
+      ),
+      error: (e, _) => Padding(
+        padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+        child: Text(
+          'Could not load applications: $e',
+          style: const TextStyle(color: AppDesignTokens.warningFg),
+        ),
+      ),
+      data: (rows) {
+        if (rows.isEmpty) {
+          return const _SectionCard(
+            icon: Icons.agriculture_outlined,
+            title: 'Applications',
+            iconColor: Color(0xFF0D9488),
+            children: [
+              _EmptyRowHint(
+                text: 'No ARM Applications sheet data for this trial.',
+              ),
+            ],
+          );
+        }
+
+        return _SectionCard(
+          icon: Icons.agriculture_outlined,
+          title: 'Applications',
+          iconColor: const Color(0xFF0D9488),
+          children: [
+            for (final row in rows)
+              _ArmApplicationRow(
+                event: row.event,
+                arm: row.arm,
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ArmApplicationRow extends StatelessWidget {
+  const _ArmApplicationRow({
+    required this.event,
+    required this.arm,
+  });
+
+  final TrialApplicationEvent event;
+  final ArmApplication arm;
+
+  @override
+  Widget build(BuildContext context) {
+    final local = event.applicationDate.toLocal();
+    final dateStr = DateFormat('d MMM yyyy').format(local);
+    final time = event.applicationTime?.trim();
+    final title = (time != null && time.isNotEmpty) ? '$dateStr · $time' : dateStr;
+
+    final colIdx = arm.armSheetColumnIndex;
+    final colLabel =
+        colIdx != null ? columnIndexToLettersZeroBased(colIdx) : '—';
+
+    final subtitle = _subtitleFromEvent(event);
+    final timing = arm.row07?.trim();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignTokens.spacing16,
+        vertical: 10,
+      ),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: AppDesignTokens.divider,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFCCFBF1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              colLabel,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF0F766E),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 2,
+                  children: [
+                    if (timing != null && timing.isNotEmpty)
+                      _MicroChip(
+                        label: timing,
+                        color: const Color(0xFFB45309),
+                      ),
+                    if (event.applicationMethod != null &&
+                        event.applicationMethod!.trim().isNotEmpty)
+                      _MicroChip(
+                        label: event.applicationMethod!.trim(),
+                        color: const Color(0xFF0369A1),
+                      ),
+                  ],
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String? _subtitleFromEvent(TrialApplicationEvent e) {
+    final parts = <String>[];
+    final op = e.operatorName?.trim();
+    if (op != null && op.isNotEmpty) parts.add('Operator: $op');
+    final eq = e.equipmentUsed?.trim();
+    if (eq != null && eq.isNotEmpty) parts.add('Equipment: $eq');
+    if (parts.isEmpty) return null;
+    return parts.join(' • ');
   }
 }
 

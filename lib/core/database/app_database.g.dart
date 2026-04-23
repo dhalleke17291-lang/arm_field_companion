@@ -33678,6 +33678,3305 @@ class ArmTreatmentMetadataCompanion
   }
 }
 
+class $ArmApplicationsTable extends ArmApplications
+    with TableInfo<$ArmApplicationsTable, ArmApplication> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ArmApplicationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialApplicationEventIdMeta =
+      const VerificationMeta('trialApplicationEventId');
+  @override
+  late final GeneratedColumn<String> trialApplicationEventId =
+      GeneratedColumn<String>('trial_application_event_id', aliasedName, false,
+          type: DriftSqlType.string,
+          requiredDuringInsert: true,
+          defaultConstraints: GeneratedColumn.constraintIsAlways(
+              'REFERENCES trial_application_events (id) ON DELETE CASCADE'));
+  static const VerificationMeta _armSheetColumnIndexMeta =
+      const VerificationMeta('armSheetColumnIndex');
+  @override
+  late final GeneratedColumn<int> armSheetColumnIndex = GeneratedColumn<int>(
+      'arm_sheet_column_index', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _row01Meta = const VerificationMeta('row01');
+  @override
+  late final GeneratedColumn<String> row01 = GeneratedColumn<String>(
+      'row01', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row02Meta = const VerificationMeta('row02');
+  @override
+  late final GeneratedColumn<String> row02 = GeneratedColumn<String>(
+      'row02', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row03Meta = const VerificationMeta('row03');
+  @override
+  late final GeneratedColumn<String> row03 = GeneratedColumn<String>(
+      'row03', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row04Meta = const VerificationMeta('row04');
+  @override
+  late final GeneratedColumn<String> row04 = GeneratedColumn<String>(
+      'row04', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row05Meta = const VerificationMeta('row05');
+  @override
+  late final GeneratedColumn<String> row05 = GeneratedColumn<String>(
+      'row05', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row06Meta = const VerificationMeta('row06');
+  @override
+  late final GeneratedColumn<String> row06 = GeneratedColumn<String>(
+      'row06', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row07Meta = const VerificationMeta('row07');
+  @override
+  late final GeneratedColumn<String> row07 = GeneratedColumn<String>(
+      'row07', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row08Meta = const VerificationMeta('row08');
+  @override
+  late final GeneratedColumn<String> row08 = GeneratedColumn<String>(
+      'row08', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row09Meta = const VerificationMeta('row09');
+  @override
+  late final GeneratedColumn<String> row09 = GeneratedColumn<String>(
+      'row09', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row10Meta = const VerificationMeta('row10');
+  @override
+  late final GeneratedColumn<String> row10 = GeneratedColumn<String>(
+      'row10', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row11Meta = const VerificationMeta('row11');
+  @override
+  late final GeneratedColumn<String> row11 = GeneratedColumn<String>(
+      'row11', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row12Meta = const VerificationMeta('row12');
+  @override
+  late final GeneratedColumn<String> row12 = GeneratedColumn<String>(
+      'row12', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row13Meta = const VerificationMeta('row13');
+  @override
+  late final GeneratedColumn<String> row13 = GeneratedColumn<String>(
+      'row13', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row14Meta = const VerificationMeta('row14');
+  @override
+  late final GeneratedColumn<String> row14 = GeneratedColumn<String>(
+      'row14', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row15Meta = const VerificationMeta('row15');
+  @override
+  late final GeneratedColumn<String> row15 = GeneratedColumn<String>(
+      'row15', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row16Meta = const VerificationMeta('row16');
+  @override
+  late final GeneratedColumn<String> row16 = GeneratedColumn<String>(
+      'row16', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row17Meta = const VerificationMeta('row17');
+  @override
+  late final GeneratedColumn<String> row17 = GeneratedColumn<String>(
+      'row17', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row18Meta = const VerificationMeta('row18');
+  @override
+  late final GeneratedColumn<String> row18 = GeneratedColumn<String>(
+      'row18', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row19Meta = const VerificationMeta('row19');
+  @override
+  late final GeneratedColumn<String> row19 = GeneratedColumn<String>(
+      'row19', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row20Meta = const VerificationMeta('row20');
+  @override
+  late final GeneratedColumn<String> row20 = GeneratedColumn<String>(
+      'row20', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row21Meta = const VerificationMeta('row21');
+  @override
+  late final GeneratedColumn<String> row21 = GeneratedColumn<String>(
+      'row21', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row22Meta = const VerificationMeta('row22');
+  @override
+  late final GeneratedColumn<String> row22 = GeneratedColumn<String>(
+      'row22', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row23Meta = const VerificationMeta('row23');
+  @override
+  late final GeneratedColumn<String> row23 = GeneratedColumn<String>(
+      'row23', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row24Meta = const VerificationMeta('row24');
+  @override
+  late final GeneratedColumn<String> row24 = GeneratedColumn<String>(
+      'row24', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row25Meta = const VerificationMeta('row25');
+  @override
+  late final GeneratedColumn<String> row25 = GeneratedColumn<String>(
+      'row25', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row26Meta = const VerificationMeta('row26');
+  @override
+  late final GeneratedColumn<String> row26 = GeneratedColumn<String>(
+      'row26', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row27Meta = const VerificationMeta('row27');
+  @override
+  late final GeneratedColumn<String> row27 = GeneratedColumn<String>(
+      'row27', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row28Meta = const VerificationMeta('row28');
+  @override
+  late final GeneratedColumn<String> row28 = GeneratedColumn<String>(
+      'row28', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row29Meta = const VerificationMeta('row29');
+  @override
+  late final GeneratedColumn<String> row29 = GeneratedColumn<String>(
+      'row29', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row30Meta = const VerificationMeta('row30');
+  @override
+  late final GeneratedColumn<String> row30 = GeneratedColumn<String>(
+      'row30', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row31Meta = const VerificationMeta('row31');
+  @override
+  late final GeneratedColumn<String> row31 = GeneratedColumn<String>(
+      'row31', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row32Meta = const VerificationMeta('row32');
+  @override
+  late final GeneratedColumn<String> row32 = GeneratedColumn<String>(
+      'row32', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row33Meta = const VerificationMeta('row33');
+  @override
+  late final GeneratedColumn<String> row33 = GeneratedColumn<String>(
+      'row33', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row34Meta = const VerificationMeta('row34');
+  @override
+  late final GeneratedColumn<String> row34 = GeneratedColumn<String>(
+      'row34', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row35Meta = const VerificationMeta('row35');
+  @override
+  late final GeneratedColumn<String> row35 = GeneratedColumn<String>(
+      'row35', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row36Meta = const VerificationMeta('row36');
+  @override
+  late final GeneratedColumn<String> row36 = GeneratedColumn<String>(
+      'row36', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row37Meta = const VerificationMeta('row37');
+  @override
+  late final GeneratedColumn<String> row37 = GeneratedColumn<String>(
+      'row37', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row38Meta = const VerificationMeta('row38');
+  @override
+  late final GeneratedColumn<String> row38 = GeneratedColumn<String>(
+      'row38', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row39Meta = const VerificationMeta('row39');
+  @override
+  late final GeneratedColumn<String> row39 = GeneratedColumn<String>(
+      'row39', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row40Meta = const VerificationMeta('row40');
+  @override
+  late final GeneratedColumn<String> row40 = GeneratedColumn<String>(
+      'row40', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row41Meta = const VerificationMeta('row41');
+  @override
+  late final GeneratedColumn<String> row41 = GeneratedColumn<String>(
+      'row41', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row42Meta = const VerificationMeta('row42');
+  @override
+  late final GeneratedColumn<String> row42 = GeneratedColumn<String>(
+      'row42', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row43Meta = const VerificationMeta('row43');
+  @override
+  late final GeneratedColumn<String> row43 = GeneratedColumn<String>(
+      'row43', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row44Meta = const VerificationMeta('row44');
+  @override
+  late final GeneratedColumn<String> row44 = GeneratedColumn<String>(
+      'row44', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row45Meta = const VerificationMeta('row45');
+  @override
+  late final GeneratedColumn<String> row45 = GeneratedColumn<String>(
+      'row45', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row46Meta = const VerificationMeta('row46');
+  @override
+  late final GeneratedColumn<String> row46 = GeneratedColumn<String>(
+      'row46', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row47Meta = const VerificationMeta('row47');
+  @override
+  late final GeneratedColumn<String> row47 = GeneratedColumn<String>(
+      'row47', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row48Meta = const VerificationMeta('row48');
+  @override
+  late final GeneratedColumn<String> row48 = GeneratedColumn<String>(
+      'row48', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row49Meta = const VerificationMeta('row49');
+  @override
+  late final GeneratedColumn<String> row49 = GeneratedColumn<String>(
+      'row49', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row50Meta = const VerificationMeta('row50');
+  @override
+  late final GeneratedColumn<String> row50 = GeneratedColumn<String>(
+      'row50', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row51Meta = const VerificationMeta('row51');
+  @override
+  late final GeneratedColumn<String> row51 = GeneratedColumn<String>(
+      'row51', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row52Meta = const VerificationMeta('row52');
+  @override
+  late final GeneratedColumn<String> row52 = GeneratedColumn<String>(
+      'row52', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row53Meta = const VerificationMeta('row53');
+  @override
+  late final GeneratedColumn<String> row53 = GeneratedColumn<String>(
+      'row53', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row54Meta = const VerificationMeta('row54');
+  @override
+  late final GeneratedColumn<String> row54 = GeneratedColumn<String>(
+      'row54', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row55Meta = const VerificationMeta('row55');
+  @override
+  late final GeneratedColumn<String> row55 = GeneratedColumn<String>(
+      'row55', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row56Meta = const VerificationMeta('row56');
+  @override
+  late final GeneratedColumn<String> row56 = GeneratedColumn<String>(
+      'row56', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row57Meta = const VerificationMeta('row57');
+  @override
+  late final GeneratedColumn<String> row57 = GeneratedColumn<String>(
+      'row57', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row58Meta = const VerificationMeta('row58');
+  @override
+  late final GeneratedColumn<String> row58 = GeneratedColumn<String>(
+      'row58', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row59Meta = const VerificationMeta('row59');
+  @override
+  late final GeneratedColumn<String> row59 = GeneratedColumn<String>(
+      'row59', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row60Meta = const VerificationMeta('row60');
+  @override
+  late final GeneratedColumn<String> row60 = GeneratedColumn<String>(
+      'row60', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row61Meta = const VerificationMeta('row61');
+  @override
+  late final GeneratedColumn<String> row61 = GeneratedColumn<String>(
+      'row61', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row62Meta = const VerificationMeta('row62');
+  @override
+  late final GeneratedColumn<String> row62 = GeneratedColumn<String>(
+      'row62', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row63Meta = const VerificationMeta('row63');
+  @override
+  late final GeneratedColumn<String> row63 = GeneratedColumn<String>(
+      'row63', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row64Meta = const VerificationMeta('row64');
+  @override
+  late final GeneratedColumn<String> row64 = GeneratedColumn<String>(
+      'row64', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row65Meta = const VerificationMeta('row65');
+  @override
+  late final GeneratedColumn<String> row65 = GeneratedColumn<String>(
+      'row65', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row66Meta = const VerificationMeta('row66');
+  @override
+  late final GeneratedColumn<String> row66 = GeneratedColumn<String>(
+      'row66', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row67Meta = const VerificationMeta('row67');
+  @override
+  late final GeneratedColumn<String> row67 = GeneratedColumn<String>(
+      'row67', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row68Meta = const VerificationMeta('row68');
+  @override
+  late final GeneratedColumn<String> row68 = GeneratedColumn<String>(
+      'row68', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row69Meta = const VerificationMeta('row69');
+  @override
+  late final GeneratedColumn<String> row69 = GeneratedColumn<String>(
+      'row69', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row70Meta = const VerificationMeta('row70');
+  @override
+  late final GeneratedColumn<String> row70 = GeneratedColumn<String>(
+      'row70', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row71Meta = const VerificationMeta('row71');
+  @override
+  late final GeneratedColumn<String> row71 = GeneratedColumn<String>(
+      'row71', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row72Meta = const VerificationMeta('row72');
+  @override
+  late final GeneratedColumn<String> row72 = GeneratedColumn<String>(
+      'row72', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row73Meta = const VerificationMeta('row73');
+  @override
+  late final GeneratedColumn<String> row73 = GeneratedColumn<String>(
+      'row73', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row74Meta = const VerificationMeta('row74');
+  @override
+  late final GeneratedColumn<String> row74 = GeneratedColumn<String>(
+      'row74', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row75Meta = const VerificationMeta('row75');
+  @override
+  late final GeneratedColumn<String> row75 = GeneratedColumn<String>(
+      'row75', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row76Meta = const VerificationMeta('row76');
+  @override
+  late final GeneratedColumn<String> row76 = GeneratedColumn<String>(
+      'row76', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row77Meta = const VerificationMeta('row77');
+  @override
+  late final GeneratedColumn<String> row77 = GeneratedColumn<String>(
+      'row77', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row78Meta = const VerificationMeta('row78');
+  @override
+  late final GeneratedColumn<String> row78 = GeneratedColumn<String>(
+      'row78', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _row79Meta = const VerificationMeta('row79');
+  @override
+  late final GeneratedColumn<String> row79 = GeneratedColumn<String>(
+      'row79', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialApplicationEventId,
+        armSheetColumnIndex,
+        row01,
+        row02,
+        row03,
+        row04,
+        row05,
+        row06,
+        row07,
+        row08,
+        row09,
+        row10,
+        row11,
+        row12,
+        row13,
+        row14,
+        row15,
+        row16,
+        row17,
+        row18,
+        row19,
+        row20,
+        row21,
+        row22,
+        row23,
+        row24,
+        row25,
+        row26,
+        row27,
+        row28,
+        row29,
+        row30,
+        row31,
+        row32,
+        row33,
+        row34,
+        row35,
+        row36,
+        row37,
+        row38,
+        row39,
+        row40,
+        row41,
+        row42,
+        row43,
+        row44,
+        row45,
+        row46,
+        row47,
+        row48,
+        row49,
+        row50,
+        row51,
+        row52,
+        row53,
+        row54,
+        row55,
+        row56,
+        row57,
+        row58,
+        row59,
+        row60,
+        row61,
+        row62,
+        row63,
+        row64,
+        row65,
+        row66,
+        row67,
+        row68,
+        row69,
+        row70,
+        row71,
+        row72,
+        row73,
+        row74,
+        row75,
+        row76,
+        row77,
+        row78,
+        row79,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'arm_applications';
+  @override
+  VerificationContext validateIntegrity(Insertable<ArmApplication> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_application_event_id')) {
+      context.handle(
+          _trialApplicationEventIdMeta,
+          trialApplicationEventId.isAcceptableOrUnknown(
+              data['trial_application_event_id']!,
+              _trialApplicationEventIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialApplicationEventIdMeta);
+    }
+    if (data.containsKey('arm_sheet_column_index')) {
+      context.handle(
+          _armSheetColumnIndexMeta,
+          armSheetColumnIndex.isAcceptableOrUnknown(
+              data['arm_sheet_column_index']!, _armSheetColumnIndexMeta));
+    }
+    if (data.containsKey('row01')) {
+      context.handle(
+          _row01Meta, row01.isAcceptableOrUnknown(data['row01']!, _row01Meta));
+    }
+    if (data.containsKey('row02')) {
+      context.handle(
+          _row02Meta, row02.isAcceptableOrUnknown(data['row02']!, _row02Meta));
+    }
+    if (data.containsKey('row03')) {
+      context.handle(
+          _row03Meta, row03.isAcceptableOrUnknown(data['row03']!, _row03Meta));
+    }
+    if (data.containsKey('row04')) {
+      context.handle(
+          _row04Meta, row04.isAcceptableOrUnknown(data['row04']!, _row04Meta));
+    }
+    if (data.containsKey('row05')) {
+      context.handle(
+          _row05Meta, row05.isAcceptableOrUnknown(data['row05']!, _row05Meta));
+    }
+    if (data.containsKey('row06')) {
+      context.handle(
+          _row06Meta, row06.isAcceptableOrUnknown(data['row06']!, _row06Meta));
+    }
+    if (data.containsKey('row07')) {
+      context.handle(
+          _row07Meta, row07.isAcceptableOrUnknown(data['row07']!, _row07Meta));
+    }
+    if (data.containsKey('row08')) {
+      context.handle(
+          _row08Meta, row08.isAcceptableOrUnknown(data['row08']!, _row08Meta));
+    }
+    if (data.containsKey('row09')) {
+      context.handle(
+          _row09Meta, row09.isAcceptableOrUnknown(data['row09']!, _row09Meta));
+    }
+    if (data.containsKey('row10')) {
+      context.handle(
+          _row10Meta, row10.isAcceptableOrUnknown(data['row10']!, _row10Meta));
+    }
+    if (data.containsKey('row11')) {
+      context.handle(
+          _row11Meta, row11.isAcceptableOrUnknown(data['row11']!, _row11Meta));
+    }
+    if (data.containsKey('row12')) {
+      context.handle(
+          _row12Meta, row12.isAcceptableOrUnknown(data['row12']!, _row12Meta));
+    }
+    if (data.containsKey('row13')) {
+      context.handle(
+          _row13Meta, row13.isAcceptableOrUnknown(data['row13']!, _row13Meta));
+    }
+    if (data.containsKey('row14')) {
+      context.handle(
+          _row14Meta, row14.isAcceptableOrUnknown(data['row14']!, _row14Meta));
+    }
+    if (data.containsKey('row15')) {
+      context.handle(
+          _row15Meta, row15.isAcceptableOrUnknown(data['row15']!, _row15Meta));
+    }
+    if (data.containsKey('row16')) {
+      context.handle(
+          _row16Meta, row16.isAcceptableOrUnknown(data['row16']!, _row16Meta));
+    }
+    if (data.containsKey('row17')) {
+      context.handle(
+          _row17Meta, row17.isAcceptableOrUnknown(data['row17']!, _row17Meta));
+    }
+    if (data.containsKey('row18')) {
+      context.handle(
+          _row18Meta, row18.isAcceptableOrUnknown(data['row18']!, _row18Meta));
+    }
+    if (data.containsKey('row19')) {
+      context.handle(
+          _row19Meta, row19.isAcceptableOrUnknown(data['row19']!, _row19Meta));
+    }
+    if (data.containsKey('row20')) {
+      context.handle(
+          _row20Meta, row20.isAcceptableOrUnknown(data['row20']!, _row20Meta));
+    }
+    if (data.containsKey('row21')) {
+      context.handle(
+          _row21Meta, row21.isAcceptableOrUnknown(data['row21']!, _row21Meta));
+    }
+    if (data.containsKey('row22')) {
+      context.handle(
+          _row22Meta, row22.isAcceptableOrUnknown(data['row22']!, _row22Meta));
+    }
+    if (data.containsKey('row23')) {
+      context.handle(
+          _row23Meta, row23.isAcceptableOrUnknown(data['row23']!, _row23Meta));
+    }
+    if (data.containsKey('row24')) {
+      context.handle(
+          _row24Meta, row24.isAcceptableOrUnknown(data['row24']!, _row24Meta));
+    }
+    if (data.containsKey('row25')) {
+      context.handle(
+          _row25Meta, row25.isAcceptableOrUnknown(data['row25']!, _row25Meta));
+    }
+    if (data.containsKey('row26')) {
+      context.handle(
+          _row26Meta, row26.isAcceptableOrUnknown(data['row26']!, _row26Meta));
+    }
+    if (data.containsKey('row27')) {
+      context.handle(
+          _row27Meta, row27.isAcceptableOrUnknown(data['row27']!, _row27Meta));
+    }
+    if (data.containsKey('row28')) {
+      context.handle(
+          _row28Meta, row28.isAcceptableOrUnknown(data['row28']!, _row28Meta));
+    }
+    if (data.containsKey('row29')) {
+      context.handle(
+          _row29Meta, row29.isAcceptableOrUnknown(data['row29']!, _row29Meta));
+    }
+    if (data.containsKey('row30')) {
+      context.handle(
+          _row30Meta, row30.isAcceptableOrUnknown(data['row30']!, _row30Meta));
+    }
+    if (data.containsKey('row31')) {
+      context.handle(
+          _row31Meta, row31.isAcceptableOrUnknown(data['row31']!, _row31Meta));
+    }
+    if (data.containsKey('row32')) {
+      context.handle(
+          _row32Meta, row32.isAcceptableOrUnknown(data['row32']!, _row32Meta));
+    }
+    if (data.containsKey('row33')) {
+      context.handle(
+          _row33Meta, row33.isAcceptableOrUnknown(data['row33']!, _row33Meta));
+    }
+    if (data.containsKey('row34')) {
+      context.handle(
+          _row34Meta, row34.isAcceptableOrUnknown(data['row34']!, _row34Meta));
+    }
+    if (data.containsKey('row35')) {
+      context.handle(
+          _row35Meta, row35.isAcceptableOrUnknown(data['row35']!, _row35Meta));
+    }
+    if (data.containsKey('row36')) {
+      context.handle(
+          _row36Meta, row36.isAcceptableOrUnknown(data['row36']!, _row36Meta));
+    }
+    if (data.containsKey('row37')) {
+      context.handle(
+          _row37Meta, row37.isAcceptableOrUnknown(data['row37']!, _row37Meta));
+    }
+    if (data.containsKey('row38')) {
+      context.handle(
+          _row38Meta, row38.isAcceptableOrUnknown(data['row38']!, _row38Meta));
+    }
+    if (data.containsKey('row39')) {
+      context.handle(
+          _row39Meta, row39.isAcceptableOrUnknown(data['row39']!, _row39Meta));
+    }
+    if (data.containsKey('row40')) {
+      context.handle(
+          _row40Meta, row40.isAcceptableOrUnknown(data['row40']!, _row40Meta));
+    }
+    if (data.containsKey('row41')) {
+      context.handle(
+          _row41Meta, row41.isAcceptableOrUnknown(data['row41']!, _row41Meta));
+    }
+    if (data.containsKey('row42')) {
+      context.handle(
+          _row42Meta, row42.isAcceptableOrUnknown(data['row42']!, _row42Meta));
+    }
+    if (data.containsKey('row43')) {
+      context.handle(
+          _row43Meta, row43.isAcceptableOrUnknown(data['row43']!, _row43Meta));
+    }
+    if (data.containsKey('row44')) {
+      context.handle(
+          _row44Meta, row44.isAcceptableOrUnknown(data['row44']!, _row44Meta));
+    }
+    if (data.containsKey('row45')) {
+      context.handle(
+          _row45Meta, row45.isAcceptableOrUnknown(data['row45']!, _row45Meta));
+    }
+    if (data.containsKey('row46')) {
+      context.handle(
+          _row46Meta, row46.isAcceptableOrUnknown(data['row46']!, _row46Meta));
+    }
+    if (data.containsKey('row47')) {
+      context.handle(
+          _row47Meta, row47.isAcceptableOrUnknown(data['row47']!, _row47Meta));
+    }
+    if (data.containsKey('row48')) {
+      context.handle(
+          _row48Meta, row48.isAcceptableOrUnknown(data['row48']!, _row48Meta));
+    }
+    if (data.containsKey('row49')) {
+      context.handle(
+          _row49Meta, row49.isAcceptableOrUnknown(data['row49']!, _row49Meta));
+    }
+    if (data.containsKey('row50')) {
+      context.handle(
+          _row50Meta, row50.isAcceptableOrUnknown(data['row50']!, _row50Meta));
+    }
+    if (data.containsKey('row51')) {
+      context.handle(
+          _row51Meta, row51.isAcceptableOrUnknown(data['row51']!, _row51Meta));
+    }
+    if (data.containsKey('row52')) {
+      context.handle(
+          _row52Meta, row52.isAcceptableOrUnknown(data['row52']!, _row52Meta));
+    }
+    if (data.containsKey('row53')) {
+      context.handle(
+          _row53Meta, row53.isAcceptableOrUnknown(data['row53']!, _row53Meta));
+    }
+    if (data.containsKey('row54')) {
+      context.handle(
+          _row54Meta, row54.isAcceptableOrUnknown(data['row54']!, _row54Meta));
+    }
+    if (data.containsKey('row55')) {
+      context.handle(
+          _row55Meta, row55.isAcceptableOrUnknown(data['row55']!, _row55Meta));
+    }
+    if (data.containsKey('row56')) {
+      context.handle(
+          _row56Meta, row56.isAcceptableOrUnknown(data['row56']!, _row56Meta));
+    }
+    if (data.containsKey('row57')) {
+      context.handle(
+          _row57Meta, row57.isAcceptableOrUnknown(data['row57']!, _row57Meta));
+    }
+    if (data.containsKey('row58')) {
+      context.handle(
+          _row58Meta, row58.isAcceptableOrUnknown(data['row58']!, _row58Meta));
+    }
+    if (data.containsKey('row59')) {
+      context.handle(
+          _row59Meta, row59.isAcceptableOrUnknown(data['row59']!, _row59Meta));
+    }
+    if (data.containsKey('row60')) {
+      context.handle(
+          _row60Meta, row60.isAcceptableOrUnknown(data['row60']!, _row60Meta));
+    }
+    if (data.containsKey('row61')) {
+      context.handle(
+          _row61Meta, row61.isAcceptableOrUnknown(data['row61']!, _row61Meta));
+    }
+    if (data.containsKey('row62')) {
+      context.handle(
+          _row62Meta, row62.isAcceptableOrUnknown(data['row62']!, _row62Meta));
+    }
+    if (data.containsKey('row63')) {
+      context.handle(
+          _row63Meta, row63.isAcceptableOrUnknown(data['row63']!, _row63Meta));
+    }
+    if (data.containsKey('row64')) {
+      context.handle(
+          _row64Meta, row64.isAcceptableOrUnknown(data['row64']!, _row64Meta));
+    }
+    if (data.containsKey('row65')) {
+      context.handle(
+          _row65Meta, row65.isAcceptableOrUnknown(data['row65']!, _row65Meta));
+    }
+    if (data.containsKey('row66')) {
+      context.handle(
+          _row66Meta, row66.isAcceptableOrUnknown(data['row66']!, _row66Meta));
+    }
+    if (data.containsKey('row67')) {
+      context.handle(
+          _row67Meta, row67.isAcceptableOrUnknown(data['row67']!, _row67Meta));
+    }
+    if (data.containsKey('row68')) {
+      context.handle(
+          _row68Meta, row68.isAcceptableOrUnknown(data['row68']!, _row68Meta));
+    }
+    if (data.containsKey('row69')) {
+      context.handle(
+          _row69Meta, row69.isAcceptableOrUnknown(data['row69']!, _row69Meta));
+    }
+    if (data.containsKey('row70')) {
+      context.handle(
+          _row70Meta, row70.isAcceptableOrUnknown(data['row70']!, _row70Meta));
+    }
+    if (data.containsKey('row71')) {
+      context.handle(
+          _row71Meta, row71.isAcceptableOrUnknown(data['row71']!, _row71Meta));
+    }
+    if (data.containsKey('row72')) {
+      context.handle(
+          _row72Meta, row72.isAcceptableOrUnknown(data['row72']!, _row72Meta));
+    }
+    if (data.containsKey('row73')) {
+      context.handle(
+          _row73Meta, row73.isAcceptableOrUnknown(data['row73']!, _row73Meta));
+    }
+    if (data.containsKey('row74')) {
+      context.handle(
+          _row74Meta, row74.isAcceptableOrUnknown(data['row74']!, _row74Meta));
+    }
+    if (data.containsKey('row75')) {
+      context.handle(
+          _row75Meta, row75.isAcceptableOrUnknown(data['row75']!, _row75Meta));
+    }
+    if (data.containsKey('row76')) {
+      context.handle(
+          _row76Meta, row76.isAcceptableOrUnknown(data['row76']!, _row76Meta));
+    }
+    if (data.containsKey('row77')) {
+      context.handle(
+          _row77Meta, row77.isAcceptableOrUnknown(data['row77']!, _row77Meta));
+    }
+    if (data.containsKey('row78')) {
+      context.handle(
+          _row78Meta, row78.isAcceptableOrUnknown(data['row78']!, _row78Meta));
+    }
+    if (data.containsKey('row79')) {
+      context.handle(
+          _row79Meta, row79.isAcceptableOrUnknown(data['row79']!, _row79Meta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ArmApplication map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ArmApplication(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialApplicationEventId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}trial_application_event_id'])!,
+      armSheetColumnIndex: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}arm_sheet_column_index']),
+      row01: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row01']),
+      row02: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row02']),
+      row03: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row03']),
+      row04: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row04']),
+      row05: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row05']),
+      row06: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row06']),
+      row07: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row07']),
+      row08: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row08']),
+      row09: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row09']),
+      row10: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row10']),
+      row11: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row11']),
+      row12: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row12']),
+      row13: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row13']),
+      row14: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row14']),
+      row15: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row15']),
+      row16: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row16']),
+      row17: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row17']),
+      row18: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row18']),
+      row19: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row19']),
+      row20: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row20']),
+      row21: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row21']),
+      row22: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row22']),
+      row23: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row23']),
+      row24: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row24']),
+      row25: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row25']),
+      row26: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row26']),
+      row27: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row27']),
+      row28: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row28']),
+      row29: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row29']),
+      row30: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row30']),
+      row31: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row31']),
+      row32: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row32']),
+      row33: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row33']),
+      row34: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row34']),
+      row35: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row35']),
+      row36: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row36']),
+      row37: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row37']),
+      row38: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row38']),
+      row39: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row39']),
+      row40: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row40']),
+      row41: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row41']),
+      row42: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row42']),
+      row43: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row43']),
+      row44: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row44']),
+      row45: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row45']),
+      row46: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row46']),
+      row47: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row47']),
+      row48: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row48']),
+      row49: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row49']),
+      row50: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row50']),
+      row51: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row51']),
+      row52: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row52']),
+      row53: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row53']),
+      row54: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row54']),
+      row55: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row55']),
+      row56: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row56']),
+      row57: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row57']),
+      row58: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row58']),
+      row59: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row59']),
+      row60: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row60']),
+      row61: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row61']),
+      row62: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row62']),
+      row63: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row63']),
+      row64: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row64']),
+      row65: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row65']),
+      row66: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row66']),
+      row67: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row67']),
+      row68: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row68']),
+      row69: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row69']),
+      row70: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row70']),
+      row71: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row71']),
+      row72: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row72']),
+      row73: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row73']),
+      row74: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row74']),
+      row75: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row75']),
+      row76: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row76']),
+      row77: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row77']),
+      row78: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row78']),
+      row79: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}row79']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $ArmApplicationsTable createAlias(String alias) {
+    return $ArmApplicationsTable(attachedDatabase, alias);
+  }
+}
+
+class ArmApplication extends DataClass implements Insertable<ArmApplication> {
+  final int id;
+  final String trialApplicationEventId;
+
+  /// 0-based worksheet column index of this application block (Excel `C` → 2).
+  final int? armSheetColumnIndex;
+  final String? row01;
+  final String? row02;
+  final String? row03;
+  final String? row04;
+  final String? row05;
+  final String? row06;
+  final String? row07;
+  final String? row08;
+  final String? row09;
+  final String? row10;
+  final String? row11;
+  final String? row12;
+  final String? row13;
+  final String? row14;
+  final String? row15;
+  final String? row16;
+  final String? row17;
+  final String? row18;
+  final String? row19;
+  final String? row20;
+  final String? row21;
+  final String? row22;
+  final String? row23;
+  final String? row24;
+  final String? row25;
+  final String? row26;
+  final String? row27;
+  final String? row28;
+  final String? row29;
+  final String? row30;
+  final String? row31;
+  final String? row32;
+  final String? row33;
+  final String? row34;
+  final String? row35;
+  final String? row36;
+  final String? row37;
+  final String? row38;
+  final String? row39;
+  final String? row40;
+  final String? row41;
+  final String? row42;
+  final String? row43;
+  final String? row44;
+  final String? row45;
+  final String? row46;
+  final String? row47;
+  final String? row48;
+  final String? row49;
+  final String? row50;
+  final String? row51;
+  final String? row52;
+  final String? row53;
+  final String? row54;
+  final String? row55;
+  final String? row56;
+  final String? row57;
+  final String? row58;
+  final String? row59;
+  final String? row60;
+  final String? row61;
+  final String? row62;
+  final String? row63;
+  final String? row64;
+  final String? row65;
+  final String? row66;
+  final String? row67;
+  final String? row68;
+  final String? row69;
+  final String? row70;
+  final String? row71;
+  final String? row72;
+  final String? row73;
+  final String? row74;
+  final String? row75;
+  final String? row76;
+  final String? row77;
+  final String? row78;
+  final String? row79;
+  final DateTime createdAt;
+  const ArmApplication(
+      {required this.id,
+      required this.trialApplicationEventId,
+      this.armSheetColumnIndex,
+      this.row01,
+      this.row02,
+      this.row03,
+      this.row04,
+      this.row05,
+      this.row06,
+      this.row07,
+      this.row08,
+      this.row09,
+      this.row10,
+      this.row11,
+      this.row12,
+      this.row13,
+      this.row14,
+      this.row15,
+      this.row16,
+      this.row17,
+      this.row18,
+      this.row19,
+      this.row20,
+      this.row21,
+      this.row22,
+      this.row23,
+      this.row24,
+      this.row25,
+      this.row26,
+      this.row27,
+      this.row28,
+      this.row29,
+      this.row30,
+      this.row31,
+      this.row32,
+      this.row33,
+      this.row34,
+      this.row35,
+      this.row36,
+      this.row37,
+      this.row38,
+      this.row39,
+      this.row40,
+      this.row41,
+      this.row42,
+      this.row43,
+      this.row44,
+      this.row45,
+      this.row46,
+      this.row47,
+      this.row48,
+      this.row49,
+      this.row50,
+      this.row51,
+      this.row52,
+      this.row53,
+      this.row54,
+      this.row55,
+      this.row56,
+      this.row57,
+      this.row58,
+      this.row59,
+      this.row60,
+      this.row61,
+      this.row62,
+      this.row63,
+      this.row64,
+      this.row65,
+      this.row66,
+      this.row67,
+      this.row68,
+      this.row69,
+      this.row70,
+      this.row71,
+      this.row72,
+      this.row73,
+      this.row74,
+      this.row75,
+      this.row76,
+      this.row77,
+      this.row78,
+      this.row79,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_application_event_id'] =
+        Variable<String>(trialApplicationEventId);
+    if (!nullToAbsent || armSheetColumnIndex != null) {
+      map['arm_sheet_column_index'] = Variable<int>(armSheetColumnIndex);
+    }
+    if (!nullToAbsent || row01 != null) {
+      map['row01'] = Variable<String>(row01);
+    }
+    if (!nullToAbsent || row02 != null) {
+      map['row02'] = Variable<String>(row02);
+    }
+    if (!nullToAbsent || row03 != null) {
+      map['row03'] = Variable<String>(row03);
+    }
+    if (!nullToAbsent || row04 != null) {
+      map['row04'] = Variable<String>(row04);
+    }
+    if (!nullToAbsent || row05 != null) {
+      map['row05'] = Variable<String>(row05);
+    }
+    if (!nullToAbsent || row06 != null) {
+      map['row06'] = Variable<String>(row06);
+    }
+    if (!nullToAbsent || row07 != null) {
+      map['row07'] = Variable<String>(row07);
+    }
+    if (!nullToAbsent || row08 != null) {
+      map['row08'] = Variable<String>(row08);
+    }
+    if (!nullToAbsent || row09 != null) {
+      map['row09'] = Variable<String>(row09);
+    }
+    if (!nullToAbsent || row10 != null) {
+      map['row10'] = Variable<String>(row10);
+    }
+    if (!nullToAbsent || row11 != null) {
+      map['row11'] = Variable<String>(row11);
+    }
+    if (!nullToAbsent || row12 != null) {
+      map['row12'] = Variable<String>(row12);
+    }
+    if (!nullToAbsent || row13 != null) {
+      map['row13'] = Variable<String>(row13);
+    }
+    if (!nullToAbsent || row14 != null) {
+      map['row14'] = Variable<String>(row14);
+    }
+    if (!nullToAbsent || row15 != null) {
+      map['row15'] = Variable<String>(row15);
+    }
+    if (!nullToAbsent || row16 != null) {
+      map['row16'] = Variable<String>(row16);
+    }
+    if (!nullToAbsent || row17 != null) {
+      map['row17'] = Variable<String>(row17);
+    }
+    if (!nullToAbsent || row18 != null) {
+      map['row18'] = Variable<String>(row18);
+    }
+    if (!nullToAbsent || row19 != null) {
+      map['row19'] = Variable<String>(row19);
+    }
+    if (!nullToAbsent || row20 != null) {
+      map['row20'] = Variable<String>(row20);
+    }
+    if (!nullToAbsent || row21 != null) {
+      map['row21'] = Variable<String>(row21);
+    }
+    if (!nullToAbsent || row22 != null) {
+      map['row22'] = Variable<String>(row22);
+    }
+    if (!nullToAbsent || row23 != null) {
+      map['row23'] = Variable<String>(row23);
+    }
+    if (!nullToAbsent || row24 != null) {
+      map['row24'] = Variable<String>(row24);
+    }
+    if (!nullToAbsent || row25 != null) {
+      map['row25'] = Variable<String>(row25);
+    }
+    if (!nullToAbsent || row26 != null) {
+      map['row26'] = Variable<String>(row26);
+    }
+    if (!nullToAbsent || row27 != null) {
+      map['row27'] = Variable<String>(row27);
+    }
+    if (!nullToAbsent || row28 != null) {
+      map['row28'] = Variable<String>(row28);
+    }
+    if (!nullToAbsent || row29 != null) {
+      map['row29'] = Variable<String>(row29);
+    }
+    if (!nullToAbsent || row30 != null) {
+      map['row30'] = Variable<String>(row30);
+    }
+    if (!nullToAbsent || row31 != null) {
+      map['row31'] = Variable<String>(row31);
+    }
+    if (!nullToAbsent || row32 != null) {
+      map['row32'] = Variable<String>(row32);
+    }
+    if (!nullToAbsent || row33 != null) {
+      map['row33'] = Variable<String>(row33);
+    }
+    if (!nullToAbsent || row34 != null) {
+      map['row34'] = Variable<String>(row34);
+    }
+    if (!nullToAbsent || row35 != null) {
+      map['row35'] = Variable<String>(row35);
+    }
+    if (!nullToAbsent || row36 != null) {
+      map['row36'] = Variable<String>(row36);
+    }
+    if (!nullToAbsent || row37 != null) {
+      map['row37'] = Variable<String>(row37);
+    }
+    if (!nullToAbsent || row38 != null) {
+      map['row38'] = Variable<String>(row38);
+    }
+    if (!nullToAbsent || row39 != null) {
+      map['row39'] = Variable<String>(row39);
+    }
+    if (!nullToAbsent || row40 != null) {
+      map['row40'] = Variable<String>(row40);
+    }
+    if (!nullToAbsent || row41 != null) {
+      map['row41'] = Variable<String>(row41);
+    }
+    if (!nullToAbsent || row42 != null) {
+      map['row42'] = Variable<String>(row42);
+    }
+    if (!nullToAbsent || row43 != null) {
+      map['row43'] = Variable<String>(row43);
+    }
+    if (!nullToAbsent || row44 != null) {
+      map['row44'] = Variable<String>(row44);
+    }
+    if (!nullToAbsent || row45 != null) {
+      map['row45'] = Variable<String>(row45);
+    }
+    if (!nullToAbsent || row46 != null) {
+      map['row46'] = Variable<String>(row46);
+    }
+    if (!nullToAbsent || row47 != null) {
+      map['row47'] = Variable<String>(row47);
+    }
+    if (!nullToAbsent || row48 != null) {
+      map['row48'] = Variable<String>(row48);
+    }
+    if (!nullToAbsent || row49 != null) {
+      map['row49'] = Variable<String>(row49);
+    }
+    if (!nullToAbsent || row50 != null) {
+      map['row50'] = Variable<String>(row50);
+    }
+    if (!nullToAbsent || row51 != null) {
+      map['row51'] = Variable<String>(row51);
+    }
+    if (!nullToAbsent || row52 != null) {
+      map['row52'] = Variable<String>(row52);
+    }
+    if (!nullToAbsent || row53 != null) {
+      map['row53'] = Variable<String>(row53);
+    }
+    if (!nullToAbsent || row54 != null) {
+      map['row54'] = Variable<String>(row54);
+    }
+    if (!nullToAbsent || row55 != null) {
+      map['row55'] = Variable<String>(row55);
+    }
+    if (!nullToAbsent || row56 != null) {
+      map['row56'] = Variable<String>(row56);
+    }
+    if (!nullToAbsent || row57 != null) {
+      map['row57'] = Variable<String>(row57);
+    }
+    if (!nullToAbsent || row58 != null) {
+      map['row58'] = Variable<String>(row58);
+    }
+    if (!nullToAbsent || row59 != null) {
+      map['row59'] = Variable<String>(row59);
+    }
+    if (!nullToAbsent || row60 != null) {
+      map['row60'] = Variable<String>(row60);
+    }
+    if (!nullToAbsent || row61 != null) {
+      map['row61'] = Variable<String>(row61);
+    }
+    if (!nullToAbsent || row62 != null) {
+      map['row62'] = Variable<String>(row62);
+    }
+    if (!nullToAbsent || row63 != null) {
+      map['row63'] = Variable<String>(row63);
+    }
+    if (!nullToAbsent || row64 != null) {
+      map['row64'] = Variable<String>(row64);
+    }
+    if (!nullToAbsent || row65 != null) {
+      map['row65'] = Variable<String>(row65);
+    }
+    if (!nullToAbsent || row66 != null) {
+      map['row66'] = Variable<String>(row66);
+    }
+    if (!nullToAbsent || row67 != null) {
+      map['row67'] = Variable<String>(row67);
+    }
+    if (!nullToAbsent || row68 != null) {
+      map['row68'] = Variable<String>(row68);
+    }
+    if (!nullToAbsent || row69 != null) {
+      map['row69'] = Variable<String>(row69);
+    }
+    if (!nullToAbsent || row70 != null) {
+      map['row70'] = Variable<String>(row70);
+    }
+    if (!nullToAbsent || row71 != null) {
+      map['row71'] = Variable<String>(row71);
+    }
+    if (!nullToAbsent || row72 != null) {
+      map['row72'] = Variable<String>(row72);
+    }
+    if (!nullToAbsent || row73 != null) {
+      map['row73'] = Variable<String>(row73);
+    }
+    if (!nullToAbsent || row74 != null) {
+      map['row74'] = Variable<String>(row74);
+    }
+    if (!nullToAbsent || row75 != null) {
+      map['row75'] = Variable<String>(row75);
+    }
+    if (!nullToAbsent || row76 != null) {
+      map['row76'] = Variable<String>(row76);
+    }
+    if (!nullToAbsent || row77 != null) {
+      map['row77'] = Variable<String>(row77);
+    }
+    if (!nullToAbsent || row78 != null) {
+      map['row78'] = Variable<String>(row78);
+    }
+    if (!nullToAbsent || row79 != null) {
+      map['row79'] = Variable<String>(row79);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ArmApplicationsCompanion toCompanion(bool nullToAbsent) {
+    return ArmApplicationsCompanion(
+      id: Value(id),
+      trialApplicationEventId: Value(trialApplicationEventId),
+      armSheetColumnIndex: armSheetColumnIndex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armSheetColumnIndex),
+      row01:
+          row01 == null && nullToAbsent ? const Value.absent() : Value(row01),
+      row02:
+          row02 == null && nullToAbsent ? const Value.absent() : Value(row02),
+      row03:
+          row03 == null && nullToAbsent ? const Value.absent() : Value(row03),
+      row04:
+          row04 == null && nullToAbsent ? const Value.absent() : Value(row04),
+      row05:
+          row05 == null && nullToAbsent ? const Value.absent() : Value(row05),
+      row06:
+          row06 == null && nullToAbsent ? const Value.absent() : Value(row06),
+      row07:
+          row07 == null && nullToAbsent ? const Value.absent() : Value(row07),
+      row08:
+          row08 == null && nullToAbsent ? const Value.absent() : Value(row08),
+      row09:
+          row09 == null && nullToAbsent ? const Value.absent() : Value(row09),
+      row10:
+          row10 == null && nullToAbsent ? const Value.absent() : Value(row10),
+      row11:
+          row11 == null && nullToAbsent ? const Value.absent() : Value(row11),
+      row12:
+          row12 == null && nullToAbsent ? const Value.absent() : Value(row12),
+      row13:
+          row13 == null && nullToAbsent ? const Value.absent() : Value(row13),
+      row14:
+          row14 == null && nullToAbsent ? const Value.absent() : Value(row14),
+      row15:
+          row15 == null && nullToAbsent ? const Value.absent() : Value(row15),
+      row16:
+          row16 == null && nullToAbsent ? const Value.absent() : Value(row16),
+      row17:
+          row17 == null && nullToAbsent ? const Value.absent() : Value(row17),
+      row18:
+          row18 == null && nullToAbsent ? const Value.absent() : Value(row18),
+      row19:
+          row19 == null && nullToAbsent ? const Value.absent() : Value(row19),
+      row20:
+          row20 == null && nullToAbsent ? const Value.absent() : Value(row20),
+      row21:
+          row21 == null && nullToAbsent ? const Value.absent() : Value(row21),
+      row22:
+          row22 == null && nullToAbsent ? const Value.absent() : Value(row22),
+      row23:
+          row23 == null && nullToAbsent ? const Value.absent() : Value(row23),
+      row24:
+          row24 == null && nullToAbsent ? const Value.absent() : Value(row24),
+      row25:
+          row25 == null && nullToAbsent ? const Value.absent() : Value(row25),
+      row26:
+          row26 == null && nullToAbsent ? const Value.absent() : Value(row26),
+      row27:
+          row27 == null && nullToAbsent ? const Value.absent() : Value(row27),
+      row28:
+          row28 == null && nullToAbsent ? const Value.absent() : Value(row28),
+      row29:
+          row29 == null && nullToAbsent ? const Value.absent() : Value(row29),
+      row30:
+          row30 == null && nullToAbsent ? const Value.absent() : Value(row30),
+      row31:
+          row31 == null && nullToAbsent ? const Value.absent() : Value(row31),
+      row32:
+          row32 == null && nullToAbsent ? const Value.absent() : Value(row32),
+      row33:
+          row33 == null && nullToAbsent ? const Value.absent() : Value(row33),
+      row34:
+          row34 == null && nullToAbsent ? const Value.absent() : Value(row34),
+      row35:
+          row35 == null && nullToAbsent ? const Value.absent() : Value(row35),
+      row36:
+          row36 == null && nullToAbsent ? const Value.absent() : Value(row36),
+      row37:
+          row37 == null && nullToAbsent ? const Value.absent() : Value(row37),
+      row38:
+          row38 == null && nullToAbsent ? const Value.absent() : Value(row38),
+      row39:
+          row39 == null && nullToAbsent ? const Value.absent() : Value(row39),
+      row40:
+          row40 == null && nullToAbsent ? const Value.absent() : Value(row40),
+      row41:
+          row41 == null && nullToAbsent ? const Value.absent() : Value(row41),
+      row42:
+          row42 == null && nullToAbsent ? const Value.absent() : Value(row42),
+      row43:
+          row43 == null && nullToAbsent ? const Value.absent() : Value(row43),
+      row44:
+          row44 == null && nullToAbsent ? const Value.absent() : Value(row44),
+      row45:
+          row45 == null && nullToAbsent ? const Value.absent() : Value(row45),
+      row46:
+          row46 == null && nullToAbsent ? const Value.absent() : Value(row46),
+      row47:
+          row47 == null && nullToAbsent ? const Value.absent() : Value(row47),
+      row48:
+          row48 == null && nullToAbsent ? const Value.absent() : Value(row48),
+      row49:
+          row49 == null && nullToAbsent ? const Value.absent() : Value(row49),
+      row50:
+          row50 == null && nullToAbsent ? const Value.absent() : Value(row50),
+      row51:
+          row51 == null && nullToAbsent ? const Value.absent() : Value(row51),
+      row52:
+          row52 == null && nullToAbsent ? const Value.absent() : Value(row52),
+      row53:
+          row53 == null && nullToAbsent ? const Value.absent() : Value(row53),
+      row54:
+          row54 == null && nullToAbsent ? const Value.absent() : Value(row54),
+      row55:
+          row55 == null && nullToAbsent ? const Value.absent() : Value(row55),
+      row56:
+          row56 == null && nullToAbsent ? const Value.absent() : Value(row56),
+      row57:
+          row57 == null && nullToAbsent ? const Value.absent() : Value(row57),
+      row58:
+          row58 == null && nullToAbsent ? const Value.absent() : Value(row58),
+      row59:
+          row59 == null && nullToAbsent ? const Value.absent() : Value(row59),
+      row60:
+          row60 == null && nullToAbsent ? const Value.absent() : Value(row60),
+      row61:
+          row61 == null && nullToAbsent ? const Value.absent() : Value(row61),
+      row62:
+          row62 == null && nullToAbsent ? const Value.absent() : Value(row62),
+      row63:
+          row63 == null && nullToAbsent ? const Value.absent() : Value(row63),
+      row64:
+          row64 == null && nullToAbsent ? const Value.absent() : Value(row64),
+      row65:
+          row65 == null && nullToAbsent ? const Value.absent() : Value(row65),
+      row66:
+          row66 == null && nullToAbsent ? const Value.absent() : Value(row66),
+      row67:
+          row67 == null && nullToAbsent ? const Value.absent() : Value(row67),
+      row68:
+          row68 == null && nullToAbsent ? const Value.absent() : Value(row68),
+      row69:
+          row69 == null && nullToAbsent ? const Value.absent() : Value(row69),
+      row70:
+          row70 == null && nullToAbsent ? const Value.absent() : Value(row70),
+      row71:
+          row71 == null && nullToAbsent ? const Value.absent() : Value(row71),
+      row72:
+          row72 == null && nullToAbsent ? const Value.absent() : Value(row72),
+      row73:
+          row73 == null && nullToAbsent ? const Value.absent() : Value(row73),
+      row74:
+          row74 == null && nullToAbsent ? const Value.absent() : Value(row74),
+      row75:
+          row75 == null && nullToAbsent ? const Value.absent() : Value(row75),
+      row76:
+          row76 == null && nullToAbsent ? const Value.absent() : Value(row76),
+      row77:
+          row77 == null && nullToAbsent ? const Value.absent() : Value(row77),
+      row78:
+          row78 == null && nullToAbsent ? const Value.absent() : Value(row78),
+      row79:
+          row79 == null && nullToAbsent ? const Value.absent() : Value(row79),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ArmApplication.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ArmApplication(
+      id: serializer.fromJson<int>(json['id']),
+      trialApplicationEventId:
+          serializer.fromJson<String>(json['trialApplicationEventId']),
+      armSheetColumnIndex:
+          serializer.fromJson<int?>(json['armSheetColumnIndex']),
+      row01: serializer.fromJson<String?>(json['row01']),
+      row02: serializer.fromJson<String?>(json['row02']),
+      row03: serializer.fromJson<String?>(json['row03']),
+      row04: serializer.fromJson<String?>(json['row04']),
+      row05: serializer.fromJson<String?>(json['row05']),
+      row06: serializer.fromJson<String?>(json['row06']),
+      row07: serializer.fromJson<String?>(json['row07']),
+      row08: serializer.fromJson<String?>(json['row08']),
+      row09: serializer.fromJson<String?>(json['row09']),
+      row10: serializer.fromJson<String?>(json['row10']),
+      row11: serializer.fromJson<String?>(json['row11']),
+      row12: serializer.fromJson<String?>(json['row12']),
+      row13: serializer.fromJson<String?>(json['row13']),
+      row14: serializer.fromJson<String?>(json['row14']),
+      row15: serializer.fromJson<String?>(json['row15']),
+      row16: serializer.fromJson<String?>(json['row16']),
+      row17: serializer.fromJson<String?>(json['row17']),
+      row18: serializer.fromJson<String?>(json['row18']),
+      row19: serializer.fromJson<String?>(json['row19']),
+      row20: serializer.fromJson<String?>(json['row20']),
+      row21: serializer.fromJson<String?>(json['row21']),
+      row22: serializer.fromJson<String?>(json['row22']),
+      row23: serializer.fromJson<String?>(json['row23']),
+      row24: serializer.fromJson<String?>(json['row24']),
+      row25: serializer.fromJson<String?>(json['row25']),
+      row26: serializer.fromJson<String?>(json['row26']),
+      row27: serializer.fromJson<String?>(json['row27']),
+      row28: serializer.fromJson<String?>(json['row28']),
+      row29: serializer.fromJson<String?>(json['row29']),
+      row30: serializer.fromJson<String?>(json['row30']),
+      row31: serializer.fromJson<String?>(json['row31']),
+      row32: serializer.fromJson<String?>(json['row32']),
+      row33: serializer.fromJson<String?>(json['row33']),
+      row34: serializer.fromJson<String?>(json['row34']),
+      row35: serializer.fromJson<String?>(json['row35']),
+      row36: serializer.fromJson<String?>(json['row36']),
+      row37: serializer.fromJson<String?>(json['row37']),
+      row38: serializer.fromJson<String?>(json['row38']),
+      row39: serializer.fromJson<String?>(json['row39']),
+      row40: serializer.fromJson<String?>(json['row40']),
+      row41: serializer.fromJson<String?>(json['row41']),
+      row42: serializer.fromJson<String?>(json['row42']),
+      row43: serializer.fromJson<String?>(json['row43']),
+      row44: serializer.fromJson<String?>(json['row44']),
+      row45: serializer.fromJson<String?>(json['row45']),
+      row46: serializer.fromJson<String?>(json['row46']),
+      row47: serializer.fromJson<String?>(json['row47']),
+      row48: serializer.fromJson<String?>(json['row48']),
+      row49: serializer.fromJson<String?>(json['row49']),
+      row50: serializer.fromJson<String?>(json['row50']),
+      row51: serializer.fromJson<String?>(json['row51']),
+      row52: serializer.fromJson<String?>(json['row52']),
+      row53: serializer.fromJson<String?>(json['row53']),
+      row54: serializer.fromJson<String?>(json['row54']),
+      row55: serializer.fromJson<String?>(json['row55']),
+      row56: serializer.fromJson<String?>(json['row56']),
+      row57: serializer.fromJson<String?>(json['row57']),
+      row58: serializer.fromJson<String?>(json['row58']),
+      row59: serializer.fromJson<String?>(json['row59']),
+      row60: serializer.fromJson<String?>(json['row60']),
+      row61: serializer.fromJson<String?>(json['row61']),
+      row62: serializer.fromJson<String?>(json['row62']),
+      row63: serializer.fromJson<String?>(json['row63']),
+      row64: serializer.fromJson<String?>(json['row64']),
+      row65: serializer.fromJson<String?>(json['row65']),
+      row66: serializer.fromJson<String?>(json['row66']),
+      row67: serializer.fromJson<String?>(json['row67']),
+      row68: serializer.fromJson<String?>(json['row68']),
+      row69: serializer.fromJson<String?>(json['row69']),
+      row70: serializer.fromJson<String?>(json['row70']),
+      row71: serializer.fromJson<String?>(json['row71']),
+      row72: serializer.fromJson<String?>(json['row72']),
+      row73: serializer.fromJson<String?>(json['row73']),
+      row74: serializer.fromJson<String?>(json['row74']),
+      row75: serializer.fromJson<String?>(json['row75']),
+      row76: serializer.fromJson<String?>(json['row76']),
+      row77: serializer.fromJson<String?>(json['row77']),
+      row78: serializer.fromJson<String?>(json['row78']),
+      row79: serializer.fromJson<String?>(json['row79']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialApplicationEventId':
+          serializer.toJson<String>(trialApplicationEventId),
+      'armSheetColumnIndex': serializer.toJson<int?>(armSheetColumnIndex),
+      'row01': serializer.toJson<String?>(row01),
+      'row02': serializer.toJson<String?>(row02),
+      'row03': serializer.toJson<String?>(row03),
+      'row04': serializer.toJson<String?>(row04),
+      'row05': serializer.toJson<String?>(row05),
+      'row06': serializer.toJson<String?>(row06),
+      'row07': serializer.toJson<String?>(row07),
+      'row08': serializer.toJson<String?>(row08),
+      'row09': serializer.toJson<String?>(row09),
+      'row10': serializer.toJson<String?>(row10),
+      'row11': serializer.toJson<String?>(row11),
+      'row12': serializer.toJson<String?>(row12),
+      'row13': serializer.toJson<String?>(row13),
+      'row14': serializer.toJson<String?>(row14),
+      'row15': serializer.toJson<String?>(row15),
+      'row16': serializer.toJson<String?>(row16),
+      'row17': serializer.toJson<String?>(row17),
+      'row18': serializer.toJson<String?>(row18),
+      'row19': serializer.toJson<String?>(row19),
+      'row20': serializer.toJson<String?>(row20),
+      'row21': serializer.toJson<String?>(row21),
+      'row22': serializer.toJson<String?>(row22),
+      'row23': serializer.toJson<String?>(row23),
+      'row24': serializer.toJson<String?>(row24),
+      'row25': serializer.toJson<String?>(row25),
+      'row26': serializer.toJson<String?>(row26),
+      'row27': serializer.toJson<String?>(row27),
+      'row28': serializer.toJson<String?>(row28),
+      'row29': serializer.toJson<String?>(row29),
+      'row30': serializer.toJson<String?>(row30),
+      'row31': serializer.toJson<String?>(row31),
+      'row32': serializer.toJson<String?>(row32),
+      'row33': serializer.toJson<String?>(row33),
+      'row34': serializer.toJson<String?>(row34),
+      'row35': serializer.toJson<String?>(row35),
+      'row36': serializer.toJson<String?>(row36),
+      'row37': serializer.toJson<String?>(row37),
+      'row38': serializer.toJson<String?>(row38),
+      'row39': serializer.toJson<String?>(row39),
+      'row40': serializer.toJson<String?>(row40),
+      'row41': serializer.toJson<String?>(row41),
+      'row42': serializer.toJson<String?>(row42),
+      'row43': serializer.toJson<String?>(row43),
+      'row44': serializer.toJson<String?>(row44),
+      'row45': serializer.toJson<String?>(row45),
+      'row46': serializer.toJson<String?>(row46),
+      'row47': serializer.toJson<String?>(row47),
+      'row48': serializer.toJson<String?>(row48),
+      'row49': serializer.toJson<String?>(row49),
+      'row50': serializer.toJson<String?>(row50),
+      'row51': serializer.toJson<String?>(row51),
+      'row52': serializer.toJson<String?>(row52),
+      'row53': serializer.toJson<String?>(row53),
+      'row54': serializer.toJson<String?>(row54),
+      'row55': serializer.toJson<String?>(row55),
+      'row56': serializer.toJson<String?>(row56),
+      'row57': serializer.toJson<String?>(row57),
+      'row58': serializer.toJson<String?>(row58),
+      'row59': serializer.toJson<String?>(row59),
+      'row60': serializer.toJson<String?>(row60),
+      'row61': serializer.toJson<String?>(row61),
+      'row62': serializer.toJson<String?>(row62),
+      'row63': serializer.toJson<String?>(row63),
+      'row64': serializer.toJson<String?>(row64),
+      'row65': serializer.toJson<String?>(row65),
+      'row66': serializer.toJson<String?>(row66),
+      'row67': serializer.toJson<String?>(row67),
+      'row68': serializer.toJson<String?>(row68),
+      'row69': serializer.toJson<String?>(row69),
+      'row70': serializer.toJson<String?>(row70),
+      'row71': serializer.toJson<String?>(row71),
+      'row72': serializer.toJson<String?>(row72),
+      'row73': serializer.toJson<String?>(row73),
+      'row74': serializer.toJson<String?>(row74),
+      'row75': serializer.toJson<String?>(row75),
+      'row76': serializer.toJson<String?>(row76),
+      'row77': serializer.toJson<String?>(row77),
+      'row78': serializer.toJson<String?>(row78),
+      'row79': serializer.toJson<String?>(row79),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ArmApplication copyWith(
+          {int? id,
+          String? trialApplicationEventId,
+          Value<int?> armSheetColumnIndex = const Value.absent(),
+          Value<String?> row01 = const Value.absent(),
+          Value<String?> row02 = const Value.absent(),
+          Value<String?> row03 = const Value.absent(),
+          Value<String?> row04 = const Value.absent(),
+          Value<String?> row05 = const Value.absent(),
+          Value<String?> row06 = const Value.absent(),
+          Value<String?> row07 = const Value.absent(),
+          Value<String?> row08 = const Value.absent(),
+          Value<String?> row09 = const Value.absent(),
+          Value<String?> row10 = const Value.absent(),
+          Value<String?> row11 = const Value.absent(),
+          Value<String?> row12 = const Value.absent(),
+          Value<String?> row13 = const Value.absent(),
+          Value<String?> row14 = const Value.absent(),
+          Value<String?> row15 = const Value.absent(),
+          Value<String?> row16 = const Value.absent(),
+          Value<String?> row17 = const Value.absent(),
+          Value<String?> row18 = const Value.absent(),
+          Value<String?> row19 = const Value.absent(),
+          Value<String?> row20 = const Value.absent(),
+          Value<String?> row21 = const Value.absent(),
+          Value<String?> row22 = const Value.absent(),
+          Value<String?> row23 = const Value.absent(),
+          Value<String?> row24 = const Value.absent(),
+          Value<String?> row25 = const Value.absent(),
+          Value<String?> row26 = const Value.absent(),
+          Value<String?> row27 = const Value.absent(),
+          Value<String?> row28 = const Value.absent(),
+          Value<String?> row29 = const Value.absent(),
+          Value<String?> row30 = const Value.absent(),
+          Value<String?> row31 = const Value.absent(),
+          Value<String?> row32 = const Value.absent(),
+          Value<String?> row33 = const Value.absent(),
+          Value<String?> row34 = const Value.absent(),
+          Value<String?> row35 = const Value.absent(),
+          Value<String?> row36 = const Value.absent(),
+          Value<String?> row37 = const Value.absent(),
+          Value<String?> row38 = const Value.absent(),
+          Value<String?> row39 = const Value.absent(),
+          Value<String?> row40 = const Value.absent(),
+          Value<String?> row41 = const Value.absent(),
+          Value<String?> row42 = const Value.absent(),
+          Value<String?> row43 = const Value.absent(),
+          Value<String?> row44 = const Value.absent(),
+          Value<String?> row45 = const Value.absent(),
+          Value<String?> row46 = const Value.absent(),
+          Value<String?> row47 = const Value.absent(),
+          Value<String?> row48 = const Value.absent(),
+          Value<String?> row49 = const Value.absent(),
+          Value<String?> row50 = const Value.absent(),
+          Value<String?> row51 = const Value.absent(),
+          Value<String?> row52 = const Value.absent(),
+          Value<String?> row53 = const Value.absent(),
+          Value<String?> row54 = const Value.absent(),
+          Value<String?> row55 = const Value.absent(),
+          Value<String?> row56 = const Value.absent(),
+          Value<String?> row57 = const Value.absent(),
+          Value<String?> row58 = const Value.absent(),
+          Value<String?> row59 = const Value.absent(),
+          Value<String?> row60 = const Value.absent(),
+          Value<String?> row61 = const Value.absent(),
+          Value<String?> row62 = const Value.absent(),
+          Value<String?> row63 = const Value.absent(),
+          Value<String?> row64 = const Value.absent(),
+          Value<String?> row65 = const Value.absent(),
+          Value<String?> row66 = const Value.absent(),
+          Value<String?> row67 = const Value.absent(),
+          Value<String?> row68 = const Value.absent(),
+          Value<String?> row69 = const Value.absent(),
+          Value<String?> row70 = const Value.absent(),
+          Value<String?> row71 = const Value.absent(),
+          Value<String?> row72 = const Value.absent(),
+          Value<String?> row73 = const Value.absent(),
+          Value<String?> row74 = const Value.absent(),
+          Value<String?> row75 = const Value.absent(),
+          Value<String?> row76 = const Value.absent(),
+          Value<String?> row77 = const Value.absent(),
+          Value<String?> row78 = const Value.absent(),
+          Value<String?> row79 = const Value.absent(),
+          DateTime? createdAt}) =>
+      ArmApplication(
+        id: id ?? this.id,
+        trialApplicationEventId:
+            trialApplicationEventId ?? this.trialApplicationEventId,
+        armSheetColumnIndex: armSheetColumnIndex.present
+            ? armSheetColumnIndex.value
+            : this.armSheetColumnIndex,
+        row01: row01.present ? row01.value : this.row01,
+        row02: row02.present ? row02.value : this.row02,
+        row03: row03.present ? row03.value : this.row03,
+        row04: row04.present ? row04.value : this.row04,
+        row05: row05.present ? row05.value : this.row05,
+        row06: row06.present ? row06.value : this.row06,
+        row07: row07.present ? row07.value : this.row07,
+        row08: row08.present ? row08.value : this.row08,
+        row09: row09.present ? row09.value : this.row09,
+        row10: row10.present ? row10.value : this.row10,
+        row11: row11.present ? row11.value : this.row11,
+        row12: row12.present ? row12.value : this.row12,
+        row13: row13.present ? row13.value : this.row13,
+        row14: row14.present ? row14.value : this.row14,
+        row15: row15.present ? row15.value : this.row15,
+        row16: row16.present ? row16.value : this.row16,
+        row17: row17.present ? row17.value : this.row17,
+        row18: row18.present ? row18.value : this.row18,
+        row19: row19.present ? row19.value : this.row19,
+        row20: row20.present ? row20.value : this.row20,
+        row21: row21.present ? row21.value : this.row21,
+        row22: row22.present ? row22.value : this.row22,
+        row23: row23.present ? row23.value : this.row23,
+        row24: row24.present ? row24.value : this.row24,
+        row25: row25.present ? row25.value : this.row25,
+        row26: row26.present ? row26.value : this.row26,
+        row27: row27.present ? row27.value : this.row27,
+        row28: row28.present ? row28.value : this.row28,
+        row29: row29.present ? row29.value : this.row29,
+        row30: row30.present ? row30.value : this.row30,
+        row31: row31.present ? row31.value : this.row31,
+        row32: row32.present ? row32.value : this.row32,
+        row33: row33.present ? row33.value : this.row33,
+        row34: row34.present ? row34.value : this.row34,
+        row35: row35.present ? row35.value : this.row35,
+        row36: row36.present ? row36.value : this.row36,
+        row37: row37.present ? row37.value : this.row37,
+        row38: row38.present ? row38.value : this.row38,
+        row39: row39.present ? row39.value : this.row39,
+        row40: row40.present ? row40.value : this.row40,
+        row41: row41.present ? row41.value : this.row41,
+        row42: row42.present ? row42.value : this.row42,
+        row43: row43.present ? row43.value : this.row43,
+        row44: row44.present ? row44.value : this.row44,
+        row45: row45.present ? row45.value : this.row45,
+        row46: row46.present ? row46.value : this.row46,
+        row47: row47.present ? row47.value : this.row47,
+        row48: row48.present ? row48.value : this.row48,
+        row49: row49.present ? row49.value : this.row49,
+        row50: row50.present ? row50.value : this.row50,
+        row51: row51.present ? row51.value : this.row51,
+        row52: row52.present ? row52.value : this.row52,
+        row53: row53.present ? row53.value : this.row53,
+        row54: row54.present ? row54.value : this.row54,
+        row55: row55.present ? row55.value : this.row55,
+        row56: row56.present ? row56.value : this.row56,
+        row57: row57.present ? row57.value : this.row57,
+        row58: row58.present ? row58.value : this.row58,
+        row59: row59.present ? row59.value : this.row59,
+        row60: row60.present ? row60.value : this.row60,
+        row61: row61.present ? row61.value : this.row61,
+        row62: row62.present ? row62.value : this.row62,
+        row63: row63.present ? row63.value : this.row63,
+        row64: row64.present ? row64.value : this.row64,
+        row65: row65.present ? row65.value : this.row65,
+        row66: row66.present ? row66.value : this.row66,
+        row67: row67.present ? row67.value : this.row67,
+        row68: row68.present ? row68.value : this.row68,
+        row69: row69.present ? row69.value : this.row69,
+        row70: row70.present ? row70.value : this.row70,
+        row71: row71.present ? row71.value : this.row71,
+        row72: row72.present ? row72.value : this.row72,
+        row73: row73.present ? row73.value : this.row73,
+        row74: row74.present ? row74.value : this.row74,
+        row75: row75.present ? row75.value : this.row75,
+        row76: row76.present ? row76.value : this.row76,
+        row77: row77.present ? row77.value : this.row77,
+        row78: row78.present ? row78.value : this.row78,
+        row79: row79.present ? row79.value : this.row79,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  ArmApplication copyWithCompanion(ArmApplicationsCompanion data) {
+    return ArmApplication(
+      id: data.id.present ? data.id.value : this.id,
+      trialApplicationEventId: data.trialApplicationEventId.present
+          ? data.trialApplicationEventId.value
+          : this.trialApplicationEventId,
+      armSheetColumnIndex: data.armSheetColumnIndex.present
+          ? data.armSheetColumnIndex.value
+          : this.armSheetColumnIndex,
+      row01: data.row01.present ? data.row01.value : this.row01,
+      row02: data.row02.present ? data.row02.value : this.row02,
+      row03: data.row03.present ? data.row03.value : this.row03,
+      row04: data.row04.present ? data.row04.value : this.row04,
+      row05: data.row05.present ? data.row05.value : this.row05,
+      row06: data.row06.present ? data.row06.value : this.row06,
+      row07: data.row07.present ? data.row07.value : this.row07,
+      row08: data.row08.present ? data.row08.value : this.row08,
+      row09: data.row09.present ? data.row09.value : this.row09,
+      row10: data.row10.present ? data.row10.value : this.row10,
+      row11: data.row11.present ? data.row11.value : this.row11,
+      row12: data.row12.present ? data.row12.value : this.row12,
+      row13: data.row13.present ? data.row13.value : this.row13,
+      row14: data.row14.present ? data.row14.value : this.row14,
+      row15: data.row15.present ? data.row15.value : this.row15,
+      row16: data.row16.present ? data.row16.value : this.row16,
+      row17: data.row17.present ? data.row17.value : this.row17,
+      row18: data.row18.present ? data.row18.value : this.row18,
+      row19: data.row19.present ? data.row19.value : this.row19,
+      row20: data.row20.present ? data.row20.value : this.row20,
+      row21: data.row21.present ? data.row21.value : this.row21,
+      row22: data.row22.present ? data.row22.value : this.row22,
+      row23: data.row23.present ? data.row23.value : this.row23,
+      row24: data.row24.present ? data.row24.value : this.row24,
+      row25: data.row25.present ? data.row25.value : this.row25,
+      row26: data.row26.present ? data.row26.value : this.row26,
+      row27: data.row27.present ? data.row27.value : this.row27,
+      row28: data.row28.present ? data.row28.value : this.row28,
+      row29: data.row29.present ? data.row29.value : this.row29,
+      row30: data.row30.present ? data.row30.value : this.row30,
+      row31: data.row31.present ? data.row31.value : this.row31,
+      row32: data.row32.present ? data.row32.value : this.row32,
+      row33: data.row33.present ? data.row33.value : this.row33,
+      row34: data.row34.present ? data.row34.value : this.row34,
+      row35: data.row35.present ? data.row35.value : this.row35,
+      row36: data.row36.present ? data.row36.value : this.row36,
+      row37: data.row37.present ? data.row37.value : this.row37,
+      row38: data.row38.present ? data.row38.value : this.row38,
+      row39: data.row39.present ? data.row39.value : this.row39,
+      row40: data.row40.present ? data.row40.value : this.row40,
+      row41: data.row41.present ? data.row41.value : this.row41,
+      row42: data.row42.present ? data.row42.value : this.row42,
+      row43: data.row43.present ? data.row43.value : this.row43,
+      row44: data.row44.present ? data.row44.value : this.row44,
+      row45: data.row45.present ? data.row45.value : this.row45,
+      row46: data.row46.present ? data.row46.value : this.row46,
+      row47: data.row47.present ? data.row47.value : this.row47,
+      row48: data.row48.present ? data.row48.value : this.row48,
+      row49: data.row49.present ? data.row49.value : this.row49,
+      row50: data.row50.present ? data.row50.value : this.row50,
+      row51: data.row51.present ? data.row51.value : this.row51,
+      row52: data.row52.present ? data.row52.value : this.row52,
+      row53: data.row53.present ? data.row53.value : this.row53,
+      row54: data.row54.present ? data.row54.value : this.row54,
+      row55: data.row55.present ? data.row55.value : this.row55,
+      row56: data.row56.present ? data.row56.value : this.row56,
+      row57: data.row57.present ? data.row57.value : this.row57,
+      row58: data.row58.present ? data.row58.value : this.row58,
+      row59: data.row59.present ? data.row59.value : this.row59,
+      row60: data.row60.present ? data.row60.value : this.row60,
+      row61: data.row61.present ? data.row61.value : this.row61,
+      row62: data.row62.present ? data.row62.value : this.row62,
+      row63: data.row63.present ? data.row63.value : this.row63,
+      row64: data.row64.present ? data.row64.value : this.row64,
+      row65: data.row65.present ? data.row65.value : this.row65,
+      row66: data.row66.present ? data.row66.value : this.row66,
+      row67: data.row67.present ? data.row67.value : this.row67,
+      row68: data.row68.present ? data.row68.value : this.row68,
+      row69: data.row69.present ? data.row69.value : this.row69,
+      row70: data.row70.present ? data.row70.value : this.row70,
+      row71: data.row71.present ? data.row71.value : this.row71,
+      row72: data.row72.present ? data.row72.value : this.row72,
+      row73: data.row73.present ? data.row73.value : this.row73,
+      row74: data.row74.present ? data.row74.value : this.row74,
+      row75: data.row75.present ? data.row75.value : this.row75,
+      row76: data.row76.present ? data.row76.value : this.row76,
+      row77: data.row77.present ? data.row77.value : this.row77,
+      row78: data.row78.present ? data.row78.value : this.row78,
+      row79: data.row79.present ? data.row79.value : this.row79,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArmApplication(')
+          ..write('id: $id, ')
+          ..write('trialApplicationEventId: $trialApplicationEventId, ')
+          ..write('armSheetColumnIndex: $armSheetColumnIndex, ')
+          ..write('row01: $row01, ')
+          ..write('row02: $row02, ')
+          ..write('row03: $row03, ')
+          ..write('row04: $row04, ')
+          ..write('row05: $row05, ')
+          ..write('row06: $row06, ')
+          ..write('row07: $row07, ')
+          ..write('row08: $row08, ')
+          ..write('row09: $row09, ')
+          ..write('row10: $row10, ')
+          ..write('row11: $row11, ')
+          ..write('row12: $row12, ')
+          ..write('row13: $row13, ')
+          ..write('row14: $row14, ')
+          ..write('row15: $row15, ')
+          ..write('row16: $row16, ')
+          ..write('row17: $row17, ')
+          ..write('row18: $row18, ')
+          ..write('row19: $row19, ')
+          ..write('row20: $row20, ')
+          ..write('row21: $row21, ')
+          ..write('row22: $row22, ')
+          ..write('row23: $row23, ')
+          ..write('row24: $row24, ')
+          ..write('row25: $row25, ')
+          ..write('row26: $row26, ')
+          ..write('row27: $row27, ')
+          ..write('row28: $row28, ')
+          ..write('row29: $row29, ')
+          ..write('row30: $row30, ')
+          ..write('row31: $row31, ')
+          ..write('row32: $row32, ')
+          ..write('row33: $row33, ')
+          ..write('row34: $row34, ')
+          ..write('row35: $row35, ')
+          ..write('row36: $row36, ')
+          ..write('row37: $row37, ')
+          ..write('row38: $row38, ')
+          ..write('row39: $row39, ')
+          ..write('row40: $row40, ')
+          ..write('row41: $row41, ')
+          ..write('row42: $row42, ')
+          ..write('row43: $row43, ')
+          ..write('row44: $row44, ')
+          ..write('row45: $row45, ')
+          ..write('row46: $row46, ')
+          ..write('row47: $row47, ')
+          ..write('row48: $row48, ')
+          ..write('row49: $row49, ')
+          ..write('row50: $row50, ')
+          ..write('row51: $row51, ')
+          ..write('row52: $row52, ')
+          ..write('row53: $row53, ')
+          ..write('row54: $row54, ')
+          ..write('row55: $row55, ')
+          ..write('row56: $row56, ')
+          ..write('row57: $row57, ')
+          ..write('row58: $row58, ')
+          ..write('row59: $row59, ')
+          ..write('row60: $row60, ')
+          ..write('row61: $row61, ')
+          ..write('row62: $row62, ')
+          ..write('row63: $row63, ')
+          ..write('row64: $row64, ')
+          ..write('row65: $row65, ')
+          ..write('row66: $row66, ')
+          ..write('row67: $row67, ')
+          ..write('row68: $row68, ')
+          ..write('row69: $row69, ')
+          ..write('row70: $row70, ')
+          ..write('row71: $row71, ')
+          ..write('row72: $row72, ')
+          ..write('row73: $row73, ')
+          ..write('row74: $row74, ')
+          ..write('row75: $row75, ')
+          ..write('row76: $row76, ')
+          ..write('row77: $row77, ')
+          ..write('row78: $row78, ')
+          ..write('row79: $row79, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+        id,
+        trialApplicationEventId,
+        armSheetColumnIndex,
+        row01,
+        row02,
+        row03,
+        row04,
+        row05,
+        row06,
+        row07,
+        row08,
+        row09,
+        row10,
+        row11,
+        row12,
+        row13,
+        row14,
+        row15,
+        row16,
+        row17,
+        row18,
+        row19,
+        row20,
+        row21,
+        row22,
+        row23,
+        row24,
+        row25,
+        row26,
+        row27,
+        row28,
+        row29,
+        row30,
+        row31,
+        row32,
+        row33,
+        row34,
+        row35,
+        row36,
+        row37,
+        row38,
+        row39,
+        row40,
+        row41,
+        row42,
+        row43,
+        row44,
+        row45,
+        row46,
+        row47,
+        row48,
+        row49,
+        row50,
+        row51,
+        row52,
+        row53,
+        row54,
+        row55,
+        row56,
+        row57,
+        row58,
+        row59,
+        row60,
+        row61,
+        row62,
+        row63,
+        row64,
+        row65,
+        row66,
+        row67,
+        row68,
+        row69,
+        row70,
+        row71,
+        row72,
+        row73,
+        row74,
+        row75,
+        row76,
+        row77,
+        row78,
+        row79,
+        createdAt
+      ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ArmApplication &&
+          other.id == this.id &&
+          other.trialApplicationEventId == this.trialApplicationEventId &&
+          other.armSheetColumnIndex == this.armSheetColumnIndex &&
+          other.row01 == this.row01 &&
+          other.row02 == this.row02 &&
+          other.row03 == this.row03 &&
+          other.row04 == this.row04 &&
+          other.row05 == this.row05 &&
+          other.row06 == this.row06 &&
+          other.row07 == this.row07 &&
+          other.row08 == this.row08 &&
+          other.row09 == this.row09 &&
+          other.row10 == this.row10 &&
+          other.row11 == this.row11 &&
+          other.row12 == this.row12 &&
+          other.row13 == this.row13 &&
+          other.row14 == this.row14 &&
+          other.row15 == this.row15 &&
+          other.row16 == this.row16 &&
+          other.row17 == this.row17 &&
+          other.row18 == this.row18 &&
+          other.row19 == this.row19 &&
+          other.row20 == this.row20 &&
+          other.row21 == this.row21 &&
+          other.row22 == this.row22 &&
+          other.row23 == this.row23 &&
+          other.row24 == this.row24 &&
+          other.row25 == this.row25 &&
+          other.row26 == this.row26 &&
+          other.row27 == this.row27 &&
+          other.row28 == this.row28 &&
+          other.row29 == this.row29 &&
+          other.row30 == this.row30 &&
+          other.row31 == this.row31 &&
+          other.row32 == this.row32 &&
+          other.row33 == this.row33 &&
+          other.row34 == this.row34 &&
+          other.row35 == this.row35 &&
+          other.row36 == this.row36 &&
+          other.row37 == this.row37 &&
+          other.row38 == this.row38 &&
+          other.row39 == this.row39 &&
+          other.row40 == this.row40 &&
+          other.row41 == this.row41 &&
+          other.row42 == this.row42 &&
+          other.row43 == this.row43 &&
+          other.row44 == this.row44 &&
+          other.row45 == this.row45 &&
+          other.row46 == this.row46 &&
+          other.row47 == this.row47 &&
+          other.row48 == this.row48 &&
+          other.row49 == this.row49 &&
+          other.row50 == this.row50 &&
+          other.row51 == this.row51 &&
+          other.row52 == this.row52 &&
+          other.row53 == this.row53 &&
+          other.row54 == this.row54 &&
+          other.row55 == this.row55 &&
+          other.row56 == this.row56 &&
+          other.row57 == this.row57 &&
+          other.row58 == this.row58 &&
+          other.row59 == this.row59 &&
+          other.row60 == this.row60 &&
+          other.row61 == this.row61 &&
+          other.row62 == this.row62 &&
+          other.row63 == this.row63 &&
+          other.row64 == this.row64 &&
+          other.row65 == this.row65 &&
+          other.row66 == this.row66 &&
+          other.row67 == this.row67 &&
+          other.row68 == this.row68 &&
+          other.row69 == this.row69 &&
+          other.row70 == this.row70 &&
+          other.row71 == this.row71 &&
+          other.row72 == this.row72 &&
+          other.row73 == this.row73 &&
+          other.row74 == this.row74 &&
+          other.row75 == this.row75 &&
+          other.row76 == this.row76 &&
+          other.row77 == this.row77 &&
+          other.row78 == this.row78 &&
+          other.row79 == this.row79 &&
+          other.createdAt == this.createdAt);
+}
+
+class ArmApplicationsCompanion extends UpdateCompanion<ArmApplication> {
+  final Value<int> id;
+  final Value<String> trialApplicationEventId;
+  final Value<int?> armSheetColumnIndex;
+  final Value<String?> row01;
+  final Value<String?> row02;
+  final Value<String?> row03;
+  final Value<String?> row04;
+  final Value<String?> row05;
+  final Value<String?> row06;
+  final Value<String?> row07;
+  final Value<String?> row08;
+  final Value<String?> row09;
+  final Value<String?> row10;
+  final Value<String?> row11;
+  final Value<String?> row12;
+  final Value<String?> row13;
+  final Value<String?> row14;
+  final Value<String?> row15;
+  final Value<String?> row16;
+  final Value<String?> row17;
+  final Value<String?> row18;
+  final Value<String?> row19;
+  final Value<String?> row20;
+  final Value<String?> row21;
+  final Value<String?> row22;
+  final Value<String?> row23;
+  final Value<String?> row24;
+  final Value<String?> row25;
+  final Value<String?> row26;
+  final Value<String?> row27;
+  final Value<String?> row28;
+  final Value<String?> row29;
+  final Value<String?> row30;
+  final Value<String?> row31;
+  final Value<String?> row32;
+  final Value<String?> row33;
+  final Value<String?> row34;
+  final Value<String?> row35;
+  final Value<String?> row36;
+  final Value<String?> row37;
+  final Value<String?> row38;
+  final Value<String?> row39;
+  final Value<String?> row40;
+  final Value<String?> row41;
+  final Value<String?> row42;
+  final Value<String?> row43;
+  final Value<String?> row44;
+  final Value<String?> row45;
+  final Value<String?> row46;
+  final Value<String?> row47;
+  final Value<String?> row48;
+  final Value<String?> row49;
+  final Value<String?> row50;
+  final Value<String?> row51;
+  final Value<String?> row52;
+  final Value<String?> row53;
+  final Value<String?> row54;
+  final Value<String?> row55;
+  final Value<String?> row56;
+  final Value<String?> row57;
+  final Value<String?> row58;
+  final Value<String?> row59;
+  final Value<String?> row60;
+  final Value<String?> row61;
+  final Value<String?> row62;
+  final Value<String?> row63;
+  final Value<String?> row64;
+  final Value<String?> row65;
+  final Value<String?> row66;
+  final Value<String?> row67;
+  final Value<String?> row68;
+  final Value<String?> row69;
+  final Value<String?> row70;
+  final Value<String?> row71;
+  final Value<String?> row72;
+  final Value<String?> row73;
+  final Value<String?> row74;
+  final Value<String?> row75;
+  final Value<String?> row76;
+  final Value<String?> row77;
+  final Value<String?> row78;
+  final Value<String?> row79;
+  final Value<DateTime> createdAt;
+  const ArmApplicationsCompanion({
+    this.id = const Value.absent(),
+    this.trialApplicationEventId = const Value.absent(),
+    this.armSheetColumnIndex = const Value.absent(),
+    this.row01 = const Value.absent(),
+    this.row02 = const Value.absent(),
+    this.row03 = const Value.absent(),
+    this.row04 = const Value.absent(),
+    this.row05 = const Value.absent(),
+    this.row06 = const Value.absent(),
+    this.row07 = const Value.absent(),
+    this.row08 = const Value.absent(),
+    this.row09 = const Value.absent(),
+    this.row10 = const Value.absent(),
+    this.row11 = const Value.absent(),
+    this.row12 = const Value.absent(),
+    this.row13 = const Value.absent(),
+    this.row14 = const Value.absent(),
+    this.row15 = const Value.absent(),
+    this.row16 = const Value.absent(),
+    this.row17 = const Value.absent(),
+    this.row18 = const Value.absent(),
+    this.row19 = const Value.absent(),
+    this.row20 = const Value.absent(),
+    this.row21 = const Value.absent(),
+    this.row22 = const Value.absent(),
+    this.row23 = const Value.absent(),
+    this.row24 = const Value.absent(),
+    this.row25 = const Value.absent(),
+    this.row26 = const Value.absent(),
+    this.row27 = const Value.absent(),
+    this.row28 = const Value.absent(),
+    this.row29 = const Value.absent(),
+    this.row30 = const Value.absent(),
+    this.row31 = const Value.absent(),
+    this.row32 = const Value.absent(),
+    this.row33 = const Value.absent(),
+    this.row34 = const Value.absent(),
+    this.row35 = const Value.absent(),
+    this.row36 = const Value.absent(),
+    this.row37 = const Value.absent(),
+    this.row38 = const Value.absent(),
+    this.row39 = const Value.absent(),
+    this.row40 = const Value.absent(),
+    this.row41 = const Value.absent(),
+    this.row42 = const Value.absent(),
+    this.row43 = const Value.absent(),
+    this.row44 = const Value.absent(),
+    this.row45 = const Value.absent(),
+    this.row46 = const Value.absent(),
+    this.row47 = const Value.absent(),
+    this.row48 = const Value.absent(),
+    this.row49 = const Value.absent(),
+    this.row50 = const Value.absent(),
+    this.row51 = const Value.absent(),
+    this.row52 = const Value.absent(),
+    this.row53 = const Value.absent(),
+    this.row54 = const Value.absent(),
+    this.row55 = const Value.absent(),
+    this.row56 = const Value.absent(),
+    this.row57 = const Value.absent(),
+    this.row58 = const Value.absent(),
+    this.row59 = const Value.absent(),
+    this.row60 = const Value.absent(),
+    this.row61 = const Value.absent(),
+    this.row62 = const Value.absent(),
+    this.row63 = const Value.absent(),
+    this.row64 = const Value.absent(),
+    this.row65 = const Value.absent(),
+    this.row66 = const Value.absent(),
+    this.row67 = const Value.absent(),
+    this.row68 = const Value.absent(),
+    this.row69 = const Value.absent(),
+    this.row70 = const Value.absent(),
+    this.row71 = const Value.absent(),
+    this.row72 = const Value.absent(),
+    this.row73 = const Value.absent(),
+    this.row74 = const Value.absent(),
+    this.row75 = const Value.absent(),
+    this.row76 = const Value.absent(),
+    this.row77 = const Value.absent(),
+    this.row78 = const Value.absent(),
+    this.row79 = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ArmApplicationsCompanion.insert({
+    this.id = const Value.absent(),
+    required String trialApplicationEventId,
+    this.armSheetColumnIndex = const Value.absent(),
+    this.row01 = const Value.absent(),
+    this.row02 = const Value.absent(),
+    this.row03 = const Value.absent(),
+    this.row04 = const Value.absent(),
+    this.row05 = const Value.absent(),
+    this.row06 = const Value.absent(),
+    this.row07 = const Value.absent(),
+    this.row08 = const Value.absent(),
+    this.row09 = const Value.absent(),
+    this.row10 = const Value.absent(),
+    this.row11 = const Value.absent(),
+    this.row12 = const Value.absent(),
+    this.row13 = const Value.absent(),
+    this.row14 = const Value.absent(),
+    this.row15 = const Value.absent(),
+    this.row16 = const Value.absent(),
+    this.row17 = const Value.absent(),
+    this.row18 = const Value.absent(),
+    this.row19 = const Value.absent(),
+    this.row20 = const Value.absent(),
+    this.row21 = const Value.absent(),
+    this.row22 = const Value.absent(),
+    this.row23 = const Value.absent(),
+    this.row24 = const Value.absent(),
+    this.row25 = const Value.absent(),
+    this.row26 = const Value.absent(),
+    this.row27 = const Value.absent(),
+    this.row28 = const Value.absent(),
+    this.row29 = const Value.absent(),
+    this.row30 = const Value.absent(),
+    this.row31 = const Value.absent(),
+    this.row32 = const Value.absent(),
+    this.row33 = const Value.absent(),
+    this.row34 = const Value.absent(),
+    this.row35 = const Value.absent(),
+    this.row36 = const Value.absent(),
+    this.row37 = const Value.absent(),
+    this.row38 = const Value.absent(),
+    this.row39 = const Value.absent(),
+    this.row40 = const Value.absent(),
+    this.row41 = const Value.absent(),
+    this.row42 = const Value.absent(),
+    this.row43 = const Value.absent(),
+    this.row44 = const Value.absent(),
+    this.row45 = const Value.absent(),
+    this.row46 = const Value.absent(),
+    this.row47 = const Value.absent(),
+    this.row48 = const Value.absent(),
+    this.row49 = const Value.absent(),
+    this.row50 = const Value.absent(),
+    this.row51 = const Value.absent(),
+    this.row52 = const Value.absent(),
+    this.row53 = const Value.absent(),
+    this.row54 = const Value.absent(),
+    this.row55 = const Value.absent(),
+    this.row56 = const Value.absent(),
+    this.row57 = const Value.absent(),
+    this.row58 = const Value.absent(),
+    this.row59 = const Value.absent(),
+    this.row60 = const Value.absent(),
+    this.row61 = const Value.absent(),
+    this.row62 = const Value.absent(),
+    this.row63 = const Value.absent(),
+    this.row64 = const Value.absent(),
+    this.row65 = const Value.absent(),
+    this.row66 = const Value.absent(),
+    this.row67 = const Value.absent(),
+    this.row68 = const Value.absent(),
+    this.row69 = const Value.absent(),
+    this.row70 = const Value.absent(),
+    this.row71 = const Value.absent(),
+    this.row72 = const Value.absent(),
+    this.row73 = const Value.absent(),
+    this.row74 = const Value.absent(),
+    this.row75 = const Value.absent(),
+    this.row76 = const Value.absent(),
+    this.row77 = const Value.absent(),
+    this.row78 = const Value.absent(),
+    this.row79 = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : trialApplicationEventId = Value(trialApplicationEventId);
+  static Insertable<ArmApplication> custom({
+    Expression<int>? id,
+    Expression<String>? trialApplicationEventId,
+    Expression<int>? armSheetColumnIndex,
+    Expression<String>? row01,
+    Expression<String>? row02,
+    Expression<String>? row03,
+    Expression<String>? row04,
+    Expression<String>? row05,
+    Expression<String>? row06,
+    Expression<String>? row07,
+    Expression<String>? row08,
+    Expression<String>? row09,
+    Expression<String>? row10,
+    Expression<String>? row11,
+    Expression<String>? row12,
+    Expression<String>? row13,
+    Expression<String>? row14,
+    Expression<String>? row15,
+    Expression<String>? row16,
+    Expression<String>? row17,
+    Expression<String>? row18,
+    Expression<String>? row19,
+    Expression<String>? row20,
+    Expression<String>? row21,
+    Expression<String>? row22,
+    Expression<String>? row23,
+    Expression<String>? row24,
+    Expression<String>? row25,
+    Expression<String>? row26,
+    Expression<String>? row27,
+    Expression<String>? row28,
+    Expression<String>? row29,
+    Expression<String>? row30,
+    Expression<String>? row31,
+    Expression<String>? row32,
+    Expression<String>? row33,
+    Expression<String>? row34,
+    Expression<String>? row35,
+    Expression<String>? row36,
+    Expression<String>? row37,
+    Expression<String>? row38,
+    Expression<String>? row39,
+    Expression<String>? row40,
+    Expression<String>? row41,
+    Expression<String>? row42,
+    Expression<String>? row43,
+    Expression<String>? row44,
+    Expression<String>? row45,
+    Expression<String>? row46,
+    Expression<String>? row47,
+    Expression<String>? row48,
+    Expression<String>? row49,
+    Expression<String>? row50,
+    Expression<String>? row51,
+    Expression<String>? row52,
+    Expression<String>? row53,
+    Expression<String>? row54,
+    Expression<String>? row55,
+    Expression<String>? row56,
+    Expression<String>? row57,
+    Expression<String>? row58,
+    Expression<String>? row59,
+    Expression<String>? row60,
+    Expression<String>? row61,
+    Expression<String>? row62,
+    Expression<String>? row63,
+    Expression<String>? row64,
+    Expression<String>? row65,
+    Expression<String>? row66,
+    Expression<String>? row67,
+    Expression<String>? row68,
+    Expression<String>? row69,
+    Expression<String>? row70,
+    Expression<String>? row71,
+    Expression<String>? row72,
+    Expression<String>? row73,
+    Expression<String>? row74,
+    Expression<String>? row75,
+    Expression<String>? row76,
+    Expression<String>? row77,
+    Expression<String>? row78,
+    Expression<String>? row79,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialApplicationEventId != null)
+        'trial_application_event_id': trialApplicationEventId,
+      if (armSheetColumnIndex != null)
+        'arm_sheet_column_index': armSheetColumnIndex,
+      if (row01 != null) 'row01': row01,
+      if (row02 != null) 'row02': row02,
+      if (row03 != null) 'row03': row03,
+      if (row04 != null) 'row04': row04,
+      if (row05 != null) 'row05': row05,
+      if (row06 != null) 'row06': row06,
+      if (row07 != null) 'row07': row07,
+      if (row08 != null) 'row08': row08,
+      if (row09 != null) 'row09': row09,
+      if (row10 != null) 'row10': row10,
+      if (row11 != null) 'row11': row11,
+      if (row12 != null) 'row12': row12,
+      if (row13 != null) 'row13': row13,
+      if (row14 != null) 'row14': row14,
+      if (row15 != null) 'row15': row15,
+      if (row16 != null) 'row16': row16,
+      if (row17 != null) 'row17': row17,
+      if (row18 != null) 'row18': row18,
+      if (row19 != null) 'row19': row19,
+      if (row20 != null) 'row20': row20,
+      if (row21 != null) 'row21': row21,
+      if (row22 != null) 'row22': row22,
+      if (row23 != null) 'row23': row23,
+      if (row24 != null) 'row24': row24,
+      if (row25 != null) 'row25': row25,
+      if (row26 != null) 'row26': row26,
+      if (row27 != null) 'row27': row27,
+      if (row28 != null) 'row28': row28,
+      if (row29 != null) 'row29': row29,
+      if (row30 != null) 'row30': row30,
+      if (row31 != null) 'row31': row31,
+      if (row32 != null) 'row32': row32,
+      if (row33 != null) 'row33': row33,
+      if (row34 != null) 'row34': row34,
+      if (row35 != null) 'row35': row35,
+      if (row36 != null) 'row36': row36,
+      if (row37 != null) 'row37': row37,
+      if (row38 != null) 'row38': row38,
+      if (row39 != null) 'row39': row39,
+      if (row40 != null) 'row40': row40,
+      if (row41 != null) 'row41': row41,
+      if (row42 != null) 'row42': row42,
+      if (row43 != null) 'row43': row43,
+      if (row44 != null) 'row44': row44,
+      if (row45 != null) 'row45': row45,
+      if (row46 != null) 'row46': row46,
+      if (row47 != null) 'row47': row47,
+      if (row48 != null) 'row48': row48,
+      if (row49 != null) 'row49': row49,
+      if (row50 != null) 'row50': row50,
+      if (row51 != null) 'row51': row51,
+      if (row52 != null) 'row52': row52,
+      if (row53 != null) 'row53': row53,
+      if (row54 != null) 'row54': row54,
+      if (row55 != null) 'row55': row55,
+      if (row56 != null) 'row56': row56,
+      if (row57 != null) 'row57': row57,
+      if (row58 != null) 'row58': row58,
+      if (row59 != null) 'row59': row59,
+      if (row60 != null) 'row60': row60,
+      if (row61 != null) 'row61': row61,
+      if (row62 != null) 'row62': row62,
+      if (row63 != null) 'row63': row63,
+      if (row64 != null) 'row64': row64,
+      if (row65 != null) 'row65': row65,
+      if (row66 != null) 'row66': row66,
+      if (row67 != null) 'row67': row67,
+      if (row68 != null) 'row68': row68,
+      if (row69 != null) 'row69': row69,
+      if (row70 != null) 'row70': row70,
+      if (row71 != null) 'row71': row71,
+      if (row72 != null) 'row72': row72,
+      if (row73 != null) 'row73': row73,
+      if (row74 != null) 'row74': row74,
+      if (row75 != null) 'row75': row75,
+      if (row76 != null) 'row76': row76,
+      if (row77 != null) 'row77': row77,
+      if (row78 != null) 'row78': row78,
+      if (row79 != null) 'row79': row79,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ArmApplicationsCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? trialApplicationEventId,
+      Value<int?>? armSheetColumnIndex,
+      Value<String?>? row01,
+      Value<String?>? row02,
+      Value<String?>? row03,
+      Value<String?>? row04,
+      Value<String?>? row05,
+      Value<String?>? row06,
+      Value<String?>? row07,
+      Value<String?>? row08,
+      Value<String?>? row09,
+      Value<String?>? row10,
+      Value<String?>? row11,
+      Value<String?>? row12,
+      Value<String?>? row13,
+      Value<String?>? row14,
+      Value<String?>? row15,
+      Value<String?>? row16,
+      Value<String?>? row17,
+      Value<String?>? row18,
+      Value<String?>? row19,
+      Value<String?>? row20,
+      Value<String?>? row21,
+      Value<String?>? row22,
+      Value<String?>? row23,
+      Value<String?>? row24,
+      Value<String?>? row25,
+      Value<String?>? row26,
+      Value<String?>? row27,
+      Value<String?>? row28,
+      Value<String?>? row29,
+      Value<String?>? row30,
+      Value<String?>? row31,
+      Value<String?>? row32,
+      Value<String?>? row33,
+      Value<String?>? row34,
+      Value<String?>? row35,
+      Value<String?>? row36,
+      Value<String?>? row37,
+      Value<String?>? row38,
+      Value<String?>? row39,
+      Value<String?>? row40,
+      Value<String?>? row41,
+      Value<String?>? row42,
+      Value<String?>? row43,
+      Value<String?>? row44,
+      Value<String?>? row45,
+      Value<String?>? row46,
+      Value<String?>? row47,
+      Value<String?>? row48,
+      Value<String?>? row49,
+      Value<String?>? row50,
+      Value<String?>? row51,
+      Value<String?>? row52,
+      Value<String?>? row53,
+      Value<String?>? row54,
+      Value<String?>? row55,
+      Value<String?>? row56,
+      Value<String?>? row57,
+      Value<String?>? row58,
+      Value<String?>? row59,
+      Value<String?>? row60,
+      Value<String?>? row61,
+      Value<String?>? row62,
+      Value<String?>? row63,
+      Value<String?>? row64,
+      Value<String?>? row65,
+      Value<String?>? row66,
+      Value<String?>? row67,
+      Value<String?>? row68,
+      Value<String?>? row69,
+      Value<String?>? row70,
+      Value<String?>? row71,
+      Value<String?>? row72,
+      Value<String?>? row73,
+      Value<String?>? row74,
+      Value<String?>? row75,
+      Value<String?>? row76,
+      Value<String?>? row77,
+      Value<String?>? row78,
+      Value<String?>? row79,
+      Value<DateTime>? createdAt}) {
+    return ArmApplicationsCompanion(
+      id: id ?? this.id,
+      trialApplicationEventId:
+          trialApplicationEventId ?? this.trialApplicationEventId,
+      armSheetColumnIndex: armSheetColumnIndex ?? this.armSheetColumnIndex,
+      row01: row01 ?? this.row01,
+      row02: row02 ?? this.row02,
+      row03: row03 ?? this.row03,
+      row04: row04 ?? this.row04,
+      row05: row05 ?? this.row05,
+      row06: row06 ?? this.row06,
+      row07: row07 ?? this.row07,
+      row08: row08 ?? this.row08,
+      row09: row09 ?? this.row09,
+      row10: row10 ?? this.row10,
+      row11: row11 ?? this.row11,
+      row12: row12 ?? this.row12,
+      row13: row13 ?? this.row13,
+      row14: row14 ?? this.row14,
+      row15: row15 ?? this.row15,
+      row16: row16 ?? this.row16,
+      row17: row17 ?? this.row17,
+      row18: row18 ?? this.row18,
+      row19: row19 ?? this.row19,
+      row20: row20 ?? this.row20,
+      row21: row21 ?? this.row21,
+      row22: row22 ?? this.row22,
+      row23: row23 ?? this.row23,
+      row24: row24 ?? this.row24,
+      row25: row25 ?? this.row25,
+      row26: row26 ?? this.row26,
+      row27: row27 ?? this.row27,
+      row28: row28 ?? this.row28,
+      row29: row29 ?? this.row29,
+      row30: row30 ?? this.row30,
+      row31: row31 ?? this.row31,
+      row32: row32 ?? this.row32,
+      row33: row33 ?? this.row33,
+      row34: row34 ?? this.row34,
+      row35: row35 ?? this.row35,
+      row36: row36 ?? this.row36,
+      row37: row37 ?? this.row37,
+      row38: row38 ?? this.row38,
+      row39: row39 ?? this.row39,
+      row40: row40 ?? this.row40,
+      row41: row41 ?? this.row41,
+      row42: row42 ?? this.row42,
+      row43: row43 ?? this.row43,
+      row44: row44 ?? this.row44,
+      row45: row45 ?? this.row45,
+      row46: row46 ?? this.row46,
+      row47: row47 ?? this.row47,
+      row48: row48 ?? this.row48,
+      row49: row49 ?? this.row49,
+      row50: row50 ?? this.row50,
+      row51: row51 ?? this.row51,
+      row52: row52 ?? this.row52,
+      row53: row53 ?? this.row53,
+      row54: row54 ?? this.row54,
+      row55: row55 ?? this.row55,
+      row56: row56 ?? this.row56,
+      row57: row57 ?? this.row57,
+      row58: row58 ?? this.row58,
+      row59: row59 ?? this.row59,
+      row60: row60 ?? this.row60,
+      row61: row61 ?? this.row61,
+      row62: row62 ?? this.row62,
+      row63: row63 ?? this.row63,
+      row64: row64 ?? this.row64,
+      row65: row65 ?? this.row65,
+      row66: row66 ?? this.row66,
+      row67: row67 ?? this.row67,
+      row68: row68 ?? this.row68,
+      row69: row69 ?? this.row69,
+      row70: row70 ?? this.row70,
+      row71: row71 ?? this.row71,
+      row72: row72 ?? this.row72,
+      row73: row73 ?? this.row73,
+      row74: row74 ?? this.row74,
+      row75: row75 ?? this.row75,
+      row76: row76 ?? this.row76,
+      row77: row77 ?? this.row77,
+      row78: row78 ?? this.row78,
+      row79: row79 ?? this.row79,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialApplicationEventId.present) {
+      map['trial_application_event_id'] =
+          Variable<String>(trialApplicationEventId.value);
+    }
+    if (armSheetColumnIndex.present) {
+      map['arm_sheet_column_index'] = Variable<int>(armSheetColumnIndex.value);
+    }
+    if (row01.present) {
+      map['row01'] = Variable<String>(row01.value);
+    }
+    if (row02.present) {
+      map['row02'] = Variable<String>(row02.value);
+    }
+    if (row03.present) {
+      map['row03'] = Variable<String>(row03.value);
+    }
+    if (row04.present) {
+      map['row04'] = Variable<String>(row04.value);
+    }
+    if (row05.present) {
+      map['row05'] = Variable<String>(row05.value);
+    }
+    if (row06.present) {
+      map['row06'] = Variable<String>(row06.value);
+    }
+    if (row07.present) {
+      map['row07'] = Variable<String>(row07.value);
+    }
+    if (row08.present) {
+      map['row08'] = Variable<String>(row08.value);
+    }
+    if (row09.present) {
+      map['row09'] = Variable<String>(row09.value);
+    }
+    if (row10.present) {
+      map['row10'] = Variable<String>(row10.value);
+    }
+    if (row11.present) {
+      map['row11'] = Variable<String>(row11.value);
+    }
+    if (row12.present) {
+      map['row12'] = Variable<String>(row12.value);
+    }
+    if (row13.present) {
+      map['row13'] = Variable<String>(row13.value);
+    }
+    if (row14.present) {
+      map['row14'] = Variable<String>(row14.value);
+    }
+    if (row15.present) {
+      map['row15'] = Variable<String>(row15.value);
+    }
+    if (row16.present) {
+      map['row16'] = Variable<String>(row16.value);
+    }
+    if (row17.present) {
+      map['row17'] = Variable<String>(row17.value);
+    }
+    if (row18.present) {
+      map['row18'] = Variable<String>(row18.value);
+    }
+    if (row19.present) {
+      map['row19'] = Variable<String>(row19.value);
+    }
+    if (row20.present) {
+      map['row20'] = Variable<String>(row20.value);
+    }
+    if (row21.present) {
+      map['row21'] = Variable<String>(row21.value);
+    }
+    if (row22.present) {
+      map['row22'] = Variable<String>(row22.value);
+    }
+    if (row23.present) {
+      map['row23'] = Variable<String>(row23.value);
+    }
+    if (row24.present) {
+      map['row24'] = Variable<String>(row24.value);
+    }
+    if (row25.present) {
+      map['row25'] = Variable<String>(row25.value);
+    }
+    if (row26.present) {
+      map['row26'] = Variable<String>(row26.value);
+    }
+    if (row27.present) {
+      map['row27'] = Variable<String>(row27.value);
+    }
+    if (row28.present) {
+      map['row28'] = Variable<String>(row28.value);
+    }
+    if (row29.present) {
+      map['row29'] = Variable<String>(row29.value);
+    }
+    if (row30.present) {
+      map['row30'] = Variable<String>(row30.value);
+    }
+    if (row31.present) {
+      map['row31'] = Variable<String>(row31.value);
+    }
+    if (row32.present) {
+      map['row32'] = Variable<String>(row32.value);
+    }
+    if (row33.present) {
+      map['row33'] = Variable<String>(row33.value);
+    }
+    if (row34.present) {
+      map['row34'] = Variable<String>(row34.value);
+    }
+    if (row35.present) {
+      map['row35'] = Variable<String>(row35.value);
+    }
+    if (row36.present) {
+      map['row36'] = Variable<String>(row36.value);
+    }
+    if (row37.present) {
+      map['row37'] = Variable<String>(row37.value);
+    }
+    if (row38.present) {
+      map['row38'] = Variable<String>(row38.value);
+    }
+    if (row39.present) {
+      map['row39'] = Variable<String>(row39.value);
+    }
+    if (row40.present) {
+      map['row40'] = Variable<String>(row40.value);
+    }
+    if (row41.present) {
+      map['row41'] = Variable<String>(row41.value);
+    }
+    if (row42.present) {
+      map['row42'] = Variable<String>(row42.value);
+    }
+    if (row43.present) {
+      map['row43'] = Variable<String>(row43.value);
+    }
+    if (row44.present) {
+      map['row44'] = Variable<String>(row44.value);
+    }
+    if (row45.present) {
+      map['row45'] = Variable<String>(row45.value);
+    }
+    if (row46.present) {
+      map['row46'] = Variable<String>(row46.value);
+    }
+    if (row47.present) {
+      map['row47'] = Variable<String>(row47.value);
+    }
+    if (row48.present) {
+      map['row48'] = Variable<String>(row48.value);
+    }
+    if (row49.present) {
+      map['row49'] = Variable<String>(row49.value);
+    }
+    if (row50.present) {
+      map['row50'] = Variable<String>(row50.value);
+    }
+    if (row51.present) {
+      map['row51'] = Variable<String>(row51.value);
+    }
+    if (row52.present) {
+      map['row52'] = Variable<String>(row52.value);
+    }
+    if (row53.present) {
+      map['row53'] = Variable<String>(row53.value);
+    }
+    if (row54.present) {
+      map['row54'] = Variable<String>(row54.value);
+    }
+    if (row55.present) {
+      map['row55'] = Variable<String>(row55.value);
+    }
+    if (row56.present) {
+      map['row56'] = Variable<String>(row56.value);
+    }
+    if (row57.present) {
+      map['row57'] = Variable<String>(row57.value);
+    }
+    if (row58.present) {
+      map['row58'] = Variable<String>(row58.value);
+    }
+    if (row59.present) {
+      map['row59'] = Variable<String>(row59.value);
+    }
+    if (row60.present) {
+      map['row60'] = Variable<String>(row60.value);
+    }
+    if (row61.present) {
+      map['row61'] = Variable<String>(row61.value);
+    }
+    if (row62.present) {
+      map['row62'] = Variable<String>(row62.value);
+    }
+    if (row63.present) {
+      map['row63'] = Variable<String>(row63.value);
+    }
+    if (row64.present) {
+      map['row64'] = Variable<String>(row64.value);
+    }
+    if (row65.present) {
+      map['row65'] = Variable<String>(row65.value);
+    }
+    if (row66.present) {
+      map['row66'] = Variable<String>(row66.value);
+    }
+    if (row67.present) {
+      map['row67'] = Variable<String>(row67.value);
+    }
+    if (row68.present) {
+      map['row68'] = Variable<String>(row68.value);
+    }
+    if (row69.present) {
+      map['row69'] = Variable<String>(row69.value);
+    }
+    if (row70.present) {
+      map['row70'] = Variable<String>(row70.value);
+    }
+    if (row71.present) {
+      map['row71'] = Variable<String>(row71.value);
+    }
+    if (row72.present) {
+      map['row72'] = Variable<String>(row72.value);
+    }
+    if (row73.present) {
+      map['row73'] = Variable<String>(row73.value);
+    }
+    if (row74.present) {
+      map['row74'] = Variable<String>(row74.value);
+    }
+    if (row75.present) {
+      map['row75'] = Variable<String>(row75.value);
+    }
+    if (row76.present) {
+      map['row76'] = Variable<String>(row76.value);
+    }
+    if (row77.present) {
+      map['row77'] = Variable<String>(row77.value);
+    }
+    if (row78.present) {
+      map['row78'] = Variable<String>(row78.value);
+    }
+    if (row79.present) {
+      map['row79'] = Variable<String>(row79.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ArmApplicationsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialApplicationEventId: $trialApplicationEventId, ')
+          ..write('armSheetColumnIndex: $armSheetColumnIndex, ')
+          ..write('row01: $row01, ')
+          ..write('row02: $row02, ')
+          ..write('row03: $row03, ')
+          ..write('row04: $row04, ')
+          ..write('row05: $row05, ')
+          ..write('row06: $row06, ')
+          ..write('row07: $row07, ')
+          ..write('row08: $row08, ')
+          ..write('row09: $row09, ')
+          ..write('row10: $row10, ')
+          ..write('row11: $row11, ')
+          ..write('row12: $row12, ')
+          ..write('row13: $row13, ')
+          ..write('row14: $row14, ')
+          ..write('row15: $row15, ')
+          ..write('row16: $row16, ')
+          ..write('row17: $row17, ')
+          ..write('row18: $row18, ')
+          ..write('row19: $row19, ')
+          ..write('row20: $row20, ')
+          ..write('row21: $row21, ')
+          ..write('row22: $row22, ')
+          ..write('row23: $row23, ')
+          ..write('row24: $row24, ')
+          ..write('row25: $row25, ')
+          ..write('row26: $row26, ')
+          ..write('row27: $row27, ')
+          ..write('row28: $row28, ')
+          ..write('row29: $row29, ')
+          ..write('row30: $row30, ')
+          ..write('row31: $row31, ')
+          ..write('row32: $row32, ')
+          ..write('row33: $row33, ')
+          ..write('row34: $row34, ')
+          ..write('row35: $row35, ')
+          ..write('row36: $row36, ')
+          ..write('row37: $row37, ')
+          ..write('row38: $row38, ')
+          ..write('row39: $row39, ')
+          ..write('row40: $row40, ')
+          ..write('row41: $row41, ')
+          ..write('row42: $row42, ')
+          ..write('row43: $row43, ')
+          ..write('row44: $row44, ')
+          ..write('row45: $row45, ')
+          ..write('row46: $row46, ')
+          ..write('row47: $row47, ')
+          ..write('row48: $row48, ')
+          ..write('row49: $row49, ')
+          ..write('row50: $row50, ')
+          ..write('row51: $row51, ')
+          ..write('row52: $row52, ')
+          ..write('row53: $row53, ')
+          ..write('row54: $row54, ')
+          ..write('row55: $row55, ')
+          ..write('row56: $row56, ')
+          ..write('row57: $row57, ')
+          ..write('row58: $row58, ')
+          ..write('row59: $row59, ')
+          ..write('row60: $row60, ')
+          ..write('row61: $row61, ')
+          ..write('row62: $row62, ')
+          ..write('row63: $row63, ')
+          ..write('row64: $row64, ')
+          ..write('row65: $row65, ')
+          ..write('row66: $row66, ')
+          ..write('row67: $row67, ')
+          ..write('row68: $row68, ')
+          ..write('row69: $row69, ')
+          ..write('row70: $row70, ')
+          ..write('row71: $row71, ')
+          ..write('row72: $row72, ')
+          ..write('row73: $row73, ')
+          ..write('row74: $row74, ')
+          ..write('row75: $row75, ')
+          ..write('row76: $row76, ')
+          ..write('row77: $row77, ')
+          ..write('row78: $row78, ')
+          ..write('row79: $row79, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -33746,6 +37045,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ArmTrialMetadataTable(this);
   late final $ArmTreatmentMetadataTable armTreatmentMetadata =
       $ArmTreatmentMetadataTable(this);
+  late final $ArmApplicationsTable armApplications =
+      $ArmApplicationsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -33792,7 +37093,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         armAssessmentMetadata,
         armSessionMetadata,
         armTrialMetadata,
-        armTreatmentMetadata
+        armTreatmentMetadata,
+        armApplications
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -33825,6 +37127,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
                 limitUpdateKind: UpdateKind.delete),
             result: [
               TableUpdate('weather_snapshots', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('trial_application_events',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('arm_applications', kind: UpdateKind.delete),
             ],
           ),
         ],
@@ -44617,6 +47926,20 @@ class $$TrialApplicationEventsTableFilterComposer
                     parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter armApplicationsRefs(
+      ComposableFilter Function($$ArmApplicationsTableFilterComposer f) f) {
+    final $$ArmApplicationsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.armApplications,
+            getReferencedColumn: (t) => t.trialApplicationEventId,
+            builder: (joinBuilder, parentComposers) =>
+                $$ArmApplicationsTableFilterComposer(ComposerState($state.db,
+                    $state.db.armApplications, joinBuilder, parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$TrialApplicationEventsTableOrderingComposer
@@ -49037,6 +52360,1399 @@ class $$ArmTreatmentMetadataTableOrderingComposer
   }
 }
 
+typedef $$ArmApplicationsTableCreateCompanionBuilder = ArmApplicationsCompanion
+    Function({
+  Value<int> id,
+  required String trialApplicationEventId,
+  Value<int?> armSheetColumnIndex,
+  Value<String?> row01,
+  Value<String?> row02,
+  Value<String?> row03,
+  Value<String?> row04,
+  Value<String?> row05,
+  Value<String?> row06,
+  Value<String?> row07,
+  Value<String?> row08,
+  Value<String?> row09,
+  Value<String?> row10,
+  Value<String?> row11,
+  Value<String?> row12,
+  Value<String?> row13,
+  Value<String?> row14,
+  Value<String?> row15,
+  Value<String?> row16,
+  Value<String?> row17,
+  Value<String?> row18,
+  Value<String?> row19,
+  Value<String?> row20,
+  Value<String?> row21,
+  Value<String?> row22,
+  Value<String?> row23,
+  Value<String?> row24,
+  Value<String?> row25,
+  Value<String?> row26,
+  Value<String?> row27,
+  Value<String?> row28,
+  Value<String?> row29,
+  Value<String?> row30,
+  Value<String?> row31,
+  Value<String?> row32,
+  Value<String?> row33,
+  Value<String?> row34,
+  Value<String?> row35,
+  Value<String?> row36,
+  Value<String?> row37,
+  Value<String?> row38,
+  Value<String?> row39,
+  Value<String?> row40,
+  Value<String?> row41,
+  Value<String?> row42,
+  Value<String?> row43,
+  Value<String?> row44,
+  Value<String?> row45,
+  Value<String?> row46,
+  Value<String?> row47,
+  Value<String?> row48,
+  Value<String?> row49,
+  Value<String?> row50,
+  Value<String?> row51,
+  Value<String?> row52,
+  Value<String?> row53,
+  Value<String?> row54,
+  Value<String?> row55,
+  Value<String?> row56,
+  Value<String?> row57,
+  Value<String?> row58,
+  Value<String?> row59,
+  Value<String?> row60,
+  Value<String?> row61,
+  Value<String?> row62,
+  Value<String?> row63,
+  Value<String?> row64,
+  Value<String?> row65,
+  Value<String?> row66,
+  Value<String?> row67,
+  Value<String?> row68,
+  Value<String?> row69,
+  Value<String?> row70,
+  Value<String?> row71,
+  Value<String?> row72,
+  Value<String?> row73,
+  Value<String?> row74,
+  Value<String?> row75,
+  Value<String?> row76,
+  Value<String?> row77,
+  Value<String?> row78,
+  Value<String?> row79,
+  Value<DateTime> createdAt,
+});
+typedef $$ArmApplicationsTableUpdateCompanionBuilder = ArmApplicationsCompanion
+    Function({
+  Value<int> id,
+  Value<String> trialApplicationEventId,
+  Value<int?> armSheetColumnIndex,
+  Value<String?> row01,
+  Value<String?> row02,
+  Value<String?> row03,
+  Value<String?> row04,
+  Value<String?> row05,
+  Value<String?> row06,
+  Value<String?> row07,
+  Value<String?> row08,
+  Value<String?> row09,
+  Value<String?> row10,
+  Value<String?> row11,
+  Value<String?> row12,
+  Value<String?> row13,
+  Value<String?> row14,
+  Value<String?> row15,
+  Value<String?> row16,
+  Value<String?> row17,
+  Value<String?> row18,
+  Value<String?> row19,
+  Value<String?> row20,
+  Value<String?> row21,
+  Value<String?> row22,
+  Value<String?> row23,
+  Value<String?> row24,
+  Value<String?> row25,
+  Value<String?> row26,
+  Value<String?> row27,
+  Value<String?> row28,
+  Value<String?> row29,
+  Value<String?> row30,
+  Value<String?> row31,
+  Value<String?> row32,
+  Value<String?> row33,
+  Value<String?> row34,
+  Value<String?> row35,
+  Value<String?> row36,
+  Value<String?> row37,
+  Value<String?> row38,
+  Value<String?> row39,
+  Value<String?> row40,
+  Value<String?> row41,
+  Value<String?> row42,
+  Value<String?> row43,
+  Value<String?> row44,
+  Value<String?> row45,
+  Value<String?> row46,
+  Value<String?> row47,
+  Value<String?> row48,
+  Value<String?> row49,
+  Value<String?> row50,
+  Value<String?> row51,
+  Value<String?> row52,
+  Value<String?> row53,
+  Value<String?> row54,
+  Value<String?> row55,
+  Value<String?> row56,
+  Value<String?> row57,
+  Value<String?> row58,
+  Value<String?> row59,
+  Value<String?> row60,
+  Value<String?> row61,
+  Value<String?> row62,
+  Value<String?> row63,
+  Value<String?> row64,
+  Value<String?> row65,
+  Value<String?> row66,
+  Value<String?> row67,
+  Value<String?> row68,
+  Value<String?> row69,
+  Value<String?> row70,
+  Value<String?> row71,
+  Value<String?> row72,
+  Value<String?> row73,
+  Value<String?> row74,
+  Value<String?> row75,
+  Value<String?> row76,
+  Value<String?> row77,
+  Value<String?> row78,
+  Value<String?> row79,
+  Value<DateTime> createdAt,
+});
+
+class $$ArmApplicationsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ArmApplicationsTable,
+    ArmApplication,
+    $$ArmApplicationsTableFilterComposer,
+    $$ArmApplicationsTableOrderingComposer,
+    $$ArmApplicationsTableCreateCompanionBuilder,
+    $$ArmApplicationsTableUpdateCompanionBuilder> {
+  $$ArmApplicationsTableTableManager(
+      _$AppDatabase db, $ArmApplicationsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$ArmApplicationsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$ArmApplicationsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> trialApplicationEventId = const Value.absent(),
+            Value<int?> armSheetColumnIndex = const Value.absent(),
+            Value<String?> row01 = const Value.absent(),
+            Value<String?> row02 = const Value.absent(),
+            Value<String?> row03 = const Value.absent(),
+            Value<String?> row04 = const Value.absent(),
+            Value<String?> row05 = const Value.absent(),
+            Value<String?> row06 = const Value.absent(),
+            Value<String?> row07 = const Value.absent(),
+            Value<String?> row08 = const Value.absent(),
+            Value<String?> row09 = const Value.absent(),
+            Value<String?> row10 = const Value.absent(),
+            Value<String?> row11 = const Value.absent(),
+            Value<String?> row12 = const Value.absent(),
+            Value<String?> row13 = const Value.absent(),
+            Value<String?> row14 = const Value.absent(),
+            Value<String?> row15 = const Value.absent(),
+            Value<String?> row16 = const Value.absent(),
+            Value<String?> row17 = const Value.absent(),
+            Value<String?> row18 = const Value.absent(),
+            Value<String?> row19 = const Value.absent(),
+            Value<String?> row20 = const Value.absent(),
+            Value<String?> row21 = const Value.absent(),
+            Value<String?> row22 = const Value.absent(),
+            Value<String?> row23 = const Value.absent(),
+            Value<String?> row24 = const Value.absent(),
+            Value<String?> row25 = const Value.absent(),
+            Value<String?> row26 = const Value.absent(),
+            Value<String?> row27 = const Value.absent(),
+            Value<String?> row28 = const Value.absent(),
+            Value<String?> row29 = const Value.absent(),
+            Value<String?> row30 = const Value.absent(),
+            Value<String?> row31 = const Value.absent(),
+            Value<String?> row32 = const Value.absent(),
+            Value<String?> row33 = const Value.absent(),
+            Value<String?> row34 = const Value.absent(),
+            Value<String?> row35 = const Value.absent(),
+            Value<String?> row36 = const Value.absent(),
+            Value<String?> row37 = const Value.absent(),
+            Value<String?> row38 = const Value.absent(),
+            Value<String?> row39 = const Value.absent(),
+            Value<String?> row40 = const Value.absent(),
+            Value<String?> row41 = const Value.absent(),
+            Value<String?> row42 = const Value.absent(),
+            Value<String?> row43 = const Value.absent(),
+            Value<String?> row44 = const Value.absent(),
+            Value<String?> row45 = const Value.absent(),
+            Value<String?> row46 = const Value.absent(),
+            Value<String?> row47 = const Value.absent(),
+            Value<String?> row48 = const Value.absent(),
+            Value<String?> row49 = const Value.absent(),
+            Value<String?> row50 = const Value.absent(),
+            Value<String?> row51 = const Value.absent(),
+            Value<String?> row52 = const Value.absent(),
+            Value<String?> row53 = const Value.absent(),
+            Value<String?> row54 = const Value.absent(),
+            Value<String?> row55 = const Value.absent(),
+            Value<String?> row56 = const Value.absent(),
+            Value<String?> row57 = const Value.absent(),
+            Value<String?> row58 = const Value.absent(),
+            Value<String?> row59 = const Value.absent(),
+            Value<String?> row60 = const Value.absent(),
+            Value<String?> row61 = const Value.absent(),
+            Value<String?> row62 = const Value.absent(),
+            Value<String?> row63 = const Value.absent(),
+            Value<String?> row64 = const Value.absent(),
+            Value<String?> row65 = const Value.absent(),
+            Value<String?> row66 = const Value.absent(),
+            Value<String?> row67 = const Value.absent(),
+            Value<String?> row68 = const Value.absent(),
+            Value<String?> row69 = const Value.absent(),
+            Value<String?> row70 = const Value.absent(),
+            Value<String?> row71 = const Value.absent(),
+            Value<String?> row72 = const Value.absent(),
+            Value<String?> row73 = const Value.absent(),
+            Value<String?> row74 = const Value.absent(),
+            Value<String?> row75 = const Value.absent(),
+            Value<String?> row76 = const Value.absent(),
+            Value<String?> row77 = const Value.absent(),
+            Value<String?> row78 = const Value.absent(),
+            Value<String?> row79 = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ArmApplicationsCompanion(
+            id: id,
+            trialApplicationEventId: trialApplicationEventId,
+            armSheetColumnIndex: armSheetColumnIndex,
+            row01: row01,
+            row02: row02,
+            row03: row03,
+            row04: row04,
+            row05: row05,
+            row06: row06,
+            row07: row07,
+            row08: row08,
+            row09: row09,
+            row10: row10,
+            row11: row11,
+            row12: row12,
+            row13: row13,
+            row14: row14,
+            row15: row15,
+            row16: row16,
+            row17: row17,
+            row18: row18,
+            row19: row19,
+            row20: row20,
+            row21: row21,
+            row22: row22,
+            row23: row23,
+            row24: row24,
+            row25: row25,
+            row26: row26,
+            row27: row27,
+            row28: row28,
+            row29: row29,
+            row30: row30,
+            row31: row31,
+            row32: row32,
+            row33: row33,
+            row34: row34,
+            row35: row35,
+            row36: row36,
+            row37: row37,
+            row38: row38,
+            row39: row39,
+            row40: row40,
+            row41: row41,
+            row42: row42,
+            row43: row43,
+            row44: row44,
+            row45: row45,
+            row46: row46,
+            row47: row47,
+            row48: row48,
+            row49: row49,
+            row50: row50,
+            row51: row51,
+            row52: row52,
+            row53: row53,
+            row54: row54,
+            row55: row55,
+            row56: row56,
+            row57: row57,
+            row58: row58,
+            row59: row59,
+            row60: row60,
+            row61: row61,
+            row62: row62,
+            row63: row63,
+            row64: row64,
+            row65: row65,
+            row66: row66,
+            row67: row67,
+            row68: row68,
+            row69: row69,
+            row70: row70,
+            row71: row71,
+            row72: row72,
+            row73: row73,
+            row74: row74,
+            row75: row75,
+            row76: row76,
+            row77: row77,
+            row78: row78,
+            row79: row79,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String trialApplicationEventId,
+            Value<int?> armSheetColumnIndex = const Value.absent(),
+            Value<String?> row01 = const Value.absent(),
+            Value<String?> row02 = const Value.absent(),
+            Value<String?> row03 = const Value.absent(),
+            Value<String?> row04 = const Value.absent(),
+            Value<String?> row05 = const Value.absent(),
+            Value<String?> row06 = const Value.absent(),
+            Value<String?> row07 = const Value.absent(),
+            Value<String?> row08 = const Value.absent(),
+            Value<String?> row09 = const Value.absent(),
+            Value<String?> row10 = const Value.absent(),
+            Value<String?> row11 = const Value.absent(),
+            Value<String?> row12 = const Value.absent(),
+            Value<String?> row13 = const Value.absent(),
+            Value<String?> row14 = const Value.absent(),
+            Value<String?> row15 = const Value.absent(),
+            Value<String?> row16 = const Value.absent(),
+            Value<String?> row17 = const Value.absent(),
+            Value<String?> row18 = const Value.absent(),
+            Value<String?> row19 = const Value.absent(),
+            Value<String?> row20 = const Value.absent(),
+            Value<String?> row21 = const Value.absent(),
+            Value<String?> row22 = const Value.absent(),
+            Value<String?> row23 = const Value.absent(),
+            Value<String?> row24 = const Value.absent(),
+            Value<String?> row25 = const Value.absent(),
+            Value<String?> row26 = const Value.absent(),
+            Value<String?> row27 = const Value.absent(),
+            Value<String?> row28 = const Value.absent(),
+            Value<String?> row29 = const Value.absent(),
+            Value<String?> row30 = const Value.absent(),
+            Value<String?> row31 = const Value.absent(),
+            Value<String?> row32 = const Value.absent(),
+            Value<String?> row33 = const Value.absent(),
+            Value<String?> row34 = const Value.absent(),
+            Value<String?> row35 = const Value.absent(),
+            Value<String?> row36 = const Value.absent(),
+            Value<String?> row37 = const Value.absent(),
+            Value<String?> row38 = const Value.absent(),
+            Value<String?> row39 = const Value.absent(),
+            Value<String?> row40 = const Value.absent(),
+            Value<String?> row41 = const Value.absent(),
+            Value<String?> row42 = const Value.absent(),
+            Value<String?> row43 = const Value.absent(),
+            Value<String?> row44 = const Value.absent(),
+            Value<String?> row45 = const Value.absent(),
+            Value<String?> row46 = const Value.absent(),
+            Value<String?> row47 = const Value.absent(),
+            Value<String?> row48 = const Value.absent(),
+            Value<String?> row49 = const Value.absent(),
+            Value<String?> row50 = const Value.absent(),
+            Value<String?> row51 = const Value.absent(),
+            Value<String?> row52 = const Value.absent(),
+            Value<String?> row53 = const Value.absent(),
+            Value<String?> row54 = const Value.absent(),
+            Value<String?> row55 = const Value.absent(),
+            Value<String?> row56 = const Value.absent(),
+            Value<String?> row57 = const Value.absent(),
+            Value<String?> row58 = const Value.absent(),
+            Value<String?> row59 = const Value.absent(),
+            Value<String?> row60 = const Value.absent(),
+            Value<String?> row61 = const Value.absent(),
+            Value<String?> row62 = const Value.absent(),
+            Value<String?> row63 = const Value.absent(),
+            Value<String?> row64 = const Value.absent(),
+            Value<String?> row65 = const Value.absent(),
+            Value<String?> row66 = const Value.absent(),
+            Value<String?> row67 = const Value.absent(),
+            Value<String?> row68 = const Value.absent(),
+            Value<String?> row69 = const Value.absent(),
+            Value<String?> row70 = const Value.absent(),
+            Value<String?> row71 = const Value.absent(),
+            Value<String?> row72 = const Value.absent(),
+            Value<String?> row73 = const Value.absent(),
+            Value<String?> row74 = const Value.absent(),
+            Value<String?> row75 = const Value.absent(),
+            Value<String?> row76 = const Value.absent(),
+            Value<String?> row77 = const Value.absent(),
+            Value<String?> row78 = const Value.absent(),
+            Value<String?> row79 = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ArmApplicationsCompanion.insert(
+            id: id,
+            trialApplicationEventId: trialApplicationEventId,
+            armSheetColumnIndex: armSheetColumnIndex,
+            row01: row01,
+            row02: row02,
+            row03: row03,
+            row04: row04,
+            row05: row05,
+            row06: row06,
+            row07: row07,
+            row08: row08,
+            row09: row09,
+            row10: row10,
+            row11: row11,
+            row12: row12,
+            row13: row13,
+            row14: row14,
+            row15: row15,
+            row16: row16,
+            row17: row17,
+            row18: row18,
+            row19: row19,
+            row20: row20,
+            row21: row21,
+            row22: row22,
+            row23: row23,
+            row24: row24,
+            row25: row25,
+            row26: row26,
+            row27: row27,
+            row28: row28,
+            row29: row29,
+            row30: row30,
+            row31: row31,
+            row32: row32,
+            row33: row33,
+            row34: row34,
+            row35: row35,
+            row36: row36,
+            row37: row37,
+            row38: row38,
+            row39: row39,
+            row40: row40,
+            row41: row41,
+            row42: row42,
+            row43: row43,
+            row44: row44,
+            row45: row45,
+            row46: row46,
+            row47: row47,
+            row48: row48,
+            row49: row49,
+            row50: row50,
+            row51: row51,
+            row52: row52,
+            row53: row53,
+            row54: row54,
+            row55: row55,
+            row56: row56,
+            row57: row57,
+            row58: row58,
+            row59: row59,
+            row60: row60,
+            row61: row61,
+            row62: row62,
+            row63: row63,
+            row64: row64,
+            row65: row65,
+            row66: row66,
+            row67: row67,
+            row68: row68,
+            row69: row69,
+            row70: row70,
+            row71: row71,
+            row72: row72,
+            row73: row73,
+            row74: row74,
+            row75: row75,
+            row76: row76,
+            row77: row77,
+            row78: row78,
+            row79: row79,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$ArmApplicationsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ArmApplicationsTable> {
+  $$ArmApplicationsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get armSheetColumnIndex => $state.composableBuilder(
+      column: $state.table.armSheetColumnIndex,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row01 => $state.composableBuilder(
+      column: $state.table.row01,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row02 => $state.composableBuilder(
+      column: $state.table.row02,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row03 => $state.composableBuilder(
+      column: $state.table.row03,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row04 => $state.composableBuilder(
+      column: $state.table.row04,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row05 => $state.composableBuilder(
+      column: $state.table.row05,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row06 => $state.composableBuilder(
+      column: $state.table.row06,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row07 => $state.composableBuilder(
+      column: $state.table.row07,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row08 => $state.composableBuilder(
+      column: $state.table.row08,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row09 => $state.composableBuilder(
+      column: $state.table.row09,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row10 => $state.composableBuilder(
+      column: $state.table.row10,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row11 => $state.composableBuilder(
+      column: $state.table.row11,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row12 => $state.composableBuilder(
+      column: $state.table.row12,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row13 => $state.composableBuilder(
+      column: $state.table.row13,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row14 => $state.composableBuilder(
+      column: $state.table.row14,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row15 => $state.composableBuilder(
+      column: $state.table.row15,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row16 => $state.composableBuilder(
+      column: $state.table.row16,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row17 => $state.composableBuilder(
+      column: $state.table.row17,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row18 => $state.composableBuilder(
+      column: $state.table.row18,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row19 => $state.composableBuilder(
+      column: $state.table.row19,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row20 => $state.composableBuilder(
+      column: $state.table.row20,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row21 => $state.composableBuilder(
+      column: $state.table.row21,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row22 => $state.composableBuilder(
+      column: $state.table.row22,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row23 => $state.composableBuilder(
+      column: $state.table.row23,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row24 => $state.composableBuilder(
+      column: $state.table.row24,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row25 => $state.composableBuilder(
+      column: $state.table.row25,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row26 => $state.composableBuilder(
+      column: $state.table.row26,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row27 => $state.composableBuilder(
+      column: $state.table.row27,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row28 => $state.composableBuilder(
+      column: $state.table.row28,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row29 => $state.composableBuilder(
+      column: $state.table.row29,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row30 => $state.composableBuilder(
+      column: $state.table.row30,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row31 => $state.composableBuilder(
+      column: $state.table.row31,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row32 => $state.composableBuilder(
+      column: $state.table.row32,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row33 => $state.composableBuilder(
+      column: $state.table.row33,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row34 => $state.composableBuilder(
+      column: $state.table.row34,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row35 => $state.composableBuilder(
+      column: $state.table.row35,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row36 => $state.composableBuilder(
+      column: $state.table.row36,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row37 => $state.composableBuilder(
+      column: $state.table.row37,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row38 => $state.composableBuilder(
+      column: $state.table.row38,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row39 => $state.composableBuilder(
+      column: $state.table.row39,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row40 => $state.composableBuilder(
+      column: $state.table.row40,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row41 => $state.composableBuilder(
+      column: $state.table.row41,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row42 => $state.composableBuilder(
+      column: $state.table.row42,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row43 => $state.composableBuilder(
+      column: $state.table.row43,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row44 => $state.composableBuilder(
+      column: $state.table.row44,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row45 => $state.composableBuilder(
+      column: $state.table.row45,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row46 => $state.composableBuilder(
+      column: $state.table.row46,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row47 => $state.composableBuilder(
+      column: $state.table.row47,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row48 => $state.composableBuilder(
+      column: $state.table.row48,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row49 => $state.composableBuilder(
+      column: $state.table.row49,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row50 => $state.composableBuilder(
+      column: $state.table.row50,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row51 => $state.composableBuilder(
+      column: $state.table.row51,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row52 => $state.composableBuilder(
+      column: $state.table.row52,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row53 => $state.composableBuilder(
+      column: $state.table.row53,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row54 => $state.composableBuilder(
+      column: $state.table.row54,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row55 => $state.composableBuilder(
+      column: $state.table.row55,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row56 => $state.composableBuilder(
+      column: $state.table.row56,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row57 => $state.composableBuilder(
+      column: $state.table.row57,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row58 => $state.composableBuilder(
+      column: $state.table.row58,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row59 => $state.composableBuilder(
+      column: $state.table.row59,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row60 => $state.composableBuilder(
+      column: $state.table.row60,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row61 => $state.composableBuilder(
+      column: $state.table.row61,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row62 => $state.composableBuilder(
+      column: $state.table.row62,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row63 => $state.composableBuilder(
+      column: $state.table.row63,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row64 => $state.composableBuilder(
+      column: $state.table.row64,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row65 => $state.composableBuilder(
+      column: $state.table.row65,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row66 => $state.composableBuilder(
+      column: $state.table.row66,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row67 => $state.composableBuilder(
+      column: $state.table.row67,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row68 => $state.composableBuilder(
+      column: $state.table.row68,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row69 => $state.composableBuilder(
+      column: $state.table.row69,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row70 => $state.composableBuilder(
+      column: $state.table.row70,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row71 => $state.composableBuilder(
+      column: $state.table.row71,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row72 => $state.composableBuilder(
+      column: $state.table.row72,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row73 => $state.composableBuilder(
+      column: $state.table.row73,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row74 => $state.composableBuilder(
+      column: $state.table.row74,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row75 => $state.composableBuilder(
+      column: $state.table.row75,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row76 => $state.composableBuilder(
+      column: $state.table.row76,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row77 => $state.composableBuilder(
+      column: $state.table.row77,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row78 => $state.composableBuilder(
+      column: $state.table.row78,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get row79 => $state.composableBuilder(
+      column: $state.table.row79,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialApplicationEventsTableFilterComposer get trialApplicationEventId {
+    final $$TrialApplicationEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialApplicationEventId,
+            referencedTable: $state.db.trialApplicationEvents,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialApplicationEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.trialApplicationEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return composer;
+  }
+}
+
+class $$ArmApplicationsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ArmApplicationsTable> {
+  $$ArmApplicationsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get armSheetColumnIndex => $state.composableBuilder(
+      column: $state.table.armSheetColumnIndex,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row01 => $state.composableBuilder(
+      column: $state.table.row01,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row02 => $state.composableBuilder(
+      column: $state.table.row02,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row03 => $state.composableBuilder(
+      column: $state.table.row03,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row04 => $state.composableBuilder(
+      column: $state.table.row04,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row05 => $state.composableBuilder(
+      column: $state.table.row05,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row06 => $state.composableBuilder(
+      column: $state.table.row06,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row07 => $state.composableBuilder(
+      column: $state.table.row07,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row08 => $state.composableBuilder(
+      column: $state.table.row08,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row09 => $state.composableBuilder(
+      column: $state.table.row09,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row10 => $state.composableBuilder(
+      column: $state.table.row10,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row11 => $state.composableBuilder(
+      column: $state.table.row11,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row12 => $state.composableBuilder(
+      column: $state.table.row12,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row13 => $state.composableBuilder(
+      column: $state.table.row13,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row14 => $state.composableBuilder(
+      column: $state.table.row14,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row15 => $state.composableBuilder(
+      column: $state.table.row15,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row16 => $state.composableBuilder(
+      column: $state.table.row16,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row17 => $state.composableBuilder(
+      column: $state.table.row17,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row18 => $state.composableBuilder(
+      column: $state.table.row18,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row19 => $state.composableBuilder(
+      column: $state.table.row19,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row20 => $state.composableBuilder(
+      column: $state.table.row20,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row21 => $state.composableBuilder(
+      column: $state.table.row21,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row22 => $state.composableBuilder(
+      column: $state.table.row22,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row23 => $state.composableBuilder(
+      column: $state.table.row23,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row24 => $state.composableBuilder(
+      column: $state.table.row24,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row25 => $state.composableBuilder(
+      column: $state.table.row25,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row26 => $state.composableBuilder(
+      column: $state.table.row26,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row27 => $state.composableBuilder(
+      column: $state.table.row27,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row28 => $state.composableBuilder(
+      column: $state.table.row28,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row29 => $state.composableBuilder(
+      column: $state.table.row29,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row30 => $state.composableBuilder(
+      column: $state.table.row30,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row31 => $state.composableBuilder(
+      column: $state.table.row31,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row32 => $state.composableBuilder(
+      column: $state.table.row32,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row33 => $state.composableBuilder(
+      column: $state.table.row33,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row34 => $state.composableBuilder(
+      column: $state.table.row34,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row35 => $state.composableBuilder(
+      column: $state.table.row35,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row36 => $state.composableBuilder(
+      column: $state.table.row36,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row37 => $state.composableBuilder(
+      column: $state.table.row37,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row38 => $state.composableBuilder(
+      column: $state.table.row38,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row39 => $state.composableBuilder(
+      column: $state.table.row39,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row40 => $state.composableBuilder(
+      column: $state.table.row40,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row41 => $state.composableBuilder(
+      column: $state.table.row41,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row42 => $state.composableBuilder(
+      column: $state.table.row42,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row43 => $state.composableBuilder(
+      column: $state.table.row43,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row44 => $state.composableBuilder(
+      column: $state.table.row44,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row45 => $state.composableBuilder(
+      column: $state.table.row45,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row46 => $state.composableBuilder(
+      column: $state.table.row46,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row47 => $state.composableBuilder(
+      column: $state.table.row47,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row48 => $state.composableBuilder(
+      column: $state.table.row48,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row49 => $state.composableBuilder(
+      column: $state.table.row49,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row50 => $state.composableBuilder(
+      column: $state.table.row50,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row51 => $state.composableBuilder(
+      column: $state.table.row51,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row52 => $state.composableBuilder(
+      column: $state.table.row52,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row53 => $state.composableBuilder(
+      column: $state.table.row53,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row54 => $state.composableBuilder(
+      column: $state.table.row54,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row55 => $state.composableBuilder(
+      column: $state.table.row55,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row56 => $state.composableBuilder(
+      column: $state.table.row56,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row57 => $state.composableBuilder(
+      column: $state.table.row57,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row58 => $state.composableBuilder(
+      column: $state.table.row58,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row59 => $state.composableBuilder(
+      column: $state.table.row59,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row60 => $state.composableBuilder(
+      column: $state.table.row60,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row61 => $state.composableBuilder(
+      column: $state.table.row61,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row62 => $state.composableBuilder(
+      column: $state.table.row62,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row63 => $state.composableBuilder(
+      column: $state.table.row63,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row64 => $state.composableBuilder(
+      column: $state.table.row64,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row65 => $state.composableBuilder(
+      column: $state.table.row65,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row66 => $state.composableBuilder(
+      column: $state.table.row66,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row67 => $state.composableBuilder(
+      column: $state.table.row67,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row68 => $state.composableBuilder(
+      column: $state.table.row68,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row69 => $state.composableBuilder(
+      column: $state.table.row69,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row70 => $state.composableBuilder(
+      column: $state.table.row70,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row71 => $state.composableBuilder(
+      column: $state.table.row71,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row72 => $state.composableBuilder(
+      column: $state.table.row72,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row73 => $state.composableBuilder(
+      column: $state.table.row73,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row74 => $state.composableBuilder(
+      column: $state.table.row74,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row75 => $state.composableBuilder(
+      column: $state.table.row75,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row76 => $state.composableBuilder(
+      column: $state.table.row76,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row77 => $state.composableBuilder(
+      column: $state.table.row77,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row78 => $state.composableBuilder(
+      column: $state.table.row78,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get row79 => $state.composableBuilder(
+      column: $state.table.row79,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialApplicationEventsTableOrderingComposer get trialApplicationEventId {
+    final $$TrialApplicationEventsTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialApplicationEventId,
+            referencedTable: $state.db.trialApplicationEvents,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialApplicationEventsTableOrderingComposer(ComposerState(
+                    $state.db,
+                    $state.db.trialApplicationEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -49130,4 +53846,6 @@ class $AppDatabaseManager {
       $$ArmTrialMetadataTableTableManager(_db, _db.armTrialMetadata);
   $$ArmTreatmentMetadataTableTableManager get armTreatmentMetadata =>
       $$ArmTreatmentMetadataTableTableManager(_db, _db.armTreatmentMetadata);
+  $$ArmApplicationsTableTableManager get armApplications =>
+      $$ArmApplicationsTableTableManager(_db, _db.armApplications);
 }

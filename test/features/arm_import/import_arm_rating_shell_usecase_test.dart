@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/data/arm/arm_applications_repository.dart';
 import 'package:arm_field_companion/data/arm/arm_column_mapping_repository.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
@@ -67,6 +68,7 @@ void main() {
       trialAssessmentRepository: TrialAssessmentRepository(db),
       assignmentRepository: assignmentRepo,
       armColumnMappingRepository: ArmColumnMappingRepository(db),
+      armApplicationsRepository: ArmApplicationsRepository(db),
     );
 
     final result = await useCase.execute('/nonexistent/path/no_shell.xlsx');
@@ -96,6 +98,7 @@ void main() {
       trialAssessmentRepository: TrialAssessmentRepository(db),
       assignmentRepository: assignmentRepo,
       armColumnMappingRepository: ArmColumnMappingRepository(db),
+      armApplicationsRepository: ArmApplicationsRepository(db),
     );
 
     final result = await useCase.execute(path);

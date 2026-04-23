@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show compute;
 import 'package:xml/xml.dart';
 
 import '../../core/excel_column_letters.dart';
+import '../../domain/models/arm_application_sheet_column.dart';
 import '../../domain/models/arm_column_map.dart';
 import '../../domain/models/arm_plot_row.dart';
 import '../../domain/models/arm_shell_import.dart';
@@ -197,6 +198,13 @@ ArmShellImport parseArmShellBytes(ArmShellParseParams p) {
     treatmentSheetRows = const [];
   }
 
+  List<ArmApplicationSheetColumn> applicationSheetColumns = const [];
+  try {
+    applicationSheetColumns = _parseApplicationsSheet(archive, strings);
+  } catch (_) {
+    applicationSheetColumns = const [];
+  }
+
   return ArmShellImport(
     title: title,
     trialId: trialId,
@@ -205,6 +213,7 @@ ArmShellImport parseArmShellBytes(ArmShellParseParams p) {
     assessmentColumns: assessmentColumns,
     plotRows: plotRows,
     treatmentSheetRows: treatmentSheetRows,
+    applicationSheetColumns: applicationSheetColumns,
     shellFilePath: p.shellFilePath,
   );
 }
@@ -286,6 +295,70 @@ List<ArmTreatmentSheetRow> _parseTreatmentsSheet(
   return rows;
 }
 
+/// Reads the optional **Applications** sheet (79 descriptor rows × application
+/// columns from C onward). Stops after two consecutive columns with no
+/// non-empty cells in any descriptor row.
+List<ArmApplicationSheetColumn> _parseApplicationsSheet(
+  Archive archive,
+  List<String> sharedStrings,
+) {
+  final path = _resolveSheetPath(archive, 'Applications');
+  if (path == null) return const [];
+  final entry = archive.findFile(path);
+  if (entry == null) return const [];
+
+  final doc = XmlDocument.parse(utf8.decode(entry.content as List<int>));
+
+  final cells = <(int, int), String>{};
+  for (final row in doc.findAllElements('row')) {
+    final rowNum = int.tryParse(row.getAttribute('r') ?? '');
+    if (rowNum == null) continue;
+    final rowIdx = rowNum - 1;
+    for (final c in row.findElements('c')) {
+      final ref = c.getAttribute('r');
+      if (ref == null) continue;
+      final colIdx = _colIdxFromRef(ref);
+      if (colIdx == null) continue;
+      final val = _cellValue(c, sharedStrings);
+      if (val != null) cells[(rowIdx, colIdx)] = val;
+    }
+  }
+
+  String? cell(int row, int col) {
+    final v = cells[(row, col)];
+    if (v == null) return null;
+    final trimmed = v.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  const descriptorRows = ArmApplicationSheetColumn.kArmApplicationDescriptorRowCount;
+  var consecutiveAllEmpty = 0;
+  final columns = <ArmApplicationSheetColumn>[];
+  for (var colIdx = 2; colIdx < 512; colIdx++) {
+    var anyNonEmpty = false;
+    final rowVals = <String?>[];
+    for (var r = 0; r < descriptorRows; r++) {
+      final v = cell(r, colIdx);
+      rowVals.add(v);
+      if (v != null) anyNonEmpty = true;
+    }
+    if (!anyNonEmpty) {
+      consecutiveAllEmpty++;
+      if (consecutiveAllEmpty >= 2) break;
+      continue;
+    }
+    consecutiveAllEmpty = 0;
+    columns.add(
+      ArmApplicationSheetColumn(
+        columnIndex: colIdx,
+        row01To79: rowVals,
+      ),
+    );
+  }
+
+  return columns;
+}
+
 /// Reads an ARM Excel Rating Shell and extracts trial metadata, columns, and plot rows.
 ///
 /// Parses the xlsx ZIP directly — only reads the Plot Data worksheet XML
@@ -294,6 +367,10 @@ List<ArmTreatmentSheetRow> _parseTreatmentsSheet(
 ///
 /// ARM Rating Shell layout contract (ARM 2025/2026):
 /// Sheet: "Plot Data" (exact name)
+///
+/// Optional sheet: **Applications** — 79 descriptor rows (Excel rows 1–79,
+/// 0-based `0…78`) × application columns from **C** onward; see
+/// `_parseApplicationsSheet` and `test/fixtures/arm_shells/README.md`.
 ///
 /// Assessment columns (c=2 onward, until empty ID cell at **0-based row 7**).
 /// Full Plot Data descriptor block **0-based rows 8–46** (Excel rows 9–47,

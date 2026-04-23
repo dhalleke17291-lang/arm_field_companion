@@ -1,3 +1,4 @@
+import 'arm_application_sheet_column.dart';
 import 'arm_column_map.dart';
 import 'arm_plot_row.dart';
 import 'arm_treatment_sheet_row.dart';
@@ -13,6 +14,7 @@ class ArmShellImport {
     this.cooperator,
     this.crop,
     this.treatmentSheetRows = const [],
+    this.applicationSheetColumns = const [],
   });
 
   final String title;
@@ -30,6 +32,11 @@ class ArmShellImport {
   /// Phase 2a — populated by the parser but not yet consumed by any
   /// writer. Slice 2b wires it into [ImportArmRatingShellUseCase].
   final List<ArmTreatmentSheetRow> treatmentSheetRows;
+
+  /// Columns parsed from the shell's **Applications** sheet (descriptor
+  /// rows 1–79, values from column C onward). Empty when the sheet is
+  /// missing, unreadable, or has no populated application blocks.
+  final List<ArmApplicationSheetColumn> applicationSheetColumns;
 
   final String shellFilePath;
 }

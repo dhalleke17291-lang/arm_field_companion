@@ -1148,6 +1148,109 @@ class ArmTreatmentMetadata extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// ARM **Applications** sheet metadata (79 descriptor rows per application
+/// column in the Rating Shell `.xlsx`). One row per core
+/// [TrialApplicationEvents] for ARM-linked trials.
+///
+/// [row01]…[row79] hold **verbatim** cell text for Excel rows **1–79** of
+/// the Applications sheet (1-based; see `test/fixtures/arm_shells/README.md`:
+/// R1 `ADA` … R79 `TMA`). Phase 3b/3c map parser output and dual-write
+/// universal fields onto [TrialApplicationEvents] separately.
+///
+/// Standalone trials have zero rows here. See docs/ARM_SEPARATION.md.
+class ArmApplications extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  TextColumn get trialApplicationEventId =>
+      text().references(TrialApplicationEvents, #id,
+          onDelete: KeyAction.cascade)();
+
+  /// 0-based worksheet column index of this application block (Excel `C` → 2).
+  IntColumn get armSheetColumnIndex => integer().nullable()();
+
+  TextColumn get row01 => text().nullable()();
+  TextColumn get row02 => text().nullable()();
+  TextColumn get row03 => text().nullable()();
+  TextColumn get row04 => text().nullable()();
+  TextColumn get row05 => text().nullable()();
+  TextColumn get row06 => text().nullable()();
+  TextColumn get row07 => text().nullable()();
+  TextColumn get row08 => text().nullable()();
+  TextColumn get row09 => text().nullable()();
+  TextColumn get row10 => text().nullable()();
+  TextColumn get row11 => text().nullable()();
+  TextColumn get row12 => text().nullable()();
+  TextColumn get row13 => text().nullable()();
+  TextColumn get row14 => text().nullable()();
+  TextColumn get row15 => text().nullable()();
+  TextColumn get row16 => text().nullable()();
+  TextColumn get row17 => text().nullable()();
+  TextColumn get row18 => text().nullable()();
+  TextColumn get row19 => text().nullable()();
+  TextColumn get row20 => text().nullable()();
+  TextColumn get row21 => text().nullable()();
+  TextColumn get row22 => text().nullable()();
+  TextColumn get row23 => text().nullable()();
+  TextColumn get row24 => text().nullable()();
+  TextColumn get row25 => text().nullable()();
+  TextColumn get row26 => text().nullable()();
+  TextColumn get row27 => text().nullable()();
+  TextColumn get row28 => text().nullable()();
+  TextColumn get row29 => text().nullable()();
+  TextColumn get row30 => text().nullable()();
+  TextColumn get row31 => text().nullable()();
+  TextColumn get row32 => text().nullable()();
+  TextColumn get row33 => text().nullable()();
+  TextColumn get row34 => text().nullable()();
+  TextColumn get row35 => text().nullable()();
+  TextColumn get row36 => text().nullable()();
+  TextColumn get row37 => text().nullable()();
+  TextColumn get row38 => text().nullable()();
+  TextColumn get row39 => text().nullable()();
+  TextColumn get row40 => text().nullable()();
+  TextColumn get row41 => text().nullable()();
+  TextColumn get row42 => text().nullable()();
+  TextColumn get row43 => text().nullable()();
+  TextColumn get row44 => text().nullable()();
+  TextColumn get row45 => text().nullable()();
+  TextColumn get row46 => text().nullable()();
+  TextColumn get row47 => text().nullable()();
+  TextColumn get row48 => text().nullable()();
+  TextColumn get row49 => text().nullable()();
+  TextColumn get row50 => text().nullable()();
+  TextColumn get row51 => text().nullable()();
+  TextColumn get row52 => text().nullable()();
+  TextColumn get row53 => text().nullable()();
+  TextColumn get row54 => text().nullable()();
+  TextColumn get row55 => text().nullable()();
+  TextColumn get row56 => text().nullable()();
+  TextColumn get row57 => text().nullable()();
+  TextColumn get row58 => text().nullable()();
+  TextColumn get row59 => text().nullable()();
+  TextColumn get row60 => text().nullable()();
+  TextColumn get row61 => text().nullable()();
+  TextColumn get row62 => text().nullable()();
+  TextColumn get row63 => text().nullable()();
+  TextColumn get row64 => text().nullable()();
+  TextColumn get row65 => text().nullable()();
+  TextColumn get row66 => text().nullable()();
+  TextColumn get row67 => text().nullable()();
+  TextColumn get row68 => text().nullable()();
+  TextColumn get row69 => text().nullable()();
+  TextColumn get row70 => text().nullable()();
+  TextColumn get row71 => text().nullable()();
+  TextColumn get row72 => text().nullable()();
+  TextColumn get row73 => text().nullable()();
+  TextColumn get row74 => text().nullable()();
+  TextColumn get row75 => text().nullable()();
+  TextColumn get row76 => text().nullable()();
+  TextColumn get row77 => text().nullable()();
+  TextColumn get row78 => text().nullable()();
+  TextColumn get row79 => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 @DriftDatabase(tables: [
   Users,
   Trials,
@@ -1192,6 +1295,7 @@ class ArmTreatmentMetadata extends Table {
   ArmSessionMetadata,
   ArmTrialMetadata,
   ArmTreatmentMetadata,
+  ArmApplications,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -1200,7 +1304,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 65;
+  int get schemaVersion => 66;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -2525,6 +2629,18 @@ WHERE pest_code IS NULL
             }
           }
 
+          if (from < 66) {
+            // ── Phase 3a: ARM Applications sheet extension (79 verbatim
+            //    descriptor rows per [TrialApplicationEvents]). Parser +
+            //    importer land in Phase 3b/3c.
+            final tables66 = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!tables66.contains('arm_applications')) {
+              await m.createTable(armApplications);
+            }
+          }
+
           await _createIndexes();
         },
       );
@@ -2638,6 +2754,10 @@ WHERE pest_code IS NULL
       CREATE INDEX IF NOT EXISTS idx_sessions_trial
       ON sessions(trial_id)
     ''');
+    await customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_arm_applications_event '
+      'ON arm_applications(trial_application_event_id)',
+    );
   }
 }
 

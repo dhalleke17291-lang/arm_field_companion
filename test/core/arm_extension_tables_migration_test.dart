@@ -30,6 +30,7 @@ const _kArmColumnMappings = 'arm_column_mappings';
 const _kArmAssessmentMetadata = 'arm_assessment_metadata';
 const _kArmSessionMetadata = 'arm_session_metadata';
 const _kArmTreatmentMetadata = 'arm_treatment_metadata';
+const _kArmApplications = 'arm_applications';
 
 Future<Set<String>> _tableNames(AppDatabase db) async {
   final rows = await db
@@ -107,12 +108,14 @@ void main() {
     expect(names, contains(_kArmAssessmentMetadata));
     expect(names, contains(_kArmSessionMetadata));
     expect(names, contains(_kArmTreatmentMetadata));
+    expect(names, contains(_kArmApplications));
 
-    // All four start empty — no seeding on fresh install.
+    // All start empty — no seeding on fresh install.
     expect(await db.select(db.armColumnMappings).get(), isEmpty);
     expect(await db.select(db.armAssessmentMetadata).get(), isEmpty);
     expect(await db.select(db.armSessionMetadata).get(), isEmpty);
     expect(await db.select(db.armTreatmentMetadata).get(), isEmpty);
+    expect(await db.select(db.armApplications).get(), isEmpty);
   });
 
   test(
@@ -582,5 +585,64 @@ void main() {
     expect(colNames, contains('shell_app_timing_code'));
     expect(colNames, contains('shell_trt_eval_interval'));
     expect(colNames, contains('shell_plant_eval_interval'));
+  });
+
+  test('v66: arm_applications table shape + FK + unique event id', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    await db.customStatement('PRAGMA foreign_keys = ON');
+
+    final idxSql = await db.customSelect(
+      "SELECT sql FROM sqlite_master WHERE type='index' "
+      "AND name='idx_arm_applications_event'",
+    ).getSingleOrNull();
+    expect(idxSql?.read<String?>('sql'), contains('UNIQUE'),
+        reason: 'one arm_applications row per trial_application_event');
+
+    final pragma = await db.customSelect(
+      "SELECT name FROM pragma_table_info('arm_applications')",
+    ).get();
+    expect(pragma.length, 83,
+        reason: 'id, trial_application_event_id, arm_sheet_column_index, '
+            'row01..row79, created_at');
+    final colNames = pragma.map((r) => r.read<String>('name')).toSet();
+    expect(colNames, contains('row01'));
+    expect(colNames, contains('row79'));
+    expect(colNames, contains('trial_application_event_id'));
+
+    final trialId = await db.into(db.trials).insert(
+          TrialsCompanion.insert(name: 'App meta trial'),
+        );
+    const eventId = '00000000-0000-4000-a000-000000000001';
+    await db.into(db.trialApplicationEvents).insert(
+          TrialApplicationEventsCompanion.insert(
+            id: const Value(eventId),
+            trialId: trialId,
+            applicationDate: DateTime.utc(2026, 3, 1),
+          ),
+        );
+
+    await db.into(db.armApplications).insert(
+          ArmApplicationsCompanion.insert(
+            trialApplicationEventId: eventId,
+            armSheetColumnIndex: const Value(2),
+            row07: const Value('A1'),
+            row79: const Value('Y'),
+          ),
+        );
+
+    final badInsert = db.into(db.armApplications).insert(
+          ArmApplicationsCompanion.insert(
+            trialApplicationEventId: 'nonexistent-event-id',
+          ),
+        );
+    await expectLater(badInsert, throwsA(anything));
+
+    final dupInsert = db.into(db.armApplications).insert(
+          ArmApplicationsCompanion.insert(
+            trialApplicationEventId: eventId,
+          ),
+        );
+    await expectLater(dupInsert, throwsA(anything));
   });
 }

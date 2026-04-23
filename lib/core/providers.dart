@@ -89,6 +89,7 @@ import '../features/arm_import/data/compatibility_profile_builder.dart';
 import '../features/arm_import/usecases/arm_import_usecase.dart';
 import '../data/arm/arm_column_mapping_repository.dart';
 import '../data/arm/arm_trial_metadata_repository.dart';
+import '../data/arm/arm_applications_repository.dart';
 import '../data/arm/arm_treatment_metadata_repository.dart';
 import '../features/arm_import/usecases/import_arm_rating_shell_usecase.dart';
 import '../features/arm_protocol/arm_protocol_tab.dart';
@@ -256,6 +257,22 @@ final armTreatmentMetadataRepositoryProvider =
   return ArmTreatmentMetadataRepository(ref.watch(databaseProvider));
 });
 
+/// ARM Applications-sheet extension (Phase 3a). One row per
+/// [TrialApplicationEvents] when the shell importer populates it (Phase 3c).
+final armApplicationsRepositoryProvider =
+    Provider<ArmApplicationsRepository>((ref) {
+  return ArmApplicationsRepository(ref.watch(databaseProvider));
+});
+
+/// Joined application events + `arm_applications` for the ARM Protocol tab
+/// (Phase 3d). Empty when the trial has no Applications-sheet import rows.
+final armSheetApplicationsForTrialProvider = StreamProvider.autoDispose
+    .family<List<ArmSheetApplicationRow>, int>((ref, trialId) {
+  return ref
+      .watch(armApplicationsRepositoryProvider)
+      .watchArmSheetApplicationsForTrial(trialId);
+});
+
 /// Factory for building the ARM Protocol tab widget.
 ///
 /// Lives in providers.dart (the DI composition root) so that
@@ -319,6 +336,7 @@ final importArmRatingShellUseCaseProvider =
     trialAssessmentRepository: ref.watch(trialAssessmentRepositoryProvider),
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
     armColumnMappingRepository: ref.watch(armColumnMappingRepositoryProvider),
+    armApplicationsRepository: ref.watch(armApplicationsRepositoryProvider),
   );
 });
 

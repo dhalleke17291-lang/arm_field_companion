@@ -62,4 +62,48 @@ void main() {
     expect(c.seName, 'W003');
     expect(c.pestCodeFromSheet, 'EPPO123');
   });
+
+  test('Applications sheet: parses populated columns C and D (79 rows)', () async {
+    List<String?> app79({
+      String? r1date,
+      String? r7timing,
+    }) {
+      final r = List<String?>.filled(79, null);
+      r[0] = r1date;
+      r[6] = r7timing;
+      return r;
+    }
+
+    final path = await writeArmShellFixture(
+      tempPath,
+      plotNumbers: const [101],
+      armColumnIds: const ['3'],
+      seNames: const ['W003'],
+      ratingTypes: const ['CONTRO'],
+      applicationSheetColumns: [
+        app79(r1date: '10-May-26', r7timing: 'A1'),
+        app79(r1date: '11-May-26', r7timing: 'A3'),
+      ],
+    );
+    final shell = await ArmShellParser(path).parse();
+    expect(shell.applicationSheetColumns, hasLength(2));
+    expect(shell.applicationSheetColumns[0].columnIndex, 2);
+    expect(shell.applicationSheetColumns[0].row01To79[0], '10-May-26');
+    expect(shell.applicationSheetColumns[0].row01To79[6], 'A1');
+    expect(shell.applicationSheetColumns[1].columnIndex, 3);
+    expect(shell.applicationSheetColumns[1].row01To79[0], '11-May-26');
+    expect(shell.applicationSheetColumns[1].row01To79[6], 'A3');
+  });
+
+  test('Applications sheet: missing in minimal workbook → empty list', () async {
+    final path = await writeArmShellFixture(
+      tempPath,
+      plotNumbers: const [101],
+      armColumnIds: const ['3'],
+      seNames: const ['W003'],
+      ratingTypes: const ['CONTRO'],
+    );
+    final shell = await ArmShellParser(path).parse();
+    expect(shell.applicationSheetColumns, isEmpty);
+  });
 }

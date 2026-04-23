@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/session_state.dart';
+import '../../../data/arm/arm_applications_repository.dart';
 import '../../../data/arm/arm_column_mapping_repository.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/services/arm_shell_parser.dart';
@@ -115,12 +116,14 @@ class ImportArmRatingShellUseCase {
     required TrialAssessmentRepository trialAssessmentRepository,
     required AssignmentRepository assignmentRepository,
     required ArmColumnMappingRepository armColumnMappingRepository,
+    required ArmApplicationsRepository armApplicationsRepository,
   })  : _db = db,
         _trialRepository = trialRepository,
         _plotRepository = plotRepository,
         _treatmentRepository = treatmentRepository,
         _assignmentRepository = assignmentRepository,
-        _armColumnMappingRepository = armColumnMappingRepository;
+        _armColumnMappingRepository = armColumnMappingRepository,
+        _armApplicationsRepository = armApplicationsRepository;
 
   final AppDatabase _db;
   final TrialRepository _trialRepository;
@@ -128,6 +131,7 @@ class ImportArmRatingShellUseCase {
   final TreatmentRepository _treatmentRepository;
   final AssignmentRepository _assignmentRepository;
   final ArmColumnMappingRepository _armColumnMappingRepository;
+  final ArmApplicationsRepository _armApplicationsRepository;
 
   /// After [trialId] is committed, if shell copy or final setup fails, remove the
   /// trial so no half-imported draft remains.
@@ -292,6 +296,71 @@ class ImportArmRatingShellUseCase {
           plotPkToTreatmentId: assignmentMap,
           assignmentSource: 'imported',
         );
+
+        // --- Applications sheet → trial_application_events + arm_applications ---
+        //
+        // Universal fields that map cleanly to [TrialApplicationEvents] are
+        // dual-written from known descriptor rows; the full 79-row verbatim
+        // block is always stored on [ArmApplications] for round-trip.
+        for (final appCol in shell.applicationSheetColumns) {
+          final rows = appCol.row01To79;
+          final rawDate = rows[0];
+          if (rawDate == null) continue;
+          final parsed = tryParseShellRatingDate(rawDate);
+          if (parsed == null) continue;
+          final appDate = parsed.startedAtUtc;
+
+          Value<String?> str(int i) {
+            final s = rows[i];
+            if (s == null) return const Value.absent();
+            return Value(s);
+          }
+
+          Value<double?> dbl(int i) {
+            final s = rows[i];
+            if (s == null) return const Value.absent();
+            final d = double.tryParse(s);
+            if (d == null) return const Value.absent();
+            return Value(d);
+          }
+
+          final event = await _db.into(_db.trialApplicationEvents).insertReturning(
+                TrialApplicationEventsCompanion.insert(
+                  trialId: id,
+                  applicationDate: appDate,
+                  applicationTime: str(1),
+                  applicationMethod: str(5),
+                  operatorName: str(8),
+                  equipmentUsed: Value(_applicationEquipmentDualWrite(rows)),
+                  temperature: dbl(9),
+                  humidity: dbl(12),
+                  windSpeed: dbl(14),
+                  windDirection: str(17),
+                  cloudCoverPct: dbl(26),
+                  soilMoisture: str(24),
+                  soilTemperature: dbl(22),
+                  nozzleType: str(39),
+                  operatingPressure: dbl(37),
+                  pressureUnit: str(38),
+                  groundSpeed: dbl(62),
+                  speedUnit: str(63),
+                  waterVolume: dbl(70),
+                  waterVolumeUnit: str(71),
+                  spraySolutionPh: dbl(76),
+                  status: const Value('applied'),
+                  appliedAt: Value(appDate),
+                ),
+              );
+
+          await _armApplicationsRepository.upsertForEvent(
+            event.id,
+            _armApplicationsCompanionFromRows(
+              trialApplicationEventId: event.id,
+              armSheetColumnIndex: appCol.columnIndex,
+              rows: rows,
+            ),
+          );
+        }
 
         // --- Dedup assessment columns + plan sessions ---
         //
@@ -636,4 +705,113 @@ String? _firstNonEmpty(Iterable<String?> values) {
     if (t != null && t.isNotEmpty) return t;
   }
   return null;
+}
+
+/// Applications sheet R36–R37 (0-based indices 35–36): Equipment + Type →
+/// one core field (matches `arm_applications.row36` / `row37`).
+String? _applicationEquipmentDualWrite(List<String?> rows) {
+  final a = rows[35]?.trim();
+  final b = rows[36]?.trim();
+  final parts = <String>[
+    if (a != null && a.isNotEmpty) a,
+    if (b != null && b.isNotEmpty) b,
+  ];
+  if (parts.isEmpty) return null;
+  return parts.join(' / ');
+}
+
+ArmApplicationsCompanion _armApplicationsCompanionFromRows({
+  required String trialApplicationEventId,
+  required int armSheetColumnIndex,
+  required List<String?> rows,
+}) {
+  assert(rows.length == 79);
+  Value<String?> rv(int i) {
+    final s = rows[i];
+    if (s == null) return const Value.absent();
+    return Value(s);
+  }
+  return ArmApplicationsCompanion.insert(
+    trialApplicationEventId: trialApplicationEventId,
+    armSheetColumnIndex: Value(armSheetColumnIndex),
+    row01: rv(0),
+    row02: rv(1),
+    row03: rv(2),
+    row04: rv(3),
+    row05: rv(4),
+    row06: rv(5),
+    row07: rv(6),
+    row08: rv(7),
+    row09: rv(8),
+    row10: rv(9),
+    row11: rv(10),
+    row12: rv(11),
+    row13: rv(12),
+    row14: rv(13),
+    row15: rv(14),
+    row16: rv(15),
+    row17: rv(16),
+    row18: rv(17),
+    row19: rv(18),
+    row20: rv(19),
+    row21: rv(20),
+    row22: rv(21),
+    row23: rv(22),
+    row24: rv(23),
+    row25: rv(24),
+    row26: rv(25),
+    row27: rv(26),
+    row28: rv(27),
+    row29: rv(28),
+    row30: rv(29),
+    row31: rv(30),
+    row32: rv(31),
+    row33: rv(32),
+    row34: rv(33),
+    row35: rv(34),
+    row36: rv(35),
+    row37: rv(36),
+    row38: rv(37),
+    row39: rv(38),
+    row40: rv(39),
+    row41: rv(40),
+    row42: rv(41),
+    row43: rv(42),
+    row44: rv(43),
+    row45: rv(44),
+    row46: rv(45),
+    row47: rv(46),
+    row48: rv(47),
+    row49: rv(48),
+    row50: rv(49),
+    row51: rv(50),
+    row52: rv(51),
+    row53: rv(52),
+    row54: rv(53),
+    row55: rv(54),
+    row56: rv(55),
+    row57: rv(56),
+    row58: rv(57),
+    row59: rv(58),
+    row60: rv(59),
+    row61: rv(60),
+    row62: rv(61),
+    row63: rv(62),
+    row64: rv(63),
+    row65: rv(64),
+    row66: rv(65),
+    row67: rv(66),
+    row68: rv(67),
+    row69: rv(68),
+    row70: rv(69),
+    row71: rv(70),
+    row72: rv(71),
+    row73: rv(72),
+    row74: rv(73),
+    row75: rv(74),
+    row76: rv(75),
+    row77: rv(76),
+    row78: rv(77),
+    row79: rv(78),
+  );
 }
