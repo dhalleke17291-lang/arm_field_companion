@@ -6,8 +6,22 @@ import 'package:flutter/foundation.dart';
 import 'package:xml/xml.dart';
 
 import '../../core/excel_column_letters.dart';
+import '../../domain/models/arm_application_sheet_column.dart';
 import '../../domain/models/arm_rating_value.dart';
 import '../../domain/models/arm_shell_import.dart';
+
+/// One Applications-sheet column to write on export ([row01To79] = R1…R79).
+class ArmApplicationsSheetExportColumn {
+  ArmApplicationsSheetExportColumn({
+    required this.columnIndex,
+    required List<String?> row01To79,
+  })  : assert(row01To79.length ==
+            ArmApplicationSheetColumn.kArmApplicationDescriptorRowCount),
+        row01To79 = List<String?>.unmodifiable(row01To79);
+
+  final int columnIndex;
+  final List<String?> row01To79;
+}
 
 /// Result of an injection operation.
 class ArmInjectionResult {
@@ -28,14 +42,19 @@ class ArmInjectionResult {
 ///
 /// Uses sheet **Plot Data** (ARM-native shells).
 ///
-/// Updates only the Plot Data worksheet XML inside the xlsx zip; all other parts
-/// are copied byte-for-byte to avoid [excel] decode/encode corruption on other sheets.
+/// Updates the Plot Data worksheet XML inside the xlsx zip (and optionally
+/// **Applications**). All other parts are copied byte-for-byte to avoid
+/// [excel] decode/encode corruption on other sheets.
 class ArmValueInjector {
   ArmValueInjector(this.shellImport);
 
   final ArmShellImport shellImport;
 
-  Future<ArmInjectionResult> inject(List<ArmRatingValue> values, String outputPath) async {
+  Future<ArmInjectionResult> inject(
+    List<ArmRatingValue> values,
+    String outputPath, {
+    List<ArmApplicationsSheetExportColumn>? applicationColumns,
+  }) async {
     if (outputPath == shellImport.shellFilePath) {
       throw StateError(
         'outputPath must differ from original shell path (would overwrite source).',
@@ -47,7 +66,7 @@ class ArmValueInjector {
 
     final shellBytes = await File(shellImport.shellFilePath).readAsBytes();
     final archive = ZipDecoder().decodeBytes(shellBytes);
-    final plotDataPath = _resolvePlotDataWorksheetPath(archive);
+    final plotDataPath = _resolveWorksheetPath(archive, 'Plot Data');
     if (plotDataPath == null) {
       throw StateError(
         'Plot Data sheet missing from shell file',
@@ -123,16 +142,70 @@ class ArmValueInjector {
       cellsWritten++;
     }
 
-    final updatedBytes = utf8.encode(
+    final updatedPlotBytes = utf8.encode(
       plotDoc.toXmlString(pretty: false),
     );
+
+    List<int>? updatedApplicationsBytes;
+    String? applicationsPath;
+    if (applicationColumns != null && applicationColumns.isNotEmpty) {
+      applicationsPath = _resolveWorksheetPath(archive, 'Applications');
+      if (applicationsPath == null) {
+        skippedReasons.add(
+          'Applications sheet missing from shell — application data not written',
+        );
+      } else {
+        final appEntry = archive.findFile(applicationsPath);
+        if (appEntry == null) {
+          skippedReasons.add(
+            'Applications worksheet entry missing: $applicationsPath',
+          );
+        } else {
+          final appDoc =
+              XmlDocument.parse(utf8.decode(appEntry.content as List<int>));
+          for (final col in applicationColumns) {
+            final idx = col.columnIndex;
+            if (idx < 0) continue;
+            for (var r = 0; r < col.row01To79.length; r++) {
+              final raw = col.row01To79[r];
+              if (raw == null) continue;
+              final trimmed = raw.trim();
+              if (trimmed.isEmpty) continue;
+              // Verbatim text (matches importer); avoid `double.toString()` drift
+              // e.g. `55` → `55.0` which breaks round-trip byte equality.
+              _writeCell(
+                appDoc,
+                r,
+                idx,
+                trimmed,
+                false,
+                ensureRow: true,
+              );
+              cellsWritten++;
+            }
+          }
+          updatedApplicationsBytes =
+              utf8.encode(appDoc.toXmlString(pretty: false));
+        }
+      }
+    }
 
     final newArchive = Archive();
     for (final file in archive.files) {
       if (!file.isFile) continue;
       if (file.name == plotDataPath) {
         newArchive.addFile(
-          ArchiveFile(file.name, updatedBytes.length, updatedBytes),
+          ArchiveFile(file.name, updatedPlotBytes.length, updatedPlotBytes),
+        );
+      } else if (applicationsPath != null &&
+          updatedApplicationsBytes != null &&
+          file.name == applicationsPath) {
+        newArchive.addFile(
+          ArchiveFile(
+            file.name,
+            updatedApplicationsBytes.length,
+            updatedApplicationsBytes,
+          ),
         );
       } else {
         final content = List<int>.from(file.content as List<int>);
@@ -153,15 +226,15 @@ class ArmValueInjector {
     );
   }
 
-  /// Resolves `xl/workbook.xml` + `xl/_rels/workbook.xml.rels` → Plot Data worksheet path.
-  String? _resolvePlotDataWorksheetPath(Archive archive) {
+  /// Resolves `xl/workbook.xml` + `xl/_rels/workbook.xml.rels` → worksheet path.
+  String? _resolveWorksheetPath(Archive archive, String sheetName) {
     final wbFile = archive.findFile('xl/workbook.xml');
     if (wbFile == null) return null;
     final wbDoc = XmlDocument.parse(utf8.decode(wbFile.content as List<int>));
 
     XmlElement? plotSheet;
     for (final sheet in wbDoc.findAllElements('sheet')) {
-      if (sheet.getAttribute('name') == 'Plot Data') {
+      if (sheet.getAttribute('name') == sheetName) {
         plotSheet = sheet;
         break;
       }
@@ -199,8 +272,9 @@ class ArmValueInjector {
     int rowIdx0,
     int colIdx,
     String value,
-    bool isNumeric,
-  ) {
+    bool isNumeric, {
+    bool ensureRow = false,
+  }) {
     if (value.trim().isEmpty) {
       return;
     }
@@ -223,10 +297,13 @@ class ArmValueInjector {
       }
     }
     if (rowEl == null) {
-      debugPrint(
-        'ArmValueInjector: row r="$rowNumStr" missing, skipping $cellRef',
-      );
-      return;
+      if (!ensureRow) {
+        debugPrint(
+          'ArmValueInjector: row r="$rowNumStr" missing, skipping $cellRef',
+        );
+        return;
+      }
+      rowEl = _getOrCreateRow(sheetData, rowIdx0);
     }
 
     XmlElement? cEl;
@@ -256,6 +333,36 @@ class ArmValueInjector {
       ],
     );
     _insertCellInRowColumnOrder(rowEl, newCell, colIdx);
+  }
+
+  XmlElement _getOrCreateRow(XmlElement sheetData, int rowIdx0) {
+    final rowNumStr = '${rowIdx0 + 1}';
+    for (final r in sheetData.childElements) {
+      if (r.name.local == 'row' && r.getAttribute('r') == rowNumStr) {
+        return r;
+      }
+    }
+    final newRow = XmlElement(
+      XmlName('row'),
+      [XmlAttribute(XmlName('r'), rowNumStr)],
+      [],
+    );
+    final children = sheetData.children;
+    final targetNum = rowIdx0 + 1;
+    var insertAt = children.length;
+    for (var i = 0; i < children.length; i++) {
+      final ch = children[i];
+      if (ch is! XmlElement || ch.name.local != 'row') {
+        continue;
+      }
+      final rn = int.tryParse(ch.getAttribute('r') ?? '');
+      if (rn != null && rn > targetNum) {
+        insertAt = i;
+        break;
+      }
+    }
+    children.insert(insertAt, newRow);
+    return newRow;
   }
 
   void _setCellTypeAndValue(

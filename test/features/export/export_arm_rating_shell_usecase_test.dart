@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/diagnostics/diagnostic_finding.dart';
+import 'package:arm_field_companion/data/arm/arm_applications_repository.dart';
 import 'package:arm_field_companion/data/arm/arm_column_mapping_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
@@ -343,6 +344,7 @@ void main() {
         sessionRepository: SessionRepository(db),
         persistence: ArmImportPersistenceRepository(db),
         armColumnMappingRepository: ArmColumnMappingRepository(db),
+        armApplicationsRepository: ArmApplicationsRepository(db),
         shareOverride: (_) async {},
         pickShellPathOverride: pickShellPathOverride,
         publishExportDiagnostics: publishExportDiagnostics,

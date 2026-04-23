@@ -6,6 +6,7 @@ import 'package:arm_field_companion/core/excel_column_letters.dart';
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
 import 'package:arm_field_companion/domain/ratings/result_status.dart';
+import 'package:arm_field_companion/data/arm/arm_applications_repository.dart';
 import 'package:arm_field_companion/data/arm/arm_column_mapping_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
 import 'package:arm_field_companion/features/arm_import/domain/enums/import_confidence.dart';
@@ -337,6 +338,7 @@ void main() {
         sessionRepository: SessionRepository(db),
         persistence: ArmImportPersistenceRepository(db),
         armColumnMappingRepository: ArmColumnMappingRepository(db),
+        armApplicationsRepository: ArmApplicationsRepository(db),
         shareOverride: (_) async {},
         pickShellPathOverride: () async => shellPath,
         publishExportDiagnostics: (tid, findings, label) {

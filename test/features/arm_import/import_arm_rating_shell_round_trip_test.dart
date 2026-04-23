@@ -26,13 +26,21 @@
 import 'dart:io';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/core/session_state.dart';
 import 'package:arm_field_companion/data/arm/arm_applications_repository.dart';
 import 'package:arm_field_companion/data/arm/arm_column_mapping_repository.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
+import 'package:arm_field_companion/data/services/arm_shell_parser.dart';
+import 'package:arm_field_companion/domain/ratings/result_status.dart'
+    show ResultStatusDb;
+import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
 import 'package:arm_field_companion/features/arm_import/usecases/import_arm_rating_shell_usecase.dart';
+import 'package:arm_field_companion/features/export/domain/export_arm_rating_shell_usecase.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
+import 'package:arm_field_companion/features/ratings/rating_repository.dart';
+import 'package:arm_field_companion/features/sessions/session_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
@@ -747,6 +755,81 @@ void main() {
       final eventIds = events.map((e) => e.id).toSet();
       for (final row in joined) {
         expect(eventIds.contains(row.arm.trialApplicationEventId), isTrue);
+      }
+    });
+
+    test('export injects Applications sheet from arm_applications', () async {
+      final path = await _writeShellWithApplications(tempDir.path);
+      final result = await useCase.execute(path);
+      expect(result.success, isTrue, reason: result.errorMessage);
+      final trialId = result.trialId!;
+
+      final sessions = await (db.select(db.sessions)
+            ..where((s) => s.trialId.equals(trialId))
+            ..orderBy([(s) => OrderingTerm.asc(s.sessionDateLocal)]))
+          .get();
+      final session = sessions.single;
+      await (db.update(db.sessions)..where((s) => s.id.equals(session.id)))
+          .write(const SessionsCompanion(
+        status: Value(kSessionStatusOpen),
+      ));
+
+      final tas = await (db.select(db.trialAssessments)
+            ..where((t) => t.trialId.equals(trialId)))
+          .get();
+      final ta = tas.single;
+      final legacyIds = await TrialAssessmentRepository(db)
+          .getOrCreateLegacyAssessmentIdsForTrialAssessments(trialId, [ta.id]);
+
+      final plots = await PlotRepository(db).getPlotsForTrial(trialId);
+      final plot = plots.firstWhere((p) => p.plotId == '101');
+
+      await RatingRepository(db).saveRating(
+        trialId: trialId,
+        plotPk: plot.id,
+        assessmentId: legacyIds.single,
+        sessionId: session.id,
+        resultStatus: ResultStatusDb.recorded,
+        numericValue: 7.0,
+        isSessionClosed: false,
+      );
+
+      final exporter = ExportArmRatingShellUseCase(
+        db: db,
+        plotRepository: PlotRepository(db),
+        treatmentRepository: TreatmentRepository(db),
+        trialAssessmentRepository: TrialAssessmentRepository(db),
+        ratingRepository: RatingRepository(db),
+        sessionRepository: SessionRepository(db),
+        persistence: ArmImportPersistenceRepository(db),
+        armColumnMappingRepository: ArmColumnMappingRepository(db),
+        armApplicationsRepository: ArmApplicationsRepository(db),
+        shareOverride: (_) async {},
+        pickShellPathOverride: () async => path,
+      );
+
+      final trialRow = await (db.select(db.trials)
+            ..where((t) => t.id.equals(trialId)))
+          .getSingle();
+      final out = await exporter.execute(trial: trialRow);
+      expect(out.success, isTrue, reason: out.errorMessage);
+      final outPath = out.filePath;
+      expect(outPath, isNotNull);
+
+      final parsed = await ArmShellParser(outPath!).parse();
+      final expectedCols = _applicationsSheetFixture();
+      expect(parsed.applicationSheetColumns, hasLength(expectedCols.length));
+      for (var i = 0; i < expectedCols.length; i++) {
+        expect(
+          parsed.applicationSheetColumns[i].columnIndex,
+          2 + i,
+          reason: 'column $i worksheet index',
+        );
+        expect(
+          parsed.applicationSheetColumns[i].row01To79,
+          expectedCols[i],
+          reason: 'application column $i must round-trip through export',
+        );
       }
     });
   });

@@ -288,6 +288,7 @@ void main() {
       sessionRepository: SessionRepository(db),
       persistence: ArmImportPersistenceRepository(db),
       armColumnMappingRepository: ArmColumnMappingRepository(db),
+      armApplicationsRepository: ArmApplicationsRepository(db),
       shareOverride: (_) async {},
       pickShellPathOverride: () async => shellPath,
     );

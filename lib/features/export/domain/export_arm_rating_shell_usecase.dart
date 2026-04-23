@@ -10,6 +10,8 @@ import '../../../core/excel_column_letters.dart';
 import '../../../core/diagnostics/diagnostic_finding.dart';
 import '../../../core/diagnostics/trial_export_diagnostics.dart'
     show kArmRatingShellExportAttemptLabel;
+import '../../../data/arm/arm_application_row_values.dart';
+import '../../../data/arm/arm_applications_repository.dart';
 import '../../../data/arm/arm_column_mapping_repository.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
@@ -47,6 +49,7 @@ class ExportArmRatingShellUseCase {
   final RatingRepository _ratingRepository;
   final ArmImportPersistenceRepository _persistence;
   final ArmColumnMappingRepository _armColumnMappingRepository;
+  final ArmApplicationsRepository _armApplicationsRepository;
   final ArmRatingShellShareOverride? shareOverride;
 
   /// Test-only: bypass [FilePicker] and return a shell `.xlsx` path (or null to cancel).
@@ -61,6 +64,7 @@ class ExportArmRatingShellUseCase {
     required SessionRepository sessionRepository,
     required ArmImportPersistenceRepository persistence,
     required ArmColumnMappingRepository armColumnMappingRepository,
+    required ArmApplicationsRepository armApplicationsRepository,
     this.shareOverride,
     this.pickShellPathOverride,
     PublishTrialExportDiagnostics? publishExportDiagnostics,
@@ -71,6 +75,7 @@ class ExportArmRatingShellUseCase {
         _ratingRepository = ratingRepository,
         _persistence = persistence,
         _armColumnMappingRepository = armColumnMappingRepository,
+        _armApplicationsRepository = armApplicationsRepository,
         _publishExportDiagnostics = publishExportDiagnostics,
         _computeArmRoundTripDiagnostics =
             ComputeArmRoundTripDiagnosticsUseCase(
@@ -579,6 +584,17 @@ class ExportArmRatingShellUseCase {
       }
     }
 
+    final appJoined = await _armApplicationsRepository
+        .getArmSheetApplicationsForTrial(trial.id);
+    final applicationColumns = <ArmApplicationsSheetExportColumn>[
+      for (final row in appJoined)
+        if (row.arm.armSheetColumnIndex != null)
+          ArmApplicationsSheetExportColumn(
+            columnIndex: row.arm.armSheetColumnIndex!,
+            row01To79: armApplicationRow01To79List(row.arm),
+          ),
+    ];
+
     final injector = ArmValueInjector(shellImport);
     final safeBase = trial.name
         .replaceAll(RegExp(r'[^\w\s-]'), '')
@@ -587,7 +603,12 @@ class ExportArmRatingShellUseCase {
     final safeName = safeBase.isEmpty ? 'trial_${trial.id}' : safeBase;
     final tempDir = await getTemporaryDirectory();
     final filePath = '${tempDir.path}/${safeName}_RatingShell_filled.xlsx';
-    final injectionResult = await injector.inject(ratingValues, filePath);
+    final injectionResult = await injector.inject(
+      ratingValues,
+      filePath,
+      applicationColumns:
+          applicationColumns.isEmpty ? null : applicationColumns,
+    );
 
     if (injectionResult.hasSkips) {
       for (final reason in injectionResult.skippedReasons) {
