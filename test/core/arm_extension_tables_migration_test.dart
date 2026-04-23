@@ -17,10 +17,10 @@
 import 'dart:io';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
-// `isNotNull` from matcher (via flutter_test) collides with Drift's
-// `isNotNull` expression builder; we only need the former here, so hide
-// the latter.
-import 'package:drift/drift.dart' hide isNotNull;
+// `isNull`/`isNotNull` from matcher (via flutter_test) collide with
+// Drift's expression builders of the same name; hide the Drift ones
+// so the test expectations read naturally.
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -360,5 +360,201 @@ void main() {
     final rows = await db.select(db.armTreatmentMetadata).get();
     expect(rows, hasLength(1));
     expect(rows.single.formConcUnit, '%W/V');
+  });
+
+  // ── Phase 2b (v63) ──
+  //
+  // v63 is an additive backfill: for every ARM-linked trial's treatment
+  // that has a non-blank core `treatment_type` but no `arm_treatment_metadata`
+  // row yet, synthesize an AAM row with `arm_type_code = treatment_type`.
+  // Standalone trials (no arm_trial_metadata row, or isArmLinked=0) must
+  // remain untouched, and existing AAM rows must not be overwritten.
+  test('62 → 63 upgrade: backfills arm_type_code for ARM-linked trials only',
+      () async {
+    final dbFile = File(p.join(docsPath, 'upgrade_62_to_63_backfill.db'));
+    if (await dbFile.exists()) await dbFile.delete();
+
+    // Boot at current schema so tables exist, then seed the state v63
+    // should see and wind user_version back to 62.
+    var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+
+    // Trial A: ARM-linked, one treatment with type 'HERB' and no AAM row
+    //          → expect backfill.
+    final trialAId = await db.into(db.trials).insert(
+          TrialsCompanion.insert(name: 'ARM Linked'),
+        );
+    final trialATreatmentId = await db.into(db.treatments).insert(
+          TreatmentsCompanion.insert(
+            trialId: trialAId,
+            code: 'T1',
+            name: 'Herbicide A',
+            treatmentType: const Value('HERB'),
+          ),
+        );
+    await db.into(db.armTrialMetadata).insert(
+          ArmTrialMetadataCompanion(
+            trialId: Value(trialAId),
+            isArmLinked: const Value(true),
+          ),
+        );
+
+    // Trial B: ARM-linked, treatment already has an AAM row with a
+    //          pre-existing armTypeCode ('CHK') → expect untouched.
+    final trialBId = await db.into(db.trials).insert(
+          TrialsCompanion.insert(name: 'ARM Linked With AAM'),
+        );
+    final trialBTreatmentId = await db.into(db.treatments).insert(
+          TreatmentsCompanion.insert(
+            trialId: trialBId,
+            code: 'T1',
+            name: 'Check',
+            treatmentType: const Value('HERB'),
+          ),
+        );
+    await db.into(db.armTrialMetadata).insert(
+          ArmTrialMetadataCompanion(
+            trialId: Value(trialBId),
+            isArmLinked: const Value(true),
+          ),
+        );
+    await db.into(db.armTreatmentMetadata).insert(
+          ArmTreatmentMetadataCompanion.insert(
+            treatmentId: trialBTreatmentId,
+            armTypeCode: const Value('CHK'),
+          ),
+        );
+
+    // Trial C: standalone (no arm_trial_metadata row) → expect untouched.
+    final trialCId = await db.into(db.trials).insert(
+          TrialsCompanion.insert(name: 'Standalone'),
+        );
+    final trialCTreatmentId = await db.into(db.treatments).insert(
+          TreatmentsCompanion.insert(
+            trialId: trialCId,
+            code: 'T1',
+            name: 'Private',
+            treatmentType: const Value('FUNG'),
+          ),
+        );
+
+    // Trial D: ARM-linked but isArmLinked = false → expect untouched.
+    final trialDId = await db.into(db.trials).insert(
+          TrialsCompanion.insert(name: 'ARM Metadata Only'),
+        );
+    final trialDTreatmentId = await db.into(db.treatments).insert(
+          TreatmentsCompanion.insert(
+            trialId: trialDId,
+            code: 'T1',
+            name: 'Orphan',
+            treatmentType: const Value('HERB'),
+          ),
+        );
+    await db.into(db.armTrialMetadata).insert(
+          ArmTrialMetadataCompanion(
+            trialId: Value(trialDId),
+            isArmLinked: const Value(false),
+          ),
+        );
+
+    // Trial E: ARM-linked, treatment has blank/null treatment_type
+    //          → expect untouched (nothing to backfill).
+    final trialEId = await db.into(db.trials).insert(
+          TrialsCompanion.insert(name: 'ARM Linked Blank Type'),
+        );
+    final trialETreatmentId = await db.into(db.treatments).insert(
+          TreatmentsCompanion.insert(
+            trialId: trialEId,
+            code: 'T1',
+            name: 'Unknown',
+          ),
+        );
+    await db.into(db.armTrialMetadata).insert(
+          ArmTrialMetadataCompanion(
+            trialId: Value(trialEId),
+            isArmLinked: const Value(true),
+          ),
+        );
+
+    await db.close();
+    _setUserVersion(dbFile.path, 62);
+
+    db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    addTearDown(db.close);
+
+    // Force schema migration by reading.
+    await _tableNames(db);
+
+    final all = await db.select(db.armTreatmentMetadata).get();
+    final byTreatment = {for (final r in all) r.treatmentId: r};
+
+    // Trial A: backfilled.
+    expect(byTreatment[trialATreatmentId]?.armTypeCode, 'HERB',
+        reason: 'ARM-linked + type=HERB + no AAM row → should backfill');
+
+    // Trial B: pre-existing row untouched.
+    expect(byTreatment[trialBTreatmentId]?.armTypeCode, 'CHK',
+        reason: 'Existing AAM row must not be overwritten by backfill');
+    expect(
+        all.where((r) => r.treatmentId == trialBTreatmentId).length, 1,
+        reason: 'Backfill must not create a duplicate AAM row');
+
+    // Trial C: standalone untouched.
+    expect(byTreatment[trialCTreatmentId], isNull,
+        reason: 'Standalone trials must never gain an AAM row');
+
+    // Trial D: isArmLinked=false untouched.
+    expect(byTreatment[trialDTreatmentId], isNull,
+        reason: 'isArmLinked=false trials must be treated as standalone');
+
+    // Trial E: blank treatment_type untouched.
+    expect(byTreatment[trialETreatmentId], isNull,
+        reason: 'Blank treatment_type provides nothing to backfill');
+  });
+
+  test('62 → 63 upgrade: rerunning schema migration is idempotent',
+      () async {
+    final dbFile = File(p.join(docsPath, 'upgrade_62_to_63_idempotent.db'));
+    if (await dbFile.exists()) await dbFile.delete();
+
+    var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    final trialId = await db.into(db.trials).insert(
+          TrialsCompanion.insert(name: 'ARM Linked'),
+        );
+    final treatmentId = await db.into(db.treatments).insert(
+          TreatmentsCompanion.insert(
+            trialId: trialId,
+            code: 'T1',
+            name: 'Herbicide A',
+            treatmentType: const Value('HERB'),
+          ),
+        );
+    await db.into(db.armTrialMetadata).insert(
+          ArmTrialMetadataCompanion(
+            trialId: Value(trialId),
+            isArmLinked: const Value(true),
+          ),
+        );
+
+    await db.close();
+    _setUserVersion(dbFile.path, 62);
+
+    db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    await _tableNames(db);
+    final firstCount =
+        (await db.select(db.armTreatmentMetadata).get()).length;
+    expect(firstCount, 1);
+    await db.close();
+
+    // Winding back to 62 and reopening re-runs the backfill.
+    _setUserVersion(dbFile.path, 62);
+    db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    addTearDown(db.close);
+    await _tableNames(db);
+
+    final secondQuery = db.select(db.armTreatmentMetadata)
+      ..where((r) => r.treatmentId.equals(treatmentId));
+    final secondRows = await secondQuery.get();
+    expect(secondRows, hasLength(1),
+        reason: 'Re-running v63 must not create a duplicate AAM row');
   });
 }

@@ -181,6 +181,85 @@ class ImportArmRatingShellUseCase {
             await _treatmentRepository.insertTreatmentsBulkForNumbers(
                 trialId: id, sortedTrtNumbers: trtNumbers);
 
+        // --- Enrich treatments from the Treatments sheet (Phase 2b) ---
+        //
+        // insertTreatmentsBulkForNumbers creates bare rows (name =
+        // "Treatment N", no type, no components). If the shell parsed a
+        // Treatments sheet, enrich each row with the product / rate /
+        // formulation data and write the ARM-specific coding
+        // (armTypeCode, Form Conc / Unit / Type, row sort order) to
+        // arm_treatment_metadata so round-trip export reproduces the
+        // sheet verbatim.
+        //
+        // Dual-write rationale (see audit in PR for Phase 2b):
+        //   - Treatments.treatmentType AND arm_treatment_metadata.armTypeCode
+        //     both receive ARM's Type code. Core keeps working for
+        //     control-treatment detection + display; AAM preserves the
+        //     verbatim coding for round-trip even if core value is ever
+        //     humanized.
+        //   - Treatments.name AND TreatmentComponents.productName both
+        //     receive the ARM Treatment Name when non-blank. Blank names
+        //     (typical for CHK / untreated-check rows) keep the default
+        //     "Treatment N" and get no component row.
+        //   - CHK rows still receive an AAM row so the Treatments-sheet
+        //     ordering round-trips correctly.
+        final sheetRowByTrt = {
+          for (final r in shell.treatmentSheetRows) r.trtNumber: r,
+        };
+        for (final entry in trtIdByNumber.entries) {
+          final trtNum = entry.key;
+          final trtId = entry.value;
+          final sheetRow = sheetRowByTrt[trtNum];
+          if (sheetRow == null) continue;
+
+          final name = sheetRow.treatmentName;
+          final type = sheetRow.typeCode;
+          final hasNameOrType =
+              (name != null && name.isNotEmpty) ||
+                  (type != null && type.isNotEmpty);
+          if (hasNameOrType) {
+            await (_db.update(_db.treatments)
+                  ..where((t) => t.id.equals(trtId)))
+                .write(
+              TreatmentsCompanion(
+                name: name != null && name.isNotEmpty
+                    ? Value(name)
+                    : const Value.absent(),
+                treatmentType: type != null && type.isNotEmpty
+                    ? Value(type)
+                    : const Value.absent(),
+                lastEditedAt: Value(DateTime.now()),
+              ),
+            );
+          }
+
+          if (name != null && name.isNotEmpty) {
+            await _db.into(_db.treatmentComponents).insert(
+                  TreatmentComponentsCompanion.insert(
+                    treatmentId: trtId,
+                    trialId: id,
+                    productName: name,
+                    rate: Value(sheetRow.rate),
+                    rateUnit: Value(sheetRow.rateUnit),
+                    sortOrder: Value(sheetRow.rowIndex),
+                  ),
+                );
+          }
+
+          await _db.into(_db.armTreatmentMetadata).insert(
+                ArmTreatmentMetadataCompanion.insert(
+                  treatmentId: trtId,
+                  armTypeCode: type != null && type.isNotEmpty
+                      ? Value(type)
+                      : const Value.absent(),
+                  formConc: Value(sheetRow.formConc),
+                  formConcUnit: Value(sheetRow.formConcUnit),
+                  formType: Value(sheetRow.formType),
+                  armRowSortOrder: Value(sheetRow.rowIndex),
+                ),
+              );
+        }
+
         // --- Plots (one protocol check) + assignments (one protocol check) ---
         final plotCompanions = shell.plotRows
             .map(

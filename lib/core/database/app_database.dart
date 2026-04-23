@@ -1159,7 +1159,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 62;
+  int get schemaVersion => 63;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -2319,6 +2319,32 @@ WHERE pest_code IS NULL
             if (!tables62.contains('arm_treatment_metadata')) {
               await m.createTable(armTreatmentMetadata);
             }
+          }
+
+          if (from < 63) {
+            // ── Phase 2b: backfill arm_treatment_metadata.armTypeCode from
+            //    core Treatments.treatmentType for ARM-linked trials only.
+            //    Preserves the ARM-verbatim coding (HERB/FUNG/CHK/…) as a
+            //    round-trip-safe source even if a later edit humanizes the
+            //    core display value. Core column is NOT nulled — core UI
+            //    and control-treatment detection continue to read it.
+            //
+            //    Idempotent: a treatment that already has an AAM row is
+            //    left untouched. Standalone trials (no arm_trial_metadata
+            //    row, or isArmLinked = 0) are never modified.
+            await customStatement('''
+              INSERT INTO arm_treatment_metadata (treatment_id, arm_type_code)
+              SELECT t.id, t.treatment_type
+              FROM treatments t
+              JOIN arm_trial_metadata atm ON atm.trial_id = t.trial_id
+              WHERE atm.is_arm_linked = 1
+                AND t.treatment_type IS NOT NULL
+                AND TRIM(t.treatment_type) <> ''
+                AND NOT EXISTS (
+                  SELECT 1 FROM arm_treatment_metadata x
+                  WHERE x.treatment_id = t.id
+                )
+            ''');
           }
 
           await _createIndexes();
