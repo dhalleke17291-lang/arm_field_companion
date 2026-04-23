@@ -149,7 +149,7 @@ The branch is a pure append; every existing export test exercises the legacy pat
 ### Not introduced in Phase 1b
 
 - Core-table cleanup (dropping the grandfathered ARM columns from `Trials` / `TrialAssessments`): deferred at the time; **now complete** in v58 / v60 / v61. See "Schema cleanup (Phase 0b — complete)" above.
-- ARM Protocol tab: still deferred. Phase 1b has no user-visible UI surface beyond the dedup itself (which is what the user wanted).
+- ARM Protocol tab: not part of 1b. Read-only **Treatments** and **Applications** sub-sections were added later (rating-shell slices **2c** and **3d**); see [Rating Shell sheet pipeline (incremental slices)](#rating-shell-sheet-pipeline-incremental-slices).
 
 ## Planned-session surface (Phase 1c)
 
@@ -187,9 +187,47 @@ Because the method lives on `SessionRepository` and does not know about ARM, it 
 ### Not introduced in Phase 1c
 
 - Pre-filling `CreateSessionScreen` with ARM-expected crop stage / rater / BBCH: deferred. The user enters real field values through the normal open-session flow after starting.
-- Editable ARM metadata: that is the ARM Protocol tab (Phase 2). Phase 1c is read-only consumption of the existing metadata rows.
+- Editable ARM metadata: still deferred. Phase 1c is read-only consumption of session metadata on the planned-session tile. The **ARM Protocol** tab adds other read-only surfaces (assessments, Treatments sheet, Applications sheet); editing there is out of scope until explicitly specified.
 - Overview / timeline / calendar surfaces for planned sessions: deliberately out of scope — one view at a time keeps the visual and navigation contract small.
 - Reordering `sessionsForTrialProvider` to put planned sessions ahead of historical closed ones: the existing `startedAt desc` ordering groups imported-same-batch planned rows together, which is fine for now.
+
+## Rating Shell sheet pipeline (incremental slices)
+
+This numbering is **workspace shorthand** for the ARM **Rating Shell (.xlsx)** work: parsers, importers, Protocol tab sub-sections, and trust tests. It sits **alongside** the Phase 0b–1c headings above (schema bridge vs sessions UX), not as a replacement for them.
+
+### Plot Data + bridge (Phase 1b)
+
+- **Parser:** `lib/data/services/arm_shell_parser.dart` — Plot Data grid → `ArmShellImport.assessmentColumns` + `plotRows`.
+- **Import:** `ImportArmRatingShellUseCase` — deduplicated assessments, planned sessions, `arm_column_mappings`, `arm_assessment_metadata`, `arm_session_metadata`.
+- **Export:** `ExportArmRatingShellUseCase` + `ArmValueInjector` — rating values are injected into the **Plot Data** worksheet XML; other worksheets are copied from the selected shell unless a future phase adds injectors for them.
+
+### Treatments sheet — slices 2a–2d
+
+| Slice | Deliverable | Where |
+|------|-------------|--------|
+| **2a** | Parser (`ArmTreatmentSheetRow`) | `_parseTreatmentsSheet` in `arm_shell_parser.dart`; `test/data/arm_shell_parser_treatments_sheet_test.dart` |
+| **2b** | Importer write-through (core + `arm_treatment_metadata` + components) | `ImportArmRatingShellUseCase`; `test/features/arm_import/import_arm_rating_shell_treatments_sheet_test.dart` |
+| **2c** | ARM Protocol tab — read-only Treatments | `ArmTreatmentsSection` in `lib/features/arm_protocol/arm_protocol_tab.dart`; `test/features/arm_protocol/arm_protocol_tab_treatments_test.dart` |
+| **2d** | Round-trip trust (dual-write, deterministic re-import, table survey) | `test/features/arm_import/import_arm_rating_shell_round_trip_test.dart` — group *Treatments sheet round-trip trust anchor* |
+
+### Applications sheet — slices 3a–3e
+
+| Slice | Deliverable | Where |
+|------|-------------|--------|
+| **3a** | `arm_applications` table (v66), repository, indexes | `app_database.dart`, `lib/data/arm/arm_applications_repository.dart`; `test/core/arm_extension_tables_migration_test.dart` |
+| **3b** | Parser (`ArmApplicationSheetColumn`, 79 rows × column) | `_parseApplicationsSheet` in `arm_shell_parser.dart`; `test/data/arm_shell_parser_test.dart` |
+| **3c** | Importer — `trial_application_events` dual-write + `arm_applications` verbatim rows | `ImportArmRatingShellUseCase`; `test/features/arm_import/import_arm_rating_shell_applications_sheet_test.dart` |
+| **3d** | ARM Protocol tab — read-only Applications | `ArmApplicationsSection` in `arm_protocol_tab.dart`; `test/features/arm_protocol/arm_protocol_tab_applications_test.dart` |
+| **3e** | Round-trip trust | `import_arm_rating_shell_round_trip_test.dart` — group *Applications sheet round-trip trust anchor* |
+
+### Fixture contract
+
+Sheet layout, row maps, and which sheets are parsed today: **`test/fixtures/arm_shells/README.md`**.
+
+### Gaps (explicit)
+
+- **Export:** `ArmValueInjector` does **not** yet rewrite the **Treatments** or **Applications** worksheets; full workbook round-trip for those sheets is future work.
+- **Comments**, **Subsample Plot Data**: not parsed (see README).
 
 ## What standalone users see
 
@@ -204,7 +242,7 @@ Standalone trials (`WorkspaceType.standalone`, `isArmLinked = false`):
 ARM-linked trials (`isArmLinked = true`):
 
 - Show all core screens unchanged (no branching in core UI on ARM flags).
-- Additionally see an **ARM Protocol tab** (in `lib/features/arm_protocol/`) that surfaces ARM-specific richness: full assessment-column metadata, formulation details, the 79-field Applications view, Comments, shell round-trip status.
+- Additionally see an **ARM Protocol tab** (in `lib/features/arm_protocol/`) that surfaces ARM-specific richness: import/shell summary, read-only **Treatments** (sheet 7) and **Applications** (79-row descriptors per imported event) sub-sections, ARM **assessments** metadata, pinned import session, and shell link. **Comments** sheet content is not surfaced there yet.
 
 ## Runtime guardrails (existing)
 
