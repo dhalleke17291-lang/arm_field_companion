@@ -210,7 +210,10 @@ class AssessmentsTab extends ConsumerWidget {
                     ta,
                     aam: aamMap[ta.id],
                   );
-                  final seDesc = AssessmentDisplayHelper.description(ta);
+                  final seDesc = AssessmentDisplayHelper.description(
+                    ta,
+                    aam: aamMap[ta.id],
+                  );
                   return Container(
                     margin:
                         const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
@@ -245,8 +248,10 @@ class AssessmentsTab extends ConsumerWidget {
                                     Expanded(
                                       child: Text(
                                         AssessmentDisplayHelper.compactName(
-                                            ta,
-                                            def: def),
+                                          ta,
+                                          def: def,
+                                          aam: aamMap[ta.id],
+                                        ),
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w600,
                                           color: AppDesignTokens.primaryText,

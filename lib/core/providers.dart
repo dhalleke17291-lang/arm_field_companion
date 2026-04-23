@@ -425,6 +425,16 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
 
     if (plots.isEmpty || assessmentPairs.isEmpty) return {};
 
+    // Unit 5c: prefer ArmAssessmentMetadata.ratingType over the legacy
+    // duplicate column on TrialAssessments.armRatingType. Falls back to
+    // the TA column until Unit 5d / schema v61 drops it.
+    final aamRows = await ref
+        .read(armColumnMappingRepositoryProvider)
+        .getAssessmentMetadatasForTrial(trialId);
+    final aamByTaId = <int, ArmAssessmentMetadataData>{
+      for (final r in aamRows) r.trialAssessmentId: r,
+    };
+
     final exportRepo = ref.read(exportRepositoryProvider);
     final rawRows = await exportRepo.buildTrialExportRows(trialId: trialId);
 
@@ -458,6 +468,8 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
           await _assessmentNameForTrialStatistics(db, ta, def);
       final unit = def.unit ?? '';
       final direction = _normalizeResultDirection(def.resultDirection);
+      final ratingType =
+          aamByTaId[ta.id]?.ratingType ?? ta.armRatingType;
       result[ta.id] = computeAssessmentStatistics(
         filteredRatingRows,
         name,
@@ -466,7 +478,7 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
         direction,
         totalPlots,
         allReps,
-        assessmentCode: ta.armRatingType,
+        assessmentCode: ratingType,
       );
     }
     return result;
@@ -1740,12 +1752,25 @@ final trialTrajectoriesProvider = FutureProvider.autoDispose
       .watch(trialAssessmentsWithDefinitionsForTrialProvider(trialId).future);
   final db = ref.watch(databaseProvider);
 
-  // Group TrialAssessments by armRatingType (the ARM code like CONTRO).
+  // Unit 5c: prefer ArmAssessmentMetadata.ratingType over the legacy
+  // duplicate column on TrialAssessments.armRatingType.
+  final aamRows = await ref
+      .read(armColumnMappingRepositoryProvider)
+      .getAssessmentMetadatasForTrial(trialId);
+  final aamByTaId = <int, ArmAssessmentMetadataData>{
+    for (final r in aamRows) r.trialAssessmentId: r,
+  };
+
+  // Group TrialAssessments by ARM rating-type code (like CONTRO).
   final byCode = <String, List<(dynamic ta, dynamic def)>>{};
   for (final pair in assessmentPairs) {
     final ta = pair.$1;
-    final code = ta.armRatingType?.trim();
-    if (code == null || code.isEmpty) continue;
+    final aamCode = aamByTaId[ta.id]?.ratingType?.trim();
+    final taCode = ta.armRatingType?.trim();
+    final code = (aamCode != null && aamCode.isNotEmpty)
+        ? aamCode
+        : (taCode != null && taCode.isNotEmpty ? taCode : null);
+    if (code == null) continue;
     if (ta.daysAfterTreatment == null) continue;
     byCode.putIfAbsent(code, () => []).add(pair);
   }

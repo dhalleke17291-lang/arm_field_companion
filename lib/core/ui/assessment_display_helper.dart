@@ -25,18 +25,25 @@ class AssessmentDisplayHelper {
   /// - SE code only: `W003`
   /// - Else: [pestCode] → [def.name] → [fallback] → `"Assessment {id}"`
   ///   ([armRatingType] is never used here.)
+  ///
+  /// Unit 5c: per-column ARM duplicate fields (seDescription / seName /
+  /// armRatingType / pestCode) are read from [ArmAssessmentMetadata] when
+  /// [aam] is provided, falling back to the matching [TrialAssessment]
+  /// columns for trials that have not yet been re-imported. See
+  /// docs/ARM_SEPARATION.md.
   static String compactName(
     TrialAssessment ta, {
     AssessmentDefinition? def,
     String? fallback,
+    ArmAssessmentMetadataData? aam,
   }) {
     final override = _nonEmpty(ta.displayNameOverride);
     if (override != null) {
       return _cleanEmptyParens(override);
     }
 
-    final d = _nonEmpty(ta.seDescription);
-    final sn = _nonEmpty(ta.seName);
+    final d = _seDescriptionOf(ta, aam);
+    final sn = _seNameOf(ta, aam);
 
     String raw;
     if (d != null && sn != null) {
@@ -46,7 +53,7 @@ class AssessmentDisplayHelper {
     } else if (sn != null) {
       raw = sn;
     } else {
-      raw = _nonShellFallback(ta, def, fallback: fallback);
+      raw = _nonShellFallback(ta, def, fallback: fallback, aam: aam);
     }
     return _cleanEmptyParens(raw);
   }
@@ -61,15 +68,16 @@ class AssessmentDisplayHelper {
     TrialAssessment ta, {
     AssessmentDefinition? def,
     String? fallback,
+    ArmAssessmentMetadataData? aam,
   }) {
     final override = _nonEmpty(ta.displayNameOverride);
     if (override != null) {
       return _cleanEmptyParens(override);
     }
 
-    final d = _nonEmpty(ta.seDescription);
-    final sn = _nonEmpty(ta.seName);
-    final rtRaw = _nonEmpty(ta.armRatingType);
+    final d = _seDescriptionOf(ta, aam);
+    final sn = _seNameOf(ta, aam);
+    final rtRaw = _armRatingTypeOf(ta, aam);
     final rt = rtRaw != null ? _friendlyRatingType(rtRaw) : null;
 
     String raw;
@@ -88,7 +96,7 @@ class AssessmentDisplayHelper {
     } else if (rt != null) {
       raw = rt;
     } else {
-      raw = _primary(ta, def, fallback: fallback);
+      raw = _primary(ta, def, fallback: fallback, aam: aam);
     }
     return _cleanEmptyParens(raw);
   }
@@ -98,16 +106,17 @@ class AssessmentDisplayHelper {
     TrialAssessment ta, {
     AssessmentDefinition? def,
     String? fallback,
+    ArmAssessmentMetadataData? aam,
   }) {
     final override = _nonEmpty(ta.displayNameOverride);
     if (override != null) {
       return override;
     }
-    final sn = _nonEmpty(ta.seName);
+    final sn = _seNameOf(ta, aam);
     if (sn != null) {
       return sn;
     }
-    return _nonShellFallback(ta, def, fallback: fallback);
+    return _nonShellFallback(ta, def, fallback: fallback, aam: aam);
   }
 
   /// Rating date: "Apr 2" format, or null.
@@ -125,10 +134,13 @@ class AssessmentDisplayHelper {
     return DateFormat('MMM d').format(dt);
   }
 
-  /// SE description or null
-  static String? description(TrialAssessment ta) {
-    final d = ta.seDescription;
-    return (d != null && d.isNotEmpty) ? d : null;
+  /// SE description or null. Prefers [ArmAssessmentMetadata.seDescription]
+  /// when [aam] is provided, else falls back to [TrialAssessment.seDescription].
+  static String? description(
+    TrialAssessment ta, {
+    ArmAssessmentMetadataData? aam,
+  }) {
+    return _seDescriptionOf(ta, aam);
   }
 
   /// Single-string priority: seDescription → seName → armRatingType → pestCode → def.name → fallback → id.
@@ -136,21 +148,22 @@ class AssessmentDisplayHelper {
     TrialAssessment ta,
     AssessmentDefinition? def, {
     String? fallback,
+    ArmAssessmentMetadataData? aam,
   }) {
-    final d = _nonEmpty(ta.seDescription);
+    final d = _seDescriptionOf(ta, aam);
     if (d != null) {
       return d;
     }
-    final sn = _nonEmpty(ta.seName);
+    final sn = _seNameOf(ta, aam);
     if (sn != null) {
       return sn;
     }
-    final rtRaw = _nonEmpty(ta.armRatingType);
+    final rtRaw = _armRatingTypeOf(ta, aam);
     final rt = rtRaw != null ? _friendlyRatingType(rtRaw) : null;
     if (rt != null) {
       return rt;
     }
-    return _nonShellFallback(ta, def, fallback: fallback);
+    return _nonShellFallback(ta, def, fallback: fallback, aam: aam);
   }
 
   /// [pestCode] → [AssessmentDefinition.name] → [fallback] → `"Assessment {id}"`.
@@ -158,8 +171,9 @@ class AssessmentDisplayHelper {
     TrialAssessment ta,
     AssessmentDefinition? def, {
     String? fallback,
+    ArmAssessmentMetadataData? aam,
   }) {
-    final pc = _nonEmpty(ta.pestCode);
+    final pc = _pestCodeOf(ta, aam);
     if (pc != null) {
       return pc;
     }
@@ -171,6 +185,30 @@ class AssessmentDisplayHelper {
       return fb;
     }
     return 'Assessment ${ta.id}';
+  }
+
+  // AAM-first, TA-fallback accessors for the four duplicate ARM fields
+  // (Unit 5c). When the duplicate columns are dropped from TrialAssessments
+  // in Unit 5d / schema v61, the fallback arms become unreachable and can
+  // be removed together with the corresponding columns.
+  static String? _seDescriptionOf(
+      TrialAssessment ta, ArmAssessmentMetadataData? aam) {
+    return _nonEmpty(aam?.seDescription) ?? _nonEmpty(ta.seDescription);
+  }
+
+  static String? _seNameOf(
+      TrialAssessment ta, ArmAssessmentMetadataData? aam) {
+    return _nonEmpty(aam?.seName) ?? _nonEmpty(ta.seName);
+  }
+
+  static String? _armRatingTypeOf(
+      TrialAssessment ta, ArmAssessmentMetadataData? aam) {
+    return _nonEmpty(aam?.ratingType) ?? _nonEmpty(ta.armRatingType);
+  }
+
+  static String? _pestCodeOf(
+      TrialAssessment ta, ArmAssessmentMetadataData? aam) {
+    return _nonEmpty(aam?.pestCode) ?? _nonEmpty(ta.pestCode);
   }
 
   /// Translates ARM rating-type codes to user-friendly labels.

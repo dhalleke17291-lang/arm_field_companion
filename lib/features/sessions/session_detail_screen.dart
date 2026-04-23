@@ -1092,6 +1092,10 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       final lid = ta.legacyAssessmentId;
       if (lid != null) taByLegacy[lid] = ta;
     }
+    final aamMap = ref
+            .watch(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        const <int, ArmAssessmentMetadataData>{};
     final scheme = Theme.of(context).colorScheme;
     final ratedCount = ratings.map((r) => r.plotPk).toSet().length;
     final treatmentMap = {for (final t in treatments) t.id: t};
@@ -1166,7 +1170,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 final a = assessments[index];
                 final ta = taByLegacy[a.id];
                 final chipLabel = ta != null
-                    ? AssessmentDisplayHelper.compactName(ta)
+                    ? AssessmentDisplayHelper.compactName(ta,
+                        aam: aamMap[ta.id])
                     : AssessmentDisplayHelper.legacyAssessmentDisplayName(a.name);
                 return Padding(
                   padding:
@@ -1288,7 +1293,8 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                               ? taByLegacy[assessment.id]
                               : null;
                           final ratingTitle = ta != null
-                              ? AssessmentDisplayHelper.compactName(ta)
+                              ? AssessmentDisplayHelper.compactName(ta,
+                                  aam: aamMap[ta.id])
                               : (assessment != null
                                   ? AssessmentDisplayHelper
                                       .legacyAssessmentDisplayName(

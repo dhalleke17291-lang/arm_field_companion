@@ -1895,10 +1895,21 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     );
   }
 
+  /// Unit 5c: per-column ARM duplicate fields live on
+  /// [ArmAssessmentMetadata]. Load the map once per frame; helpers prefer
+  /// AAM and fall back to the [TrialAssessment] columns.
+  Map<int, ArmAssessmentMetadataData> _aamMap() {
+    return ref
+            .watch(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        const <int, ArmAssessmentMetadataData>{};
+  }
+
   String? _shellDescriptionForCurrentAssessment(
       Map<int, TrialAssessment> taByLegacy, Map<int, TrialAssessment> taById) {
     final ta = _resolveTrialAssessment(_currentAssessment, taByLegacy, taById);
-    return ta != null ? AssessmentDisplayHelper.description(ta) : null;
+    if (ta == null) return null;
+    return AssessmentDisplayHelper.description(ta, aam: _aamMap()[ta.id]);
   }
 
   /// Resolves a legacy [Assessment] bridge row to its [TrialAssessment].
@@ -1918,15 +1929,21 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       final taId = int.tryParse(match.group(1)!);
       if (taId != null && taById.containsKey(taId)) return taById[taId];
     }
-    // 3) Fuzzy match: compare stripped assessment name against TrialAssessment
-    //    display name or seDescription.
+    // 3) Fuzzy match: compare stripped assessment name against
+    //    displayNameOverride or AAM/TA seDescription (AAM-first per
+    //    Unit 5c, falling back to the legacy TrialAssessment column).
     final stripped = _assessmentPillLabel(assessment).toLowerCase().trim();
     if (stripped.isNotEmpty) {
+      final aamMap = _aamMap();
       for (final candidate in taById.values) {
-        final cName =
-            (candidate.displayNameOverride ?? candidate.seDescription ?? '')
-                .toLowerCase()
-                .trim();
+        final aamDesc = aamMap[candidate.id]?.seDescription?.trim();
+        final taDesc = candidate.seDescription?.trim();
+        final effectiveDesc = (aamDesc != null && aamDesc.isNotEmpty)
+            ? aamDesc
+            : (taDesc != null && taDesc.isNotEmpty ? taDesc : null);
+        final cName = (candidate.displayNameOverride ?? effectiveDesc ?? '')
+            .toLowerCase()
+            .trim();
         if (cName.isNotEmpty && cName == stripped) return candidate;
       }
     }
@@ -1941,7 +1958,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     // Pass the legacy bridge name as the fallback so shell-less assessments
     // show their definition name (e.g. "Weed Control") instead of the generic
     // "Assessment {id}" default.
-    return AssessmentDisplayHelper.compactName(ta, fallback: bridgeName);
+    return AssessmentDisplayHelper.compactName(
+      ta,
+      fallback: bridgeName,
+      aam: _aamMap()[ta.id],
+    );
   }
 
   String _ratingAssessmentChipLabel(Assessment assessment,
@@ -1949,7 +1970,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final bridgeName = _assessmentPillLabel(assessment);
     final ta = _resolveTrialAssessment(assessment, taByLegacy, taById);
     if (ta == null) return bridgeName;
-    return AssessmentDisplayHelper.compactName(ta, fallback: bridgeName);
+    return AssessmentDisplayHelper.compactName(
+      ta,
+      fallback: bridgeName,
+      aam: _aamMap()[ta.id],
+    );
   }
 
   Widget _buildAssessmentSelector(

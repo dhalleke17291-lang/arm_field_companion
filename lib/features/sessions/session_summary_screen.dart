@@ -872,13 +872,19 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
     final trialAssessments = ref
         .watch(trialAssessmentsForTrialProvider(widget.trial.id))
         .valueOrNull;
+    final aamMap = ref
+            .watch(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        const <int, ArmAssessmentMetadataData>{};
     final assessmentDisplayNames = <int, String>{};
     if (trialAssessments != null) {
       for (final ta in trialAssessments) {
         final lid = ta.legacyAssessmentId;
         if (lid != null) {
-          assessmentDisplayNames[lid] =
-              AssessmentDisplayHelper.compactName(ta);
+          assessmentDisplayNames[lid] = AssessmentDisplayHelper.compactName(
+            ta,
+            aam: aamMap[ta.id],
+          );
         }
       }
     }

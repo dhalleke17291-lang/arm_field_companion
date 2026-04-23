@@ -123,6 +123,10 @@ class _PlotRatingHistoryList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final aamMap = ref
+            .watch(armAssessmentMetadataMapForTrialProvider(trial.id))
+            .valueOrNull ??
+        const <int, ArmAssessmentMetadataData>{};
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       sliver: SliverList(
@@ -138,7 +142,8 @@ class _PlotRatingHistoryList extends ConsumerWidget {
                 ? taByLegacyAssessmentId[assessment.id]
                 : null;
             final historyTitle = ta != null
-                ? AssessmentDisplayHelper.minimalName(ta)
+                ? AssessmentDisplayHelper.minimalName(ta,
+                    aam: aamMap[ta.id])
                 : (assessment?.name ?? 'Assessment');
             return Consumer(
               builder: (context, cRef, _) {
@@ -656,6 +661,10 @@ class PlotDetailScreen extends ConsumerWidget {
       final lid = ta.legacyAssessmentId;
       if (lid != null) taByLegacy[lid] = ta;
     }
+    final aamMap = ref
+            .watch(armAssessmentMetadataMapForTrialProvider(trial.id))
+            .valueOrNull ??
+        const <int, ArmAssessmentMetadataData>{};
     final plotContextAsync = ref.watch(plotContextProvider(plot.id));
     final notesAsync = ref.watch(notesForTrialProvider(trial.id));
     final plots = ref.watch(plotsForTrialProvider(trial.id)).value ?? [];
@@ -1022,7 +1031,10 @@ class PlotDetailScreen extends ConsumerWidget {
                               ? taByLegacy[assessment.id]
                               : null;
                           final lineageName = ta != null
-                              ? AssessmentDisplayHelper.minimalName(ta)
+                              ? AssessmentDisplayHelper.minimalName(
+                                  ta,
+                                  aam: aamMap[ta.id],
+                                )
                               : (assessment?.name ?? 'Assessment');
                           showRatingLineageBottomSheet(
                             context: context,

@@ -13,9 +13,15 @@ import '../../assessments/assessment_library_picker.dart';
 import '../../../core/protocol_edit_blocked_exception.dart';
 
 /// Normalized display names already on the trial (library + unlinked legacy).
+///
+/// Unit 5c: pass the [aamByTaId] map so [AssessmentDisplayHelper.compactName]
+/// can read the per-column ARM duplicate fields (seDescription / seName) from
+/// [ArmAssessmentMetadata] first and keep the TA columns only as fallback.
 Set<String> _existingTrialAssessmentNamesNormalized({
   required List<(TrialAssessment, AssessmentDefinition)> pairs,
   required List<Assessment> legacy,
+  Map<int, ArmAssessmentMetadataData> aamByTaId =
+      const <int, ArmAssessmentMetadataData>{},
 }) {
   final linkedLegacyIds = pairs
       .map((e) => e.$1.legacyAssessmentId)
@@ -24,7 +30,11 @@ Set<String> _existingTrialAssessmentNamesNormalized({
   final out = <String>{};
   for (final p in pairs) {
     out.add(
-      AssessmentDisplayHelper.compactName(p.$1, def: p.$2).trim().toLowerCase(),
+      AssessmentDisplayHelper.compactName(
+        p.$1,
+        def: p.$2,
+        aam: aamByTaId[p.$1.id],
+      ).trim().toLowerCase(),
     );
   }
   for (final a in legacy) {
@@ -42,10 +52,13 @@ Future<Set<String>> _loadExistingTrialAssessmentNamesNormalizedForTrial(
   int trialId, {
   required Future<List<(TrialAssessment, AssessmentDefinition)>> pairsFuture,
   required Future<List<Assessment>> legacyFuture,
+  Future<Map<int, ArmAssessmentMetadataData>>? aamMapFuture,
 }) async {
   return _existingTrialAssessmentNamesNormalized(
     pairs: await pairsFuture,
     legacy: await legacyFuture,
+    aamByTaId:
+        aamMapFuture == null ? const {} : await aamMapFuture,
   );
 }
 
@@ -163,6 +176,9 @@ class _AddCustomAssessmentSheetBodyState
       ),
       legacyFuture:
           ref.read(assessmentsForTrialProvider(widget.trial.id).future),
+      aamMapFuture: ref.read(
+        armAssessmentMetadataMapForTrialProvider(widget.trial.id).future,
+      ),
     );
     if (existing.contains(name.toLowerCase()) && mounted) {
       final proceed = await showDialog<bool>(
@@ -271,6 +287,9 @@ class _AddCustomAssessmentSheetBodyState
                 ),
                 legacyFuture:
                     container.read(assessmentsForTrialProvider(trialId).future),
+                aamMapFuture: container.read(
+                  armAssessmentMetadataMapForTrialProvider(trialId).future,
+                ),
               );
               final dupLabels = picks
                   .map((e) => e.name.trim())

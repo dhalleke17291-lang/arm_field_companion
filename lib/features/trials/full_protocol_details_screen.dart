@@ -117,8 +117,11 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
                             children: [
                               Expanded(
                                 child: Text(
-                                  AssessmentDisplayHelper.fullName(ta,
-                                      def: def),
+                                  AssessmentDisplayHelper.fullName(
+                                    ta,
+                                    def: def,
+                                    aam: aamMap[ta.id],
+                                  ),
                                   style: const TextStyle(
                                       fontSize: 14,
                                       color: AppDesignTokens.primaryText),
