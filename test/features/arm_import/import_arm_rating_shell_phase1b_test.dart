@@ -162,7 +162,9 @@ void main() {
     final sessionMetas = await db.select(db.armSessionMetadata).get();
     expect(sessionMetas, hasLength(3));
     final dates = sessionMetas.map((m) => m.armRatingDate).toSet();
-    expect(dates, {'2-Apr-26', '23-Apr-26', '14-May-26'});
+    expect(dates, {'2026-04-02', '2026-04-23', '2026-05-14'},
+        reason: 'shell d-Mmm-yy dates normalize to yyyy-MM-dd on sessions '
+            'and arm_session_metadata');
 
     // arm_column_mappings: one row per shell column, all pointing at the
     // same trial_assessment and at distinct sessions.
@@ -246,7 +248,7 @@ void main() {
           ..where((s) => s.trialId.equals(trialId))
           ..orderBy([(s) => OrderingTerm.asc(s.sessionDateLocal)]))
         .get();
-    final earlySession = sessions.first; // 2-Apr-26
+    final earlySession = sessions.first; // canonical 2026-04-02
     await (db.update(db.sessions)..where((s) => s.id.equals(earlySession.id)))
         .write(const SessionsCompanion(
       status: Value(kSessionStatusOpen),
@@ -307,5 +309,45 @@ void main() {
             'points at the rated session');
     expect(_cellText(sheet, 48, 3), '',
         reason: 'sibling column for the other date must stay empty');
+  });
+
+  test(
+      'Phase 1 Plot Data: persists descriptor rows on AAM and session rater',
+      () async {
+    final shellPath = await writeArmShellFixture(
+      tempDir.path,
+      plotNumbers: const [101],
+      armColumnIds: const ['3'],
+      seNames: const ['W003'],
+      pestCodesFromSheet: const ['PCODE99'],
+      ratingDates: const ['1-Jul-26'],
+      ratingTypes: const ['CONTRO'],
+      ratingTimings: const ['A9'],
+      plotDataSizeUnit: 'SU',
+      plotDataCollectBasis: 'CB',
+      plotDataAssessedBy: 'J.S.',
+    );
+
+    final result = await makeImporter().execute(shellPath);
+    expect(result.success, isTrue, reason: result.errorMessage);
+
+    final aam = await db.select(db.armAssessmentMetadata).getSingle();
+    expect(aam.pestCode, 'PCODE99',
+        reason: '003EPT row wins over SE Name for AAM.pestCode');
+    expect(aam.collectBasis, 'CB');
+    expect(aam.shellSizeUnit, 'SU');
+    expect(aam.shellAssessedBy, 'J.S.');
+    expect(aam.shellAppTimingCode, 'A9');
+
+    final session = await db.select(db.sessions).getSingle();
+    expect(session.sessionDateLocal, '2026-07-01');
+    expect(session.raterName, 'J.S.');
+    expect(session.startedAt.toUtc(),
+        DateTime.utc(2026, 7, 1),
+        reason: 'parsed shell dates set startedAt to UTC midnight');
+
+    final asm = await db.select(db.armSessionMetadata).getSingle();
+    expect(asm.armRatingDate, '2026-07-01');
+    expect(asm.raterInitials, 'J.S.');
   });
 }

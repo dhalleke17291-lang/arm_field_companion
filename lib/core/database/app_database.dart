@@ -1025,6 +1025,47 @@ class ArmAssessmentMetadata extends Table {
   /// any trailing markers; paired with [ArmSessionMetadata.armRatingDate].
   TextColumn get armShellRatingDate => text().nullable()();
 
+  // ── Phase 1 Plot Data: descriptor rows 8–46 (0-based) / Excel 9–47 ──
+  // Verbatim strings for round-trip; see [ArmColumnMap] and
+  // test/fixtures/arm_shells/README.md.
+
+  TextColumn get shellPestType => text().nullable()();
+  TextColumn get shellPestName => text().nullable()();
+  TextColumn get shellCropCode => text().nullable()();
+  TextColumn get shellCropName => text().nullable()();
+  TextColumn get shellCropVariety => text().nullable()();
+  TextColumn get shellRatingTime => text().nullable()();
+  TextColumn get shellCropOrPest => text().nullable()();
+  TextColumn get shellSampleSize => text().nullable()();
+  TextColumn get shellSizeUnit => text().nullable()();
+  TextColumn get shellCollectionBasisUnit => text().nullable()();
+  TextColumn get shellReportingBasis => text().nullable()();
+  TextColumn get shellReportingBasisUnit => text().nullable()();
+  TextColumn get shellStageScale => text().nullable()();
+  TextColumn get shellCropStageMaj => text().nullable()();
+  TextColumn get shellCropStageMin => text().nullable()();
+  TextColumn get shellCropStageMax => text().nullable()();
+  TextColumn get shellCropDensity => text().nullable()();
+  TextColumn get shellCropDensityUnit => text().nullable()();
+  TextColumn get shellPestStageMaj => text().nullable()();
+  TextColumn get shellPestStageMin => text().nullable()();
+  TextColumn get shellPestStageMax => text().nullable()();
+  TextColumn get shellPestDensity => text().nullable()();
+  TextColumn get shellPestDensityUnit => text().nullable()();
+  TextColumn get shellAssessedBy => text().nullable()();
+  TextColumn get shellEquipment => text().nullable()();
+  TextColumn get shellUntreatedRatingType => text().nullable()();
+  TextColumn get shellArmActions => text().nullable()();
+
+  /// Row 41 (0-based) — ARM `035EET` Rating / App timing code (A1, A3, AA).
+  TextColumn get shellAppTimingCode => text().nullable()();
+
+  /// Row 42 (0-based) — ARM `036ETI` treatment-evaluation interval.
+  TextColumn get shellTrtEvalInterval => text().nullable()();
+
+  /// Row 43 (0-based) — ARM `037EPI` plant-evaluation / DAT interval.
+  TextColumn get shellPlantEvalInterval => text().nullable()();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -1159,7 +1200,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 63;
+  int get schemaVersion => 65;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -2345,6 +2386,143 @@ WHERE pest_code IS NULL
                   WHERE x.treatment_id = t.id
                 )
             ''');
+          }
+
+          if (from < 64) {
+            // ── Phase 1: full Plot Data descriptor capture on AAM (rows 8–46).
+            final aamCols64 = await customSelect(
+              "SELECT name FROM pragma_table_info('arm_assessment_metadata')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+
+            if (!aamCols64.contains('shell_pest_type')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellPestType);
+            }
+            if (!aamCols64.contains('shell_pest_name')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellPestName);
+            }
+            if (!aamCols64.contains('shell_crop_code')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellCropCode);
+            }
+            if (!aamCols64.contains('shell_crop_name')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellCropName);
+            }
+            if (!aamCols64.contains('shell_crop_variety')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellCropVariety);
+            }
+            if (!aamCols64.contains('shell_rating_time')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellRatingTime);
+            }
+            if (!aamCols64.contains('shell_crop_or_pest')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellCropOrPest);
+            }
+            if (!aamCols64.contains('shell_sample_size')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellSampleSize);
+            }
+            if (!aamCols64.contains('shell_size_unit')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellSizeUnit);
+            }
+            if (!aamCols64.contains('shell_collection_basis_unit')) {
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellCollectionBasisUnit);
+            }
+            if (!aamCols64.contains('shell_reporting_basis')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellReportingBasis);
+            }
+            if (!aamCols64.contains('shell_reporting_basis_unit')) {
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellReportingBasisUnit);
+            }
+            if (!aamCols64.contains('shell_stage_scale')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellStageScale);
+            }
+            if (!aamCols64.contains('shell_crop_stage_maj')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellCropStageMaj);
+            }
+            if (!aamCols64.contains('shell_crop_stage_min')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellCropStageMin);
+            }
+            if (!aamCols64.contains('shell_crop_stage_max')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellCropStageMax);
+            }
+            if (!aamCols64.contains('shell_crop_density')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellCropDensity);
+            }
+            if (!aamCols64.contains('shell_crop_density_unit')) {
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellCropDensityUnit);
+            }
+            if (!aamCols64.contains('shell_pest_stage_maj')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellPestStageMaj);
+            }
+            if (!aamCols64.contains('shell_pest_stage_min')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellPestStageMin);
+            }
+            if (!aamCols64.contains('shell_pest_stage_max')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellPestStageMax);
+            }
+            if (!aamCols64.contains('shell_pest_density')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellPestDensity);
+            }
+            if (!aamCols64.contains('shell_pest_density_unit')) {
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellPestDensityUnit);
+            }
+            if (!aamCols64.contains('shell_assessed_by')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellAssessedBy);
+            }
+            if (!aamCols64.contains('shell_equipment')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellEquipment);
+            }
+            if (!aamCols64.contains('shell_untreated_rating_type')) {
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellUntreatedRatingType);
+            }
+            if (!aamCols64.contains('shell_arm_actions')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.shellArmActions);
+            }
+          }
+
+          if (from < 65) {
+            // ── Phase 1: timing + interval descriptor rows on AAM (Plot Data
+            //    rows 42–44, 0-based 41–43) for round-trip + Protocol tab.
+            final aamCols65 = await customSelect(
+              "SELECT name FROM pragma_table_info('arm_assessment_metadata')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+
+            if (!aamCols65.contains('shell_app_timing_code')) {
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellAppTimingCode);
+            }
+            if (!aamCols65.contains('shell_trt_eval_interval')) {
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellTrtEvalInterval);
+            }
+            if (!aamCols65.contains('shell_plant_eval_interval')) {
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellPlantEvalInterval);
+            }
           }
 
           await _createIndexes();

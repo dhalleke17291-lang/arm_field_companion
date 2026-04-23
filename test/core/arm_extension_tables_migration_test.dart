@@ -557,4 +557,30 @@ void main() {
     expect(secondRows, hasLength(1),
         reason: 'Re-running v63 must not create a duplicate AAM row');
   });
+
+  test('v64: arm_assessment_metadata includes Phase 1 shell_* columns', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final pragma = await db.customSelect(
+      "SELECT name FROM pragma_table_info('arm_assessment_metadata')",
+    ).get();
+    final colNames = pragma.map((r) => r.read<String>('name')).toSet();
+    expect(colNames, contains('shell_pest_type'));
+    expect(colNames, contains('shell_size_unit'));
+    expect(colNames, contains('shell_assessed_by'));
+    expect(colNames, contains('shell_arm_actions'));
+  });
+
+  test('v65: arm_assessment_metadata includes timing / interval shell columns',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final pragma = await db.customSelect(
+      "SELECT name FROM pragma_table_info('arm_assessment_metadata')",
+    ).get();
+    final colNames = pragma.map((r) => r.read<String>('name')).toSet();
+    expect(colNames, contains('shell_app_timing_code'));
+    expect(colNames, contains('shell_trt_eval_interval'));
+    expect(colNames, contains('shell_plant_eval_interval'));
+  });
 }

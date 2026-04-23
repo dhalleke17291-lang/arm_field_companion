@@ -29821,6 +29821,186 @@ class $ArmAssessmentMetadataTable extends ArmAssessmentMetadata
   late final GeneratedColumn<String> armShellRatingDate =
       GeneratedColumn<String>('arm_shell_rating_date', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellPestTypeMeta =
+      const VerificationMeta('shellPestType');
+  @override
+  late final GeneratedColumn<String> shellPestType = GeneratedColumn<String>(
+      'shell_pest_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellPestNameMeta =
+      const VerificationMeta('shellPestName');
+  @override
+  late final GeneratedColumn<String> shellPestName = GeneratedColumn<String>(
+      'shell_pest_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellCropCodeMeta =
+      const VerificationMeta('shellCropCode');
+  @override
+  late final GeneratedColumn<String> shellCropCode = GeneratedColumn<String>(
+      'shell_crop_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellCropNameMeta =
+      const VerificationMeta('shellCropName');
+  @override
+  late final GeneratedColumn<String> shellCropName = GeneratedColumn<String>(
+      'shell_crop_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellCropVarietyMeta =
+      const VerificationMeta('shellCropVariety');
+  @override
+  late final GeneratedColumn<String> shellCropVariety = GeneratedColumn<String>(
+      'shell_crop_variety', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellRatingTimeMeta =
+      const VerificationMeta('shellRatingTime');
+  @override
+  late final GeneratedColumn<String> shellRatingTime = GeneratedColumn<String>(
+      'shell_rating_time', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellCropOrPestMeta =
+      const VerificationMeta('shellCropOrPest');
+  @override
+  late final GeneratedColumn<String> shellCropOrPest = GeneratedColumn<String>(
+      'shell_crop_or_pest', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellSampleSizeMeta =
+      const VerificationMeta('shellSampleSize');
+  @override
+  late final GeneratedColumn<String> shellSampleSize = GeneratedColumn<String>(
+      'shell_sample_size', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellSizeUnitMeta =
+      const VerificationMeta('shellSizeUnit');
+  @override
+  late final GeneratedColumn<String> shellSizeUnit = GeneratedColumn<String>(
+      'shell_size_unit', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellCollectionBasisUnitMeta =
+      const VerificationMeta('shellCollectionBasisUnit');
+  @override
+  late final GeneratedColumn<String> shellCollectionBasisUnit =
+      GeneratedColumn<String>('shell_collection_basis_unit', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellReportingBasisMeta =
+      const VerificationMeta('shellReportingBasis');
+  @override
+  late final GeneratedColumn<String> shellReportingBasis =
+      GeneratedColumn<String>('shell_reporting_basis', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellReportingBasisUnitMeta =
+      const VerificationMeta('shellReportingBasisUnit');
+  @override
+  late final GeneratedColumn<String> shellReportingBasisUnit =
+      GeneratedColumn<String>('shell_reporting_basis_unit', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellStageScaleMeta =
+      const VerificationMeta('shellStageScale');
+  @override
+  late final GeneratedColumn<String> shellStageScale = GeneratedColumn<String>(
+      'shell_stage_scale', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellCropStageMajMeta =
+      const VerificationMeta('shellCropStageMaj');
+  @override
+  late final GeneratedColumn<String> shellCropStageMaj =
+      GeneratedColumn<String>('shell_crop_stage_maj', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellCropStageMinMeta =
+      const VerificationMeta('shellCropStageMin');
+  @override
+  late final GeneratedColumn<String> shellCropStageMin =
+      GeneratedColumn<String>('shell_crop_stage_min', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellCropStageMaxMeta =
+      const VerificationMeta('shellCropStageMax');
+  @override
+  late final GeneratedColumn<String> shellCropStageMax =
+      GeneratedColumn<String>('shell_crop_stage_max', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellCropDensityMeta =
+      const VerificationMeta('shellCropDensity');
+  @override
+  late final GeneratedColumn<String> shellCropDensity = GeneratedColumn<String>(
+      'shell_crop_density', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellCropDensityUnitMeta =
+      const VerificationMeta('shellCropDensityUnit');
+  @override
+  late final GeneratedColumn<String> shellCropDensityUnit =
+      GeneratedColumn<String>('shell_crop_density_unit', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellPestStageMajMeta =
+      const VerificationMeta('shellPestStageMaj');
+  @override
+  late final GeneratedColumn<String> shellPestStageMaj =
+      GeneratedColumn<String>('shell_pest_stage_maj', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellPestStageMinMeta =
+      const VerificationMeta('shellPestStageMin');
+  @override
+  late final GeneratedColumn<String> shellPestStageMin =
+      GeneratedColumn<String>('shell_pest_stage_min', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellPestStageMaxMeta =
+      const VerificationMeta('shellPestStageMax');
+  @override
+  late final GeneratedColumn<String> shellPestStageMax =
+      GeneratedColumn<String>('shell_pest_stage_max', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellPestDensityMeta =
+      const VerificationMeta('shellPestDensity');
+  @override
+  late final GeneratedColumn<String> shellPestDensity = GeneratedColumn<String>(
+      'shell_pest_density', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellPestDensityUnitMeta =
+      const VerificationMeta('shellPestDensityUnit');
+  @override
+  late final GeneratedColumn<String> shellPestDensityUnit =
+      GeneratedColumn<String>('shell_pest_density_unit', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellAssessedByMeta =
+      const VerificationMeta('shellAssessedBy');
+  @override
+  late final GeneratedColumn<String> shellAssessedBy = GeneratedColumn<String>(
+      'shell_assessed_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellEquipmentMeta =
+      const VerificationMeta('shellEquipment');
+  @override
+  late final GeneratedColumn<String> shellEquipment = GeneratedColumn<String>(
+      'shell_equipment', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellUntreatedRatingTypeMeta =
+      const VerificationMeta('shellUntreatedRatingType');
+  @override
+  late final GeneratedColumn<String> shellUntreatedRatingType =
+      GeneratedColumn<String>('shell_untreated_rating_type', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellArmActionsMeta =
+      const VerificationMeta('shellArmActions');
+  @override
+  late final GeneratedColumn<String> shellArmActions = GeneratedColumn<String>(
+      'shell_arm_actions', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellAppTimingCodeMeta =
+      const VerificationMeta('shellAppTimingCode');
+  @override
+  late final GeneratedColumn<String> shellAppTimingCode =
+      GeneratedColumn<String>('shell_app_timing_code', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellTrtEvalIntervalMeta =
+      const VerificationMeta('shellTrtEvalInterval');
+  @override
+  late final GeneratedColumn<String> shellTrtEvalInterval =
+      GeneratedColumn<String>('shell_trt_eval_interval', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellPlantEvalIntervalMeta =
+      const VerificationMeta('shellPlantEvalInterval');
+  @override
+  late final GeneratedColumn<String> shellPlantEvalInterval =
+      GeneratedColumn<String>('shell_plant_eval_interval', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -29848,6 +30028,36 @@ class $ArmAssessmentMetadataTable extends ArmAssessmentMetadata
         armShellColumnId,
         armColumnIdInteger,
         armShellRatingDate,
+        shellPestType,
+        shellPestName,
+        shellCropCode,
+        shellCropName,
+        shellCropVariety,
+        shellRatingTime,
+        shellCropOrPest,
+        shellSampleSize,
+        shellSizeUnit,
+        shellCollectionBasisUnit,
+        shellReportingBasis,
+        shellReportingBasisUnit,
+        shellStageScale,
+        shellCropStageMaj,
+        shellCropStageMin,
+        shellCropStageMax,
+        shellCropDensity,
+        shellCropDensityUnit,
+        shellPestStageMaj,
+        shellPestStageMin,
+        shellPestStageMax,
+        shellPestDensity,
+        shellPestDensityUnit,
+        shellAssessedBy,
+        shellEquipment,
+        shellUntreatedRatingType,
+        shellArmActions,
+        shellAppTimingCode,
+        shellTrtEvalInterval,
+        shellPlantEvalInterval,
         createdAt
       ];
   @override
@@ -29952,6 +30162,189 @@ class $ArmAssessmentMetadataTable extends ArmAssessmentMetadata
           armShellRatingDate.isAcceptableOrUnknown(
               data['arm_shell_rating_date']!, _armShellRatingDateMeta));
     }
+    if (data.containsKey('shell_pest_type')) {
+      context.handle(
+          _shellPestTypeMeta,
+          shellPestType.isAcceptableOrUnknown(
+              data['shell_pest_type']!, _shellPestTypeMeta));
+    }
+    if (data.containsKey('shell_pest_name')) {
+      context.handle(
+          _shellPestNameMeta,
+          shellPestName.isAcceptableOrUnknown(
+              data['shell_pest_name']!, _shellPestNameMeta));
+    }
+    if (data.containsKey('shell_crop_code')) {
+      context.handle(
+          _shellCropCodeMeta,
+          shellCropCode.isAcceptableOrUnknown(
+              data['shell_crop_code']!, _shellCropCodeMeta));
+    }
+    if (data.containsKey('shell_crop_name')) {
+      context.handle(
+          _shellCropNameMeta,
+          shellCropName.isAcceptableOrUnknown(
+              data['shell_crop_name']!, _shellCropNameMeta));
+    }
+    if (data.containsKey('shell_crop_variety')) {
+      context.handle(
+          _shellCropVarietyMeta,
+          shellCropVariety.isAcceptableOrUnknown(
+              data['shell_crop_variety']!, _shellCropVarietyMeta));
+    }
+    if (data.containsKey('shell_rating_time')) {
+      context.handle(
+          _shellRatingTimeMeta,
+          shellRatingTime.isAcceptableOrUnknown(
+              data['shell_rating_time']!, _shellRatingTimeMeta));
+    }
+    if (data.containsKey('shell_crop_or_pest')) {
+      context.handle(
+          _shellCropOrPestMeta,
+          shellCropOrPest.isAcceptableOrUnknown(
+              data['shell_crop_or_pest']!, _shellCropOrPestMeta));
+    }
+    if (data.containsKey('shell_sample_size')) {
+      context.handle(
+          _shellSampleSizeMeta,
+          shellSampleSize.isAcceptableOrUnknown(
+              data['shell_sample_size']!, _shellSampleSizeMeta));
+    }
+    if (data.containsKey('shell_size_unit')) {
+      context.handle(
+          _shellSizeUnitMeta,
+          shellSizeUnit.isAcceptableOrUnknown(
+              data['shell_size_unit']!, _shellSizeUnitMeta));
+    }
+    if (data.containsKey('shell_collection_basis_unit')) {
+      context.handle(
+          _shellCollectionBasisUnitMeta,
+          shellCollectionBasisUnit.isAcceptableOrUnknown(
+              data['shell_collection_basis_unit']!,
+              _shellCollectionBasisUnitMeta));
+    }
+    if (data.containsKey('shell_reporting_basis')) {
+      context.handle(
+          _shellReportingBasisMeta,
+          shellReportingBasis.isAcceptableOrUnknown(
+              data['shell_reporting_basis']!, _shellReportingBasisMeta));
+    }
+    if (data.containsKey('shell_reporting_basis_unit')) {
+      context.handle(
+          _shellReportingBasisUnitMeta,
+          shellReportingBasisUnit.isAcceptableOrUnknown(
+              data['shell_reporting_basis_unit']!,
+              _shellReportingBasisUnitMeta));
+    }
+    if (data.containsKey('shell_stage_scale')) {
+      context.handle(
+          _shellStageScaleMeta,
+          shellStageScale.isAcceptableOrUnknown(
+              data['shell_stage_scale']!, _shellStageScaleMeta));
+    }
+    if (data.containsKey('shell_crop_stage_maj')) {
+      context.handle(
+          _shellCropStageMajMeta,
+          shellCropStageMaj.isAcceptableOrUnknown(
+              data['shell_crop_stage_maj']!, _shellCropStageMajMeta));
+    }
+    if (data.containsKey('shell_crop_stage_min')) {
+      context.handle(
+          _shellCropStageMinMeta,
+          shellCropStageMin.isAcceptableOrUnknown(
+              data['shell_crop_stage_min']!, _shellCropStageMinMeta));
+    }
+    if (data.containsKey('shell_crop_stage_max')) {
+      context.handle(
+          _shellCropStageMaxMeta,
+          shellCropStageMax.isAcceptableOrUnknown(
+              data['shell_crop_stage_max']!, _shellCropStageMaxMeta));
+    }
+    if (data.containsKey('shell_crop_density')) {
+      context.handle(
+          _shellCropDensityMeta,
+          shellCropDensity.isAcceptableOrUnknown(
+              data['shell_crop_density']!, _shellCropDensityMeta));
+    }
+    if (data.containsKey('shell_crop_density_unit')) {
+      context.handle(
+          _shellCropDensityUnitMeta,
+          shellCropDensityUnit.isAcceptableOrUnknown(
+              data['shell_crop_density_unit']!, _shellCropDensityUnitMeta));
+    }
+    if (data.containsKey('shell_pest_stage_maj')) {
+      context.handle(
+          _shellPestStageMajMeta,
+          shellPestStageMaj.isAcceptableOrUnknown(
+              data['shell_pest_stage_maj']!, _shellPestStageMajMeta));
+    }
+    if (data.containsKey('shell_pest_stage_min')) {
+      context.handle(
+          _shellPestStageMinMeta,
+          shellPestStageMin.isAcceptableOrUnknown(
+              data['shell_pest_stage_min']!, _shellPestStageMinMeta));
+    }
+    if (data.containsKey('shell_pest_stage_max')) {
+      context.handle(
+          _shellPestStageMaxMeta,
+          shellPestStageMax.isAcceptableOrUnknown(
+              data['shell_pest_stage_max']!, _shellPestStageMaxMeta));
+    }
+    if (data.containsKey('shell_pest_density')) {
+      context.handle(
+          _shellPestDensityMeta,
+          shellPestDensity.isAcceptableOrUnknown(
+              data['shell_pest_density']!, _shellPestDensityMeta));
+    }
+    if (data.containsKey('shell_pest_density_unit')) {
+      context.handle(
+          _shellPestDensityUnitMeta,
+          shellPestDensityUnit.isAcceptableOrUnknown(
+              data['shell_pest_density_unit']!, _shellPestDensityUnitMeta));
+    }
+    if (data.containsKey('shell_assessed_by')) {
+      context.handle(
+          _shellAssessedByMeta,
+          shellAssessedBy.isAcceptableOrUnknown(
+              data['shell_assessed_by']!, _shellAssessedByMeta));
+    }
+    if (data.containsKey('shell_equipment')) {
+      context.handle(
+          _shellEquipmentMeta,
+          shellEquipment.isAcceptableOrUnknown(
+              data['shell_equipment']!, _shellEquipmentMeta));
+    }
+    if (data.containsKey('shell_untreated_rating_type')) {
+      context.handle(
+          _shellUntreatedRatingTypeMeta,
+          shellUntreatedRatingType.isAcceptableOrUnknown(
+              data['shell_untreated_rating_type']!,
+              _shellUntreatedRatingTypeMeta));
+    }
+    if (data.containsKey('shell_arm_actions')) {
+      context.handle(
+          _shellArmActionsMeta,
+          shellArmActions.isAcceptableOrUnknown(
+              data['shell_arm_actions']!, _shellArmActionsMeta));
+    }
+    if (data.containsKey('shell_app_timing_code')) {
+      context.handle(
+          _shellAppTimingCodeMeta,
+          shellAppTimingCode.isAcceptableOrUnknown(
+              data['shell_app_timing_code']!, _shellAppTimingCodeMeta));
+    }
+    if (data.containsKey('shell_trt_eval_interval')) {
+      context.handle(
+          _shellTrtEvalIntervalMeta,
+          shellTrtEvalInterval.isAcceptableOrUnknown(
+              data['shell_trt_eval_interval']!, _shellTrtEvalIntervalMeta));
+    }
+    if (data.containsKey('shell_plant_eval_interval')) {
+      context.handle(
+          _shellPlantEvalIntervalMeta,
+          shellPlantEvalInterval.isAcceptableOrUnknown(
+              data['shell_plant_eval_interval']!, _shellPlantEvalIntervalMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -30000,6 +30393,73 @@ class $ArmAssessmentMetadataTable extends ArmAssessmentMetadata
           DriftSqlType.int, data['${effectivePrefix}arm_column_id_integer']),
       armShellRatingDate: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}arm_shell_rating_date']),
+      shellPestType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}shell_pest_type']),
+      shellPestName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}shell_pest_name']),
+      shellCropCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}shell_crop_code']),
+      shellCropName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}shell_crop_name']),
+      shellCropVariety: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_crop_variety']),
+      shellRatingTime: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_rating_time']),
+      shellCropOrPest: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_crop_or_pest']),
+      shellSampleSize: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_sample_size']),
+      shellSizeUnit: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}shell_size_unit']),
+      shellCollectionBasisUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}shell_collection_basis_unit']),
+      shellReportingBasis: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_reporting_basis']),
+      shellReportingBasisUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}shell_reporting_basis_unit']),
+      shellStageScale: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_stage_scale']),
+      shellCropStageMaj: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_crop_stage_maj']),
+      shellCropStageMin: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_crop_stage_min']),
+      shellCropStageMax: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_crop_stage_max']),
+      shellCropDensity: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_crop_density']),
+      shellCropDensityUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}shell_crop_density_unit']),
+      shellPestStageMaj: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_pest_stage_maj']),
+      shellPestStageMin: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_pest_stage_min']),
+      shellPestStageMax: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_pest_stage_max']),
+      shellPestDensity: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_pest_density']),
+      shellPestDensityUnit: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}shell_pest_density_unit']),
+      shellAssessedBy: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_assessed_by']),
+      shellEquipment: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}shell_equipment']),
+      shellUntreatedRatingType: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}shell_untreated_rating_type']),
+      shellArmActions: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_arm_actions']),
+      shellAppTimingCode: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_app_timing_code']),
+      shellTrtEvalInterval: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}shell_trt_eval_interval']),
+      shellPlantEvalInterval: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}shell_plant_eval_interval']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -30059,6 +30519,42 @@ class ArmAssessmentMetadataData extends DataClass
   /// Shell rating-date cell (row 15) as the raw display string, including
   /// any trailing markers; paired with [ArmSessionMetadata.armRatingDate].
   final String? armShellRatingDate;
+  final String? shellPestType;
+  final String? shellPestName;
+  final String? shellCropCode;
+  final String? shellCropName;
+  final String? shellCropVariety;
+  final String? shellRatingTime;
+  final String? shellCropOrPest;
+  final String? shellSampleSize;
+  final String? shellSizeUnit;
+  final String? shellCollectionBasisUnit;
+  final String? shellReportingBasis;
+  final String? shellReportingBasisUnit;
+  final String? shellStageScale;
+  final String? shellCropStageMaj;
+  final String? shellCropStageMin;
+  final String? shellCropStageMax;
+  final String? shellCropDensity;
+  final String? shellCropDensityUnit;
+  final String? shellPestStageMaj;
+  final String? shellPestStageMin;
+  final String? shellPestStageMax;
+  final String? shellPestDensity;
+  final String? shellPestDensityUnit;
+  final String? shellAssessedBy;
+  final String? shellEquipment;
+  final String? shellUntreatedRatingType;
+  final String? shellArmActions;
+
+  /// Row 41 (0-based) — ARM `035EET` Rating / App timing code (A1, A3, AA).
+  final String? shellAppTimingCode;
+
+  /// Row 42 (0-based) — ARM `036ETI` treatment-evaluation interval.
+  final String? shellTrtEvalInterval;
+
+  /// Row 43 (0-based) — ARM `037EPI` plant-evaluation / DAT interval.
+  final String? shellPlantEvalInterval;
   final DateTime createdAt;
   const ArmAssessmentMetadataData(
       {required this.id,
@@ -30078,6 +30574,36 @@ class ArmAssessmentMetadataData extends DataClass
       this.armShellColumnId,
       this.armColumnIdInteger,
       this.armShellRatingDate,
+      this.shellPestType,
+      this.shellPestName,
+      this.shellCropCode,
+      this.shellCropName,
+      this.shellCropVariety,
+      this.shellRatingTime,
+      this.shellCropOrPest,
+      this.shellSampleSize,
+      this.shellSizeUnit,
+      this.shellCollectionBasisUnit,
+      this.shellReportingBasis,
+      this.shellReportingBasisUnit,
+      this.shellStageScale,
+      this.shellCropStageMaj,
+      this.shellCropStageMin,
+      this.shellCropStageMax,
+      this.shellCropDensity,
+      this.shellCropDensityUnit,
+      this.shellPestStageMaj,
+      this.shellPestStageMin,
+      this.shellPestStageMax,
+      this.shellPestDensity,
+      this.shellPestDensityUnit,
+      this.shellAssessedBy,
+      this.shellEquipment,
+      this.shellUntreatedRatingType,
+      this.shellArmActions,
+      this.shellAppTimingCode,
+      this.shellTrtEvalInterval,
+      this.shellPlantEvalInterval,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -30128,6 +30654,100 @@ class ArmAssessmentMetadataData extends DataClass
     }
     if (!nullToAbsent || armShellRatingDate != null) {
       map['arm_shell_rating_date'] = Variable<String>(armShellRatingDate);
+    }
+    if (!nullToAbsent || shellPestType != null) {
+      map['shell_pest_type'] = Variable<String>(shellPestType);
+    }
+    if (!nullToAbsent || shellPestName != null) {
+      map['shell_pest_name'] = Variable<String>(shellPestName);
+    }
+    if (!nullToAbsent || shellCropCode != null) {
+      map['shell_crop_code'] = Variable<String>(shellCropCode);
+    }
+    if (!nullToAbsent || shellCropName != null) {
+      map['shell_crop_name'] = Variable<String>(shellCropName);
+    }
+    if (!nullToAbsent || shellCropVariety != null) {
+      map['shell_crop_variety'] = Variable<String>(shellCropVariety);
+    }
+    if (!nullToAbsent || shellRatingTime != null) {
+      map['shell_rating_time'] = Variable<String>(shellRatingTime);
+    }
+    if (!nullToAbsent || shellCropOrPest != null) {
+      map['shell_crop_or_pest'] = Variable<String>(shellCropOrPest);
+    }
+    if (!nullToAbsent || shellSampleSize != null) {
+      map['shell_sample_size'] = Variable<String>(shellSampleSize);
+    }
+    if (!nullToAbsent || shellSizeUnit != null) {
+      map['shell_size_unit'] = Variable<String>(shellSizeUnit);
+    }
+    if (!nullToAbsent || shellCollectionBasisUnit != null) {
+      map['shell_collection_basis_unit'] =
+          Variable<String>(shellCollectionBasisUnit);
+    }
+    if (!nullToAbsent || shellReportingBasis != null) {
+      map['shell_reporting_basis'] = Variable<String>(shellReportingBasis);
+    }
+    if (!nullToAbsent || shellReportingBasisUnit != null) {
+      map['shell_reporting_basis_unit'] =
+          Variable<String>(shellReportingBasisUnit);
+    }
+    if (!nullToAbsent || shellStageScale != null) {
+      map['shell_stage_scale'] = Variable<String>(shellStageScale);
+    }
+    if (!nullToAbsent || shellCropStageMaj != null) {
+      map['shell_crop_stage_maj'] = Variable<String>(shellCropStageMaj);
+    }
+    if (!nullToAbsent || shellCropStageMin != null) {
+      map['shell_crop_stage_min'] = Variable<String>(shellCropStageMin);
+    }
+    if (!nullToAbsent || shellCropStageMax != null) {
+      map['shell_crop_stage_max'] = Variable<String>(shellCropStageMax);
+    }
+    if (!nullToAbsent || shellCropDensity != null) {
+      map['shell_crop_density'] = Variable<String>(shellCropDensity);
+    }
+    if (!nullToAbsent || shellCropDensityUnit != null) {
+      map['shell_crop_density_unit'] = Variable<String>(shellCropDensityUnit);
+    }
+    if (!nullToAbsent || shellPestStageMaj != null) {
+      map['shell_pest_stage_maj'] = Variable<String>(shellPestStageMaj);
+    }
+    if (!nullToAbsent || shellPestStageMin != null) {
+      map['shell_pest_stage_min'] = Variable<String>(shellPestStageMin);
+    }
+    if (!nullToAbsent || shellPestStageMax != null) {
+      map['shell_pest_stage_max'] = Variable<String>(shellPestStageMax);
+    }
+    if (!nullToAbsent || shellPestDensity != null) {
+      map['shell_pest_density'] = Variable<String>(shellPestDensity);
+    }
+    if (!nullToAbsent || shellPestDensityUnit != null) {
+      map['shell_pest_density_unit'] = Variable<String>(shellPestDensityUnit);
+    }
+    if (!nullToAbsent || shellAssessedBy != null) {
+      map['shell_assessed_by'] = Variable<String>(shellAssessedBy);
+    }
+    if (!nullToAbsent || shellEquipment != null) {
+      map['shell_equipment'] = Variable<String>(shellEquipment);
+    }
+    if (!nullToAbsent || shellUntreatedRatingType != null) {
+      map['shell_untreated_rating_type'] =
+          Variable<String>(shellUntreatedRatingType);
+    }
+    if (!nullToAbsent || shellArmActions != null) {
+      map['shell_arm_actions'] = Variable<String>(shellArmActions);
+    }
+    if (!nullToAbsent || shellAppTimingCode != null) {
+      map['shell_app_timing_code'] = Variable<String>(shellAppTimingCode);
+    }
+    if (!nullToAbsent || shellTrtEvalInterval != null) {
+      map['shell_trt_eval_interval'] = Variable<String>(shellTrtEvalInterval);
+    }
+    if (!nullToAbsent || shellPlantEvalInterval != null) {
+      map['shell_plant_eval_interval'] =
+          Variable<String>(shellPlantEvalInterval);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -30181,6 +30801,96 @@ class ArmAssessmentMetadataData extends DataClass
       armShellRatingDate: armShellRatingDate == null && nullToAbsent
           ? const Value.absent()
           : Value(armShellRatingDate),
+      shellPestType: shellPestType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellPestType),
+      shellPestName: shellPestName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellPestName),
+      shellCropCode: shellCropCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellCropCode),
+      shellCropName: shellCropName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellCropName),
+      shellCropVariety: shellCropVariety == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellCropVariety),
+      shellRatingTime: shellRatingTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellRatingTime),
+      shellCropOrPest: shellCropOrPest == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellCropOrPest),
+      shellSampleSize: shellSampleSize == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellSampleSize),
+      shellSizeUnit: shellSizeUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellSizeUnit),
+      shellCollectionBasisUnit: shellCollectionBasisUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellCollectionBasisUnit),
+      shellReportingBasis: shellReportingBasis == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellReportingBasis),
+      shellReportingBasisUnit: shellReportingBasisUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellReportingBasisUnit),
+      shellStageScale: shellStageScale == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellStageScale),
+      shellCropStageMaj: shellCropStageMaj == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellCropStageMaj),
+      shellCropStageMin: shellCropStageMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellCropStageMin),
+      shellCropStageMax: shellCropStageMax == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellCropStageMax),
+      shellCropDensity: shellCropDensity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellCropDensity),
+      shellCropDensityUnit: shellCropDensityUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellCropDensityUnit),
+      shellPestStageMaj: shellPestStageMaj == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellPestStageMaj),
+      shellPestStageMin: shellPestStageMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellPestStageMin),
+      shellPestStageMax: shellPestStageMax == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellPestStageMax),
+      shellPestDensity: shellPestDensity == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellPestDensity),
+      shellPestDensityUnit: shellPestDensityUnit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellPestDensityUnit),
+      shellAssessedBy: shellAssessedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellAssessedBy),
+      shellEquipment: shellEquipment == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellEquipment),
+      shellUntreatedRatingType: shellUntreatedRatingType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellUntreatedRatingType),
+      shellArmActions: shellArmActions == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellArmActions),
+      shellAppTimingCode: shellAppTimingCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellAppTimingCode),
+      shellTrtEvalInterval: shellTrtEvalInterval == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellTrtEvalInterval),
+      shellPlantEvalInterval: shellPlantEvalInterval == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellPlantEvalInterval),
       createdAt: Value(createdAt),
     );
   }
@@ -30209,6 +30919,51 @@ class ArmAssessmentMetadataData extends DataClass
       armColumnIdInteger: serializer.fromJson<int?>(json['armColumnIdInteger']),
       armShellRatingDate:
           serializer.fromJson<String?>(json['armShellRatingDate']),
+      shellPestType: serializer.fromJson<String?>(json['shellPestType']),
+      shellPestName: serializer.fromJson<String?>(json['shellPestName']),
+      shellCropCode: serializer.fromJson<String?>(json['shellCropCode']),
+      shellCropName: serializer.fromJson<String?>(json['shellCropName']),
+      shellCropVariety: serializer.fromJson<String?>(json['shellCropVariety']),
+      shellRatingTime: serializer.fromJson<String?>(json['shellRatingTime']),
+      shellCropOrPest: serializer.fromJson<String?>(json['shellCropOrPest']),
+      shellSampleSize: serializer.fromJson<String?>(json['shellSampleSize']),
+      shellSizeUnit: serializer.fromJson<String?>(json['shellSizeUnit']),
+      shellCollectionBasisUnit:
+          serializer.fromJson<String?>(json['shellCollectionBasisUnit']),
+      shellReportingBasis:
+          serializer.fromJson<String?>(json['shellReportingBasis']),
+      shellReportingBasisUnit:
+          serializer.fromJson<String?>(json['shellReportingBasisUnit']),
+      shellStageScale: serializer.fromJson<String?>(json['shellStageScale']),
+      shellCropStageMaj:
+          serializer.fromJson<String?>(json['shellCropStageMaj']),
+      shellCropStageMin:
+          serializer.fromJson<String?>(json['shellCropStageMin']),
+      shellCropStageMax:
+          serializer.fromJson<String?>(json['shellCropStageMax']),
+      shellCropDensity: serializer.fromJson<String?>(json['shellCropDensity']),
+      shellCropDensityUnit:
+          serializer.fromJson<String?>(json['shellCropDensityUnit']),
+      shellPestStageMaj:
+          serializer.fromJson<String?>(json['shellPestStageMaj']),
+      shellPestStageMin:
+          serializer.fromJson<String?>(json['shellPestStageMin']),
+      shellPestStageMax:
+          serializer.fromJson<String?>(json['shellPestStageMax']),
+      shellPestDensity: serializer.fromJson<String?>(json['shellPestDensity']),
+      shellPestDensityUnit:
+          serializer.fromJson<String?>(json['shellPestDensityUnit']),
+      shellAssessedBy: serializer.fromJson<String?>(json['shellAssessedBy']),
+      shellEquipment: serializer.fromJson<String?>(json['shellEquipment']),
+      shellUntreatedRatingType:
+          serializer.fromJson<String?>(json['shellUntreatedRatingType']),
+      shellArmActions: serializer.fromJson<String?>(json['shellArmActions']),
+      shellAppTimingCode:
+          serializer.fromJson<String?>(json['shellAppTimingCode']),
+      shellTrtEvalInterval:
+          serializer.fromJson<String?>(json['shellTrtEvalInterval']),
+      shellPlantEvalInterval:
+          serializer.fromJson<String?>(json['shellPlantEvalInterval']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -30233,6 +30988,40 @@ class ArmAssessmentMetadataData extends DataClass
       'armShellColumnId': serializer.toJson<String?>(armShellColumnId),
       'armColumnIdInteger': serializer.toJson<int?>(armColumnIdInteger),
       'armShellRatingDate': serializer.toJson<String?>(armShellRatingDate),
+      'shellPestType': serializer.toJson<String?>(shellPestType),
+      'shellPestName': serializer.toJson<String?>(shellPestName),
+      'shellCropCode': serializer.toJson<String?>(shellCropCode),
+      'shellCropName': serializer.toJson<String?>(shellCropName),
+      'shellCropVariety': serializer.toJson<String?>(shellCropVariety),
+      'shellRatingTime': serializer.toJson<String?>(shellRatingTime),
+      'shellCropOrPest': serializer.toJson<String?>(shellCropOrPest),
+      'shellSampleSize': serializer.toJson<String?>(shellSampleSize),
+      'shellSizeUnit': serializer.toJson<String?>(shellSizeUnit),
+      'shellCollectionBasisUnit':
+          serializer.toJson<String?>(shellCollectionBasisUnit),
+      'shellReportingBasis': serializer.toJson<String?>(shellReportingBasis),
+      'shellReportingBasisUnit':
+          serializer.toJson<String?>(shellReportingBasisUnit),
+      'shellStageScale': serializer.toJson<String?>(shellStageScale),
+      'shellCropStageMaj': serializer.toJson<String?>(shellCropStageMaj),
+      'shellCropStageMin': serializer.toJson<String?>(shellCropStageMin),
+      'shellCropStageMax': serializer.toJson<String?>(shellCropStageMax),
+      'shellCropDensity': serializer.toJson<String?>(shellCropDensity),
+      'shellCropDensityUnit': serializer.toJson<String?>(shellCropDensityUnit),
+      'shellPestStageMaj': serializer.toJson<String?>(shellPestStageMaj),
+      'shellPestStageMin': serializer.toJson<String?>(shellPestStageMin),
+      'shellPestStageMax': serializer.toJson<String?>(shellPestStageMax),
+      'shellPestDensity': serializer.toJson<String?>(shellPestDensity),
+      'shellPestDensityUnit': serializer.toJson<String?>(shellPestDensityUnit),
+      'shellAssessedBy': serializer.toJson<String?>(shellAssessedBy),
+      'shellEquipment': serializer.toJson<String?>(shellEquipment),
+      'shellUntreatedRatingType':
+          serializer.toJson<String?>(shellUntreatedRatingType),
+      'shellArmActions': serializer.toJson<String?>(shellArmActions),
+      'shellAppTimingCode': serializer.toJson<String?>(shellAppTimingCode),
+      'shellTrtEvalInterval': serializer.toJson<String?>(shellTrtEvalInterval),
+      'shellPlantEvalInterval':
+          serializer.toJson<String?>(shellPlantEvalInterval),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -30255,6 +31044,36 @@ class ArmAssessmentMetadataData extends DataClass
           Value<String?> armShellColumnId = const Value.absent(),
           Value<int?> armColumnIdInteger = const Value.absent(),
           Value<String?> armShellRatingDate = const Value.absent(),
+          Value<String?> shellPestType = const Value.absent(),
+          Value<String?> shellPestName = const Value.absent(),
+          Value<String?> shellCropCode = const Value.absent(),
+          Value<String?> shellCropName = const Value.absent(),
+          Value<String?> shellCropVariety = const Value.absent(),
+          Value<String?> shellRatingTime = const Value.absent(),
+          Value<String?> shellCropOrPest = const Value.absent(),
+          Value<String?> shellSampleSize = const Value.absent(),
+          Value<String?> shellSizeUnit = const Value.absent(),
+          Value<String?> shellCollectionBasisUnit = const Value.absent(),
+          Value<String?> shellReportingBasis = const Value.absent(),
+          Value<String?> shellReportingBasisUnit = const Value.absent(),
+          Value<String?> shellStageScale = const Value.absent(),
+          Value<String?> shellCropStageMaj = const Value.absent(),
+          Value<String?> shellCropStageMin = const Value.absent(),
+          Value<String?> shellCropStageMax = const Value.absent(),
+          Value<String?> shellCropDensity = const Value.absent(),
+          Value<String?> shellCropDensityUnit = const Value.absent(),
+          Value<String?> shellPestStageMaj = const Value.absent(),
+          Value<String?> shellPestStageMin = const Value.absent(),
+          Value<String?> shellPestStageMax = const Value.absent(),
+          Value<String?> shellPestDensity = const Value.absent(),
+          Value<String?> shellPestDensityUnit = const Value.absent(),
+          Value<String?> shellAssessedBy = const Value.absent(),
+          Value<String?> shellEquipment = const Value.absent(),
+          Value<String?> shellUntreatedRatingType = const Value.absent(),
+          Value<String?> shellArmActions = const Value.absent(),
+          Value<String?> shellAppTimingCode = const Value.absent(),
+          Value<String?> shellTrtEvalInterval = const Value.absent(),
+          Value<String?> shellPlantEvalInterval = const Value.absent(),
           DateTime? createdAt}) =>
       ArmAssessmentMetadataData(
         id: id ?? this.id,
@@ -30287,6 +31106,90 @@ class ArmAssessmentMetadataData extends DataClass
         armShellRatingDate: armShellRatingDate.present
             ? armShellRatingDate.value
             : this.armShellRatingDate,
+        shellPestType:
+            shellPestType.present ? shellPestType.value : this.shellPestType,
+        shellPestName:
+            shellPestName.present ? shellPestName.value : this.shellPestName,
+        shellCropCode:
+            shellCropCode.present ? shellCropCode.value : this.shellCropCode,
+        shellCropName:
+            shellCropName.present ? shellCropName.value : this.shellCropName,
+        shellCropVariety: shellCropVariety.present
+            ? shellCropVariety.value
+            : this.shellCropVariety,
+        shellRatingTime: shellRatingTime.present
+            ? shellRatingTime.value
+            : this.shellRatingTime,
+        shellCropOrPest: shellCropOrPest.present
+            ? shellCropOrPest.value
+            : this.shellCropOrPest,
+        shellSampleSize: shellSampleSize.present
+            ? shellSampleSize.value
+            : this.shellSampleSize,
+        shellSizeUnit:
+            shellSizeUnit.present ? shellSizeUnit.value : this.shellSizeUnit,
+        shellCollectionBasisUnit: shellCollectionBasisUnit.present
+            ? shellCollectionBasisUnit.value
+            : this.shellCollectionBasisUnit,
+        shellReportingBasis: shellReportingBasis.present
+            ? shellReportingBasis.value
+            : this.shellReportingBasis,
+        shellReportingBasisUnit: shellReportingBasisUnit.present
+            ? shellReportingBasisUnit.value
+            : this.shellReportingBasisUnit,
+        shellStageScale: shellStageScale.present
+            ? shellStageScale.value
+            : this.shellStageScale,
+        shellCropStageMaj: shellCropStageMaj.present
+            ? shellCropStageMaj.value
+            : this.shellCropStageMaj,
+        shellCropStageMin: shellCropStageMin.present
+            ? shellCropStageMin.value
+            : this.shellCropStageMin,
+        shellCropStageMax: shellCropStageMax.present
+            ? shellCropStageMax.value
+            : this.shellCropStageMax,
+        shellCropDensity: shellCropDensity.present
+            ? shellCropDensity.value
+            : this.shellCropDensity,
+        shellCropDensityUnit: shellCropDensityUnit.present
+            ? shellCropDensityUnit.value
+            : this.shellCropDensityUnit,
+        shellPestStageMaj: shellPestStageMaj.present
+            ? shellPestStageMaj.value
+            : this.shellPestStageMaj,
+        shellPestStageMin: shellPestStageMin.present
+            ? shellPestStageMin.value
+            : this.shellPestStageMin,
+        shellPestStageMax: shellPestStageMax.present
+            ? shellPestStageMax.value
+            : this.shellPestStageMax,
+        shellPestDensity: shellPestDensity.present
+            ? shellPestDensity.value
+            : this.shellPestDensity,
+        shellPestDensityUnit: shellPestDensityUnit.present
+            ? shellPestDensityUnit.value
+            : this.shellPestDensityUnit,
+        shellAssessedBy: shellAssessedBy.present
+            ? shellAssessedBy.value
+            : this.shellAssessedBy,
+        shellEquipment:
+            shellEquipment.present ? shellEquipment.value : this.shellEquipment,
+        shellUntreatedRatingType: shellUntreatedRatingType.present
+            ? shellUntreatedRatingType.value
+            : this.shellUntreatedRatingType,
+        shellArmActions: shellArmActions.present
+            ? shellArmActions.value
+            : this.shellArmActions,
+        shellAppTimingCode: shellAppTimingCode.present
+            ? shellAppTimingCode.value
+            : this.shellAppTimingCode,
+        shellTrtEvalInterval: shellTrtEvalInterval.present
+            ? shellTrtEvalInterval.value
+            : this.shellTrtEvalInterval,
+        shellPlantEvalInterval: shellPlantEvalInterval.present
+            ? shellPlantEvalInterval.value
+            : this.shellPlantEvalInterval,
         createdAt: createdAt ?? this.createdAt,
       );
   ArmAssessmentMetadataData copyWithCompanion(
@@ -30329,6 +31232,96 @@ class ArmAssessmentMetadataData extends DataClass
       armShellRatingDate: data.armShellRatingDate.present
           ? data.armShellRatingDate.value
           : this.armShellRatingDate,
+      shellPestType: data.shellPestType.present
+          ? data.shellPestType.value
+          : this.shellPestType,
+      shellPestName: data.shellPestName.present
+          ? data.shellPestName.value
+          : this.shellPestName,
+      shellCropCode: data.shellCropCode.present
+          ? data.shellCropCode.value
+          : this.shellCropCode,
+      shellCropName: data.shellCropName.present
+          ? data.shellCropName.value
+          : this.shellCropName,
+      shellCropVariety: data.shellCropVariety.present
+          ? data.shellCropVariety.value
+          : this.shellCropVariety,
+      shellRatingTime: data.shellRatingTime.present
+          ? data.shellRatingTime.value
+          : this.shellRatingTime,
+      shellCropOrPest: data.shellCropOrPest.present
+          ? data.shellCropOrPest.value
+          : this.shellCropOrPest,
+      shellSampleSize: data.shellSampleSize.present
+          ? data.shellSampleSize.value
+          : this.shellSampleSize,
+      shellSizeUnit: data.shellSizeUnit.present
+          ? data.shellSizeUnit.value
+          : this.shellSizeUnit,
+      shellCollectionBasisUnit: data.shellCollectionBasisUnit.present
+          ? data.shellCollectionBasisUnit.value
+          : this.shellCollectionBasisUnit,
+      shellReportingBasis: data.shellReportingBasis.present
+          ? data.shellReportingBasis.value
+          : this.shellReportingBasis,
+      shellReportingBasisUnit: data.shellReportingBasisUnit.present
+          ? data.shellReportingBasisUnit.value
+          : this.shellReportingBasisUnit,
+      shellStageScale: data.shellStageScale.present
+          ? data.shellStageScale.value
+          : this.shellStageScale,
+      shellCropStageMaj: data.shellCropStageMaj.present
+          ? data.shellCropStageMaj.value
+          : this.shellCropStageMaj,
+      shellCropStageMin: data.shellCropStageMin.present
+          ? data.shellCropStageMin.value
+          : this.shellCropStageMin,
+      shellCropStageMax: data.shellCropStageMax.present
+          ? data.shellCropStageMax.value
+          : this.shellCropStageMax,
+      shellCropDensity: data.shellCropDensity.present
+          ? data.shellCropDensity.value
+          : this.shellCropDensity,
+      shellCropDensityUnit: data.shellCropDensityUnit.present
+          ? data.shellCropDensityUnit.value
+          : this.shellCropDensityUnit,
+      shellPestStageMaj: data.shellPestStageMaj.present
+          ? data.shellPestStageMaj.value
+          : this.shellPestStageMaj,
+      shellPestStageMin: data.shellPestStageMin.present
+          ? data.shellPestStageMin.value
+          : this.shellPestStageMin,
+      shellPestStageMax: data.shellPestStageMax.present
+          ? data.shellPestStageMax.value
+          : this.shellPestStageMax,
+      shellPestDensity: data.shellPestDensity.present
+          ? data.shellPestDensity.value
+          : this.shellPestDensity,
+      shellPestDensityUnit: data.shellPestDensityUnit.present
+          ? data.shellPestDensityUnit.value
+          : this.shellPestDensityUnit,
+      shellAssessedBy: data.shellAssessedBy.present
+          ? data.shellAssessedBy.value
+          : this.shellAssessedBy,
+      shellEquipment: data.shellEquipment.present
+          ? data.shellEquipment.value
+          : this.shellEquipment,
+      shellUntreatedRatingType: data.shellUntreatedRatingType.present
+          ? data.shellUntreatedRatingType.value
+          : this.shellUntreatedRatingType,
+      shellArmActions: data.shellArmActions.present
+          ? data.shellArmActions.value
+          : this.shellArmActions,
+      shellAppTimingCode: data.shellAppTimingCode.present
+          ? data.shellAppTimingCode.value
+          : this.shellAppTimingCode,
+      shellTrtEvalInterval: data.shellTrtEvalInterval.present
+          ? data.shellTrtEvalInterval.value
+          : this.shellTrtEvalInterval,
+      shellPlantEvalInterval: data.shellPlantEvalInterval.present
+          ? data.shellPlantEvalInterval.value
+          : this.shellPlantEvalInterval,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -30353,31 +31346,92 @@ class ArmAssessmentMetadataData extends DataClass
           ..write('armShellColumnId: $armShellColumnId, ')
           ..write('armColumnIdInteger: $armColumnIdInteger, ')
           ..write('armShellRatingDate: $armShellRatingDate, ')
+          ..write('shellPestType: $shellPestType, ')
+          ..write('shellPestName: $shellPestName, ')
+          ..write('shellCropCode: $shellCropCode, ')
+          ..write('shellCropName: $shellCropName, ')
+          ..write('shellCropVariety: $shellCropVariety, ')
+          ..write('shellRatingTime: $shellRatingTime, ')
+          ..write('shellCropOrPest: $shellCropOrPest, ')
+          ..write('shellSampleSize: $shellSampleSize, ')
+          ..write('shellSizeUnit: $shellSizeUnit, ')
+          ..write('shellCollectionBasisUnit: $shellCollectionBasisUnit, ')
+          ..write('shellReportingBasis: $shellReportingBasis, ')
+          ..write('shellReportingBasisUnit: $shellReportingBasisUnit, ')
+          ..write('shellStageScale: $shellStageScale, ')
+          ..write('shellCropStageMaj: $shellCropStageMaj, ')
+          ..write('shellCropStageMin: $shellCropStageMin, ')
+          ..write('shellCropStageMax: $shellCropStageMax, ')
+          ..write('shellCropDensity: $shellCropDensity, ')
+          ..write('shellCropDensityUnit: $shellCropDensityUnit, ')
+          ..write('shellPestStageMaj: $shellPestStageMaj, ')
+          ..write('shellPestStageMin: $shellPestStageMin, ')
+          ..write('shellPestStageMax: $shellPestStageMax, ')
+          ..write('shellPestDensity: $shellPestDensity, ')
+          ..write('shellPestDensityUnit: $shellPestDensityUnit, ')
+          ..write('shellAssessedBy: $shellAssessedBy, ')
+          ..write('shellEquipment: $shellEquipment, ')
+          ..write('shellUntreatedRatingType: $shellUntreatedRatingType, ')
+          ..write('shellArmActions: $shellArmActions, ')
+          ..write('shellAppTimingCode: $shellAppTimingCode, ')
+          ..write('shellTrtEvalInterval: $shellTrtEvalInterval, ')
+          ..write('shellPlantEvalInterval: $shellPlantEvalInterval, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      trialAssessmentId,
-      seName,
-      seDescription,
-      partRated,
-      ratingType,
-      ratingUnit,
-      ratingMin,
-      ratingMax,
-      collectBasis,
-      numSubsamples,
-      pestCode,
-      pestCodeSecondary,
-      armImportColumnIndex,
-      armShellColumnId,
-      armColumnIdInteger,
-      armShellRatingDate,
-      createdAt);
+  int get hashCode => Object.hashAll([
+        id,
+        trialAssessmentId,
+        seName,
+        seDescription,
+        partRated,
+        ratingType,
+        ratingUnit,
+        ratingMin,
+        ratingMax,
+        collectBasis,
+        numSubsamples,
+        pestCode,
+        pestCodeSecondary,
+        armImportColumnIndex,
+        armShellColumnId,
+        armColumnIdInteger,
+        armShellRatingDate,
+        shellPestType,
+        shellPestName,
+        shellCropCode,
+        shellCropName,
+        shellCropVariety,
+        shellRatingTime,
+        shellCropOrPest,
+        shellSampleSize,
+        shellSizeUnit,
+        shellCollectionBasisUnit,
+        shellReportingBasis,
+        shellReportingBasisUnit,
+        shellStageScale,
+        shellCropStageMaj,
+        shellCropStageMin,
+        shellCropStageMax,
+        shellCropDensity,
+        shellCropDensityUnit,
+        shellPestStageMaj,
+        shellPestStageMin,
+        shellPestStageMax,
+        shellPestDensity,
+        shellPestDensityUnit,
+        shellAssessedBy,
+        shellEquipment,
+        shellUntreatedRatingType,
+        shellArmActions,
+        shellAppTimingCode,
+        shellTrtEvalInterval,
+        shellPlantEvalInterval,
+        createdAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -30399,6 +31453,36 @@ class ArmAssessmentMetadataData extends DataClass
           other.armShellColumnId == this.armShellColumnId &&
           other.armColumnIdInteger == this.armColumnIdInteger &&
           other.armShellRatingDate == this.armShellRatingDate &&
+          other.shellPestType == this.shellPestType &&
+          other.shellPestName == this.shellPestName &&
+          other.shellCropCode == this.shellCropCode &&
+          other.shellCropName == this.shellCropName &&
+          other.shellCropVariety == this.shellCropVariety &&
+          other.shellRatingTime == this.shellRatingTime &&
+          other.shellCropOrPest == this.shellCropOrPest &&
+          other.shellSampleSize == this.shellSampleSize &&
+          other.shellSizeUnit == this.shellSizeUnit &&
+          other.shellCollectionBasisUnit == this.shellCollectionBasisUnit &&
+          other.shellReportingBasis == this.shellReportingBasis &&
+          other.shellReportingBasisUnit == this.shellReportingBasisUnit &&
+          other.shellStageScale == this.shellStageScale &&
+          other.shellCropStageMaj == this.shellCropStageMaj &&
+          other.shellCropStageMin == this.shellCropStageMin &&
+          other.shellCropStageMax == this.shellCropStageMax &&
+          other.shellCropDensity == this.shellCropDensity &&
+          other.shellCropDensityUnit == this.shellCropDensityUnit &&
+          other.shellPestStageMaj == this.shellPestStageMaj &&
+          other.shellPestStageMin == this.shellPestStageMin &&
+          other.shellPestStageMax == this.shellPestStageMax &&
+          other.shellPestDensity == this.shellPestDensity &&
+          other.shellPestDensityUnit == this.shellPestDensityUnit &&
+          other.shellAssessedBy == this.shellAssessedBy &&
+          other.shellEquipment == this.shellEquipment &&
+          other.shellUntreatedRatingType == this.shellUntreatedRatingType &&
+          other.shellArmActions == this.shellArmActions &&
+          other.shellAppTimingCode == this.shellAppTimingCode &&
+          other.shellTrtEvalInterval == this.shellTrtEvalInterval &&
+          other.shellPlantEvalInterval == this.shellPlantEvalInterval &&
           other.createdAt == this.createdAt);
 }
 
@@ -30421,6 +31505,36 @@ class ArmAssessmentMetadataCompanion
   final Value<String?> armShellColumnId;
   final Value<int?> armColumnIdInteger;
   final Value<String?> armShellRatingDate;
+  final Value<String?> shellPestType;
+  final Value<String?> shellPestName;
+  final Value<String?> shellCropCode;
+  final Value<String?> shellCropName;
+  final Value<String?> shellCropVariety;
+  final Value<String?> shellRatingTime;
+  final Value<String?> shellCropOrPest;
+  final Value<String?> shellSampleSize;
+  final Value<String?> shellSizeUnit;
+  final Value<String?> shellCollectionBasisUnit;
+  final Value<String?> shellReportingBasis;
+  final Value<String?> shellReportingBasisUnit;
+  final Value<String?> shellStageScale;
+  final Value<String?> shellCropStageMaj;
+  final Value<String?> shellCropStageMin;
+  final Value<String?> shellCropStageMax;
+  final Value<String?> shellCropDensity;
+  final Value<String?> shellCropDensityUnit;
+  final Value<String?> shellPestStageMaj;
+  final Value<String?> shellPestStageMin;
+  final Value<String?> shellPestStageMax;
+  final Value<String?> shellPestDensity;
+  final Value<String?> shellPestDensityUnit;
+  final Value<String?> shellAssessedBy;
+  final Value<String?> shellEquipment;
+  final Value<String?> shellUntreatedRatingType;
+  final Value<String?> shellArmActions;
+  final Value<String?> shellAppTimingCode;
+  final Value<String?> shellTrtEvalInterval;
+  final Value<String?> shellPlantEvalInterval;
   final Value<DateTime> createdAt;
   const ArmAssessmentMetadataCompanion({
     this.id = const Value.absent(),
@@ -30440,6 +31554,36 @@ class ArmAssessmentMetadataCompanion
     this.armShellColumnId = const Value.absent(),
     this.armColumnIdInteger = const Value.absent(),
     this.armShellRatingDate = const Value.absent(),
+    this.shellPestType = const Value.absent(),
+    this.shellPestName = const Value.absent(),
+    this.shellCropCode = const Value.absent(),
+    this.shellCropName = const Value.absent(),
+    this.shellCropVariety = const Value.absent(),
+    this.shellRatingTime = const Value.absent(),
+    this.shellCropOrPest = const Value.absent(),
+    this.shellSampleSize = const Value.absent(),
+    this.shellSizeUnit = const Value.absent(),
+    this.shellCollectionBasisUnit = const Value.absent(),
+    this.shellReportingBasis = const Value.absent(),
+    this.shellReportingBasisUnit = const Value.absent(),
+    this.shellStageScale = const Value.absent(),
+    this.shellCropStageMaj = const Value.absent(),
+    this.shellCropStageMin = const Value.absent(),
+    this.shellCropStageMax = const Value.absent(),
+    this.shellCropDensity = const Value.absent(),
+    this.shellCropDensityUnit = const Value.absent(),
+    this.shellPestStageMaj = const Value.absent(),
+    this.shellPestStageMin = const Value.absent(),
+    this.shellPestStageMax = const Value.absent(),
+    this.shellPestDensity = const Value.absent(),
+    this.shellPestDensityUnit = const Value.absent(),
+    this.shellAssessedBy = const Value.absent(),
+    this.shellEquipment = const Value.absent(),
+    this.shellUntreatedRatingType = const Value.absent(),
+    this.shellArmActions = const Value.absent(),
+    this.shellAppTimingCode = const Value.absent(),
+    this.shellTrtEvalInterval = const Value.absent(),
+    this.shellPlantEvalInterval = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   ArmAssessmentMetadataCompanion.insert({
@@ -30460,6 +31604,36 @@ class ArmAssessmentMetadataCompanion
     this.armShellColumnId = const Value.absent(),
     this.armColumnIdInteger = const Value.absent(),
     this.armShellRatingDate = const Value.absent(),
+    this.shellPestType = const Value.absent(),
+    this.shellPestName = const Value.absent(),
+    this.shellCropCode = const Value.absent(),
+    this.shellCropName = const Value.absent(),
+    this.shellCropVariety = const Value.absent(),
+    this.shellRatingTime = const Value.absent(),
+    this.shellCropOrPest = const Value.absent(),
+    this.shellSampleSize = const Value.absent(),
+    this.shellSizeUnit = const Value.absent(),
+    this.shellCollectionBasisUnit = const Value.absent(),
+    this.shellReportingBasis = const Value.absent(),
+    this.shellReportingBasisUnit = const Value.absent(),
+    this.shellStageScale = const Value.absent(),
+    this.shellCropStageMaj = const Value.absent(),
+    this.shellCropStageMin = const Value.absent(),
+    this.shellCropStageMax = const Value.absent(),
+    this.shellCropDensity = const Value.absent(),
+    this.shellCropDensityUnit = const Value.absent(),
+    this.shellPestStageMaj = const Value.absent(),
+    this.shellPestStageMin = const Value.absent(),
+    this.shellPestStageMax = const Value.absent(),
+    this.shellPestDensity = const Value.absent(),
+    this.shellPestDensityUnit = const Value.absent(),
+    this.shellAssessedBy = const Value.absent(),
+    this.shellEquipment = const Value.absent(),
+    this.shellUntreatedRatingType = const Value.absent(),
+    this.shellArmActions = const Value.absent(),
+    this.shellAppTimingCode = const Value.absent(),
+    this.shellTrtEvalInterval = const Value.absent(),
+    this.shellPlantEvalInterval = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : trialAssessmentId = Value(trialAssessmentId);
   static Insertable<ArmAssessmentMetadataData> custom({
@@ -30480,6 +31654,36 @@ class ArmAssessmentMetadataCompanion
     Expression<String>? armShellColumnId,
     Expression<int>? armColumnIdInteger,
     Expression<String>? armShellRatingDate,
+    Expression<String>? shellPestType,
+    Expression<String>? shellPestName,
+    Expression<String>? shellCropCode,
+    Expression<String>? shellCropName,
+    Expression<String>? shellCropVariety,
+    Expression<String>? shellRatingTime,
+    Expression<String>? shellCropOrPest,
+    Expression<String>? shellSampleSize,
+    Expression<String>? shellSizeUnit,
+    Expression<String>? shellCollectionBasisUnit,
+    Expression<String>? shellReportingBasis,
+    Expression<String>? shellReportingBasisUnit,
+    Expression<String>? shellStageScale,
+    Expression<String>? shellCropStageMaj,
+    Expression<String>? shellCropStageMin,
+    Expression<String>? shellCropStageMax,
+    Expression<String>? shellCropDensity,
+    Expression<String>? shellCropDensityUnit,
+    Expression<String>? shellPestStageMaj,
+    Expression<String>? shellPestStageMin,
+    Expression<String>? shellPestStageMax,
+    Expression<String>? shellPestDensity,
+    Expression<String>? shellPestDensityUnit,
+    Expression<String>? shellAssessedBy,
+    Expression<String>? shellEquipment,
+    Expression<String>? shellUntreatedRatingType,
+    Expression<String>? shellArmActions,
+    Expression<String>? shellAppTimingCode,
+    Expression<String>? shellTrtEvalInterval,
+    Expression<String>? shellPlantEvalInterval,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -30503,6 +31707,45 @@ class ArmAssessmentMetadataCompanion
         'arm_column_id_integer': armColumnIdInteger,
       if (armShellRatingDate != null)
         'arm_shell_rating_date': armShellRatingDate,
+      if (shellPestType != null) 'shell_pest_type': shellPestType,
+      if (shellPestName != null) 'shell_pest_name': shellPestName,
+      if (shellCropCode != null) 'shell_crop_code': shellCropCode,
+      if (shellCropName != null) 'shell_crop_name': shellCropName,
+      if (shellCropVariety != null) 'shell_crop_variety': shellCropVariety,
+      if (shellRatingTime != null) 'shell_rating_time': shellRatingTime,
+      if (shellCropOrPest != null) 'shell_crop_or_pest': shellCropOrPest,
+      if (shellSampleSize != null) 'shell_sample_size': shellSampleSize,
+      if (shellSizeUnit != null) 'shell_size_unit': shellSizeUnit,
+      if (shellCollectionBasisUnit != null)
+        'shell_collection_basis_unit': shellCollectionBasisUnit,
+      if (shellReportingBasis != null)
+        'shell_reporting_basis': shellReportingBasis,
+      if (shellReportingBasisUnit != null)
+        'shell_reporting_basis_unit': shellReportingBasisUnit,
+      if (shellStageScale != null) 'shell_stage_scale': shellStageScale,
+      if (shellCropStageMaj != null) 'shell_crop_stage_maj': shellCropStageMaj,
+      if (shellCropStageMin != null) 'shell_crop_stage_min': shellCropStageMin,
+      if (shellCropStageMax != null) 'shell_crop_stage_max': shellCropStageMax,
+      if (shellCropDensity != null) 'shell_crop_density': shellCropDensity,
+      if (shellCropDensityUnit != null)
+        'shell_crop_density_unit': shellCropDensityUnit,
+      if (shellPestStageMaj != null) 'shell_pest_stage_maj': shellPestStageMaj,
+      if (shellPestStageMin != null) 'shell_pest_stage_min': shellPestStageMin,
+      if (shellPestStageMax != null) 'shell_pest_stage_max': shellPestStageMax,
+      if (shellPestDensity != null) 'shell_pest_density': shellPestDensity,
+      if (shellPestDensityUnit != null)
+        'shell_pest_density_unit': shellPestDensityUnit,
+      if (shellAssessedBy != null) 'shell_assessed_by': shellAssessedBy,
+      if (shellEquipment != null) 'shell_equipment': shellEquipment,
+      if (shellUntreatedRatingType != null)
+        'shell_untreated_rating_type': shellUntreatedRatingType,
+      if (shellArmActions != null) 'shell_arm_actions': shellArmActions,
+      if (shellAppTimingCode != null)
+        'shell_app_timing_code': shellAppTimingCode,
+      if (shellTrtEvalInterval != null)
+        'shell_trt_eval_interval': shellTrtEvalInterval,
+      if (shellPlantEvalInterval != null)
+        'shell_plant_eval_interval': shellPlantEvalInterval,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -30525,6 +31768,36 @@ class ArmAssessmentMetadataCompanion
       Value<String?>? armShellColumnId,
       Value<int?>? armColumnIdInteger,
       Value<String?>? armShellRatingDate,
+      Value<String?>? shellPestType,
+      Value<String?>? shellPestName,
+      Value<String?>? shellCropCode,
+      Value<String?>? shellCropName,
+      Value<String?>? shellCropVariety,
+      Value<String?>? shellRatingTime,
+      Value<String?>? shellCropOrPest,
+      Value<String?>? shellSampleSize,
+      Value<String?>? shellSizeUnit,
+      Value<String?>? shellCollectionBasisUnit,
+      Value<String?>? shellReportingBasis,
+      Value<String?>? shellReportingBasisUnit,
+      Value<String?>? shellStageScale,
+      Value<String?>? shellCropStageMaj,
+      Value<String?>? shellCropStageMin,
+      Value<String?>? shellCropStageMax,
+      Value<String?>? shellCropDensity,
+      Value<String?>? shellCropDensityUnit,
+      Value<String?>? shellPestStageMaj,
+      Value<String?>? shellPestStageMin,
+      Value<String?>? shellPestStageMax,
+      Value<String?>? shellPestDensity,
+      Value<String?>? shellPestDensityUnit,
+      Value<String?>? shellAssessedBy,
+      Value<String?>? shellEquipment,
+      Value<String?>? shellUntreatedRatingType,
+      Value<String?>? shellArmActions,
+      Value<String?>? shellAppTimingCode,
+      Value<String?>? shellTrtEvalInterval,
+      Value<String?>? shellPlantEvalInterval,
       Value<DateTime>? createdAt}) {
     return ArmAssessmentMetadataCompanion(
       id: id ?? this.id,
@@ -30544,6 +31817,40 @@ class ArmAssessmentMetadataCompanion
       armShellColumnId: armShellColumnId ?? this.armShellColumnId,
       armColumnIdInteger: armColumnIdInteger ?? this.armColumnIdInteger,
       armShellRatingDate: armShellRatingDate ?? this.armShellRatingDate,
+      shellPestType: shellPestType ?? this.shellPestType,
+      shellPestName: shellPestName ?? this.shellPestName,
+      shellCropCode: shellCropCode ?? this.shellCropCode,
+      shellCropName: shellCropName ?? this.shellCropName,
+      shellCropVariety: shellCropVariety ?? this.shellCropVariety,
+      shellRatingTime: shellRatingTime ?? this.shellRatingTime,
+      shellCropOrPest: shellCropOrPest ?? this.shellCropOrPest,
+      shellSampleSize: shellSampleSize ?? this.shellSampleSize,
+      shellSizeUnit: shellSizeUnit ?? this.shellSizeUnit,
+      shellCollectionBasisUnit:
+          shellCollectionBasisUnit ?? this.shellCollectionBasisUnit,
+      shellReportingBasis: shellReportingBasis ?? this.shellReportingBasis,
+      shellReportingBasisUnit:
+          shellReportingBasisUnit ?? this.shellReportingBasisUnit,
+      shellStageScale: shellStageScale ?? this.shellStageScale,
+      shellCropStageMaj: shellCropStageMaj ?? this.shellCropStageMaj,
+      shellCropStageMin: shellCropStageMin ?? this.shellCropStageMin,
+      shellCropStageMax: shellCropStageMax ?? this.shellCropStageMax,
+      shellCropDensity: shellCropDensity ?? this.shellCropDensity,
+      shellCropDensityUnit: shellCropDensityUnit ?? this.shellCropDensityUnit,
+      shellPestStageMaj: shellPestStageMaj ?? this.shellPestStageMaj,
+      shellPestStageMin: shellPestStageMin ?? this.shellPestStageMin,
+      shellPestStageMax: shellPestStageMax ?? this.shellPestStageMax,
+      shellPestDensity: shellPestDensity ?? this.shellPestDensity,
+      shellPestDensityUnit: shellPestDensityUnit ?? this.shellPestDensityUnit,
+      shellAssessedBy: shellAssessedBy ?? this.shellAssessedBy,
+      shellEquipment: shellEquipment ?? this.shellEquipment,
+      shellUntreatedRatingType:
+          shellUntreatedRatingType ?? this.shellUntreatedRatingType,
+      shellArmActions: shellArmActions ?? this.shellArmActions,
+      shellAppTimingCode: shellAppTimingCode ?? this.shellAppTimingCode,
+      shellTrtEvalInterval: shellTrtEvalInterval ?? this.shellTrtEvalInterval,
+      shellPlantEvalInterval:
+          shellPlantEvalInterval ?? this.shellPlantEvalInterval,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -30603,6 +31910,104 @@ class ArmAssessmentMetadataCompanion
     if (armShellRatingDate.present) {
       map['arm_shell_rating_date'] = Variable<String>(armShellRatingDate.value);
     }
+    if (shellPestType.present) {
+      map['shell_pest_type'] = Variable<String>(shellPestType.value);
+    }
+    if (shellPestName.present) {
+      map['shell_pest_name'] = Variable<String>(shellPestName.value);
+    }
+    if (shellCropCode.present) {
+      map['shell_crop_code'] = Variable<String>(shellCropCode.value);
+    }
+    if (shellCropName.present) {
+      map['shell_crop_name'] = Variable<String>(shellCropName.value);
+    }
+    if (shellCropVariety.present) {
+      map['shell_crop_variety'] = Variable<String>(shellCropVariety.value);
+    }
+    if (shellRatingTime.present) {
+      map['shell_rating_time'] = Variable<String>(shellRatingTime.value);
+    }
+    if (shellCropOrPest.present) {
+      map['shell_crop_or_pest'] = Variable<String>(shellCropOrPest.value);
+    }
+    if (shellSampleSize.present) {
+      map['shell_sample_size'] = Variable<String>(shellSampleSize.value);
+    }
+    if (shellSizeUnit.present) {
+      map['shell_size_unit'] = Variable<String>(shellSizeUnit.value);
+    }
+    if (shellCollectionBasisUnit.present) {
+      map['shell_collection_basis_unit'] =
+          Variable<String>(shellCollectionBasisUnit.value);
+    }
+    if (shellReportingBasis.present) {
+      map['shell_reporting_basis'] =
+          Variable<String>(shellReportingBasis.value);
+    }
+    if (shellReportingBasisUnit.present) {
+      map['shell_reporting_basis_unit'] =
+          Variable<String>(shellReportingBasisUnit.value);
+    }
+    if (shellStageScale.present) {
+      map['shell_stage_scale'] = Variable<String>(shellStageScale.value);
+    }
+    if (shellCropStageMaj.present) {
+      map['shell_crop_stage_maj'] = Variable<String>(shellCropStageMaj.value);
+    }
+    if (shellCropStageMin.present) {
+      map['shell_crop_stage_min'] = Variable<String>(shellCropStageMin.value);
+    }
+    if (shellCropStageMax.present) {
+      map['shell_crop_stage_max'] = Variable<String>(shellCropStageMax.value);
+    }
+    if (shellCropDensity.present) {
+      map['shell_crop_density'] = Variable<String>(shellCropDensity.value);
+    }
+    if (shellCropDensityUnit.present) {
+      map['shell_crop_density_unit'] =
+          Variable<String>(shellCropDensityUnit.value);
+    }
+    if (shellPestStageMaj.present) {
+      map['shell_pest_stage_maj'] = Variable<String>(shellPestStageMaj.value);
+    }
+    if (shellPestStageMin.present) {
+      map['shell_pest_stage_min'] = Variable<String>(shellPestStageMin.value);
+    }
+    if (shellPestStageMax.present) {
+      map['shell_pest_stage_max'] = Variable<String>(shellPestStageMax.value);
+    }
+    if (shellPestDensity.present) {
+      map['shell_pest_density'] = Variable<String>(shellPestDensity.value);
+    }
+    if (shellPestDensityUnit.present) {
+      map['shell_pest_density_unit'] =
+          Variable<String>(shellPestDensityUnit.value);
+    }
+    if (shellAssessedBy.present) {
+      map['shell_assessed_by'] = Variable<String>(shellAssessedBy.value);
+    }
+    if (shellEquipment.present) {
+      map['shell_equipment'] = Variable<String>(shellEquipment.value);
+    }
+    if (shellUntreatedRatingType.present) {
+      map['shell_untreated_rating_type'] =
+          Variable<String>(shellUntreatedRatingType.value);
+    }
+    if (shellArmActions.present) {
+      map['shell_arm_actions'] = Variable<String>(shellArmActions.value);
+    }
+    if (shellAppTimingCode.present) {
+      map['shell_app_timing_code'] = Variable<String>(shellAppTimingCode.value);
+    }
+    if (shellTrtEvalInterval.present) {
+      map['shell_trt_eval_interval'] =
+          Variable<String>(shellTrtEvalInterval.value);
+    }
+    if (shellPlantEvalInterval.present) {
+      map['shell_plant_eval_interval'] =
+          Variable<String>(shellPlantEvalInterval.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -30629,6 +32034,36 @@ class ArmAssessmentMetadataCompanion
           ..write('armShellColumnId: $armShellColumnId, ')
           ..write('armColumnIdInteger: $armColumnIdInteger, ')
           ..write('armShellRatingDate: $armShellRatingDate, ')
+          ..write('shellPestType: $shellPestType, ')
+          ..write('shellPestName: $shellPestName, ')
+          ..write('shellCropCode: $shellCropCode, ')
+          ..write('shellCropName: $shellCropName, ')
+          ..write('shellCropVariety: $shellCropVariety, ')
+          ..write('shellRatingTime: $shellRatingTime, ')
+          ..write('shellCropOrPest: $shellCropOrPest, ')
+          ..write('shellSampleSize: $shellSampleSize, ')
+          ..write('shellSizeUnit: $shellSizeUnit, ')
+          ..write('shellCollectionBasisUnit: $shellCollectionBasisUnit, ')
+          ..write('shellReportingBasis: $shellReportingBasis, ')
+          ..write('shellReportingBasisUnit: $shellReportingBasisUnit, ')
+          ..write('shellStageScale: $shellStageScale, ')
+          ..write('shellCropStageMaj: $shellCropStageMaj, ')
+          ..write('shellCropStageMin: $shellCropStageMin, ')
+          ..write('shellCropStageMax: $shellCropStageMax, ')
+          ..write('shellCropDensity: $shellCropDensity, ')
+          ..write('shellCropDensityUnit: $shellCropDensityUnit, ')
+          ..write('shellPestStageMaj: $shellPestStageMaj, ')
+          ..write('shellPestStageMin: $shellPestStageMin, ')
+          ..write('shellPestStageMax: $shellPestStageMax, ')
+          ..write('shellPestDensity: $shellPestDensity, ')
+          ..write('shellPestDensityUnit: $shellPestDensityUnit, ')
+          ..write('shellAssessedBy: $shellAssessedBy, ')
+          ..write('shellEquipment: $shellEquipment, ')
+          ..write('shellUntreatedRatingType: $shellUntreatedRatingType, ')
+          ..write('shellArmActions: $shellArmActions, ')
+          ..write('shellAppTimingCode: $shellAppTimingCode, ')
+          ..write('shellTrtEvalInterval: $shellTrtEvalInterval, ')
+          ..write('shellPlantEvalInterval: $shellPlantEvalInterval, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -46169,6 +47604,36 @@ typedef $$ArmAssessmentMetadataTableCreateCompanionBuilder
   Value<String?> armShellColumnId,
   Value<int?> armColumnIdInteger,
   Value<String?> armShellRatingDate,
+  Value<String?> shellPestType,
+  Value<String?> shellPestName,
+  Value<String?> shellCropCode,
+  Value<String?> shellCropName,
+  Value<String?> shellCropVariety,
+  Value<String?> shellRatingTime,
+  Value<String?> shellCropOrPest,
+  Value<String?> shellSampleSize,
+  Value<String?> shellSizeUnit,
+  Value<String?> shellCollectionBasisUnit,
+  Value<String?> shellReportingBasis,
+  Value<String?> shellReportingBasisUnit,
+  Value<String?> shellStageScale,
+  Value<String?> shellCropStageMaj,
+  Value<String?> shellCropStageMin,
+  Value<String?> shellCropStageMax,
+  Value<String?> shellCropDensity,
+  Value<String?> shellCropDensityUnit,
+  Value<String?> shellPestStageMaj,
+  Value<String?> shellPestStageMin,
+  Value<String?> shellPestStageMax,
+  Value<String?> shellPestDensity,
+  Value<String?> shellPestDensityUnit,
+  Value<String?> shellAssessedBy,
+  Value<String?> shellEquipment,
+  Value<String?> shellUntreatedRatingType,
+  Value<String?> shellArmActions,
+  Value<String?> shellAppTimingCode,
+  Value<String?> shellTrtEvalInterval,
+  Value<String?> shellPlantEvalInterval,
   Value<DateTime> createdAt,
 });
 typedef $$ArmAssessmentMetadataTableUpdateCompanionBuilder
@@ -46190,6 +47655,36 @@ typedef $$ArmAssessmentMetadataTableUpdateCompanionBuilder
   Value<String?> armShellColumnId,
   Value<int?> armColumnIdInteger,
   Value<String?> armShellRatingDate,
+  Value<String?> shellPestType,
+  Value<String?> shellPestName,
+  Value<String?> shellCropCode,
+  Value<String?> shellCropName,
+  Value<String?> shellCropVariety,
+  Value<String?> shellRatingTime,
+  Value<String?> shellCropOrPest,
+  Value<String?> shellSampleSize,
+  Value<String?> shellSizeUnit,
+  Value<String?> shellCollectionBasisUnit,
+  Value<String?> shellReportingBasis,
+  Value<String?> shellReportingBasisUnit,
+  Value<String?> shellStageScale,
+  Value<String?> shellCropStageMaj,
+  Value<String?> shellCropStageMin,
+  Value<String?> shellCropStageMax,
+  Value<String?> shellCropDensity,
+  Value<String?> shellCropDensityUnit,
+  Value<String?> shellPestStageMaj,
+  Value<String?> shellPestStageMin,
+  Value<String?> shellPestStageMax,
+  Value<String?> shellPestDensity,
+  Value<String?> shellPestDensityUnit,
+  Value<String?> shellAssessedBy,
+  Value<String?> shellEquipment,
+  Value<String?> shellUntreatedRatingType,
+  Value<String?> shellArmActions,
+  Value<String?> shellAppTimingCode,
+  Value<String?> shellTrtEvalInterval,
+  Value<String?> shellPlantEvalInterval,
   Value<DateTime> createdAt,
 });
 
@@ -46228,6 +47723,36 @@ class $$ArmAssessmentMetadataTableTableManager extends RootTableManager<
             Value<String?> armShellColumnId = const Value.absent(),
             Value<int?> armColumnIdInteger = const Value.absent(),
             Value<String?> armShellRatingDate = const Value.absent(),
+            Value<String?> shellPestType = const Value.absent(),
+            Value<String?> shellPestName = const Value.absent(),
+            Value<String?> shellCropCode = const Value.absent(),
+            Value<String?> shellCropName = const Value.absent(),
+            Value<String?> shellCropVariety = const Value.absent(),
+            Value<String?> shellRatingTime = const Value.absent(),
+            Value<String?> shellCropOrPest = const Value.absent(),
+            Value<String?> shellSampleSize = const Value.absent(),
+            Value<String?> shellSizeUnit = const Value.absent(),
+            Value<String?> shellCollectionBasisUnit = const Value.absent(),
+            Value<String?> shellReportingBasis = const Value.absent(),
+            Value<String?> shellReportingBasisUnit = const Value.absent(),
+            Value<String?> shellStageScale = const Value.absent(),
+            Value<String?> shellCropStageMaj = const Value.absent(),
+            Value<String?> shellCropStageMin = const Value.absent(),
+            Value<String?> shellCropStageMax = const Value.absent(),
+            Value<String?> shellCropDensity = const Value.absent(),
+            Value<String?> shellCropDensityUnit = const Value.absent(),
+            Value<String?> shellPestStageMaj = const Value.absent(),
+            Value<String?> shellPestStageMin = const Value.absent(),
+            Value<String?> shellPestStageMax = const Value.absent(),
+            Value<String?> shellPestDensity = const Value.absent(),
+            Value<String?> shellPestDensityUnit = const Value.absent(),
+            Value<String?> shellAssessedBy = const Value.absent(),
+            Value<String?> shellEquipment = const Value.absent(),
+            Value<String?> shellUntreatedRatingType = const Value.absent(),
+            Value<String?> shellArmActions = const Value.absent(),
+            Value<String?> shellAppTimingCode = const Value.absent(),
+            Value<String?> shellTrtEvalInterval = const Value.absent(),
+            Value<String?> shellPlantEvalInterval = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               ArmAssessmentMetadataCompanion(
@@ -46248,6 +47773,36 @@ class $$ArmAssessmentMetadataTableTableManager extends RootTableManager<
             armShellColumnId: armShellColumnId,
             armColumnIdInteger: armColumnIdInteger,
             armShellRatingDate: armShellRatingDate,
+            shellPestType: shellPestType,
+            shellPestName: shellPestName,
+            shellCropCode: shellCropCode,
+            shellCropName: shellCropName,
+            shellCropVariety: shellCropVariety,
+            shellRatingTime: shellRatingTime,
+            shellCropOrPest: shellCropOrPest,
+            shellSampleSize: shellSampleSize,
+            shellSizeUnit: shellSizeUnit,
+            shellCollectionBasisUnit: shellCollectionBasisUnit,
+            shellReportingBasis: shellReportingBasis,
+            shellReportingBasisUnit: shellReportingBasisUnit,
+            shellStageScale: shellStageScale,
+            shellCropStageMaj: shellCropStageMaj,
+            shellCropStageMin: shellCropStageMin,
+            shellCropStageMax: shellCropStageMax,
+            shellCropDensity: shellCropDensity,
+            shellCropDensityUnit: shellCropDensityUnit,
+            shellPestStageMaj: shellPestStageMaj,
+            shellPestStageMin: shellPestStageMin,
+            shellPestStageMax: shellPestStageMax,
+            shellPestDensity: shellPestDensity,
+            shellPestDensityUnit: shellPestDensityUnit,
+            shellAssessedBy: shellAssessedBy,
+            shellEquipment: shellEquipment,
+            shellUntreatedRatingType: shellUntreatedRatingType,
+            shellArmActions: shellArmActions,
+            shellAppTimingCode: shellAppTimingCode,
+            shellTrtEvalInterval: shellTrtEvalInterval,
+            shellPlantEvalInterval: shellPlantEvalInterval,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
@@ -46268,6 +47823,36 @@ class $$ArmAssessmentMetadataTableTableManager extends RootTableManager<
             Value<String?> armShellColumnId = const Value.absent(),
             Value<int?> armColumnIdInteger = const Value.absent(),
             Value<String?> armShellRatingDate = const Value.absent(),
+            Value<String?> shellPestType = const Value.absent(),
+            Value<String?> shellPestName = const Value.absent(),
+            Value<String?> shellCropCode = const Value.absent(),
+            Value<String?> shellCropName = const Value.absent(),
+            Value<String?> shellCropVariety = const Value.absent(),
+            Value<String?> shellRatingTime = const Value.absent(),
+            Value<String?> shellCropOrPest = const Value.absent(),
+            Value<String?> shellSampleSize = const Value.absent(),
+            Value<String?> shellSizeUnit = const Value.absent(),
+            Value<String?> shellCollectionBasisUnit = const Value.absent(),
+            Value<String?> shellReportingBasis = const Value.absent(),
+            Value<String?> shellReportingBasisUnit = const Value.absent(),
+            Value<String?> shellStageScale = const Value.absent(),
+            Value<String?> shellCropStageMaj = const Value.absent(),
+            Value<String?> shellCropStageMin = const Value.absent(),
+            Value<String?> shellCropStageMax = const Value.absent(),
+            Value<String?> shellCropDensity = const Value.absent(),
+            Value<String?> shellCropDensityUnit = const Value.absent(),
+            Value<String?> shellPestStageMaj = const Value.absent(),
+            Value<String?> shellPestStageMin = const Value.absent(),
+            Value<String?> shellPestStageMax = const Value.absent(),
+            Value<String?> shellPestDensity = const Value.absent(),
+            Value<String?> shellPestDensityUnit = const Value.absent(),
+            Value<String?> shellAssessedBy = const Value.absent(),
+            Value<String?> shellEquipment = const Value.absent(),
+            Value<String?> shellUntreatedRatingType = const Value.absent(),
+            Value<String?> shellArmActions = const Value.absent(),
+            Value<String?> shellAppTimingCode = const Value.absent(),
+            Value<String?> shellTrtEvalInterval = const Value.absent(),
+            Value<String?> shellPlantEvalInterval = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               ArmAssessmentMetadataCompanion.insert(
@@ -46288,6 +47873,36 @@ class $$ArmAssessmentMetadataTableTableManager extends RootTableManager<
             armShellColumnId: armShellColumnId,
             armColumnIdInteger: armColumnIdInteger,
             armShellRatingDate: armShellRatingDate,
+            shellPestType: shellPestType,
+            shellPestName: shellPestName,
+            shellCropCode: shellCropCode,
+            shellCropName: shellCropName,
+            shellCropVariety: shellCropVariety,
+            shellRatingTime: shellRatingTime,
+            shellCropOrPest: shellCropOrPest,
+            shellSampleSize: shellSampleSize,
+            shellSizeUnit: shellSizeUnit,
+            shellCollectionBasisUnit: shellCollectionBasisUnit,
+            shellReportingBasis: shellReportingBasis,
+            shellReportingBasisUnit: shellReportingBasisUnit,
+            shellStageScale: shellStageScale,
+            shellCropStageMaj: shellCropStageMaj,
+            shellCropStageMin: shellCropStageMin,
+            shellCropStageMax: shellCropStageMax,
+            shellCropDensity: shellCropDensity,
+            shellCropDensityUnit: shellCropDensityUnit,
+            shellPestStageMaj: shellPestStageMaj,
+            shellPestStageMin: shellPestStageMin,
+            shellPestStageMax: shellPestStageMax,
+            shellPestDensity: shellPestDensity,
+            shellPestDensityUnit: shellPestDensityUnit,
+            shellAssessedBy: shellAssessedBy,
+            shellEquipment: shellEquipment,
+            shellUntreatedRatingType: shellUntreatedRatingType,
+            shellArmActions: shellArmActions,
+            shellAppTimingCode: shellAppTimingCode,
+            shellTrtEvalInterval: shellTrtEvalInterval,
+            shellPlantEvalInterval: shellPlantEvalInterval,
             createdAt: createdAt,
           ),
         ));
@@ -46373,6 +47988,158 @@ class $$ArmAssessmentMetadataTableFilterComposer
 
   ColumnFilters<String> get armShellRatingDate => $state.composableBuilder(
       column: $state.table.armShellRatingDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellPestType => $state.composableBuilder(
+      column: $state.table.shellPestType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellPestName => $state.composableBuilder(
+      column: $state.table.shellPestName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellCropCode => $state.composableBuilder(
+      column: $state.table.shellCropCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellCropName => $state.composableBuilder(
+      column: $state.table.shellCropName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellCropVariety => $state.composableBuilder(
+      column: $state.table.shellCropVariety,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellRatingTime => $state.composableBuilder(
+      column: $state.table.shellRatingTime,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellCropOrPest => $state.composableBuilder(
+      column: $state.table.shellCropOrPest,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellSampleSize => $state.composableBuilder(
+      column: $state.table.shellSampleSize,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellSizeUnit => $state.composableBuilder(
+      column: $state.table.shellSizeUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellCollectionBasisUnit =>
+      $state.composableBuilder(
+          column: $state.table.shellCollectionBasisUnit,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellReportingBasis => $state.composableBuilder(
+      column: $state.table.shellReportingBasis,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellReportingBasisUnit => $state.composableBuilder(
+      column: $state.table.shellReportingBasisUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellStageScale => $state.composableBuilder(
+      column: $state.table.shellStageScale,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellCropStageMaj => $state.composableBuilder(
+      column: $state.table.shellCropStageMaj,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellCropStageMin => $state.composableBuilder(
+      column: $state.table.shellCropStageMin,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellCropStageMax => $state.composableBuilder(
+      column: $state.table.shellCropStageMax,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellCropDensity => $state.composableBuilder(
+      column: $state.table.shellCropDensity,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellCropDensityUnit => $state.composableBuilder(
+      column: $state.table.shellCropDensityUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellPestStageMaj => $state.composableBuilder(
+      column: $state.table.shellPestStageMaj,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellPestStageMin => $state.composableBuilder(
+      column: $state.table.shellPestStageMin,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellPestStageMax => $state.composableBuilder(
+      column: $state.table.shellPestStageMax,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellPestDensity => $state.composableBuilder(
+      column: $state.table.shellPestDensity,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellPestDensityUnit => $state.composableBuilder(
+      column: $state.table.shellPestDensityUnit,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellAssessedBy => $state.composableBuilder(
+      column: $state.table.shellAssessedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellEquipment => $state.composableBuilder(
+      column: $state.table.shellEquipment,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellUntreatedRatingType =>
+      $state.composableBuilder(
+          column: $state.table.shellUntreatedRatingType,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellArmActions => $state.composableBuilder(
+      column: $state.table.shellArmActions,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellAppTimingCode => $state.composableBuilder(
+      column: $state.table.shellAppTimingCode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellTrtEvalInterval => $state.composableBuilder(
+      column: $state.table.shellTrtEvalInterval,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellPlantEvalInterval => $state.composableBuilder(
+      column: $state.table.shellPlantEvalInterval,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -46477,6 +48244,160 @@ class $$ArmAssessmentMetadataTableOrderingComposer
       column: $state.table.armShellRatingDate,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellPestType => $state.composableBuilder(
+      column: $state.table.shellPestType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellPestName => $state.composableBuilder(
+      column: $state.table.shellPestName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellCropCode => $state.composableBuilder(
+      column: $state.table.shellCropCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellCropName => $state.composableBuilder(
+      column: $state.table.shellCropName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellCropVariety => $state.composableBuilder(
+      column: $state.table.shellCropVariety,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellRatingTime => $state.composableBuilder(
+      column: $state.table.shellRatingTime,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellCropOrPest => $state.composableBuilder(
+      column: $state.table.shellCropOrPest,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellSampleSize => $state.composableBuilder(
+      column: $state.table.shellSampleSize,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellSizeUnit => $state.composableBuilder(
+      column: $state.table.shellSizeUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellCollectionBasisUnit =>
+      $state.composableBuilder(
+          column: $state.table.shellCollectionBasisUnit,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellReportingBasis => $state.composableBuilder(
+      column: $state.table.shellReportingBasis,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellReportingBasisUnit =>
+      $state.composableBuilder(
+          column: $state.table.shellReportingBasisUnit,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellStageScale => $state.composableBuilder(
+      column: $state.table.shellStageScale,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellCropStageMaj => $state.composableBuilder(
+      column: $state.table.shellCropStageMaj,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellCropStageMin => $state.composableBuilder(
+      column: $state.table.shellCropStageMin,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellCropStageMax => $state.composableBuilder(
+      column: $state.table.shellCropStageMax,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellCropDensity => $state.composableBuilder(
+      column: $state.table.shellCropDensity,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellCropDensityUnit => $state.composableBuilder(
+      column: $state.table.shellCropDensityUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellPestStageMaj => $state.composableBuilder(
+      column: $state.table.shellPestStageMaj,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellPestStageMin => $state.composableBuilder(
+      column: $state.table.shellPestStageMin,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellPestStageMax => $state.composableBuilder(
+      column: $state.table.shellPestStageMax,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellPestDensity => $state.composableBuilder(
+      column: $state.table.shellPestDensity,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellPestDensityUnit => $state.composableBuilder(
+      column: $state.table.shellPestDensityUnit,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellAssessedBy => $state.composableBuilder(
+      column: $state.table.shellAssessedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellEquipment => $state.composableBuilder(
+      column: $state.table.shellEquipment,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellUntreatedRatingType =>
+      $state.composableBuilder(
+          column: $state.table.shellUntreatedRatingType,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellArmActions => $state.composableBuilder(
+      column: $state.table.shellArmActions,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellAppTimingCode => $state.composableBuilder(
+      column: $state.table.shellAppTimingCode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellTrtEvalInterval => $state.composableBuilder(
+      column: $state.table.shellTrtEvalInterval,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellPlantEvalInterval =>
+      $state.composableBuilder(
+          column: $state.table.shellPlantEvalInterval,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
 
   ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
       column: $state.table.createdAt,

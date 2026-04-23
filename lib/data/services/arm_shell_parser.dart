@@ -108,20 +108,46 @@ ArmShellImport parseArmShellBytes(ArmShellParseParams p) {
         armColumnIdInteger: int.tryParse(armColumnId),
         columnLetter: columnIndexToLettersZeroBased(colIdx),
         columnIndex: colIdx,
-        ratingDate: cell(15, colIdx),
+        pestType: cell(8, colIdx),
+        pestCodeFromSheet: cell(9, colIdx),
+        pestName: cell(10, colIdx),
+        cropCodeArm: cell(11, colIdx),
+        cropNameArm: cell(12, colIdx),
+        cropVariety: cell(13, colIdx),
         seDescription: cell(14, colIdx),
+        ratingDate: cell(15, colIdx),
+        ratingTime: cell(16, colIdx),
         seName: cell(17, colIdx),
+        partRated: cell(18, colIdx),
+        cropOrPest: cell(19, colIdx),
         ratingType: cell(20, colIdx),
         ratingUnit: cell(21, colIdx),
+        sampleSize: cell(22, colIdx),
+        sizeUnit: cell(23, colIdx),
+        collectBasis: cell(24, colIdx),
+        collectionBasisUnit: cell(25, colIdx),
+        reportingBasis: cell(26, colIdx),
+        reportingBasisUnit: cell(27, colIdx),
+        stageScale: cell(28, colIdx),
         cropStageMaj: cell(29, colIdx),
+        cropStageMin: cell(30, colIdx),
+        cropStageMax: cell(31, colIdx),
+        cropDensity: cell(32, colIdx),
+        cropDensityUnit: cell(33, colIdx),
+        pestStageMaj: cell(34, colIdx),
+        pestStageMin: cell(35, colIdx),
+        pestStageMax: cell(36, colIdx),
+        pestDensity: cell(37, colIdx),
+        pestDensityUnit: cell(38, colIdx),
+        assessedBy: cell(39, colIdx),
+        equipment: cell(40, colIdx),
         ratingTiming: cell(41, colIdx),
-        numSubsamples: subs != null ? int.tryParse(subs.trim()) : null,
-        pestCode: cell(17, colIdx),
-        partRated: cell(18, colIdx),
-        collectBasis: cell(23, colIdx),
         appTimingCode: cell(41, colIdx),
         trtEvalInterval: cell(42, colIdx),
         datInterval: cell(43, colIdx),
+        untreatedRatingType: cell(44, colIdx),
+        armActions: cell(45, colIdx),
+        numSubsamples: subs != null ? int.tryParse(subs.trim()) : null,
       ),
     );
   }
@@ -269,19 +295,26 @@ List<ArmTreatmentSheetRow> _parseTreatmentsSheet(
 /// ARM Rating Shell layout contract (ARM 2025/2026):
 /// Sheet: "Plot Data" (exact name)
 ///
-/// Assessment columns (c=2 onward, until empty ID cell):
-///   r=7:  ARM Column ID (identity anchor; integer for AgQuest shells)
+/// Assessment columns (c=2 onward, until empty ID cell at **0-based row 7**).
+/// Full Plot Data descriptor block **0-based rows 8–46** (Excel rows 9–47,
+/// `001EID`…`040ENS`) is read into [ArmColumnMap]; see
+/// `test/fixtures/arm_shells/README.md`.
+///
+/// Highlights:
+///   r=7:  ARM Column ID
+///   r=9:  `003EPT` pest code ([ArmColumnMap.pestCodeFromSheet])
 ///   r=14: SE Description
 ///   r=15: Rating date
-///   r=17: SE Name / Pest code (W003, W001, CF013)
-///   r=18: Part rated (PLANT, LEAF3)
-///   r=20: Rating type
-///   r=21: Rating unit
-///   r=23: Collect basis (PLOT)
-///   r=29: Crop stage major
-///   r=41: Rating timing / App timing code (A1, A3, A6, A9, AA)
-///   r=42: Trt-eval interval (-28 DA-A, -7 DA-A)
-///   r=43: DAT interval (-7 DP-1, 1 DP-1, 14 DP-1)
+///   r=17: SE Name
+///   r=18: Part rated
+///   r=20–21: Rating type / unit
+///   r=22: Sample size
+///   r=23: Size unit (`017EBU`)
+///   r=24: Collect. basis (`018EUS`) — **not** row 23
+///   r=29–31: Crop stage maj / min / max
+///   r=39: Assessed By
+///   r=41: Rating timing / App timing code
+///   r=42–43: Trt-eval / plant-eval interval
 ///   r=46: Num subsamples
 ///
 /// Row and column indices are **0-based**.

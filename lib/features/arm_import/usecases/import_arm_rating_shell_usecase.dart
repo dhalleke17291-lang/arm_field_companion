@@ -7,6 +7,7 @@ import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/services/arm_shell_parser.dart';
 import '../../../data/services/shell_storage_service.dart';
 import '../../../domain/models/arm_column_map.dart';
+import '../data/shell_rating_date_parser.dart';
 import '../../plots/plot_repository.dart';
 import '../../trials/trial_repository.dart';
 import '../../../data/repositories/assignment_repository.dart';
@@ -311,7 +312,8 @@ class ImportArmRatingShellUseCase {
         var sortOrder = 0;
         for (final entry in dedupGroups.entries) {
           final first = entry.value.first;
-          final pestCode = _firstNonEmpty([first.pestCode, first.seName]);
+          final pestCode =
+              _firstNonEmpty([first.pestCodeFromSheet, first.seName]);
           final codeKey =
               _firstNonEmpty([pestCode, first.ratingType]) ?? entry.key;
           final code = 'SHELL_$codeKey'.replaceAll(' ', '_').toUpperCase();
@@ -380,6 +382,43 @@ class ImportArmRatingShellUseCase {
               armColumnIdInteger: Value(first.armColumnIdInteger),
               armShellColumnId: Value(_firstNonEmpty([first.armColumnId])),
               armShellRatingDate: Value(_firstNonEmpty([first.ratingDate])),
+              shellPestType: Value(_firstNonEmpty([first.pestType])),
+              shellPestName: Value(_firstNonEmpty([first.pestName])),
+              shellCropCode: Value(_firstNonEmpty([first.cropCodeArm])),
+              shellCropName: Value(_firstNonEmpty([first.cropNameArm])),
+              shellCropVariety: Value(_firstNonEmpty([first.cropVariety])),
+              shellRatingTime: Value(_firstNonEmpty([first.ratingTime])),
+              shellCropOrPest: Value(_firstNonEmpty([first.cropOrPest])),
+              shellSampleSize: Value(_firstNonEmpty([first.sampleSize])),
+              shellSizeUnit: Value(_firstNonEmpty([first.sizeUnit])),
+              shellCollectionBasisUnit:
+                  Value(_firstNonEmpty([first.collectionBasisUnit])),
+              shellReportingBasis: Value(_firstNonEmpty([first.reportingBasis])),
+              shellReportingBasisUnit:
+                  Value(_firstNonEmpty([first.reportingBasisUnit])),
+              shellStageScale: Value(_firstNonEmpty([first.stageScale])),
+              shellCropStageMaj: Value(_firstNonEmpty([first.cropStageMaj])),
+              shellCropStageMin: Value(_firstNonEmpty([first.cropStageMin])),
+              shellCropStageMax: Value(_firstNonEmpty([first.cropStageMax])),
+              shellCropDensity: Value(_firstNonEmpty([first.cropDensity])),
+              shellCropDensityUnit:
+                  Value(_firstNonEmpty([first.cropDensityUnit])),
+              shellPestStageMaj: Value(_firstNonEmpty([first.pestStageMaj])),
+              shellPestStageMin: Value(_firstNonEmpty([first.pestStageMin])),
+              shellPestStageMax: Value(_firstNonEmpty([first.pestStageMax])),
+              shellPestDensity: Value(_firstNonEmpty([first.pestDensity])),
+              shellPestDensityUnit:
+                  Value(_firstNonEmpty([first.pestDensityUnit])),
+              shellAssessedBy: Value(_firstNonEmpty([first.assessedBy])),
+              shellEquipment: Value(_firstNonEmpty([first.equipment])),
+              shellUntreatedRatingType:
+                  Value(_firstNonEmpty([first.untreatedRatingType])),
+              shellArmActions: Value(_firstNonEmpty([first.armActions])),
+              shellAppTimingCode: Value(_firstNonEmpty([first.appTimingCode])),
+              shellTrtEvalInterval:
+                  Value(_firstNonEmpty([first.trtEvalInterval])),
+              shellPlantEvalInterval:
+                  Value(_firstNonEmpty([first.datInterval])),
             ),
           ]);
 
@@ -402,12 +441,23 @@ class ImportArmRatingShellUseCase {
           ..sort();
 
         for (final dateStr in sortedDates) {
-          final sessionName = 'Planned — $dateStr';
+          final parsed = tryParseShellRatingDate(dateStr);
+          final sessionDateLocal = parsed?.canonicalYyyyMmDd ?? dateStr.trim();
+          final sessionName = 'Planned — $sessionDateLocal';
+          final repCol = shell.assessmentColumns.firstWhere(
+            (c) => (c.ratingDate?.trim() ?? '') == dateStr,
+          );
+          final rater = _firstNonEmpty([repCol.assessedBy]);
+
           final sessionId = await _db.into(_db.sessions).insert(
                 SessionsCompanion.insert(
                   trialId: id,
                   name: sessionName,
-                  sessionDateLocal: dateStr,
+                  sessionDateLocal: sessionDateLocal,
+                  startedAt: parsed != null
+                      ? Value(parsed.startedAtUtc)
+                      : const Value.absent(),
+                  raterName: rater != null ? Value(rater) : const Value.absent(),
                   status: const Value(kSessionStatusPlanned),
                 ),
               );
@@ -419,18 +469,18 @@ class ImportArmRatingShellUseCase {
           // the same date; if the shell carries that divergence we keep the
           // first column's values here and let export regenerate per-column
           // text from arm_column_mappings + the original shell.
-          final repCol = shell.assessmentColumns.firstWhere(
-            (c) => (c.ratingDate?.trim() ?? '') == dateStr,
-          );
           await _armColumnMappingRepository.insertSessionMetadataBulk([
             ArmSessionMetadataCompanion.insert(
               sessionId: sessionId,
-              armRatingDate: dateStr,
+              armRatingDate: sessionDateLocal,
               timingCode: Value(_firstNonEmpty([repCol.appTimingCode])),
               cropStageMaj: Value(_firstNonEmpty([repCol.cropStageMaj])),
+              cropStageMin: Value(_firstNonEmpty([repCol.cropStageMin])),
+              cropStageScale: Value(_firstNonEmpty([repCol.stageScale])),
               trtEvalInterval:
                   Value(_firstNonEmpty([repCol.trtEvalInterval])),
               plantEvalInterval: Value(_firstNonEmpty([repCol.datInterval])),
+              raterInitials: Value(_firstNonEmpty([repCol.assessedBy])),
             ),
           ]);
         }

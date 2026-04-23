@@ -20,8 +20,8 @@ This file has **7 sheets**:
 
 | Sheet | Purpose | Parsed today? |
 |---|---|---|
-| **Plot Data** | Assessment column metadata + plot layout + rating values | Partial (structure + limited metadata) |
-| **Treatments** | Products, rates, formulations, rate units | **Not parsed** |
+| **Plot Data** | Assessment column metadata + plot layout + rating values | **Yes** — descriptor rows 9–47 (0-based 8–46) into [ArmColumnMap]; importer lands them on `arm_assessment_metadata` + normalises rating dates to `yyyy-MM-dd` on planned sessions |
+| **Treatments** | Products, rates, formulations, rate units | **Yes** (Phase 2) |
 | **Applications** | 79 descriptor fields: dates, weather, equipment, nozzles, carrier, mix | **Not parsed** |
 | **Comments** | Free-text trial notes | **Not parsed** |
 | **Subsample Plot Data** | Mirror of Plot Data for subsample protocols | **Not parsed** |
@@ -42,48 +42,48 @@ Header block:
 
 Assessment-column descriptor rows (columns C+ hold per-column values; one column per assessment). Column C onwards uses **ARM Column ID** (integer) as identity:
 
-| Row | Code | Field label | Example values (AgQuest) | Currently captured? |
+| Row | Code | Field label | Example values (AgQuest) | Captured? |
 |---|---|---|---|---|
-| 8 | `001EID` | ARM Column ID | `3`, `6`, `7`, `8`, `9`, `16` | yes (`armColumnIdInteger`) |
-| 9 | `002E~P` | Pest Type | *(blank)* | no |
-| 10 | `003EPT` | Pest Code | *(blank)* | no (conflated with SE Name) |
-| 11 | `004EPG` | Pest Name | *(blank)* | no |
-| 12 | `005ECR` | Crop Code | *(blank)* | no |
-| 13 | `006ECG` | Crop Name | *(blank)* | no |
-| 14 | `007ECV` | Crop Variety | *(blank)* | no |
-| 15 | `008ECE` | Description | *(blank in AgQuest; typically SE description)* | yes (`seDescription`) |
-| 16 | `009EED` | Rating Date | `2026-04-02`, `2026-04-10`, `2026-04-15`, `2026-04-23`, blank, `2026-04-02` | yes (as string in `timingCode`; **not parsed as DateTime**) |
-| 17 | `010ETD` | Rating Time | *(blank)* | no |
-| 18 | `011EEV` | SE Name | `W003`, `W001`, `CF013`, `W003`, blank, `W003` | yes (`seName`) |
-| 19 | `012ECP` | Part Rated | `PLANT`, `PLANT`, `LEAF3`, `PLANT`, blank, `PLANT` | yes (`partRated` / `cropPart`) |
-| 20 | `013ERF` | Crop or Pest | *(blank)* | no |
-| 21 | `014EDT` | Rating Type | `CONTRO`, `LODGIN`, `PESINC`, `CONTRO`, blank, `CONTRO` | yes (`ratingType`) |
-| 22 | `015ERU` | Rating Unit | `%` × 5 filled | yes (`ratingUnit`) |
-| 23 | `016EBS` | Sample Size | `1` × 5 filled | no |
-| 24 | `017EBU` | Size Unit | `PLOT` × 5 filled | **mislabeled** — parser stores as `collectBasis` |
-| 25 | `018EUS` | Collect. Basis | `1` × 5 filled | no (parser uses row 24 instead) |
-| 26 | `019EUU` | Basis Unit | `PLOT` × 5 filled | no |
-| 27 | `020ERS` | Report. Basis | `1` × 5 filled | no |
-| 28 | `021ERN` | Basis Unit | `PLOT` × 5 filled | no |
-| 29 | `022ECN` | Stage Scale | *(blank)* | no |
-| 30 | `023ECS` | Crop Stage Maj. | *(blank)* | model field exists (`cropStageMaj`), **not persisted** |
-| 31 | `024ECL` | Crop Stage Min. | *(blank)* | no |
-| 32 | `025ECX` | Crop Stage Max. | *(blank)* | no |
-| 33 | `026ECD` | Crop Density | *(blank)* | no |
-| 34 | `027ECU` | Density Unit | *(blank)* | no |
-| 35 | `028EPS` | Pest Stage Maj. | *(blank)* | no |
-| 36 | `029EPL` | Pest Stage Min. | *(blank)* | no |
-| 37 | `030EPX` | Pest Stage Max. | *(blank)* | no |
-| 38 | `031EPD` | Pest Density | *(blank)* | no |
-| 39 | `032EPU` | Density Unit | *(blank)* | no |
-| 40 | `033EAB` | Assessed By | *(blank in AgQuest; this is the rater name)* | no |
-| 41 | `034EQP` | Equipment | *(blank)* | no |
-| 42 | `035EET` | Rating Timing | `A1`, `A3`, `A9`, `A6`, `A4`, `AA` | yes (`appTimingCode`) |
-| 43 | `036ETI` | Trt-Eval Interval | `-28 DA-A`, `-20 DA-A`, `-15 DA-A`, `-7 DA-A`, blank, `-28 DA-A` | yes (`trtEvalInterval`) |
-| 44 | `037EPI` | Plant-Eval Interval | `-7 DP-1`, `1 DP-1`, `6 DP-1`, `14 DP-1`, blank, `-7 DP-1` | model field exists (`datInterval`), **not persisted** |
-| 45 | `038EUT` | Untrt. Rating Type | *(blank)* | no |
-| 46 | `039EDP` | ARM Actions | *(blank)* | no |
-| 47 | `040ENS` | # Subsamples | `1` × 6 filled | model field exists (`numSubsamples`), **not persisted** |
+| 8 | `001EID` | ARM Column ID | `3`, `6`, `7`, `8`, `9`, `16` | yes → `armColumnId` / `armColumnIdInteger` |
+| 9 | `002E~P` | Pest Type | *(blank)* | yes → `ArmColumnMap.pestType` → AAM `shellPestType` |
+| 10 | `003EPT` | Pest Code | *(blank)* | yes → `pestCodeFromSheet` → AAM `pestCode` |
+| 11 | `004EPG` | Pest Name | *(blank)* | yes → AAM `shellPestName` |
+| 12 | `005ECR` | Crop Code | *(blank)* | yes → AAM `shellCropCode` |
+| 13 | `006ECG` | Crop Name | *(blank)* | yes → AAM `shellCropName` |
+| 14 | `007ECV` | Crop Variety | *(blank)* | yes → AAM `shellCropVariety` |
+| 15 | `008ECE` | Description | *(blank in AgQuest; typically SE description)* | yes → `seDescription` |
+| 16 | `009EED` | Rating Date | ISO or `d-Mmm-yy` | yes → raw on AAM `armShellRatingDate`; **normalised `yyyy-MM-dd`** on `Sessions.sessionDateLocal`, `Sessions.startedAt` (UTC midnight when parseable), `ArmSessionMetadata.armRatingDate` |
+| 17 | `010ETD` | Rating Time | *(blank)* | yes → AAM `shellRatingTime` |
+| 18 | `011EEV` | SE Name | `W003`, `W001`, `CF013`, … | yes → `seName` |
+| 19 | `012ECP` | Part Rated | `PLANT`, `LEAF3`, … | yes → `partRated` |
+| 20 | `013ERF` | Crop or Pest | *(blank)* | yes → AAM `shellCropOrPest` |
+| 21 | `014EDT` | Rating Type | `CONTRO`, `LODGIN`, … | yes → `ratingType` |
+| 22 | `015ERU` | Rating Unit | `%` | yes → `ratingUnit` |
+| 23 | `016EBS` | Sample Size | `1` | yes → AAM `shellSampleSize` |
+| 24 | `017EBU` | Size Unit | `PLOT` | yes → AAM `shellSizeUnit` |
+| 25 | `018EUS` | Collect. Basis | `1` | yes → `collectBasis` (core-style field on AAM) |
+| 26 | `019EUU` | Basis Unit | `PLOT` | yes → AAM `shellCollectionBasisUnit` |
+| 27 | `020ERS` | Report. Basis | `1` | yes → AAM `shellReportingBasis` |
+| 28 | `021ERN` | Basis Unit | `PLOT` | yes → AAM `shellReportingBasisUnit` |
+| 29 | `022ECN` | Stage Scale | *(blank)* | yes → AAM `shellStageScale` |
+| 30 | `023ECS` | Crop Stage Maj. | *(blank)* | yes → `cropStageMaj` / AAM `shellCropStageMaj` |
+| 31 | `024ECL` | Crop Stage Min. | *(blank)* | yes → AAM `shellCropStageMin` |
+| 32 | `025ECX` | Crop Stage Max. | *(blank)* | yes → AAM `shellCropStageMax` |
+| 33 | `026ECD` | Crop Density | *(blank)* | yes → AAM `shellCropDensity` |
+| 34 | `027ECU` | Density Unit | *(blank)* | yes → AAM `shellCropDensityUnit` |
+| 35 | `028EPS` | Pest Stage Maj. | *(blank)* | yes → AAM `shellPestStageMaj` |
+| 36 | `029EPL` | Pest Stage Min. | *(blank)* | yes → AAM `shellPestStageMin` |
+| 37 | `030EPX` | Pest Stage Max. | *(blank)* | yes → AAM `shellPestStageMax` |
+| 38 | `031EPD` | Pest Density | *(blank)* | yes → AAM `shellPestDensity` |
+| 39 | `032EPU` | Density Unit | *(blank)* | yes → AAM `shellPestDensityUnit` |
+| 40 | `033EAB` | Assessed By | *(blank in AgQuest)* | yes → AAM `shellAssessedBy`; also `Sessions.raterName` + `ArmSessionMetadata.raterInitials` for planned sessions |
+| 41 | `034EQP` | Equipment | *(blank)* | yes → AAM `shellEquipment` |
+| 42 | `035EET` | Rating Timing | `A1`, `A3`, … | yes → `appTimingCode` + AAM `shellAppTimingCode` |
+| 43 | `036ETI` | Trt-Eval Interval | `-28 DA-A`, … | yes → `trtEvalInterval` + AAM `shellTrtEvalInterval` |
+| 44 | `037EPI` | Plant-Eval Interval | `-7 DP-1`, … | yes → `datInterval` + AAM `shellPlantEvalInterval` |
+| 45 | `038EUT` | Untrt. Rating Type | *(blank)* | yes → AAM `shellUntreatedRatingType` |
+| 46 | `039EDP` | ARM Actions | *(blank)* | yes → AAM `shellArmActions` |
+| 47 | `040ENS` | # Subsamples | `1` | yes → `numSubsamples` |
 
 Plot layout block (starting row 48):
 

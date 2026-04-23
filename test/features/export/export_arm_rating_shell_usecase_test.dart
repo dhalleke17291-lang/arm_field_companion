@@ -172,6 +172,14 @@ Future<String> writeArmShellFixture(
   List<String>? ratingTypes,
   List<String>? ratingUnits,
   List<String>? ratingTimings,
+  /// Row 10 (0-based row 9) — ARM `003EPT` pest code (optional test hook).
+  List<String>? pestCodesFromSheet,
+  /// Row 24 (0-based) — `018EUS` Collect. Basis.
+  String? plotDataCollectBasis,
+  /// Row 23 (0-based) — `017EBU` size unit.
+  String? plotDataSizeUnit,
+  /// Row 39 (0-based) — `033EAB` Assessed By.
+  String? plotDataAssessedBy,
 }) async {
   final excel = Excel.createExcel();
   excel.rename('Sheet1', 'Plot Data');
@@ -198,6 +206,9 @@ Future<String> writeArmShellFixture(
   for (var i = 0; i < armColumnIds.length; i++) {
     final col = 2 + i;
     setText(7, col, armColumnIds[i]);
+    if (pestCodesFromSheet != null && i < pestCodesFromSheet.length) {
+      setText(9, col, pestCodesFromSheet[i]);
+    }
     setText(
       14,
       col,
@@ -229,6 +240,15 @@ Future<String> writeArmShellFixture(
           ? ratingTimings[i]
           : 'tim',
     );
+    if (plotDataSizeUnit != null) {
+      setText(23, col, plotDataSizeUnit);
+    }
+    if (plotDataCollectBasis != null) {
+      setText(24, col, plotDataCollectBasis);
+    }
+    if (plotDataAssessedBy != null) {
+      setText(39, col, plotDataAssessedBy);
+    }
     setText(46, col, '1');
   }
 

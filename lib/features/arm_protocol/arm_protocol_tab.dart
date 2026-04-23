@@ -513,6 +513,139 @@ class _ArmAssessmentRow extends StatelessWidget {
     final ratingDate = aam?.armShellRatingDate;
     final seName = aam?.seName;
     final ratingType = aam?.ratingType;
+    final appTimingCode = aam?.shellAppTimingCode;
+
+    final m = aam;
+    final detailParts = <String>[
+      if (m != null) ...[
+        if (m.seDescription != null &&
+            m.seDescription!.trim().isNotEmpty &&
+            m.seDescription!.trim() != name.trim())
+          m.seDescription!,
+        if (m.partRated != null && m.partRated!.isNotEmpty)
+          'Part: ${m.partRated}',
+        if (m.ratingUnit != null && m.ratingUnit!.isNotEmpty)
+          'Unit: ${m.ratingUnit}',
+        if (m.collectBasis != null && m.collectBasis!.isNotEmpty)
+          'Collect: ${m.collectBasis}',
+        if (m.shellSizeUnit != null && m.shellSizeUnit!.isNotEmpty)
+          'Size unit: ${m.shellSizeUnit}',
+        if (m.shellSampleSize != null && m.shellSampleSize!.isNotEmpty)
+          'Sample size: ${m.shellSampleSize}',
+        if (m.numSubsamples != null)
+          '# subsamples: ${m.numSubsamples}',
+        if (m.shellCollectionBasisUnit != null &&
+            m.shellCollectionBasisUnit!.trim().isNotEmpty)
+          'Coll. basis unit: ${m.shellCollectionBasisUnit}',
+        if (m.shellCropOrPest != null && m.shellCropOrPest!.trim().isNotEmpty)
+          'Crop/Pest: ${m.shellCropOrPest}',
+        if (m.shellRatingTime != null && m.shellRatingTime!.trim().isNotEmpty)
+          'Rating time: ${m.shellRatingTime}',
+        if (m.shellPestType != null && m.shellPestType!.trim().isNotEmpty)
+          'Pest type: ${m.shellPestType}',
+        if (m.shellPestName != null && m.shellPestName!.trim().isNotEmpty)
+          'Pest: ${m.shellPestName}',
+        if (m.shellCropCode != null && m.shellCropCode!.trim().isNotEmpty ||
+            m.shellCropName != null && m.shellCropName!.trim().isNotEmpty ||
+            m.shellCropVariety != null &&
+                m.shellCropVariety!.trim().isNotEmpty)
+          [
+            if (m.shellCropCode != null && m.shellCropCode!.trim().isNotEmpty)
+              m.shellCropCode!,
+            if (m.shellCropName != null && m.shellCropName!.trim().isNotEmpty)
+              m.shellCropName!,
+            if (m.shellCropVariety != null &&
+                m.shellCropVariety!.trim().isNotEmpty)
+              m.shellCropVariety!,
+          ].join(' · '),
+        if (m.shellReportingBasis != null &&
+                m.shellReportingBasis!.trim().isNotEmpty ||
+            m.shellReportingBasisUnit != null &&
+                m.shellReportingBasisUnit!.trim().isNotEmpty)
+          'Report: ${[
+            if (m.shellReportingBasis != null &&
+                m.shellReportingBasis!.trim().isNotEmpty)
+              m.shellReportingBasis!,
+            if (m.shellReportingBasisUnit != null &&
+                m.shellReportingBasisUnit!.trim().isNotEmpty)
+              m.shellReportingBasisUnit!,
+          ].join(' ')}',
+        if (m.shellStageScale != null && m.shellStageScale!.trim().isNotEmpty)
+          'Stage scale: ${m.shellStageScale}',
+        if (m.shellCropStageMaj != null && m.shellCropStageMaj!.isNotEmpty ||
+            m.shellCropStageMin != null &&
+                m.shellCropStageMin!.trim().isNotEmpty ||
+            m.shellCropStageMax != null &&
+                m.shellCropStageMax!.trim().isNotEmpty)
+          'Crop stage: ${[
+            if (m.shellCropStageMaj != null &&
+                m.shellCropStageMaj!.trim().isNotEmpty)
+              m.shellCropStageMaj!,
+            if (m.shellCropStageMin != null &&
+                m.shellCropStageMin!.trim().isNotEmpty)
+              m.shellCropStageMin!,
+            if (m.shellCropStageMax != null &&
+                m.shellCropStageMax!.trim().isNotEmpty)
+              m.shellCropStageMax!,
+          ].join('–')}',
+        if (m.shellCropDensity != null &&
+                m.shellCropDensity!.trim().isNotEmpty ||
+            m.shellCropDensityUnit != null &&
+                m.shellCropDensityUnit!.trim().isNotEmpty)
+          'Crop density: ${[
+            if (m.shellCropDensity != null &&
+                m.shellCropDensity!.trim().isNotEmpty)
+              m.shellCropDensity!,
+            if (m.shellCropDensityUnit != null &&
+                m.shellCropDensityUnit!.trim().isNotEmpty)
+              m.shellCropDensityUnit!,
+          ].join(' ')}',
+        if (m.shellPestStageMaj != null &&
+                m.shellPestStageMaj!.trim().isNotEmpty ||
+            m.shellPestStageMin != null &&
+                m.shellPestStageMin!.trim().isNotEmpty ||
+            m.shellPestStageMax != null &&
+                m.shellPestStageMax!.trim().isNotEmpty)
+          'Pest stage: ${[
+            if (m.shellPestStageMaj != null &&
+                m.shellPestStageMaj!.trim().isNotEmpty)
+              m.shellPestStageMaj!,
+            if (m.shellPestStageMin != null &&
+                m.shellPestStageMin!.trim().isNotEmpty)
+              m.shellPestStageMin!,
+            if (m.shellPestStageMax != null &&
+                m.shellPestStageMax!.trim().isNotEmpty)
+              m.shellPestStageMax!,
+          ].join('–')}',
+        if (m.shellPestDensity != null &&
+                m.shellPestDensity!.trim().isNotEmpty ||
+            m.shellPestDensityUnit != null &&
+                m.shellPestDensityUnit!.trim().isNotEmpty)
+          'Pest density: ${[
+            if (m.shellPestDensity != null &&
+                m.shellPestDensity!.trim().isNotEmpty)
+              m.shellPestDensity!,
+            if (m.shellPestDensityUnit != null &&
+                m.shellPestDensityUnit!.trim().isNotEmpty)
+              m.shellPestDensityUnit!,
+          ].join(' ')}',
+        if (m.shellTrtEvalInterval != null &&
+            m.shellTrtEvalInterval!.trim().isNotEmpty)
+          'Trt interval: ${m.shellTrtEvalInterval}',
+        if (m.shellPlantEvalInterval != null &&
+            m.shellPlantEvalInterval!.trim().isNotEmpty)
+          'Plant interval: ${m.shellPlantEvalInterval}',
+        if (m.shellAssessedBy != null && m.shellAssessedBy!.isNotEmpty)
+          'Assessed by: ${m.shellAssessedBy}',
+        if (m.shellEquipment != null && m.shellEquipment!.isNotEmpty)
+          'Equipment: ${m.shellEquipment}',
+        if (m.shellUntreatedRatingType != null &&
+            m.shellUntreatedRatingType!.trim().isNotEmpty)
+          'Untrt. type: ${m.shellUntreatedRatingType}',
+        if (m.shellArmActions != null && m.shellArmActions!.trim().isNotEmpty)
+          'ARM actions: ${m.shellArmActions}',
+      ],
+    ];
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -579,8 +712,24 @@ class _ArmAssessmentRow extends StatelessWidget {
                       _MicroChip(label: seName, color: const Color(0xFF0369A1)),
                     if (ratingType != null && ratingType.isNotEmpty)
                       _MicroChip(label: ratingType, color: const Color(0xFF047857)),
+                    if (appTimingCode != null &&
+                        appTimingCode.trim().isNotEmpty)
+                      _MicroChip(
+                        label: appTimingCode,
+                        color: const Color(0xFFB45309),
+                      ),
                   ],
                 ),
+                if (detailParts.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    detailParts.join(' • '),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

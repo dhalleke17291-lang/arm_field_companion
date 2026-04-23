@@ -32,4 +32,34 @@ void main() {
     );
     expect(shell.assessmentColumns.single.ratingDate, '1-Jul-26');
   });
+
+  test('reads collect basis from row 24 and size unit from row 23', () async {
+    final path = await writeArmShellFixture(
+      tempPath,
+      plotNumbers: const [101],
+      armColumnIds: const ['3'],
+      seNames: const ['W003'],
+      plotDataSizeUnit: 'PLOT',
+      plotDataCollectBasis: '1',
+    );
+    final shell = await ArmShellParser(path).parse();
+    final c = shell.assessmentColumns.single;
+    expect(c.sizeUnit, 'PLOT');
+    expect(c.collectBasis, '1');
+  });
+
+  test('pestCodeFromSheet comes from row 9, not SE Name row', () async {
+    final path = await writeArmShellFixture(
+      tempPath,
+      plotNumbers: const [101],
+      armColumnIds: const ['3'],
+      seNames: const ['W003'],
+      pestCodesFromSheet: const ['EPPO123'],
+      ratingTypes: const ['CONTRO'],
+    );
+    final shell = await ArmShellParser(path).parse();
+    final c = shell.assessmentColumns.single;
+    expect(c.seName, 'W003');
+    expect(c.pestCodeFromSheet, 'EPPO123');
+  });
 }
