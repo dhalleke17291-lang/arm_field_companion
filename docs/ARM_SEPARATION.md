@@ -199,7 +199,7 @@ This numbering is **workspace shorthand** for the ARM **Rating Shell (.xlsx)** w
 
 - **Parser:** `lib/data/services/arm_shell_parser.dart` — Plot Data grid → `ArmShellImport.assessmentColumns` + `plotRows`.
 - **Import:** `ImportArmRatingShellUseCase` — deduplicated assessments, planned sessions, `arm_column_mappings`, `arm_assessment_metadata`, `arm_session_metadata`.
-- **Export:** `ExportArmRatingShellUseCase` + `ArmValueInjector` — rating values are injected into the **Plot Data** worksheet XML; other worksheets are copied from the selected shell unless a future phase adds injectors for them.
+- **Export:** `ExportArmRatingShellUseCase` + `ArmValueInjector` — rating values are injected into the **Plot Data** worksheet XML; **Applications** columns are rewritten from `arm_applications` (verbatim `row01`…`row79`). The **Treatments** worksheet is still copied unchanged from the selected shell.
 
 ### Treatments sheet — slices 2a–2d
 
@@ -218,7 +218,7 @@ This numbering is **workspace shorthand** for the ARM **Rating Shell (.xlsx)** w
 | **3b** | Parser (`ArmApplicationSheetColumn`, 79 rows × column) | `_parseApplicationsSheet` in `arm_shell_parser.dart`; `test/data/arm_shell_parser_test.dart` |
 | **3c** | Importer — `trial_application_events` dual-write + `arm_applications` verbatim rows | `ImportArmRatingShellUseCase`; `test/features/arm_import/import_arm_rating_shell_applications_sheet_test.dart` |
 | **3d** | ARM Protocol tab — read-only Applications | `ArmApplicationsSection` in `arm_protocol_tab.dart`; `test/features/arm_protocol/arm_protocol_tab_applications_test.dart` |
-| **3e** | Round-trip trust | `import_arm_rating_shell_round_trip_test.dart` — group *Applications sheet round-trip trust anchor* |
+| **3e** | Round-trip trust + **export** Applications inject | `import_arm_rating_shell_round_trip_test.dart` — group *Applications sheet round-trip trust anchor* (includes **export injects Applications sheet** test) |
 
 ### Fixture contract
 
@@ -226,7 +226,7 @@ Sheet layout, row maps, and which sheets are parsed today: **`test/fixtures/arm_
 
 ### Gaps (explicit)
 
-- **Export:** `ArmValueInjector` does **not** yet rewrite the **Treatments** or **Applications** worksheets; full workbook round-trip for those sheets is future work.
+- **Export:** `ArmValueInjector` does **not** yet rewrite the **Treatments** worksheet. **Applications** export is implemented (optional `applicationColumns` on `inject`, fed by `ExportArmRatingShellUseCase` from `arm_applications`).
 - **Comments**, **Subsample Plot Data**: not parsed (see README).
 
 ## What standalone users see
