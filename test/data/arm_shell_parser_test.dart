@@ -129,4 +129,43 @@ void main() {
     ).parse();
     expect(shell.commentsSheetText, isNull);
   });
+
+  test('Subsample Plot Data: mirrored sheet parses same columns and plots', () async {
+    final path = await writeArmShellFixture(
+      tempPath,
+      plotNumbers: const [101, 102],
+      armColumnIds: const ['3', '16'],
+      seNames: const ['W003', 'W001'],
+      ratingTypes: const ['CONTRO', 'LODGIN'],
+      subsamplePlotDataMirror: true,
+    );
+    final shell = await ArmShellParser(path).parse();
+    expect(shell.assessmentColumns, hasLength(2));
+    expect(shell.subsampleAssessmentColumns, hasLength(2));
+    expect(
+      shell.subsampleAssessmentColumns.map((c) => c.armColumnId).toList(),
+      ['3', '16'],
+    );
+    expect(shell.plotRows, hasLength(2));
+    expect(shell.subsamplePlotRows, hasLength(2));
+    expect(
+      shell.subsamplePlotRows.map((p) => p.plotNumber).toList(),
+      [101, 102],
+    );
+  });
+
+  test('AgQuest fixture: Subsample Plot Data mirrors main plot structure', () async {
+    final shell = await ArmShellParser(
+      'test/fixtures/arm_shells/AgQuest_RatingShell.xlsx',
+    ).parse();
+    expect(shell.subsampleAssessmentColumns, hasLength(shell.assessmentColumns.length));
+    expect(shell.subsamplePlotRows, hasLength(shell.plotRows.length));
+    if (shell.assessmentColumns.isNotEmpty &&
+        shell.subsampleAssessmentColumns.isNotEmpty) {
+      expect(
+        shell.subsampleAssessmentColumns.first.armColumnId,
+        shell.assessmentColumns.first.armColumnId,
+      );
+    }
+  });
 }

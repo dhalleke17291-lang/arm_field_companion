@@ -16,6 +16,8 @@ class ArmShellImport {
     this.treatmentSheetRows = const [],
     this.applicationSheetColumns = const [],
     this.commentsSheetText,
+    this.subsampleAssessmentColumns = const [],
+    this.subsamplePlotRows = const [],
   });
 
   final String title;
@@ -42,6 +44,12 @@ class ArmShellImport {
   /// **Comments** sheet: body text next to the `ECM` row (column B). Null
   /// when the sheet is missing, unreadable, or the cell is blank.
   final String? commentsSheetText;
+
+  /// **Subsample Plot Data** sheet: same column + plot-row layout as Plot Data.
+  /// Empty when the sheet is missing, unreadable, or does not contain a valid
+  /// `041TRT` block (best-effort — import does not yet consume these rows).
+  final List<ArmColumnMap> subsampleAssessmentColumns;
+  final List<ArmPlotRow> subsamplePlotRows;
 
   final String shellFilePath;
 }

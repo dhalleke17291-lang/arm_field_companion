@@ -63,32 +63,11 @@ ArmShellImport parseArmShellBytes(ArmShellParseParams p) {
   final plotDoc =
       XmlDocument.parse(utf8.decode(plotEntry.content as List<int>));
 
-  // --- Build cell grid from XML rows ---
-  // Map of (row0, col0) → cell value string
-  final cells = <(int, int), String>{};
-  for (final row in plotDoc.findAllElements('row')) {
-    final rowNum = int.tryParse(row.getAttribute('r') ?? '');
-    if (rowNum == null) continue;
-    final rowIdx = rowNum - 1; // 0-based
-    for (final c in row.findElements('c')) {
-      final ref = c.getAttribute('r'); // e.g. "C8"
-      if (ref == null) continue;
-      final colIdx = _colIdxFromRef(ref);
-      if (colIdx == null) continue;
-      final val = _cellValue(c, strings);
-      if (val != null) cells[(rowIdx, colIdx)] = val;
-    }
-  }
+  final plotCells = _cellMapFromWorksheetXml(plotDoc, strings);
 
   // --- Helper to read a cell ---
-  String? cell(int row, int col) => cells[(row, col)];
-  int? cellInt(int row, int col) {
-    final v = cell(row, col);
-    if (v == null) return null;
-    final d = double.tryParse(v);
-    if (d != null) return d.toInt();
-    return int.tryParse(v);
-  }
+  String? cell(int row, int col) => plotCells[(row, col)];
+  int? cellInt(int row, int col) => _cellIntFrom(plotCells, row, col);
 
   // --- Metadata ---
   final title = cell(1, 2) ?? '';
@@ -96,93 +75,8 @@ ArmShellImport parseArmShellBytes(ArmShellParseParams p) {
   final cooperator = cell(3, 2);
   final crop = cell(4, 2);
 
-  // --- Assessment columns (c=2 onward, until empty ID cell at row 7) ---
-  final assessmentColumns = <ArmColumnMap>[];
-  for (var colIdx = 2; colIdx < 512; colIdx++) {
-    final rawId = cell(7, colIdx);
-    if (rawId == null || rawId.trim().isEmpty) break;
-    final armColumnId = rawId.trim();
-    final subs = cell(46, colIdx);
-    assessmentColumns.add(
-      ArmColumnMap(
-        armColumnId: armColumnId,
-        armColumnIdInteger: int.tryParse(armColumnId),
-        columnLetter: columnIndexToLettersZeroBased(colIdx),
-        columnIndex: colIdx,
-        pestType: cell(8, colIdx),
-        pestCodeFromSheet: cell(9, colIdx),
-        pestName: cell(10, colIdx),
-        cropCodeArm: cell(11, colIdx),
-        cropNameArm: cell(12, colIdx),
-        cropVariety: cell(13, colIdx),
-        seDescription: cell(14, colIdx),
-        ratingDate: cell(15, colIdx),
-        ratingTime: cell(16, colIdx),
-        seName: cell(17, colIdx),
-        partRated: cell(18, colIdx),
-        cropOrPest: cell(19, colIdx),
-        ratingType: cell(20, colIdx),
-        ratingUnit: cell(21, colIdx),
-        sampleSize: cell(22, colIdx),
-        sizeUnit: cell(23, colIdx),
-        collectBasis: cell(24, colIdx),
-        collectionBasisUnit: cell(25, colIdx),
-        reportingBasis: cell(26, colIdx),
-        reportingBasisUnit: cell(27, colIdx),
-        stageScale: cell(28, colIdx),
-        cropStageMaj: cell(29, colIdx),
-        cropStageMin: cell(30, colIdx),
-        cropStageMax: cell(31, colIdx),
-        cropDensity: cell(32, colIdx),
-        cropDensityUnit: cell(33, colIdx),
-        pestStageMaj: cell(34, colIdx),
-        pestStageMin: cell(35, colIdx),
-        pestStageMax: cell(36, colIdx),
-        pestDensity: cell(37, colIdx),
-        pestDensityUnit: cell(38, colIdx),
-        assessedBy: cell(39, colIdx),
-        equipment: cell(40, colIdx),
-        ratingTiming: cell(41, colIdx),
-        appTimingCode: cell(41, colIdx),
-        trtEvalInterval: cell(42, colIdx),
-        datInterval: cell(43, colIdx),
-        untreatedRatingType: cell(44, colIdx),
-        armActions: cell(45, colIdx),
-        numSubsamples: subs != null ? int.tryParse(subs.trim()) : null,
-      ),
-    );
-  }
-
-  // --- Plot data rows: find 041TRT marker, data starts next row ---
-  var headerRowIdx = -1;
-  for (var rowIdx = 7; rowIdx < 200; rowIdx++) {
-    final v = cell(rowIdx, 0);
-    if (v != null && v.trim() == '041TRT') {
-      headerRowIdx = rowIdx;
-      break;
-    }
-  }
-  if (headerRowIdx < 0) {
-    throw ArgumentError(
-      'Excel rating sheet invalid: 041TRT header row not found.',
-    );
-  }
-
-  final plotRows = <ArmPlotRow>[];
-  for (var rowIdx = headerRowIdx + 1; rowIdx < 1000; rowIdx++) {
-    final trt = cellInt(rowIdx, 0);
-    if (trt == null) break;
-    final plot = cellInt(rowIdx, 1);
-    if (plot == null) break;
-    plotRows.add(
-      ArmPlotRow(
-        trtNumber: trt,
-        plotNumber: plot,
-        blockNumber: plot ~/ 100,
-        rowIndex: rowIdx,
-      ),
-    );
-  }
+  final assessmentColumns = _parseAssessmentColumnsFromCells(cell);
+  final plotRows = _parsePlotRowsFromCells(cell, cellInt);
 
   // --- Treatments sheet (optional; legacy shells without it still parse) ---
   //
@@ -212,6 +106,27 @@ ArmShellImport parseArmShellBytes(ArmShellParseParams p) {
     commentsSheetText = null;
   }
 
+  var subsampleAssessmentColumns = <ArmColumnMap>[];
+  var subsamplePlotRows = <ArmPlotRow>[];
+  try {
+    final subPath = _resolveSheetPath(archive, 'Subsample Plot Data');
+    if (subPath != null) {
+      final subEntry = archive.findFile(subPath);
+      if (subEntry != null) {
+        final subDoc =
+            XmlDocument.parse(utf8.decode(subEntry.content as List<int>));
+        final subCells = _cellMapFromWorksheetXml(subDoc, strings);
+        String? sCell(int r, int c) => subCells[(r, c)];
+        int? sCellInt(int r, int c) => _cellIntFrom(subCells, r, c);
+        subsampleAssessmentColumns = _parseAssessmentColumnsFromCells(sCell);
+        subsamplePlotRows = _parsePlotRowsFromCells(sCell, sCellInt);
+      }
+    }
+  } catch (_) {
+    subsampleAssessmentColumns = const [];
+    subsamplePlotRows = const [];
+  }
+
   return ArmShellImport(
     title: title,
     trialId: trialId,
@@ -222,6 +137,8 @@ ArmShellImport parseArmShellBytes(ArmShellParseParams p) {
     treatmentSheetRows: treatmentSheetRows,
     applicationSheetColumns: applicationSheetColumns,
     commentsSheetText: commentsSheetText,
+    subsampleAssessmentColumns: subsampleAssessmentColumns,
+    subsamplePlotRows: subsamplePlotRows,
     shellFilePath: p.shellFilePath,
   );
 }
@@ -422,7 +339,15 @@ String? _parseCommentsSheet(Archive archive, List<String> sharedStrings) {
 /// Optional sheet: **Comments** — single `ECM` row with free text in column B;
 /// see `_parseCommentsSheet`.
 ///
-/// Assessment columns (c=2 onward, until empty ID cell at **0-based row 7**).
+/// Optional sheet: **Subsample Plot Data** — same `001EID`…`041TRT` layout as
+/// Plot Data; parsed into [ArmShellImport.subsampleAssessmentColumns] and
+/// [ArmShellImport.subsamplePlotRows] (best-effort when the sheet is missing or
+/// invalid).
+///
+/// Assessment columns (c=2 onward, until empty ID cell on the `001EID` row).
+/// The `001EID` descriptor row is detected from column A (falls back to **0-based
+/// row 7** / Excel row 8). **Subsample Plot Data** uses the same row offsets
+/// from that anchor (ARM may place `001EID` on row 1 in that sheet).
 /// Full Plot Data descriptor block **0-based rows 8–46** (Excel rows 9–47,
 /// `001EID`…`040ENS`) is read into [ArmColumnMap]; see
 /// `test/fixtures/arm_shells/README.md`.
@@ -460,6 +385,145 @@ class ArmShellParser {
 }
 
 // --- Private helpers ---
+
+/// Map of (row0, col0) → cell value string from one worksheet `<sheetData>`.
+Map<(int, int), String> _cellMapFromWorksheetXml(
+  XmlDocument sheetDoc,
+  List<String> sharedStrings,
+) {
+  final cells = <(int, int), String>{};
+  for (final row in sheetDoc.findAllElements('row')) {
+    final rowNum = int.tryParse(row.getAttribute('r') ?? '');
+    if (rowNum == null) continue;
+    final rowIdx = rowNum - 1;
+    for (final c in row.findElements('c')) {
+      final ref = c.getAttribute('r');
+      if (ref == null) continue;
+      final colIdx = _colIdxFromRef(ref);
+      if (colIdx == null) continue;
+      final val = _cellValue(c, sharedStrings);
+      if (val != null) cells[(rowIdx, colIdx)] = val;
+    }
+  }
+  return cells;
+}
+
+int? _cellIntFrom(Map<(int, int), String> cells, int row, int col) {
+  final v = cells[(row, col)];
+  if (v == null) return null;
+  final d = double.tryParse(v);
+  if (d != null) return d.toInt();
+  return int.tryParse(v);
+}
+
+/// Row (0-based) where column A is `001EID` and column C+ hold ARM Column IDs.
+/// Falls back to **7** (Excel row 8) when not found — matches standard Plot Data.
+int _find001EidDescriptorRow(String? Function(int row, int col) cell) {
+  for (var r = 0; r < 100; r++) {
+    if (cell(r, 0)?.trim() == '001EID') return r;
+  }
+  return 7;
+}
+
+List<ArmColumnMap> _parseAssessmentColumnsFromCells(
+  String? Function(int row, int col) cell,
+) {
+  final anchor = _find001EidDescriptorRow(cell);
+  int dr(int specRow) => anchor + (specRow - 7);
+
+  final assessmentColumns = <ArmColumnMap>[];
+  for (var colIdx = 2; colIdx < 512; colIdx++) {
+    final rawId = cell(dr(7), colIdx);
+    if (rawId == null || rawId.trim().isEmpty) break;
+    final armColumnId = rawId.trim();
+    final subs = cell(dr(46), colIdx);
+    assessmentColumns.add(
+      ArmColumnMap(
+        armColumnId: armColumnId,
+        armColumnIdInteger: int.tryParse(armColumnId),
+        columnLetter: columnIndexToLettersZeroBased(colIdx),
+        columnIndex: colIdx,
+        pestType: cell(dr(8), colIdx),
+        pestCodeFromSheet: cell(dr(9), colIdx),
+        pestName: cell(dr(10), colIdx),
+        cropCodeArm: cell(dr(11), colIdx),
+        cropNameArm: cell(dr(12), colIdx),
+        cropVariety: cell(dr(13), colIdx),
+        seDescription: cell(dr(14), colIdx),
+        ratingDate: cell(dr(15), colIdx),
+        ratingTime: cell(dr(16), colIdx),
+        seName: cell(dr(17), colIdx),
+        partRated: cell(dr(18), colIdx),
+        cropOrPest: cell(dr(19), colIdx),
+        ratingType: cell(dr(20), colIdx),
+        ratingUnit: cell(dr(21), colIdx),
+        sampleSize: cell(dr(22), colIdx),
+        sizeUnit: cell(dr(23), colIdx),
+        collectBasis: cell(dr(24), colIdx),
+        collectionBasisUnit: cell(dr(25), colIdx),
+        reportingBasis: cell(dr(26), colIdx),
+        reportingBasisUnit: cell(dr(27), colIdx),
+        stageScale: cell(dr(28), colIdx),
+        cropStageMaj: cell(dr(29), colIdx),
+        cropStageMin: cell(dr(30), colIdx),
+        cropStageMax: cell(dr(31), colIdx),
+        cropDensity: cell(dr(32), colIdx),
+        cropDensityUnit: cell(dr(33), colIdx),
+        pestStageMaj: cell(dr(34), colIdx),
+        pestStageMin: cell(dr(35), colIdx),
+        pestStageMax: cell(dr(36), colIdx),
+        pestDensity: cell(dr(37), colIdx),
+        pestDensityUnit: cell(dr(38), colIdx),
+        assessedBy: cell(dr(39), colIdx),
+        equipment: cell(dr(40), colIdx),
+        ratingTiming: cell(dr(41), colIdx),
+        appTimingCode: cell(dr(41), colIdx),
+        trtEvalInterval: cell(dr(42), colIdx),
+        datInterval: cell(dr(43), colIdx),
+        untreatedRatingType: cell(dr(44), colIdx),
+        armActions: cell(dr(45), colIdx),
+        numSubsamples: subs != null ? int.tryParse(subs.trim()) : null,
+      ),
+    );
+  }
+  return assessmentColumns;
+}
+
+List<ArmPlotRow> _parsePlotRowsFromCells(
+  String? Function(int row, int col) cell,
+  int? Function(int row, int col) cellInt,
+) {
+  var headerRowIdx = -1;
+  for (var rowIdx = 7; rowIdx < 200; rowIdx++) {
+    final v = cell(rowIdx, 0);
+    if (v != null && v.trim() == '041TRT') {
+      headerRowIdx = rowIdx;
+      break;
+    }
+  }
+  if (headerRowIdx < 0) {
+    throw ArgumentError(
+      'Excel rating sheet invalid: 041TRT header row not found.',
+    );
+  }
+
+  final plotRows = <ArmPlotRow>[];
+  for (var rowIdx = headerRowIdx + 1; rowIdx < 1000; rowIdx++) {
+    final trt = cellInt(rowIdx, 0);
+    if (trt == null) break;
+    final plot = cellInt(rowIdx, 1);
+    if (plot == null) break;
+    plotRows.add(
+      ArmPlotRow(
+        trtNumber: trt,
+        plotNumber: plot,
+        blockNumber: plot ~/ 100,
+        rowIndex: rowIdx,
+      ),
+    );
+  }
+  return plotRows;
+}
 
 /// Resolves workbook.xml + rels to find the XML path of a worksheet by
 /// its display name (e.g. `'Plot Data'`, `'Treatments'`).

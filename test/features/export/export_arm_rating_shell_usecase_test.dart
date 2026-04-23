@@ -189,85 +189,96 @@ Future<String> writeArmShellFixture(
 
   /// Optional **Comments** sheet: `ECM` in A2 and this text in B2 (ARM layout).
   String? commentsSheetBody,
+
+  /// When true, fills **Subsample Plot Data** with the same layout as Plot Data
+  /// (for parser tests).
+  bool subsamplePlotDataMirror = false,
 }) async {
   final excel = Excel.createExcel();
   excel.rename('Sheet1', 'Plot Data');
   final sheet = excel['Plot Data'];
 
-  void setText(int r, int c, String t) {
-    sheet
-        .cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: r))
-        .value = TextCellValue(t);
+  void populatePlotDataLikeSheet(Sheet target) {
+    void setText(int r, int c, String t) {
+      target
+          .cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: r))
+          .value = TextCellValue(t);
+    }
+
+    void setInt(int r, int c, int v) {
+      target
+          .cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: r))
+          .value = IntCellValue(v);
+    }
+
+    setText(1, 2, 'T');
+    setText(2, 2, 'id');
+    setText(3, 2, 'c');
+    setText(4, 2, 'cr');
+    setText(5, 2, 'f');
+
+    for (var i = 0; i < armColumnIds.length; i++) {
+      final col = 2 + i;
+      setText(7, col, armColumnIds[i]);
+      if (pestCodesFromSheet != null && i < pestCodesFromSheet.length) {
+        setText(9, col, pestCodesFromSheet[i]);
+      }
+      setText(
+        14,
+        col,
+        seDescriptions != null && i < seDescriptions.length
+            ? seDescriptions[i]
+            : '',
+      );
+      setText(
+        15,
+        col,
+        ratingDates != null && i < ratingDates.length ? ratingDates[i] : '',
+      );
+      setText(17, col, seNames[i]);
+      setText(
+        20,
+        col,
+        ratingTypes != null && i < ratingTypes.length ? ratingTypes[i] : 'TYPE',
+      );
+      setText(
+        21,
+        col,
+        ratingUnits != null && i < ratingUnits.length ? ratingUnits[i] : 'u',
+      );
+      setText(29, col, 'st');
+      setText(
+        41,
+        col,
+        ratingTimings != null && i < ratingTimings.length
+            ? ratingTimings[i]
+            : 'tim',
+      );
+      if (plotDataSizeUnit != null) {
+        setText(23, col, plotDataSizeUnit);
+      }
+      if (plotDataCollectBasis != null) {
+        setText(24, col, plotDataCollectBasis);
+      }
+      if (plotDataAssessedBy != null) {
+        setText(39, col, plotDataAssessedBy);
+      }
+      setText(46, col, '1');
+    }
+
+    setText(47, 0, '041TRT');
+    setText(47, 1, 'Plot (Sub)');
+
+    for (var i = 0; i < plotNumbers.length; i++) {
+      final row = 48 + i;
+      setInt(row, 0, 1);
+      setInt(row, 1, plotNumbers[i]);
+    }
   }
 
-  void setInt(int r, int c, int v) {
-    sheet
-        .cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: r))
-        .value = IntCellValue(v);
-  }
-
-  setText(1, 2, 'T');
-  setText(2, 2, 'id');
-  setText(3, 2, 'c');
-  setText(4, 2, 'cr');
-  setText(5, 2, 'f');
-
-  for (var i = 0; i < armColumnIds.length; i++) {
-    final col = 2 + i;
-    setText(7, col, armColumnIds[i]);
-    if (pestCodesFromSheet != null && i < pestCodesFromSheet.length) {
-      setText(9, col, pestCodesFromSheet[i]);
-    }
-    setText(
-      14,
-      col,
-      seDescriptions != null && i < seDescriptions.length
-          ? seDescriptions[i]
-          : '',
-    );
-    setText(
-      15,
-      col,
-      ratingDates != null && i < ratingDates.length ? ratingDates[i] : '',
-    );
-    setText(17, col, seNames[i]);
-    setText(
-      20,
-      col,
-      ratingTypes != null && i < ratingTypes.length ? ratingTypes[i] : 'TYPE',
-    );
-    setText(
-      21,
-      col,
-      ratingUnits != null && i < ratingUnits.length ? ratingUnits[i] : 'u',
-    );
-    setText(29, col, 'st');
-    setText(
-      41,
-      col,
-      ratingTimings != null && i < ratingTimings.length
-          ? ratingTimings[i]
-          : 'tim',
-    );
-    if (plotDataSizeUnit != null) {
-      setText(23, col, plotDataSizeUnit);
-    }
-    if (plotDataCollectBasis != null) {
-      setText(24, col, plotDataCollectBasis);
-    }
-    if (plotDataAssessedBy != null) {
-      setText(39, col, plotDataAssessedBy);
-    }
-    setText(46, col, '1');
-  }
-
-  setText(47, 0, '041TRT');
-  setText(47, 1, 'Plot (Sub)');
-
-  for (var i = 0; i < plotNumbers.length; i++) {
-    final row = 48 + i;
-    setInt(row, 0, 1);
-    setInt(row, 1, plotNumbers[i]);
+  populatePlotDataLikeSheet(sheet);
+  if (subsamplePlotDataMirror) {
+    populatePlotDataLikeSheet(excel['Subsample Plot Data']);
   }
 
   if (applicationSheetColumns != null &&

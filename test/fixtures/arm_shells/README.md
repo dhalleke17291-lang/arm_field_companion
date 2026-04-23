@@ -24,7 +24,7 @@ This file has **7 sheets**:
 | **Treatments** | Products, rates, formulations, rate units | **Yes** (Phase 2) |
 | **Applications** | 79 descriptor fields: dates, weather, equipment, nozzles, carrier, mix | **Yes** (Phase 3b parser + Phase 3c importer) |
 | **Comments** | Free-text trial notes (`ECM` row, column B) | **Yes** — parser → `ArmShellImport.commentsSheetText`; persisted on `arm_trial_metadata.shell_comments_sheet` |
-| **Subsample Plot Data** | Mirror of Plot Data for subsample protocols | **Not parsed** |
+| **Subsample Plot Data** | Mirror of Plot Data for subsample protocols | **Yes** — same descriptor + `041TRT` layout as Plot Data; exposed on `ArmShellImport.subsampleAssessmentColumns` / `subsamplePlotRows` (import does not yet land subsample rows in core) |
 | **Subsample Treatment Means** | Calculated means (Excel formulas) | Output-only, not ingested |
 | **Treatment Means** | Calculated means per treatment (Excel formulas) | Output-only, not ingested |
 
@@ -161,6 +161,8 @@ Single free-text cell:
 ## Subsample Plot Data & Subsample Treatment Means
 
 Only relevant when `# Subsamples > 1`. AgQuest uses subsamples = 1, so these sheets mirror the main plot data degenerately.
+
+**Layout note:** In AgQuest’s export, **Subsample Plot Data** uses the same descriptor *codes* and column offsets as Plot Data, but the `001EID` block starts on **Excel row 1** (not row 8). The parser finds the anchor row by scanning column A for `001EID`, then applies the standard `001EID`…`040ENS` offsets from there.
 
 ## Parser sanity checks
 

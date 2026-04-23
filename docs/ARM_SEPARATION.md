@@ -226,7 +226,7 @@ Sheet layout, row maps, and which sheets are parsed today: **`test/fixtures/arm_
 
 ### Gaps (explicit)
 
-- **Subsample Plot Data**: not parsed (see README). **Comments** sheet: parsed and stored on `arm_trial_metadata.shell_comments_sheet`; ARM Protocol tab shows non-empty text.
+- **Subsample Plot Data**: parsed into `ArmShellImport.subsampleAssessmentColumns` / `subsamplePlotRows` (structure only; not persisted). **Comments** sheet: parsed and stored on `arm_trial_metadata.shell_comments_sheet`; ARM Protocol tab shows non-empty text.
 
 ## What standalone users see
 
