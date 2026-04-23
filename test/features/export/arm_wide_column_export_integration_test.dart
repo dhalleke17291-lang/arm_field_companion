@@ -226,13 +226,13 @@ void main() {
                 assessmentDefinitionId: defId,
                 legacyAssessmentId: Value(legacyId),
                 sortOrder: Value(i),
-                pestCode: Value('WC$i'),
               ),
             );
         await db.into(db.armAssessmentMetadata).insert(
               ArmAssessmentMetadataCompanion.insert(
                 trialAssessmentId: taId,
                 armImportColumnIndex: Value(colIdx),
+                pestCode: Value('WC$i'),
               ),
             );
         legacyIds.add(legacyId);

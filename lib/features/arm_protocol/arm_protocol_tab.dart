@@ -278,16 +278,17 @@ class _ArmAssessmentRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // v60 moved per-column ARM fields to arm_assessment_metadata; seName /
-    // ratingType still live on trial_assessments pending Unit 5.
+    // v60 moved per-column ARM fields to arm_assessment_metadata; v61
+    // (Unit 5d) finished the cutover by dropping seName / seDescription /
+    // armRatingType / pestCode from trial_assessments. All ARM display
+    // fields are now read from AAM.
     final name =
         ta.displayNameOverride?.isNotEmpty == true ? ta.displayNameOverride! : def.name;
     final colIdx = aam?.armImportColumnIndex;
     final columnId = aam?.armShellColumnId;
     final ratingDate = aam?.armShellRatingDate;
-    final seName = (aam?.seName?.isNotEmpty == true) ? aam!.seName : ta.seName;
-    final ratingType =
-        (aam?.ratingType?.isNotEmpty == true) ? aam!.ratingType : ta.armRatingType;
+    final seName = aam?.seName;
+    final ratingType = aam?.ratingType;
 
     return Container(
       padding: const EdgeInsets.symmetric(

@@ -425,9 +425,8 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
 
     if (plots.isEmpty || assessmentPairs.isEmpty) return {};
 
-    // Unit 5c: prefer ArmAssessmentMetadata.ratingType over the legacy
-    // duplicate column on TrialAssessments.armRatingType. Falls back to
-    // the TA column until Unit 5d / schema v61 drops it.
+    // ARM rating type lives on arm_assessment_metadata (v61). Standalone
+    // trials have no AAM rows, so the lookup is a no-op for them.
     final aamRows = await ref
         .read(armColumnMappingRepositoryProvider)
         .getAssessmentMetadatasForTrial(trialId);
@@ -468,8 +467,7 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
           await _assessmentNameForTrialStatistics(db, ta, def);
       final unit = def.unit ?? '';
       final direction = _normalizeResultDirection(def.resultDirection);
-      final ratingType =
-          aamByTaId[ta.id]?.ratingType ?? ta.armRatingType;
+      final ratingType = aamByTaId[ta.id]?.ratingType;
       result[ta.id] = computeAssessmentStatistics(
         filteredRatingRows,
         name,
@@ -1752,8 +1750,9 @@ final trialTrajectoriesProvider = FutureProvider.autoDispose
       .watch(trialAssessmentsWithDefinitionsForTrialProvider(trialId).future);
   final db = ref.watch(databaseProvider);
 
-  // Unit 5c: prefer ArmAssessmentMetadata.ratingType over the legacy
-  // duplicate column on TrialAssessments.armRatingType.
+  // ARM rating-type code (e.g. CONTRO) now lives on
+  // arm_assessment_metadata (v61). Standalone trials have no AAM rows
+  // and contribute nothing to this grouping.
   final aamRows = await ref
       .read(armColumnMappingRepositoryProvider)
       .getAssessmentMetadatasForTrial(trialId);
@@ -1761,16 +1760,11 @@ final trialTrajectoriesProvider = FutureProvider.autoDispose
     for (final r in aamRows) r.trialAssessmentId: r,
   };
 
-  // Group TrialAssessments by ARM rating-type code (like CONTRO).
   final byCode = <String, List<(dynamic ta, dynamic def)>>{};
   for (final pair in assessmentPairs) {
     final ta = pair.$1;
-    final aamCode = aamByTaId[ta.id]?.ratingType?.trim();
-    final taCode = ta.armRatingType?.trim();
-    final code = (aamCode != null && aamCode.isNotEmpty)
-        ? aamCode
-        : (taCode != null && taCode.isNotEmpty ? taCode : null);
-    if (code == null) continue;
+    final code = aamByTaId[ta.id]?.ratingType?.trim();
+    if (code == null || code.isEmpty) continue;
     if (ta.daysAfterTreatment == null) continue;
     byCode.putIfAbsent(code, () => []).add(pair);
   }

@@ -80,74 +80,12 @@ class TrialAssessmentRepository {
     );
   }
 
-  /// Applies ARM Rating Shell metadata on one trial assessment without
-  /// [assertCanEditProtocolForTrialId].
-  ///
-  /// Only non-empty incoming values are applied. Empty shell strings are
-  /// ignored. Non-empty existing values are not replaced by empty shell
-  /// values (callers should omit empty keys).
-  ///
-  /// Per-column ARM anchor fields (armImportColumnIndex, armShellColumnId,
-  /// armShellRatingDate, armColumnIdInteger) moved to arm_assessment_metadata
-  /// in v60; callers apply those via [ArmColumnMappingRepository] separately.
-  /// Returns whether any column was written.
-  Future<bool> applyArmShellLinkFields({
-    required int id,
-    String? pestCode,
-    String? seName,
-    String? seDescription,
-    String? armRatingType,
-  }) async {
-    final existing = await getById(id);
-    if (existing == null) return false;
-
-    String? mergePest(String? incoming) {
-      if (incoming == null) return null;
-      final s = incoming.trim();
-      if (s.isEmpty) return null;
-      final e = existing.pestCode?.trim() ?? '';
-      if (e.isNotEmpty && e.toUpperCase() == s.toUpperCase()) return null;
-      return s;
-    }
-
-    String? mergeText(String? current, String? incoming) {
-      if (incoming == null) return null;
-      final s = incoming.trim();
-      if (s.isEmpty) return null;
-      final c = current?.trim() ?? '';
-      if (c.isNotEmpty && c == s) return null;
-      return s;
-    }
-
-    final nextPest = mergePest(pestCode);
-    final nextSeName = mergeText(existing.seName, seName);
-    final nextSeDesc = mergeText(existing.seDescription, seDescription);
-    final nextRatingType = mergeText(existing.armRatingType, armRatingType);
-
-    final companion = TrialAssessmentsCompanion(
-      pestCode:
-          nextPest == null ? const Value.absent() : Value(nextPest),
-      seName: nextSeName == null ? const Value.absent() : Value(nextSeName),
-      seDescription:
-          nextSeDesc == null ? const Value.absent() : Value(nextSeDesc),
-      armRatingType: nextRatingType == null
-          ? const Value.absent()
-          : Value(nextRatingType),
-      updatedAt: Value(DateTime.now().toUtc()),
-    );
-
-    final touched = nextPest != null ||
-        nextSeName != null ||
-        nextSeDesc != null ||
-        nextRatingType != null;
-    if (!touched) return false;
-
-    await (_db.update(_db.trialAssessments)..where((t) => t.id.equals(id)))
-        .write(companion);
-    return true;
-  }
-
   /// Add a library definition to this trial (manual or protocol-driven).
+  ///
+  /// The ARM assessment code (pestCode) and ARM SE name / description /
+  /// rating type live on [ArmAssessmentMetadata]; callers that need to
+  /// persist an ARM code must insert the AAM row themselves. Unit 5d
+  /// removed the four duplicate ARM columns from [TrialAssessments].
   Future<int> addToTrial({
     required int trialId,
     required int assessmentDefinitionId,
@@ -158,8 +96,6 @@ class TrialAssessmentRepository {
     bool defaultInSessions = true,
     int sortOrder = 0,
     bool isActive = true,
-    /// ARM assessment code (e.g. CONTRO, AVEFA); stored in [TrialAssessments.pestCode].
-    String? pestCode,
     /// Optional machine tag (e.g. curated library source id); not shown in rating UI.
     String? instructionOverride,
   }) async {
@@ -175,7 +111,6 @@ class TrialAssessmentRepository {
             defaultInSessions: Value(defaultInSessions),
             sortOrder: Value(sortOrder),
             isActive: Value(isActive),
-            pestCode: Value(pestCode),
             instructionOverride: Value(instructionOverride),
           ),
         );

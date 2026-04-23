@@ -145,14 +145,10 @@ class ArmShellLinkUseCase {
       }
       for (final e in byTa.entries) {
         final m = e.value;
-        final wroteTa =
-            await _trialAssessmentRepository.applyArmShellLinkFields(
-          id: e.key,
-          pestCode: m['pestCode'],
-          seName: m['se_name'],
-          seDescription: m['se_description'],
-          armRatingType: m['arm_rating_type'],
-        );
+        // Unit 5d (v61): pestCode / seName / seDescription / armRatingType
+        // live only on arm_assessment_metadata; the four per-column ARM
+        // anchor fields moved to AAM in v60. Everything for this trial
+        // assessment is applied via the ARM column mapping repository.
         final wroteAam = await _armColumnMappingRepository
             .applyShellLinkFieldsForTrialAssessment(
           trialAssessmentId: e.key,
@@ -161,17 +157,12 @@ class ArmShellLinkUseCase {
           armColumnIdInteger: m['arm_column_id_integer'] != null
               ? int.tryParse(m['arm_column_id_integer']!)
               : null,
-          // Phase 0b-ta (Unit 5b): mirror the four duplicate fields into AAM
-          // so readers can flip to AAM-first in Unit 5c and the TA columns
-          // can be dropped in Unit 5d. Still dual-written above via
-          // TrialAssessmentRepository.applyArmShellLinkFields during the
-          // transition.
           pestCode: m['pestCode'],
           seName: m['se_name'],
           seDescription: m['se_description'],
           ratingType: m['arm_rating_type'],
         );
-        if (wroteTa || wroteAam) assessmentWriteCount++;
+        if (wroteAam) assessmentWriteCount++;
       }
 
       // Store shell internally so export doesn't need a file picker.
@@ -405,13 +396,13 @@ class ArmShellLinkUseCase {
       return t.isEmpty ? null : t;
     }
     String? pestCodeFor(TrialAssessment a) =>
-        nonEmpty(aamByTaId[a.id]?.pestCode) ?? nonEmpty(a.pestCode);
+        nonEmpty(aamByTaId[a.id]?.pestCode);
     String? seNameFor(TrialAssessment a) =>
-        nonEmpty(aamByTaId[a.id]?.seName) ?? nonEmpty(a.seName);
+        nonEmpty(aamByTaId[a.id]?.seName);
     String? seDescriptionFor(TrialAssessment a) =>
-        nonEmpty(aamByTaId[a.id]?.seDescription) ?? nonEmpty(a.seDescription);
+        nonEmpty(aamByTaId[a.id]?.seDescription);
     String? armRatingTypeFor(TrialAssessment a) =>
-        nonEmpty(aamByTaId[a.id]?.ratingType) ?? nonEmpty(a.armRatingType);
+        nonEmpty(aamByTaId[a.id]?.ratingType);
 
     final sortedAssessments = List<TrialAssessment>.from(assessments);
     final withColIdx =

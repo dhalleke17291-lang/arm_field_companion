@@ -130,10 +130,9 @@ void main() {
         .get();
     expect(tas, hasLength(1));
     final ta = tas.single;
-    expect(ta.seName, 'W003');
-    expect(ta.armRatingType, 'CONTRO');
 
-    // arm_assessment_metadata: one row, identity fields match.
+    // arm_assessment_metadata: one row, identity fields match. The SE
+    // name / rating type live solely on AAM since v61 (Unit 5d).
     final metas = await (db.select(db.armAssessmentMetadata)
           ..where((m) => m.trialAssessmentId.equals(ta.id)))
         .get();

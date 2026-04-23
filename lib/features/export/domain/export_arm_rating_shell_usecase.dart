@@ -222,8 +222,9 @@ class ExportArmRatingShellUseCase {
 
     // v60 moved per-column ARM fields to arm_assessment_metadata; Unit 5c
     // (this phase) adds pestCode/seName/seDescription/ratingType to that
-    // AAM-first read. Load AAM up front so every downstream helper can
-    // prefer AAM when present and fall back to TA during the transition.
+    // ARM per-column anchors and pestCode live on arm_assessment_metadata
+    // (v60 / v61). Load the AAM map up front so every downstream helper
+    // can resolve them for this trial without re-querying.
     final aamRows = await _armColumnMappingRepository
         .getAssessmentMetadatasForTrial(trial.id);
     final aamByTaId = <int, ArmAssessmentMetadataData>{
@@ -234,10 +235,8 @@ class ExportArmRatingShellUseCase {
     int? armColumnIdIntegerFor(TrialAssessment a) =>
         aamByTaId[a.id]?.armColumnIdInteger;
     String? pestCodeFor(TrialAssessment a) {
-      final aamPc = aamByTaId[a.id]?.pestCode?.trim();
-      if (aamPc != null && aamPc.isNotEmpty) return aamPc;
-      final taPc = a.pestCode?.trim();
-      return (taPc == null || taPc.isEmpty) ? null : taPc;
+      final pc = aamByTaId[a.id]?.pestCode?.trim();
+      return (pc == null || pc.isEmpty) ? null : pc;
     }
 
     final columnOrderOnExport = _parseColumnOrderJson(profile?.columnOrderOnExport);
@@ -722,7 +721,6 @@ class ExportArmRatingShellUseCase {
   ) {
     final aamPc = aamByTaId[ta.id]?.pestCode?.trim();
     if (aamPc != null && aamPc.isNotEmpty) return;
-    if (ta.pestCode != null && ta.pestCode!.trim().isNotEmpty) return;
     if (warnedTaIds.contains(ta.id)) return;
     warnedTaIds.add(ta.id);
     shellWarnings.add(
@@ -790,12 +788,9 @@ class ExportArmRatingShellUseCase {
     Map<int, ArmAssessmentMetadataData> aamByTaId,
   ) {
     final parser = ArmCsvParser();
-    // Phase 0b-ta (Unit 5c): read pestCode from AAM first; fall back to TA.
     String? pestCodeFor(TrialAssessment a) {
-      final aamPc = aamByTaId[a.id]?.pestCode?.trim();
-      if (aamPc != null && aamPc.isNotEmpty) return aamPc;
-      final taPc = a.pestCode?.trim();
-      return (taPc == null || taPc.isEmpty) ? null : taPc;
+      final pc = aamByTaId[a.id]?.pestCode?.trim();
+      return (pc == null || pc.isEmpty) ? null : pc;
     }
 
     final withPest = <({TrialAssessment ta, String pc})>[];

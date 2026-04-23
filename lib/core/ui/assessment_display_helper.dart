@@ -134,8 +134,7 @@ class AssessmentDisplayHelper {
     return DateFormat('MMM d').format(dt);
   }
 
-  /// SE description or null. Prefers [ArmAssessmentMetadata.seDescription]
-  /// when [aam] is provided, else falls back to [TrialAssessment.seDescription].
+  /// SE description or null, read from [ArmAssessmentMetadata.seDescription].
   static String? description(
     TrialAssessment ta, {
     ArmAssessmentMetadataData? aam,
@@ -187,28 +186,28 @@ class AssessmentDisplayHelper {
     return 'Assessment ${ta.id}';
   }
 
-  // AAM-first, TA-fallback accessors for the four duplicate ARM fields
-  // (Unit 5c). When the duplicate columns are dropped from TrialAssessments
-  // in Unit 5d / schema v61, the fallback arms become unreachable and can
-  // be removed together with the corresponding columns.
+  // ARM SE / pest fields live on arm_assessment_metadata (v61). The
+  // `ta` parameter is kept on these accessors so callers can pass the
+  // trial assessment alongside its AAM row without restructuring; the
+  // helpers do not read ARM fields from TrialAssessments.
   static String? _seDescriptionOf(
       TrialAssessment ta, ArmAssessmentMetadataData? aam) {
-    return _nonEmpty(aam?.seDescription) ?? _nonEmpty(ta.seDescription);
+    return _nonEmpty(aam?.seDescription);
   }
 
   static String? _seNameOf(
       TrialAssessment ta, ArmAssessmentMetadataData? aam) {
-    return _nonEmpty(aam?.seName) ?? _nonEmpty(ta.seName);
+    return _nonEmpty(aam?.seName);
   }
 
   static String? _armRatingTypeOf(
       TrialAssessment ta, ArmAssessmentMetadataData? aam) {
-    return _nonEmpty(aam?.ratingType) ?? _nonEmpty(ta.armRatingType);
+    return _nonEmpty(aam?.ratingType);
   }
 
   static String? _pestCodeOf(
       TrialAssessment ta, ArmAssessmentMetadataData? aam) {
-    return _nonEmpty(aam?.pestCode) ?? _nonEmpty(ta.pestCode);
+    return _nonEmpty(aam?.pestCode);
   }
 
   /// Translates ARM rating-type codes to user-friendly labels.

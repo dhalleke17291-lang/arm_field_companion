@@ -107,17 +107,15 @@ class ArmColumnMappingRepository {
   /// row exists yet, one is inserted with the given values so shell-link
   /// proposals can target trials whose v59 backfill produced a blank AAM row.
   ///
-  /// Merge semantics mirror [TrialAssessmentRepository.applyArmShellLinkFields]:
-  /// only non-empty incoming values are applied, and existing non-empty
-  /// values that equal the incoming value are left untouched. String
-  /// comparisons are case-insensitive for [pestCode] (ARM codes are
-  /// canonically upper-case) and case-sensitive for the rest.
-  /// Returns whether any field was written.
+  /// Merge semantics: only non-empty incoming values are applied, and
+  /// existing non-empty values that equal the incoming value are left
+  /// untouched. String comparisons are case-insensitive for [pestCode]
+  /// (ARM codes are canonically upper-case) and case-sensitive for the
+  /// rest. Returns whether any field was written.
   ///
-  /// Phase 0b-ta (Unit 5b): [pestCode], [seName], [seDescription], and
-  /// [ratingType] were added here so the ARM shell-link flow can drive AAM
-  /// directly; the same fields are still dual-written to trial_assessments
-  /// via [TrialAssessmentRepository.applyArmShellLinkFields] pending Unit 5d.
+  /// v61 (Unit 5d) made this the only write path for pestCode / seName /
+  /// seDescription / ratingType; the matching columns on trial_assessments
+  /// were dropped.
   Future<bool> applyShellLinkFieldsForTrialAssessment({
     required int trialAssessmentId,
     String? armShellColumnId,

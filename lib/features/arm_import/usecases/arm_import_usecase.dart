@@ -427,12 +427,12 @@ class ArmImportUseCase {
         defaultInSessions: true,
         sortOrder: sortOrder,
         isActive: true,
-        pestCode: token.armCode,
       );
-      // v60 moved the per-column ARM fields to arm_assessment_metadata.
-      // The legacy CSV path only has `armImportColumnIndex` + `pestCode`
-      // to offer; shell IDs and rating-date cells come from the XLSX
-      // shell importer and are null here.
+      // v60 moved the per-column ARM fields to arm_assessment_metadata;
+      // v61 (Unit 5d) finished the cutover by dropping pestCode from
+      // trial_assessments. The legacy CSV path writes pestCode +
+      // armImportColumnIndex onto AAM below; shell IDs and rating-date
+      // cells come from the XLSX shell importer and are null here.
       aamRows.add(
         ArmAssessmentMetadataCompanion.insert(
           trialAssessmentId: taId,

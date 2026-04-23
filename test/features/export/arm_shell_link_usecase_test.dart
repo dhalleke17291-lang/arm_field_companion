@@ -98,7 +98,6 @@ void main() {
             trialId: trialId,
             assessmentDefinitionId: defId,
             sortOrder: const Value(0),
-            pestCode: const Value.absent(),
           ),
         );
     await db.into(db.armAssessmentMetadata).insert(
@@ -156,18 +155,17 @@ void main() {
     expect(arm!.armLinkedShellPath, shellPath);
     expect(arm.armLinkedShellAt != null, isTrue);
 
-    final ta = await (db.select(db.trialAssessments)
-          ..where((t) => t.id.equals(taId)))
-        .getSingle();
     final aam = await (db.select(db.armAssessmentMetadata)
           ..where((m) => m.trialAssessmentId.equals(taId)))
         .getSingle();
-    expect(ta.pestCode, 'AVEFA');
+    // v61 (Unit 5d): pestCode / seName / seDescription / ratingType live
+    // only on arm_assessment_metadata.
+    expect(aam.pestCode, 'AVEFA');
     expect(aam.armImportColumnIndex, 2);
     expect(aam.armShellColumnId, '001EID001');
-    expect(ta.seDescription, 'Percent weed control');
-    expect(ta.seName, 'AVEFA');
-    expect(ta.armRatingType, 'CONTRO');
+    expect(aam.seDescription, 'Percent weed control');
+    expect(aam.seName, 'AVEFA');
+    expect(aam.ratingType, 'CONTRO');
     expect(aam.armShellRatingDate, '1-Jul-26');
 
     final audits = await (db.select(db.auditEvents)
@@ -217,13 +215,13 @@ void main() {
             trialId: trialId,
             assessmentDefinitionId: defId,
             sortOrder: const Value(0),
-            pestCode: const Value('AVEFA'),
           ),
         );
     await db.into(db.armAssessmentMetadata).insert(
           ArmAssessmentMetadataCompanion.insert(
             trialAssessmentId: idempTaId,
             armImportColumnIndex: const Value(2),
+            pestCode: const Value('AVEFA'),
           ),
         );
 
@@ -285,13 +283,13 @@ void main() {
             trialId: trialId,
             assessmentDefinitionId: defId,
             sortOrder: const Value(0),
-            pestCode: const Value('AVEFA'),
           ),
         );
     await db.into(db.armAssessmentMetadata).insert(
           ArmAssessmentMetadataCompanion.insert(
             trialAssessmentId: taId,
             armImportColumnIndex: const Value(99),
+            pestCode: const Value('AVEFA'),
           ),
         );
 
@@ -358,14 +356,14 @@ void main() {
             trialId: trialId,
             assessmentDefinitionId: defId,
             sortOrder: const Value(0),
-            pestCode: const Value('AVEFA'),
-            seDescription: const Value('Keep me'),
           ),
         );
     await db.into(db.armAssessmentMetadata).insert(
           ArmAssessmentMetadataCompanion.insert(
             trialAssessmentId: taId,
             armImportColumnIndex: const Value(2),
+            pestCode: const Value('AVEFA'),
+            seDescription: const Value('Keep me'),
           ),
         );
 
@@ -385,9 +383,9 @@ void main() {
     );
 
     await uc.apply(trialId, shellPath);
-    final ta = await (db.select(db.trialAssessments)
-          ..where((t) => t.id.equals(taId)))
+    final aam = await (db.select(db.armAssessmentMetadata)
+          ..where((m) => m.trialAssessmentId.equals(taId)))
         .getSingle();
-    expect(ta.seDescription, 'Keep me');
+    expect(aam.seDescription, 'Keep me');
   });
 }

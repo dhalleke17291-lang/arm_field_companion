@@ -277,20 +277,15 @@ class ImportArmRatingShellUseCase {
                   selectedManually: const Value(false),
                   defaultInSessions: const Value(true),
                   sortOrder: Value(sortOrder),
-                  pestCode: Value(pestCode),
-                  // Duplicated fields (seName/seDescription/armRatingType) are
-                  // still written here pending Unit 5; the four per-column ARM
-                  // anchor fields (armImportColumnIndex, armColumnIdInteger,
-                  // armShellColumnId, armShellRatingDate) moved to
-                  // arm_assessment_metadata in v60 and are written below.
-                  seDescription: Value(_firstNonEmpty([first.seDescription])),
-                  seName: Value(_firstNonEmpty([first.seName, first.pestCode])),
-                  armRatingType: Value(_firstNonEmpty([first.ratingType])),
                 ),
               );
 
           dedupAssessmentIds[entry.key] = taId;
 
+          // Unit 5d: pestCode / seName / seDescription / armRatingType now
+          // live only on arm_assessment_metadata. The four per-column ARM
+          // anchor fields (armImportColumnIndex, armColumnIdInteger,
+          // armShellColumnId, armShellRatingDate) moved to AAM in v60.
           await _armColumnMappingRepository.insertAssessmentMetadataBulk([
             ArmAssessmentMetadataCompanion.insert(
               trialAssessmentId: taId,
@@ -301,11 +296,7 @@ class ImportArmRatingShellUseCase {
               ratingUnit: Value(_firstNonEmpty([first.ratingUnit])),
               collectBasis: Value(_firstNonEmpty([first.collectBasis])),
               numSubsamples: Value(first.numSubsamples),
-              pestCode: Value(_firstNonEmpty([first.pestCode])),
-              // Phase 0b-ta: per-column ARM fields live on AAM going forward.
-              // Still dual-written to trial_assessments above during the
-              // transition; readers flip to AAM in a later unit and the TA
-              // columns are dropped in v60.
+              pestCode: Value(pestCode),
               armImportColumnIndex: Value(first.columnIndex),
               armColumnIdInteger: Value(first.armColumnIdInteger),
               armShellColumnId: Value(_firstNonEmpty([first.armColumnId])),

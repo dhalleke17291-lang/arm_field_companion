@@ -86,11 +86,17 @@ Future<void> _pinArmExportAnchors(
   int armImportColumnIndex = 2,
   required int sessionId,
   DateTime? armImportedAt,
+  String? pestCode,
 }) async {
   await (db.update(db.plots)..where((p) => p.id.equals(plotPk))).write(
     PlotsCompanion(armPlotNumber: Value(armPlotNumber)),
   );
-  await _upsertAamImportColumnIndex(db, trialAssessmentId, armImportColumnIndex);
+  await _upsertAamImportColumnIndex(
+    db,
+    trialAssessmentId,
+    armImportColumnIndex,
+    pestCode: pestCode,
+  );
   await upsertArmTrialMetadataForTest(
     db,
     trialId: trialId,
@@ -103,8 +109,9 @@ Future<void> _pinArmExportAnchors(
 Future<void> _upsertAamImportColumnIndex(
   AppDatabase db,
   int trialAssessmentId,
-  int armImportColumnIndex,
-) async {
+  int armImportColumnIndex, {
+  String? pestCode,
+}) async {
   final existing = await (db.select(db.armAssessmentMetadata)
         ..where((m) => m.trialAssessmentId.equals(trialAssessmentId))
         ..limit(1))
@@ -114,6 +121,7 @@ Future<void> _upsertAamImportColumnIndex(
           ArmAssessmentMetadataCompanion.insert(
             trialAssessmentId: trialAssessmentId,
             armImportColumnIndex: Value(armImportColumnIndex),
+            pestCode: Value(pestCode),
           ),
         );
   } else {
@@ -121,6 +129,7 @@ Future<void> _upsertAamImportColumnIndex(
           ..where((m) => m.trialAssessmentId.equals(trialAssessmentId)))
         .write(ArmAssessmentMetadataCompanion(
       armImportColumnIndex: Value(armImportColumnIndex),
+      pestCode: pestCode == null ? const Value.absent() : Value(pestCode),
     ));
   }
 }
@@ -377,7 +386,6 @@ void main() {
               assessmentDefinitionId: defId,
               legacyAssessmentId: Value(legacyAsmId),
               sortOrder: const Value(0),
-              pestCode: const Value('AVEFA'),
             ),
           );
       final sessionId = await db.into(db.sessions).insert(
@@ -394,6 +402,7 @@ void main() {
         armPlotNumber: 101,
         trialAssessmentId: taId,
         sessionId: sessionId,
+        pestCode: 'AVEFA',
       );
       await _insertCompatibilityProfile(
         db: db,
@@ -446,7 +455,6 @@ void main() {
               assessmentDefinitionId: defId,
               legacyAssessmentId: Value(legacyAsmId),
               sortOrder: const Value(0),
-              pestCode: const Value('AVEFA'),
             ),
           );
       final sessionId = await db.into(db.sessions).insert(
@@ -476,6 +484,7 @@ void main() {
         armPlotNumber: 101,
         trialAssessmentId: taId,
         sessionId: sessionId,
+        pestCode: 'AVEFA',
       );
 
       await _insertCompatibilityProfile(
@@ -579,7 +588,6 @@ void main() {
                 assessmentDefinitionId: defId,
                 legacyAssessmentId: Value(legacyAsmId),
                 sortOrder: const Value(0),
-                pestCode: const Value('AVEFA'),
               ),
             );
         final sessionId = await db.into(db.sessions).insert(
@@ -609,6 +617,7 @@ void main() {
           armPlotNumber: 101,
           trialAssessmentId: taId,
           sessionId: sessionId,
+          pestCode: 'AVEFA',
         );
         await _upsertAamImportColumnIndex(db, taId, 99);
 
@@ -704,7 +713,6 @@ void main() {
                 assessmentDefinitionId: defId,
                 legacyAssessmentId: Value(legacyAsmId),
                 sortOrder: const Value(0),
-                pestCode: const Value('AVEFA'),
               ),
             );
         final sessionId = await db.into(db.sessions).insert(
@@ -734,6 +742,7 @@ void main() {
           armPlotNumber: 101,
           trialAssessmentId: taId,
           sessionId: sessionId,
+          pestCode: 'AVEFA',
         );
         await _upsertAamImportColumnIndex(db, taId, 99);
 
@@ -838,7 +847,6 @@ void main() {
                 assessmentDefinitionId: defId,
                 legacyAssessmentId: Value(legacyAsmId),
                 sortOrder: const Value(0),
-                pestCode: const Value('AVEFA'),
               ),
             );
         final sessionId = await db.into(db.sessions).insert(
@@ -868,6 +876,7 @@ void main() {
           armPlotNumber: 101,
           trialAssessmentId: taId,
           sessionId: sessionId,
+          pestCode: 'AVEFA',
         );
 
         await _insertCompatibilityProfile(
@@ -957,7 +966,6 @@ void main() {
                 assessmentDefinitionId: defId,
                 legacyAssessmentId: Value(legacyAsmId),
                 sortOrder: const Value(0),
-                pestCode: const Value('AVEFA'),
               ),
             );
         final sessionId = await db.into(db.sessions).insert(
@@ -986,6 +994,7 @@ void main() {
           armPlotNumber: 101,
           trialAssessmentId: taId,
           sessionId: sessionId,
+          pestCode: 'AVEFA',
         );
 
         await _insertCompatibilityProfile(
@@ -1087,7 +1096,6 @@ void main() {
                 assessmentDefinitionId: defId,
                 legacyAssessmentId: Value(legacyAsmId),
                 sortOrder: const Value(0),
-                pestCode: const Value('AVEFA'),
               ),
             );
         final sessionId = await db.into(db.sessions).insert(
@@ -1117,6 +1125,7 @@ void main() {
           armPlotNumber: 101,
           trialAssessmentId: taId,
           sessionId: sessionId,
+          pestCode: 'AVEFA',
         );
 
         await _insertCompatibilityProfile(
@@ -1196,7 +1205,6 @@ void main() {
                 assessmentDefinitionId: defId,
                 legacyAssessmentId: Value(legacyAsmId),
                 sortOrder: const Value(0),
-                pestCode: const Value('AVEFA'),
               ),
             );
         final sessionId = await db.into(db.sessions).insert(
@@ -1226,6 +1234,7 @@ void main() {
           armPlotNumber: 101,
           trialAssessmentId: taId,
           sessionId: sessionId,
+          pestCode: 'AVEFA',
         );
         await _upsertAamImportColumnIndex(db, taId, 99);
 
@@ -1331,7 +1340,6 @@ void main() {
                 assessmentDefinitionId: defId,
                 legacyAssessmentId: Value(legacyAsmId),
                 sortOrder: const Value(0),
-                pestCode: const Value('AVEFA'),
               ),
             );
         final sessionId = await db.into(db.sessions).insert(
@@ -1361,6 +1369,7 @@ void main() {
           armPlotNumber: 101,
           trialAssessmentId: taId,
           sessionId: sessionId,
+          pestCode: 'AVEFA',
         );
         await _upsertAamImportColumnIndex(db, taId, 99);
 
@@ -1460,7 +1469,6 @@ void main() {
               assessmentDefinitionId: defId,
               legacyAssessmentId: Value(legacyAsmId),
               sortOrder: const Value(0),
-              pestCode: const Value('AVEFA'),
             ),
           );
       final armT = DateTime.utc(2026, 3, 1, 12);
@@ -1502,6 +1510,7 @@ void main() {
         trialAssessmentId: taId,
         sessionId: armSessionId,
         armImportedAt: armT,
+        pestCode: 'AVEFA',
       );
       final trialRow =
           await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
@@ -1593,7 +1602,6 @@ void main() {
               assessmentDefinitionId: defId,
               legacyAssessmentId: Value(legacyAsmId),
               sortOrder: const Value(0),
-              pestCode: const Value('AVEFA'),
             ),
           );
       await _upsertAamImportColumnIndex(db, dupTaId, 2);
@@ -1678,7 +1686,6 @@ void main() {
               assessmentDefinitionId: defId,
               legacyAssessmentId: Value(legacyId1),
               sortOrder: const Value(0),
-              pestCode: const Value('CONTRO'),
             ),
           );
       await db.into(db.armAssessmentMetadata).insert(
@@ -1686,6 +1693,7 @@ void main() {
               trialAssessmentId: taId1,
               armColumnIdInteger: const Value(3),
               armImportColumnIndex: const Value(2),
+              pestCode: const Value('CONTRO'),
             ),
           );
       final taId2 = await db.into(db.trialAssessments).insert(
@@ -1694,7 +1702,6 @@ void main() {
               assessmentDefinitionId: defId,
               legacyAssessmentId: Value(legacyId2),
               sortOrder: const Value(1),
-              pestCode: const Value('CONTRO'),
             ),
           );
       await db.into(db.armAssessmentMetadata).insert(
@@ -1702,6 +1709,7 @@ void main() {
               trialAssessmentId: taId2,
               armColumnIdInteger: const Value(16),
               armImportColumnIndex: const Value(3),
+              pestCode: const Value('CONTRO'),
             ),
           );
 

@@ -1930,20 +1930,16 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       if (taId != null && taById.containsKey(taId)) return taById[taId];
     }
     // 3) Fuzzy match: compare stripped assessment name against
-    //    displayNameOverride or AAM/TA seDescription (AAM-first per
-    //    Unit 5c, falling back to the legacy TrialAssessment column).
+    //    displayNameOverride or AAM seDescription (v61 moved the SE
+    //    fields onto arm_assessment_metadata).
     final stripped = _assessmentPillLabel(assessment).toLowerCase().trim();
     if (stripped.isNotEmpty) {
       final aamMap = _aamMap();
       for (final candidate in taById.values) {
         final aamDesc = aamMap[candidate.id]?.seDescription?.trim();
-        final taDesc = candidate.seDescription?.trim();
-        final effectiveDesc = (aamDesc != null && aamDesc.isNotEmpty)
-            ? aamDesc
-            : (taDesc != null && taDesc.isNotEmpty ? taDesc : null);
-        final cName = (candidate.displayNameOverride ?? effectiveDesc ?? '')
-            .toLowerCase()
-            .trim();
+        final descSource = candidate.displayNameOverride ??
+            (aamDesc != null && aamDesc.isNotEmpty ? aamDesc : null);
+        final cName = (descSource ?? '').toLowerCase().trim();
         if (cName.isNotEmpty && cName == stripped) return candidate;
       }
     }
