@@ -220,6 +220,26 @@ class ExportArmRatingShellUseCase {
             .getSingleOrNull()
         : null;
 
+    // v60 moved per-column ARM fields to arm_assessment_metadata; Unit 5c
+    // (this phase) adds pestCode/seName/seDescription/ratingType to that
+    // AAM-first read. Load AAM up front so every downstream helper can
+    // prefer AAM when present and fall back to TA during the transition.
+    final aamRows = await _armColumnMappingRepository
+        .getAssessmentMetadatasForTrial(trial.id);
+    final aamByTaId = <int, ArmAssessmentMetadataData>{
+      for (final r in aamRows) r.trialAssessmentId: r,
+    };
+    int? armImportColumnIndexFor(TrialAssessment a) =>
+        aamByTaId[a.id]?.armImportColumnIndex;
+    int? armColumnIdIntegerFor(TrialAssessment a) =>
+        aamByTaId[a.id]?.armColumnIdInteger;
+    String? pestCodeFor(TrialAssessment a) {
+      final aamPc = aamByTaId[a.id]?.pestCode?.trim();
+      if (aamPc != null && aamPc.isNotEmpty) return aamPc;
+      final taPc = a.pestCode?.trim();
+      return (taPc == null || taPc.isEmpty) ? null : taPc;
+    }
+
     final columnOrderOnExport = _parseColumnOrderJson(profile?.columnOrderOnExport);
     var assessmentColumns = _filterAssessmentColumns(
       columnOrderOnExport,
@@ -227,6 +247,7 @@ class ExportArmRatingShellUseCase {
       defById,
       shellWarnings,
       warnedNullPestTaIds,
+      aamByTaId,
     );
 
     if (assessmentColumns.isEmpty) {
@@ -316,18 +337,6 @@ class ExportArmRatingShellUseCase {
     final parser = ArmShellParser(shellPath);
     final shellImport = await parser.parse();
 
-    // v60 moved per-column ARM fields (armImportColumnIndex,
-    // armColumnIdInteger, …) to arm_assessment_metadata.
-    final aamRows = await _armColumnMappingRepository
-        .getAssessmentMetadatasForTrial(trial.id);
-    final aamByTaId = <int, ArmAssessmentMetadataData>{
-      for (final r in aamRows) r.trialAssessmentId: r,
-    };
-    int? armImportColumnIndexFor(TrialAssessment a) =>
-        aamByTaId[a.id]?.armImportColumnIndex;
-    int? armColumnIdIntegerFor(TrialAssessment a) =>
-        aamByTaId[a.id]?.armColumnIdInteger;
-
     final sortedAssessments = List<TrialAssessment>.from(assessments);
     final withColIdx =
         assessments.where((a) => armImportColumnIndexFor(a) != null).length;
@@ -372,7 +381,7 @@ class ExportArmRatingShellUseCase {
         if (i >= effectiveColumns.length) break;
         final ta = sortedAssessments[i];
         final col = effectiveColumns[i];
-        final seCode = ta.pestCode?.trim().toUpperCase();
+        final seCode = pestCodeFor(ta)?.toUpperCase();
         final shellSeName = col.seName?.trim().toUpperCase();
         if (seCode != null &&
             shellSeName != null &&
@@ -384,7 +393,7 @@ class ExportArmRatingShellUseCase {
             'Injecting positionally.',
           );
         }
-        final pc = ta.pestCode?.trim();
+        final pc = pestCodeFor(ta);
         if (pc != null && pc.isNotEmpty) {
           _logSeCodeMismatch(shellImport.assessmentColumns, pc, i);
         }
@@ -469,7 +478,11 @@ class ExportArmRatingShellUseCase {
         for (var i = 0; i < sortedAssessments.length; i++) {
           final ta = sortedAssessments[i];
           final def = defById[ta.assessmentDefinitionId];
-          final identity = ArmAssessmentIdentity.fromTrialAssessment(ta, def);
+          final identity = ArmAssessmentIdentity.fromTrialAssessment(
+            ta,
+            def,
+            aam: aamByTaId[ta.id],
+          );
           final match = _armAssessmentMatcher.findMatchingColumn(
             assessment: identity,
             columns: effectiveColumns,
@@ -705,7 +718,10 @@ class ExportArmRatingShellUseCase {
     TrialAssessment ta,
     String definitionCode,
     Set<int> warnedTaIds,
+    Map<int, ArmAssessmentMetadataData> aamByTaId,
   ) {
+    final aamPc = aamByTaId[ta.id]?.pestCode?.trim();
+    if (aamPc != null && aamPc.isNotEmpty) return;
     if (ta.pestCode != null && ta.pestCode!.trim().isNotEmpty) return;
     if (warnedTaIds.contains(ta.id)) return;
     warnedTaIds.add(ta.id);
@@ -749,6 +765,7 @@ class ExportArmRatingShellUseCase {
     Map<int, AssessmentDefinition> defById,
     List<String> shellWarnings,
     Set<int> warnedNullPestTaIds,
+    Map<int, ArmAssessmentMetadataData> aamByTaId,
   ) {
     return columnOrderOnExport
         .where(
@@ -758,6 +775,7 @@ class ExportArmRatingShellUseCase {
             defById,
             shellWarnings,
             warnedNullPestTaIds,
+            aamByTaId,
           ),
         )
         .toList();
@@ -769,27 +787,48 @@ class ExportArmRatingShellUseCase {
     Map<int, AssessmentDefinition> defById,
     List<String> shellWarnings,
     Set<int> warnedNullPestTaIds,
+    Map<int, ArmAssessmentMetadataData> aamByTaId,
   ) {
     final parser = ArmCsvParser();
-    final withPest = tas
-        .where((t) => t.pestCode != null && t.pestCode!.trim().isNotEmpty)
-        .toList()
-      ..sort((a, b) => b.pestCode!.length.compareTo(a.pestCode!.length));
-    for (final ta in withPest) {
+    // Phase 0b-ta (Unit 5c): read pestCode from AAM first; fall back to TA.
+    String? pestCodeFor(TrialAssessment a) {
+      final aamPc = aamByTaId[a.id]?.pestCode?.trim();
+      if (aamPc != null && aamPc.isNotEmpty) return aamPc;
+      final taPc = a.pestCode?.trim();
+      return (taPc == null || taPc.isEmpty) ? null : taPc;
+    }
+
+    final withPest = <({TrialAssessment ta, String pc})>[];
+    for (final t in tas) {
+      final pc = pestCodeFor(t);
+      if (pc != null) withPest.add((ta: t, pc: pc));
+    }
+    withPest.sort((a, b) => b.pc.length.compareTo(a.pc.length));
+    for (final entry in withPest) {
+      final ta = entry.ta;
+      final pc = entry.pc;
       final def = defById[ta.assessmentDefinitionId];
-      final id = ArmAssessmentIdentity.fromTrialAssessment(ta, def);
+      final id = ArmAssessmentIdentity.fromTrialAssessment(
+        ta,
+        def,
+        aam: aamByTaId[ta.id],
+      );
       final parsed = parser.tryParseAssessmentToken(h);
       if (parsed != null &&
           parsed.toIdentity().canonicalKey == id.canonicalKey) {
         return true;
       }
-      if (h.contains(ta.pestCode!)) return true;
+      if (h.contains(pc)) return true;
     }
     for (final ta in tas) {
-      if (ta.pestCode != null && ta.pestCode!.trim().isNotEmpty) continue;
+      if (pestCodeFor(ta) != null) continue;
       final def = defById[ta.assessmentDefinitionId];
       if (def == null || def.code.trim().isEmpty) continue;
-      final id = ArmAssessmentIdentity.fromTrialAssessment(ta, def);
+      final id = ArmAssessmentIdentity.fromTrialAssessment(
+        ta,
+        def,
+        aam: aamByTaId[ta.id],
+      );
       final parsed = parser.tryParseAssessmentToken(h);
       if (parsed != null &&
           parsed.toIdentity().canonicalKey == id.canonicalKey) {
@@ -798,6 +837,7 @@ class ExportArmRatingShellUseCase {
           ta,
           def.code,
           warnedNullPestTaIds,
+          aamByTaId,
         );
         return true;
       }
@@ -807,6 +847,7 @@ class ExportArmRatingShellUseCase {
           ta,
           def.code,
           warnedNullPestTaIds,
+          aamByTaId,
         );
         return true;
       }

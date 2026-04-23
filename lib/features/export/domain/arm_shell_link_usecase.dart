@@ -161,6 +161,15 @@ class ArmShellLinkUseCase {
           armColumnIdInteger: m['arm_column_id_integer'] != null
               ? int.tryParse(m['arm_column_id_integer']!)
               : null,
+          // Phase 0b-ta (Unit 5b): mirror the four duplicate fields into AAM
+          // so readers can flip to AAM-first in Unit 5c and the TA columns
+          // can be dropped in Unit 5d. Still dual-written above via
+          // TrialAssessmentRepository.applyArmShellLinkFields during the
+          // transition.
+          pestCode: m['pestCode'],
+          seName: m['se_name'],
+          seDescription: m['se_description'],
+          ratingType: m['arm_rating_type'],
         );
         if (wroteTa || wroteAam) assessmentWriteCount++;
       }
@@ -388,6 +397,21 @@ class ArmShellLinkUseCase {
         aamByTaId[a.id]?.armImportColumnIndex;
     int? armColumnIdIntegerFor(TrialAssessment a) =>
         aamByTaId[a.id]?.armColumnIdInteger;
+    // Phase 0b-ta (Unit 5c): AAM-first reads for the four duplicate fields.
+    // TA is kept as a fallback during the transition; dropped in Unit 5d.
+    String? nonEmpty(String? s) {
+      if (s == null) return null;
+      final t = s.trim();
+      return t.isEmpty ? null : t;
+    }
+    String? pestCodeFor(TrialAssessment a) =>
+        nonEmpty(aamByTaId[a.id]?.pestCode) ?? nonEmpty(a.pestCode);
+    String? seNameFor(TrialAssessment a) =>
+        nonEmpty(aamByTaId[a.id]?.seName) ?? nonEmpty(a.seName);
+    String? seDescriptionFor(TrialAssessment a) =>
+        nonEmpty(aamByTaId[a.id]?.seDescription) ?? nonEmpty(a.seDescription);
+    String? armRatingTypeFor(TrialAssessment a) =>
+        nonEmpty(aamByTaId[a.id]?.ratingType) ?? nonEmpty(a.armRatingType);
 
     final sortedAssessments = List<TrialAssessment>.from(assessments);
     final withColIdx =
@@ -411,7 +435,11 @@ class ArmShellLinkUseCase {
     for (var i = 0; i < sortedAssessments.length; i++) {
       final ta = sortedAssessments[i];
       final def = defById[ta.assessmentDefinitionId];
-      final identity = ArmAssessmentIdentity.fromTrialAssessment(ta, def);
+      final identity = ArmAssessmentIdentity.fromTrialAssessment(
+        ta,
+        def,
+        aam: aamByTaId[ta.id],
+      );
       final match = _matcher.findMatchingColumn(
         assessment: identity,
         columns: effectiveColumns,
@@ -424,7 +452,7 @@ class ArmShellLinkUseCase {
         unmatchedTrialAssessments.add(
           ShellUnmatchedTrialAssessment(
             trialAssessmentId: ta.id,
-            pestCode: ta.pestCode,
+            pestCode: pestCodeFor(ta),
             armImportColumnIndex: armImportColumnIndexFor(ta),
           ),
         );
@@ -445,7 +473,7 @@ class ArmShellLinkUseCase {
 
       final shellPest = _shellPestCode(col);
       if (shellPest.isNotEmpty) {
-        final cur = ta.pestCode?.trim();
+        final cur = pestCodeFor(ta);
         if (cur == null || cur.isEmpty) {
           assessmentFieldChanges.add(
             ShellAssessmentFieldChange(
@@ -488,21 +516,21 @@ class ArmShellLinkUseCase {
         assessmentFieldChanges,
         trialAssessmentId: ta.id,
         fieldName: 'se_name',
-        currentDb: ta.seName,
+        currentDb: seNameFor(ta),
         shellRaw: col.seName,
       );
       _proposeShellTaField(
         assessmentFieldChanges,
         trialAssessmentId: ta.id,
         fieldName: 'se_description',
-        currentDb: ta.seDescription,
+        currentDb: seDescriptionFor(ta),
         shellRaw: col.seDescription,
       );
       _proposeShellTaField(
         assessmentFieldChanges,
         trialAssessmentId: ta.id,
         fieldName: 'arm_rating_type',
-        currentDb: ta.armRatingType,
+        currentDb: armRatingTypeFor(ta),
         shellRaw: col.ratingType,
       );
     }

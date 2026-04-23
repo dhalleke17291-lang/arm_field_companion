@@ -109,13 +109,24 @@ class ArmColumnMappingRepository {
   ///
   /// Merge semantics mirror [TrialAssessmentRepository.applyArmShellLinkFields]:
   /// only non-empty incoming values are applied, and existing non-empty
-  /// values that equal the incoming value are left untouched.
+  /// values that equal the incoming value are left untouched. String
+  /// comparisons are case-insensitive for [pestCode] (ARM codes are
+  /// canonically upper-case) and case-sensitive for the rest.
   /// Returns whether any field was written.
+  ///
+  /// Phase 0b-ta (Unit 5b): [pestCode], [seName], [seDescription], and
+  /// [ratingType] were added here so the ARM shell-link flow can drive AAM
+  /// directly; the same fields are still dual-written to trial_assessments
+  /// via [TrialAssessmentRepository.applyArmShellLinkFields] pending Unit 5d.
   Future<bool> applyShellLinkFieldsForTrialAssessment({
     required int trialAssessmentId,
     String? armShellColumnId,
     String? armShellRatingDate,
     int? armColumnIdInteger,
+    String? pestCode,
+    String? seName,
+    String? seDescription,
+    String? ratingType,
   }) async {
     final existing = await (_db.select(_db.armAssessmentMetadata)
           ..where((m) => m.trialAssessmentId.equals(trialAssessmentId))
@@ -131,6 +142,15 @@ class ArmColumnMappingRepository {
       return s;
     }
 
+    String? mergePest(String? current, String? incoming) {
+      if (incoming == null) return null;
+      final s = incoming.trim();
+      if (s.isEmpty) return null;
+      final c = current?.trim() ?? '';
+      if (c.isNotEmpty && c.toUpperCase() == s.toUpperCase()) return null;
+      return s;
+    }
+
     final nextColId = mergeText(existing?.armShellColumnId, armShellColumnId);
     final nextRatingDate =
         mergeText(existing?.armShellRatingDate, armShellRatingDate);
@@ -139,10 +159,18 @@ class ArmColumnMappingRepository {
             incomingColInt != existing?.armColumnIdInteger)
         ? incomingColInt
         : null;
+    final nextPestCode = mergePest(existing?.pestCode, pestCode);
+    final nextSeName = mergeText(existing?.seName, seName);
+    final nextSeDesc = mergeText(existing?.seDescription, seDescription);
+    final nextRatingType = mergeText(existing?.ratingType, ratingType);
 
     final touched = nextColId != null ||
         nextRatingDate != null ||
-        nextColInt != null;
+        nextColInt != null ||
+        nextPestCode != null ||
+        nextSeName != null ||
+        nextSeDesc != null ||
+        nextRatingType != null;
     if (!touched) return false;
 
     if (existing == null) {
@@ -152,6 +180,10 @@ class ArmColumnMappingRepository {
               armShellColumnId: Value(nextColId),
               armShellRatingDate: Value(nextRatingDate),
               armColumnIdInteger: Value(nextColInt),
+              pestCode: Value(nextPestCode),
+              seName: Value(nextSeName),
+              seDescription: Value(nextSeDesc),
+              ratingType: Value(nextRatingType),
             ),
           );
       return true;
@@ -165,6 +197,14 @@ class ArmColumnMappingRepository {
           : Value(nextRatingDate),
       armColumnIdInteger:
           nextColInt == null ? const Value.absent() : Value(nextColInt),
+      pestCode:
+          nextPestCode == null ? const Value.absent() : Value(nextPestCode),
+      seName: nextSeName == null ? const Value.absent() : Value(nextSeName),
+      seDescription:
+          nextSeDesc == null ? const Value.absent() : Value(nextSeDesc),
+      ratingType: nextRatingType == null
+          ? const Value.absent()
+          : Value(nextRatingType),
     );
     await (_db.update(_db.armAssessmentMetadata)
           ..where((m) => m.trialAssessmentId.equals(trialAssessmentId)))

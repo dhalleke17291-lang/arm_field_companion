@@ -33,14 +33,23 @@ class ArmAssessmentIdentity {
   }
 
   /// Identity for export/profile from trial protocol + definition.
+  ///
+  /// Phase 0b-ta (Unit 5c): when [aam] is supplied, its `pestCode` wins over
+  /// the duplicate on [TrialAssessment]. AAM is the new source of truth for
+  /// ARM-originated fields; the TA column is kept as a fallback during the
+  /// transition and dropped in Unit 5d.
   factory ArmAssessmentIdentity.fromTrialAssessment(
     TrialAssessment ta,
-    AssessmentDefinition? def,
-  ) {
-    final pc = ta.pestCode?.trim();
-    final rawCode = (pc != null && pc.isNotEmpty)
-        ? pc
-        : (def?.code.trim() ?? '');
+    AssessmentDefinition? def, {
+    ArmAssessmentMetadataData? aam,
+  }) {
+    final aamPc = aam?.pestCode?.trim();
+    final taPc = ta.pestCode?.trim();
+    final pc = (aamPc != null && aamPc.isNotEmpty)
+        ? aamPc
+        : (taPc != null && taPc.isNotEmpty ? taPc : null);
+    final rawCode =
+        (pc != null && pc.isNotEmpty) ? pc : (def?.code.trim() ?? '');
     final u = def?.unit?.replaceAll(RegExp(r'\s+'), ' ').trim();
     final tc = def?.timingCode?.trim();
     return ArmAssessmentIdentity(
