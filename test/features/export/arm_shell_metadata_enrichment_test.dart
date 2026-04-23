@@ -35,6 +35,7 @@ void main() {
       shellPlotCount: 1,
       trialMatchedPlotCount: 1,
       trialPlotCount: 1,
+      shellCommentsSheetText: null,
     );
     expect(
       shouldOfferShellMetadataEnrichmentBeforeExport(
@@ -77,6 +78,7 @@ void main() {
       shellPlotCount: 1,
       trialMatchedPlotCount: 1,
       trialPlotCount: 1,
+      shellCommentsSheetText: null,
     );
     expect(
       shouldOfferShellMetadataEnrichmentBeforeExport(

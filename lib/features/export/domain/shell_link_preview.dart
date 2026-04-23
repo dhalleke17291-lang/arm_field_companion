@@ -105,6 +105,7 @@ class ShellLinkPreview {
     required this.shellPlotCount,
     required this.trialMatchedPlotCount,
     required this.trialPlotCount,
+    this.shellCommentsSheetText,
   });
 
   final List<ShellLinkIssue> issues;
@@ -126,6 +127,9 @@ class ShellLinkPreview {
   final int shellPlotCount;
   final int trialMatchedPlotCount;
   final int trialPlotCount;
+
+  /// Body text from the shell **Comments** sheet (`ECM` row).
+  final String? shellCommentsSheetText;
 
   bool get canApply =>
       !issues.any((i) => i.severity == ShellLinkIssueSeverity.block);

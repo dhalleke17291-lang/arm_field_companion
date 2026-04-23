@@ -186,6 +186,9 @@ Future<String> writeArmShellFixture(
   /// Optional **Applications** sheet: one inner list per application column
   /// (C, D, …), each of length **79** (`row01`…`row79`).
   List<List<String?>>? applicationSheetColumns,
+
+  /// Optional **Comments** sheet: `ECM` in A2 and this text in B2 (ARM layout).
+  String? commentsSheetBody,
 }) async {
   final excel = Excel.createExcel();
   excel.rename('Sheet1', 'Plot Data');
@@ -290,6 +293,18 @@ Future<String> writeArmShellFixture(
         }
       }
     }
+  }
+
+  if (commentsSheetBody != null) {
+    final cSheet = excel['Comments'];
+    void cSetText(int r, int c, String t) {
+      cSheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: r))
+          .value = TextCellValue(t);
+    }
+    cSetText(0, 1, 'Enter all comments in cell below:');
+    cSetText(1, 0, 'ECM');
+    cSetText(1, 1, commentsSheetBody);
   }
 
   final path = '$tempDir/shell_${DateTime.now().microsecondsSinceEpoch}.xlsx';

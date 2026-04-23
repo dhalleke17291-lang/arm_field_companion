@@ -117,6 +117,9 @@ class ArmTrialMetadata extends Table {
   /// Internal app path where the shell file is stored (copied at import/link).
   TextColumn get shellInternalPath => text().nullable()();
 
+  /// Free-text from the shell **Comments** sheet (`ECM` row, column B).
+  TextColumn get shellCommentsSheet => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {trialId};
 }
@@ -1304,7 +1307,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 66;
+  int get schemaVersion => 67;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -2638,6 +2641,17 @@ WHERE pest_code IS NULL
             ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!tables66.contains('arm_applications')) {
               await m.createTable(armApplications);
+            }
+          }
+          if (from < 67) {
+            final cols67 = await customSelect(
+              "SELECT name FROM pragma_table_info('arm_trial_metadata')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!cols67.contains('shell_comments_sheet')) {
+              await m.addColumn(
+                armTrialMetadata,
+                armTrialMetadata.shellCommentsSheet,
+              );
             }
           }
 

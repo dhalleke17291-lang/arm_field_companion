@@ -600,6 +600,7 @@ class ImportArmRatingShellUseCase {
                 armSourceFile: Value(shell.shellFilePath),
                 shellInternalPath: Value(internalPath),
                 armLinkedShellPath: Value(shellPath),
+                shellCommentsSheet: Value(shell.commentsSheetText),
               ),
             );
         await _trialRepository.updateTrialSetup(

@@ -106,4 +106,27 @@ void main() {
     final shell = await ArmShellParser(path).parse();
     expect(shell.applicationSheetColumns, isEmpty);
   });
+
+  test('Comments sheet: parses ECM body text from column B', () async {
+    final path = await writeArmShellFixture(
+      tempPath,
+      plotNumbers: const [101],
+      armColumnIds: const ['3'],
+      seNames: const ['W003'],
+      ratingTypes: const ['CONTRO'],
+      commentsSheetBody: 'Plot layout adjusted per cooperator.',
+    );
+    final shell = await ArmShellParser(path).parse();
+    expect(
+      shell.commentsSheetText,
+      'Plot layout adjusted per cooperator.',
+    );
+  });
+
+  test('AgQuest fixture: Comments sheet present but empty body → null', () async {
+    final shell = await ArmShellParser(
+      'test/fixtures/arm_shells/AgQuest_RatingShell.xlsx',
+    ).parse();
+    expect(shell.commentsSheetText, isNull);
+  });
 }

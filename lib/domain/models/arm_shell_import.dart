@@ -15,6 +15,7 @@ class ArmShellImport {
     this.crop,
     this.treatmentSheetRows = const [],
     this.applicationSheetColumns = const [],
+    this.commentsSheetText,
   });
 
   final String title;
@@ -37,6 +38,10 @@ class ArmShellImport {
   /// rows 1–79, values from column C onward). Empty when the sheet is
   /// missing, unreadable, or has no populated application blocks.
   final List<ArmApplicationSheetColumn> applicationSheetColumns;
+
+  /// **Comments** sheet: body text next to the `ECM` row (column B). Null
+  /// when the sheet is missing, unreadable, or the cell is blank.
+  final String? commentsSheetText;
 
   final String shellFilePath;
 }

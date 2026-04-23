@@ -205,6 +205,13 @@ ArmShellImport parseArmShellBytes(ArmShellParseParams p) {
     applicationSheetColumns = const [];
   }
 
+  String? commentsSheetText;
+  try {
+    commentsSheetText = _parseCommentsSheet(archive, strings);
+  } catch (_) {
+    commentsSheetText = null;
+  }
+
   return ArmShellImport(
     title: title,
     trialId: trialId,
@@ -214,6 +221,7 @@ ArmShellImport parseArmShellBytes(ArmShellParseParams p) {
     plotRows: plotRows,
     treatmentSheetRows: treatmentSheetRows,
     applicationSheetColumns: applicationSheetColumns,
+    commentsSheetText: commentsSheetText,
     shellFilePath: p.shellFilePath,
   );
 }
@@ -359,6 +367,45 @@ List<ArmApplicationSheetColumn> _parseApplicationsSheet(
   return columns;
 }
 
+/// Optional **Comments** sheet (`ECM` in column A, free text in column B).
+String? _parseCommentsSheet(Archive archive, List<String> sharedStrings) {
+  final path = _resolveSheetPath(archive, 'Comments');
+  if (path == null) return null;
+  final entry = archive.findFile(path);
+  if (entry == null) return null;
+
+  final doc = XmlDocument.parse(utf8.decode(entry.content as List<int>));
+  final cells = <(int, int), String>{};
+  for (final row in doc.findAllElements('row')) {
+    final rowNum = int.tryParse(row.getAttribute('r') ?? '');
+    if (rowNum == null) continue;
+    final rowIdx = rowNum - 1;
+    for (final c in row.findElements('c')) {
+      final ref = c.getAttribute('r');
+      if (ref == null) continue;
+      final colIdx = _colIdxFromRef(ref);
+      if (colIdx == null) continue;
+      final val = _cellValue(c, sharedStrings);
+      if (val != null) cells[(rowIdx, colIdx)] = val;
+    }
+  }
+
+  String? cell(int row, int col) {
+    final v = cells[(row, col)];
+    if (v == null) return null;
+    final t = v.trim();
+    return t.isEmpty ? null : t;
+  }
+
+  for (var r = 0; r < 64; r++) {
+    final code = cell(r, 0);
+    if (code != null && code.toUpperCase() == 'ECM') {
+      return cell(r, 1);
+    }
+  }
+  return null;
+}
+
 /// Reads an ARM Excel Rating Shell and extracts trial metadata, columns, and plot rows.
 ///
 /// Parses the xlsx ZIP directly — only reads the Plot Data worksheet XML
@@ -371,6 +418,9 @@ List<ArmApplicationSheetColumn> _parseApplicationsSheet(
 /// Optional sheet: **Applications** — 79 descriptor rows (Excel rows 1–79,
 /// 0-based `0…78`) × application columns from **C** onward; see
 /// `_parseApplicationsSheet` and `test/fixtures/arm_shells/README.md`.
+///
+/// Optional sheet: **Comments** — single `ECM` row with free text in column B;
+/// see `_parseCommentsSheet`.
 ///
 /// Assessment columns (c=2 onward, until empty ID cell at **0-based row 7**).
 /// Full Plot Data descriptor block **0-based rows 8–46** (Excel rows 9–47,

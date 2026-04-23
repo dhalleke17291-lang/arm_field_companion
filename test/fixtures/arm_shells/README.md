@@ -23,7 +23,7 @@ This file has **7 sheets**:
 | **Plot Data** | Assessment column metadata + plot layout + rating values | **Yes** — descriptor rows 9–47 (0-based 8–46) into [ArmColumnMap]; importer lands them on `arm_assessment_metadata` + normalises rating dates to `yyyy-MM-dd` on planned sessions |
 | **Treatments** | Products, rates, formulations, rate units | **Yes** (Phase 2) |
 | **Applications** | 79 descriptor fields: dates, weather, equipment, nozzles, carrier, mix | **Yes** (Phase 3b parser + Phase 3c importer) |
-| **Comments** | Free-text trial notes | **Not parsed** |
+| **Comments** | Free-text trial notes (`ECM` row, column B) | **Yes** — parser → `ArmShellImport.commentsSheetText`; persisted on `arm_trial_metadata.shell_comments_sheet` |
 | **Subsample Plot Data** | Mirror of Plot Data for subsample protocols | **Not parsed** |
 | **Subsample Treatment Means** | Calculated means (Excel formulas) | Output-only, not ingested |
 | **Treatment Means** | Calculated means per treatment (Excel formulas) | Output-only, not ingested |

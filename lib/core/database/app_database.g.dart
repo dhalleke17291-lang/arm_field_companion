@@ -32750,6 +32750,12 @@ class $ArmTrialMetadataTable extends ArmTrialMetadata
   late final GeneratedColumn<String> shellInternalPath =
       GeneratedColumn<String>('shell_internal_path', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _shellCommentsSheetMeta =
+      const VerificationMeta('shellCommentsSheet');
+  @override
+  late final GeneratedColumn<String> shellCommentsSheet =
+      GeneratedColumn<String>('shell_comments_sheet', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         trialId,
@@ -32760,7 +32766,8 @@ class $ArmTrialMetadataTable extends ArmTrialMetadata
         armImportSessionId,
         armLinkedShellPath,
         armLinkedShellAt,
-        shellInternalPath
+        shellInternalPath,
+        shellCommentsSheet
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -32825,6 +32832,12 @@ class $ArmTrialMetadataTable extends ArmTrialMetadata
           shellInternalPath.isAcceptableOrUnknown(
               data['shell_internal_path']!, _shellInternalPathMeta));
     }
+    if (data.containsKey('shell_comments_sheet')) {
+      context.handle(
+          _shellCommentsSheetMeta,
+          shellCommentsSheet.isAcceptableOrUnknown(
+              data['shell_comments_sheet']!, _shellCommentsSheetMeta));
+    }
     return context;
   }
 
@@ -32852,6 +32865,8 @@ class $ArmTrialMetadataTable extends ArmTrialMetadata
           DriftSqlType.dateTime, data['${effectivePrefix}arm_linked_shell_at']),
       shellInternalPath: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}shell_internal_path']),
+      shellCommentsSheet: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}shell_comments_sheet']),
     );
   }
 
@@ -32881,6 +32896,9 @@ class ArmTrialMetadataData extends DataClass
 
   /// Internal app path where the shell file is stored (copied at import/link).
   final String? shellInternalPath;
+
+  /// Free-text from the shell **Comments** sheet (`ECM` row, column B).
+  final String? shellCommentsSheet;
   const ArmTrialMetadataData(
       {required this.trialId,
       required this.isArmLinked,
@@ -32890,7 +32908,8 @@ class ArmTrialMetadataData extends DataClass
       this.armImportSessionId,
       this.armLinkedShellPath,
       this.armLinkedShellAt,
-      this.shellInternalPath});
+      this.shellInternalPath,
+      this.shellCommentsSheet});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -32916,6 +32935,9 @@ class ArmTrialMetadataData extends DataClass
     }
     if (!nullToAbsent || shellInternalPath != null) {
       map['shell_internal_path'] = Variable<String>(shellInternalPath);
+    }
+    if (!nullToAbsent || shellCommentsSheet != null) {
+      map['shell_comments_sheet'] = Variable<String>(shellCommentsSheet);
     }
     return map;
   }
@@ -32945,6 +32967,9 @@ class ArmTrialMetadataData extends DataClass
       shellInternalPath: shellInternalPath == null && nullToAbsent
           ? const Value.absent()
           : Value(shellInternalPath),
+      shellCommentsSheet: shellCommentsSheet == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shellCommentsSheet),
     );
   }
 
@@ -32964,6 +32989,8 @@ class ArmTrialMetadataData extends DataClass
           serializer.fromJson<DateTime?>(json['armLinkedShellAt']),
       shellInternalPath:
           serializer.fromJson<String?>(json['shellInternalPath']),
+      shellCommentsSheet:
+          serializer.fromJson<String?>(json['shellCommentsSheet']),
     );
   }
   @override
@@ -32979,6 +33006,7 @@ class ArmTrialMetadataData extends DataClass
       'armLinkedShellPath': serializer.toJson<String?>(armLinkedShellPath),
       'armLinkedShellAt': serializer.toJson<DateTime?>(armLinkedShellAt),
       'shellInternalPath': serializer.toJson<String?>(shellInternalPath),
+      'shellCommentsSheet': serializer.toJson<String?>(shellCommentsSheet),
     };
   }
 
@@ -32991,7 +33019,8 @@ class ArmTrialMetadataData extends DataClass
           Value<int?> armImportSessionId = const Value.absent(),
           Value<String?> armLinkedShellPath = const Value.absent(),
           Value<DateTime?> armLinkedShellAt = const Value.absent(),
-          Value<String?> shellInternalPath = const Value.absent()}) =>
+          Value<String?> shellInternalPath = const Value.absent(),
+          Value<String?> shellCommentsSheet = const Value.absent()}) =>
       ArmTrialMetadataData(
         trialId: trialId ?? this.trialId,
         isArmLinked: isArmLinked ?? this.isArmLinked,
@@ -33012,6 +33041,9 @@ class ArmTrialMetadataData extends DataClass
         shellInternalPath: shellInternalPath.present
             ? shellInternalPath.value
             : this.shellInternalPath,
+        shellCommentsSheet: shellCommentsSheet.present
+            ? shellCommentsSheet.value
+            : this.shellCommentsSheet,
       );
   ArmTrialMetadataData copyWithCompanion(ArmTrialMetadataCompanion data) {
     return ArmTrialMetadataData(
@@ -33038,6 +33070,9 @@ class ArmTrialMetadataData extends DataClass
       shellInternalPath: data.shellInternalPath.present
           ? data.shellInternalPath.value
           : this.shellInternalPath,
+      shellCommentsSheet: data.shellCommentsSheet.present
+          ? data.shellCommentsSheet.value
+          : this.shellCommentsSheet,
     );
   }
 
@@ -33052,7 +33087,8 @@ class ArmTrialMetadataData extends DataClass
           ..write('armImportSessionId: $armImportSessionId, ')
           ..write('armLinkedShellPath: $armLinkedShellPath, ')
           ..write('armLinkedShellAt: $armLinkedShellAt, ')
-          ..write('shellInternalPath: $shellInternalPath')
+          ..write('shellInternalPath: $shellInternalPath, ')
+          ..write('shellCommentsSheet: $shellCommentsSheet')
           ..write(')'))
         .toString();
   }
@@ -33067,7 +33103,8 @@ class ArmTrialMetadataData extends DataClass
       armImportSessionId,
       armLinkedShellPath,
       armLinkedShellAt,
-      shellInternalPath);
+      shellInternalPath,
+      shellCommentsSheet);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -33080,7 +33117,8 @@ class ArmTrialMetadataData extends DataClass
           other.armImportSessionId == this.armImportSessionId &&
           other.armLinkedShellPath == this.armLinkedShellPath &&
           other.armLinkedShellAt == this.armLinkedShellAt &&
-          other.shellInternalPath == this.shellInternalPath);
+          other.shellInternalPath == this.shellInternalPath &&
+          other.shellCommentsSheet == this.shellCommentsSheet);
 }
 
 class ArmTrialMetadataCompanion extends UpdateCompanion<ArmTrialMetadataData> {
@@ -33093,6 +33131,7 @@ class ArmTrialMetadataCompanion extends UpdateCompanion<ArmTrialMetadataData> {
   final Value<String?> armLinkedShellPath;
   final Value<DateTime?> armLinkedShellAt;
   final Value<String?> shellInternalPath;
+  final Value<String?> shellCommentsSheet;
   const ArmTrialMetadataCompanion({
     this.trialId = const Value.absent(),
     this.isArmLinked = const Value.absent(),
@@ -33103,6 +33142,7 @@ class ArmTrialMetadataCompanion extends UpdateCompanion<ArmTrialMetadataData> {
     this.armLinkedShellPath = const Value.absent(),
     this.armLinkedShellAt = const Value.absent(),
     this.shellInternalPath = const Value.absent(),
+    this.shellCommentsSheet = const Value.absent(),
   });
   ArmTrialMetadataCompanion.insert({
     this.trialId = const Value.absent(),
@@ -33114,6 +33154,7 @@ class ArmTrialMetadataCompanion extends UpdateCompanion<ArmTrialMetadataData> {
     this.armLinkedShellPath = const Value.absent(),
     this.armLinkedShellAt = const Value.absent(),
     this.shellInternalPath = const Value.absent(),
+    this.shellCommentsSheet = const Value.absent(),
   });
   static Insertable<ArmTrialMetadataData> custom({
     Expression<int>? trialId,
@@ -33125,6 +33166,7 @@ class ArmTrialMetadataCompanion extends UpdateCompanion<ArmTrialMetadataData> {
     Expression<String>? armLinkedShellPath,
     Expression<DateTime>? armLinkedShellAt,
     Expression<String>? shellInternalPath,
+    Expression<String>? shellCommentsSheet,
   }) {
     return RawValuesInsertable({
       if (trialId != null) 'trial_id': trialId,
@@ -33138,6 +33180,8 @@ class ArmTrialMetadataCompanion extends UpdateCompanion<ArmTrialMetadataData> {
         'arm_linked_shell_path': armLinkedShellPath,
       if (armLinkedShellAt != null) 'arm_linked_shell_at': armLinkedShellAt,
       if (shellInternalPath != null) 'shell_internal_path': shellInternalPath,
+      if (shellCommentsSheet != null)
+        'shell_comments_sheet': shellCommentsSheet,
     });
   }
 
@@ -33150,7 +33194,8 @@ class ArmTrialMetadataCompanion extends UpdateCompanion<ArmTrialMetadataData> {
       Value<int?>? armImportSessionId,
       Value<String?>? armLinkedShellPath,
       Value<DateTime?>? armLinkedShellAt,
-      Value<String?>? shellInternalPath}) {
+      Value<String?>? shellInternalPath,
+      Value<String?>? shellCommentsSheet}) {
     return ArmTrialMetadataCompanion(
       trialId: trialId ?? this.trialId,
       isArmLinked: isArmLinked ?? this.isArmLinked,
@@ -33161,6 +33206,7 @@ class ArmTrialMetadataCompanion extends UpdateCompanion<ArmTrialMetadataData> {
       armLinkedShellPath: armLinkedShellPath ?? this.armLinkedShellPath,
       armLinkedShellAt: armLinkedShellAt ?? this.armLinkedShellAt,
       shellInternalPath: shellInternalPath ?? this.shellInternalPath,
+      shellCommentsSheet: shellCommentsSheet ?? this.shellCommentsSheet,
     );
   }
 
@@ -33194,6 +33240,9 @@ class ArmTrialMetadataCompanion extends UpdateCompanion<ArmTrialMetadataData> {
     if (shellInternalPath.present) {
       map['shell_internal_path'] = Variable<String>(shellInternalPath.value);
     }
+    if (shellCommentsSheet.present) {
+      map['shell_comments_sheet'] = Variable<String>(shellCommentsSheet.value);
+    }
     return map;
   }
 
@@ -33208,7 +33257,8 @@ class ArmTrialMetadataCompanion extends UpdateCompanion<ArmTrialMetadataData> {
           ..write('armImportSessionId: $armImportSessionId, ')
           ..write('armLinkedShellPath: $armLinkedShellPath, ')
           ..write('armLinkedShellAt: $armLinkedShellAt, ')
-          ..write('shellInternalPath: $shellInternalPath')
+          ..write('shellInternalPath: $shellInternalPath, ')
+          ..write('shellCommentsSheet: $shellCommentsSheet')
           ..write(')'))
         .toString();
   }
@@ -51985,6 +52035,7 @@ typedef $$ArmTrialMetadataTableCreateCompanionBuilder
   Value<String?> armLinkedShellPath,
   Value<DateTime?> armLinkedShellAt,
   Value<String?> shellInternalPath,
+  Value<String?> shellCommentsSheet,
 });
 typedef $$ArmTrialMetadataTableUpdateCompanionBuilder
     = ArmTrialMetadataCompanion Function({
@@ -51997,6 +52048,7 @@ typedef $$ArmTrialMetadataTableUpdateCompanionBuilder
   Value<String?> armLinkedShellPath,
   Value<DateTime?> armLinkedShellAt,
   Value<String?> shellInternalPath,
+  Value<String?> shellCommentsSheet,
 });
 
 class $$ArmTrialMetadataTableTableManager extends RootTableManager<
@@ -52026,6 +52078,7 @@ class $$ArmTrialMetadataTableTableManager extends RootTableManager<
             Value<String?> armLinkedShellPath = const Value.absent(),
             Value<DateTime?> armLinkedShellAt = const Value.absent(),
             Value<String?> shellInternalPath = const Value.absent(),
+            Value<String?> shellCommentsSheet = const Value.absent(),
           }) =>
               ArmTrialMetadataCompanion(
             trialId: trialId,
@@ -52037,6 +52090,7 @@ class $$ArmTrialMetadataTableTableManager extends RootTableManager<
             armLinkedShellPath: armLinkedShellPath,
             armLinkedShellAt: armLinkedShellAt,
             shellInternalPath: shellInternalPath,
+            shellCommentsSheet: shellCommentsSheet,
           ),
           createCompanionCallback: ({
             Value<int> trialId = const Value.absent(),
@@ -52048,6 +52102,7 @@ class $$ArmTrialMetadataTableTableManager extends RootTableManager<
             Value<String?> armLinkedShellPath = const Value.absent(),
             Value<DateTime?> armLinkedShellAt = const Value.absent(),
             Value<String?> shellInternalPath = const Value.absent(),
+            Value<String?> shellCommentsSheet = const Value.absent(),
           }) =>
               ArmTrialMetadataCompanion.insert(
             trialId: trialId,
@@ -52059,6 +52114,7 @@ class $$ArmTrialMetadataTableTableManager extends RootTableManager<
             armLinkedShellPath: armLinkedShellPath,
             armLinkedShellAt: armLinkedShellAt,
             shellInternalPath: shellInternalPath,
+            shellCommentsSheet: shellCommentsSheet,
           ),
         ));
 }
@@ -52103,6 +52159,11 @@ class $$ArmTrialMetadataTableFilterComposer
 
   ColumnFilters<String> get shellInternalPath => $state.composableBuilder(
       column: $state.table.shellInternalPath,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get shellCommentsSheet => $state.composableBuilder(
+      column: $state.table.shellCommentsSheet,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -52159,6 +52220,11 @@ class $$ArmTrialMetadataTableOrderingComposer
 
   ColumnOrderings<String> get shellInternalPath => $state.composableBuilder(
       column: $state.table.shellInternalPath,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get shellCommentsSheet => $state.composableBuilder(
+      column: $state.table.shellCommentsSheet,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

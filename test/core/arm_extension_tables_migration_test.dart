@@ -645,4 +645,14 @@ void main() {
         );
     await expectLater(dupInsert, throwsA(anything));
   });
+
+  test('v67: arm_trial_metadata.shell_comments_sheet column', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final pragma = await db.customSelect(
+      "SELECT name FROM pragma_table_info('arm_trial_metadata')",
+    ).get();
+    final colNames = pragma.map((r) => r.read<String>('name')).toSet();
+    expect(colNames, contains('shell_comments_sheet'));
+  });
 }

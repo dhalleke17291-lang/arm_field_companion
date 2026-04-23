@@ -15,6 +15,7 @@ import '../../core/widgets/loading_error_widgets.dart';
 ///  - Shell link (linked shell file, link date)
 ///  - ARM assessments (columns, SE codes, rating dates)
 ///  - Applications sheet (imported application blocks, read-only)
+///  - Comments sheet text (`ECM` row), when present
 ///  - Pinned import session
 ///
 /// Lives under `lib/features/arm_protocol/` (ARM subtree). Trial hub accesses
@@ -115,6 +116,9 @@ class _ArmProtocolContent extends ConsumerWidget {
         _ImportSummaryCard(meta: meta),
         if (meta.armLinkedShellPath != null || meta.armLinkedShellAt != null)
           _ShellLinkCard(meta: meta),
+        if (meta.shellCommentsSheet != null &&
+            meta.shellCommentsSheet!.trim().isNotEmpty)
+          _ShellCommentsCard(text: meta.shellCommentsSheet!.trim()),
         ArmTreatmentsSection(trialId: trialId),
         ArmApplicationsSection(trialId: trialId),
         _ArmAssessmentsSection(trialId: trialId),
@@ -199,6 +203,33 @@ class _ShellLinkCard extends StatelessWidget {
   String _basenameOf(String path) {
     final sep = path.contains('/') ? '/' : r'\';
     return path.split(sep).last;
+  }
+}
+
+// ─── Comments sheet (ECM) ────────────────────────────────────────────────────
+
+class _ShellCommentsCard extends StatelessWidget {
+  const _ShellCommentsCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      icon: Icons.notes_rounded,
+      title: 'Comments (rating sheet)',
+      iconColor: const Color(0xFF6D28D9),
+      children: [
+        SelectableText(
+          text,
+          style: const TextStyle(
+            fontSize: 14,
+            height: 1.35,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+      ],
+    );
   }
 }
 

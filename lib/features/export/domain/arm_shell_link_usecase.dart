@@ -184,6 +184,7 @@ class ArmShellLinkUseCase {
               shellInternalPath: internalPath != null
                   ? Value(internalPath)
                   : const Value.absent(),
+              shellCommentsSheet: Value(preview.shellCommentsSheetText),
             ),
           );
       await _trialRepository.updateTrialSetup(
@@ -585,6 +586,7 @@ class ArmShellLinkUseCase {
       shellPlotCount: shell.plotRows.length,
       trialMatchedPlotCount: matchedPlotNums.length,
       trialPlotCount: trialPlotNums.length,
+      shellCommentsSheetText: shell.commentsSheetText,
     );
   }
 
@@ -606,6 +608,7 @@ class ArmShellLinkUseCase {
       shellPlotCount: 0,
       trialMatchedPlotCount: 0,
       trialPlotCount: 0,
+      shellCommentsSheetText: null,
     );
   }
 

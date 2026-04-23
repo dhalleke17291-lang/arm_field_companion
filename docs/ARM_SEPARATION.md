@@ -226,7 +226,7 @@ Sheet layout, row maps, and which sheets are parsed today: **`test/fixtures/arm_
 
 ### Gaps (explicit)
 
-- **Comments**, **Subsample Plot Data**: not parsed (see README).
+- **Subsample Plot Data**: not parsed (see README). **Comments** sheet: parsed and stored on `arm_trial_metadata.shell_comments_sheet`; ARM Protocol tab shows non-empty text.
 
 ## What standalone users see
 
@@ -241,7 +241,7 @@ Standalone trials (`WorkspaceType.standalone`, `isArmLinked = false`):
 ARM-linked trials (`isArmLinked = true`):
 
 - Show all core screens unchanged (no branching in core UI on ARM flags).
-- Additionally see an **ARM Protocol tab** (in `lib/features/arm_protocol/`) that surfaces ARM-specific richness: import/shell summary, read-only **Treatments** (sheet 7) and **Applications** (79-row descriptors per imported event) sub-sections, ARM **assessments** metadata, pinned import session, and shell link. **Comments** sheet content is not surfaced there yet.
+- Additionally see an **ARM Protocol tab** (in `lib/features/arm_protocol/`) that surfaces ARM-specific richness: import/shell summary, read-only **Treatments** (sheet 7) and **Applications** (79-row descriptors per imported event) sub-sections, **Comments** (`ECM` body) when present, ARM **assessments** metadata, pinned import session, and shell link.
 
 ## Runtime guardrails (existing)
 
