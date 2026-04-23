@@ -278,7 +278,6 @@ class TrialAssessments extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
-  TextColumn get pestCode => text().nullable()();
   TextColumn get pestName => text().nullable()();
   TextColumn get eppoCodeLocal => text().nullable()();
   TextColumn get bbchScale => text().nullable()();
@@ -286,17 +285,10 @@ class TrialAssessments extends Table {
 
   // v60 (Phase 0b-ta contract phase) moved the per-column ARM anchor fields
   // (armImportColumnIndex, armShellColumnId, armShellRatingDate,
-  // armColumnIdInteger) to arm_assessment_metadata. Readers/writers were
-  // flipped in Units 2–3 and the TA columns were dropped here.
-
-  /// SE Name from shell (row 17), display-oriented; may differ in casing from [pestCode].
-  TextColumn get seName => text().nullable()();
-
-  /// SE Description from shell (row 14).
-  TextColumn get seDescription => text().nullable()();
-
-  /// Rating type from shell (row 20).
-  TextColumn get armRatingType => text().nullable()();
+  // armColumnIdInteger) to arm_assessment_metadata. v61 (Unit 5d) finished
+  // the cutover by dropping pestCode / seName / seDescription / armRatingType
+  // from trial_assessments; those fields now live only on
+  // arm_assessment_metadata.
 }
 
 class Plots extends Table {
@@ -1124,7 +1116,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 60;
+  int get schemaVersion => 61;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1454,7 +1446,18 @@ SET status = 'completed',
             await m.addColumn(plots, plots.exclusionReason);
             await m.addColumn(plots, plots.damageType);
 
-            await m.addColumn(trialAssessments, trialAssessments.pestCode);
+            // Historical v36 add. pestCode later moved to
+            // arm_assessment_metadata and was dropped from trial_assessments
+            // in v61 (Unit 5d); the ADD here uses raw SQL so pre-v36
+            // upgrades still pass through v61's drop cleanly.
+            final taCols36 = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_assessments')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!taCols36.contains('pest_code')) {
+              await customStatement(
+                'ALTER TABLE trial_assessments ADD COLUMN pest_code TEXT',
+              );
+            }
             await m.addColumn(trialAssessments, trialAssessments.pestName);
             await m.addColumn(trialAssessments, trialAssessments.eppoCodeLocal);
             await m.addColumn(trialAssessments, trialAssessments.bbchScale);
@@ -1540,8 +1543,11 @@ SET status = 'completed',
             // Historical v43 additions. Two of the per-column ARM fields
             // (armShellColumnId, armShellRatingDate) were later moved to
             // arm_assessment_metadata and dropped from trial_assessments in
-            // v60; the ADD here uses raw SQL so pre-v43 upgrades still pass
-            // through v60's drop cleanly.
+            // v60. The three SE / rating-type fields added in v43
+            // (seName, seDescription, armRatingType) were likewise moved
+            // to arm_assessment_metadata and dropped in v61. The ADDs here
+            // use raw SQL so pre-v43 upgrades still pass through v60/v61's
+            // drops cleanly.
             final taCols43 = await customSelect(
               "SELECT name FROM pragma_table_info('trial_assessments')",
             ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
@@ -1555,9 +1561,21 @@ SET status = 'completed',
                 'ALTER TABLE trial_assessments ADD COLUMN arm_shell_rating_date TEXT',
               );
             }
-            await m.addColumn(trialAssessments, trialAssessments.seName);
-            await m.addColumn(trialAssessments, trialAssessments.seDescription);
-            await m.addColumn(trialAssessments, trialAssessments.armRatingType);
+            if (!taCols43.contains('se_name')) {
+              await customStatement(
+                'ALTER TABLE trial_assessments ADD COLUMN se_name TEXT',
+              );
+            }
+            if (!taCols43.contains('se_description')) {
+              await customStatement(
+                'ALTER TABLE trial_assessments ADD COLUMN se_description TEXT',
+              );
+            }
+            if (!taCols43.contains('arm_rating_type')) {
+              await customStatement(
+                'ALTER TABLE trial_assessments ADD COLUMN arm_rating_type TEXT',
+              );
+            }
           }
           if (from < 44) {
             await m.createTable(weatherSnapshots);
@@ -2210,6 +2228,34 @@ WHERE pest_code IS NULL
             ];
             for (final col in taColsToDrop) {
               if (taCols60.contains(col)) {
+                await customStatement(
+                  'ALTER TABLE trial_assessments DROP COLUMN $col',
+                );
+              }
+            }
+          }
+
+          if (from < 61) {
+            // ── Unit 5d (contract phase): drop the four duplicate ARM
+            //    fields from trial_assessments. pestCode / seName /
+            //    seDescription / armRatingType now live only on
+            //    arm_assessment_metadata. The v59 backfill populated AAM
+            //    from TA for all existing rows; Unit 5b/5c flipped writers
+            //    and readers; Unit 5d part 1 removed the last TA reads and
+            //    writes. Idempotent: each DROP is guarded by a pragma
+            //    check so re-runs or installs that never had the column
+            //    are a no-op.
+            final taCols61 = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_assessments')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            const taColsToDrop61 = <String>[
+              'pest_code',
+              'se_name',
+              'se_description',
+              'arm_rating_type',
+            ];
+            for (final col in taColsToDrop61) {
+              if (taCols61.contains(col)) {
                 await customStatement(
                   'ALTER TABLE trial_assessments DROP COLUMN $col',
                 );

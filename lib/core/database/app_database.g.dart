@@ -6987,12 +6987,6 @@ class $TrialAssessmentsTable extends TrialAssessments
       type: DriftSqlType.dateTime,
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
-  static const VerificationMeta _pestCodeMeta =
-      const VerificationMeta('pestCode');
-  @override
-  late final GeneratedColumn<String> pestCode = GeneratedColumn<String>(
-      'pest_code', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _pestNameMeta =
       const VerificationMeta('pestName');
   @override
@@ -7017,23 +7011,6 @@ class $TrialAssessmentsTable extends TrialAssessments
   late final GeneratedColumn<String> cropStageAtAssessment =
       GeneratedColumn<String>('crop_stage_at_assessment', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _seNameMeta = const VerificationMeta('seName');
-  @override
-  late final GeneratedColumn<String> seName = GeneratedColumn<String>(
-      'se_name', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _seDescriptionMeta =
-      const VerificationMeta('seDescription');
-  @override
-  late final GeneratedColumn<String> seDescription = GeneratedColumn<String>(
-      'se_description', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _armRatingTypeMeta =
-      const VerificationMeta('armRatingType');
-  @override
-  late final GeneratedColumn<String> armRatingType = GeneratedColumn<String>(
-      'arm_rating_type', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -7055,14 +7032,10 @@ class $TrialAssessmentsTable extends TrialAssessments
         legacyAssessmentId,
         createdAt,
         updatedAt,
-        pestCode,
         pestName,
         eppoCodeLocal,
         bbchScale,
-        cropStageAtAssessment,
-        seName,
-        seDescription,
-        armRatingType
+        cropStageAtAssessment
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7177,10 +7150,6 @@ class $TrialAssessmentsTable extends TrialAssessments
       context.handle(_updatedAtMeta,
           updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
     }
-    if (data.containsKey('pest_code')) {
-      context.handle(_pestCodeMeta,
-          pestCode.isAcceptableOrUnknown(data['pest_code']!, _pestCodeMeta));
-    }
     if (data.containsKey('pest_name')) {
       context.handle(_pestNameMeta,
           pestName.isAcceptableOrUnknown(data['pest_name']!, _pestNameMeta));
@@ -7200,22 +7169,6 @@ class $TrialAssessmentsTable extends TrialAssessments
           _cropStageAtAssessmentMeta,
           cropStageAtAssessment.isAcceptableOrUnknown(
               data['crop_stage_at_assessment']!, _cropStageAtAssessmentMeta));
-    }
-    if (data.containsKey('se_name')) {
-      context.handle(_seNameMeta,
-          seName.isAcceptableOrUnknown(data['se_name']!, _seNameMeta));
-    }
-    if (data.containsKey('se_description')) {
-      context.handle(
-          _seDescriptionMeta,
-          seDescription.isAcceptableOrUnknown(
-              data['se_description']!, _seDescriptionMeta));
-    }
-    if (data.containsKey('arm_rating_type')) {
-      context.handle(
-          _armRatingTypeMeta,
-          armRatingType.isAcceptableOrUnknown(
-              data['arm_rating_type']!, _armRatingTypeMeta));
     }
     return context;
   }
@@ -7265,8 +7218,6 @@ class $TrialAssessmentsTable extends TrialAssessments
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
-      pestCode: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}pest_code']),
       pestName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}pest_name']),
       eppoCodeLocal: attachedDatabase.typeMapping
@@ -7276,12 +7227,6 @@ class $TrialAssessmentsTable extends TrialAssessments
       cropStageAtAssessment: attachedDatabase.typeMapping.read(
           DriftSqlType.string,
           data['${effectivePrefix}crop_stage_at_assessment']),
-      seName: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}se_name']),
-      seDescription: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}se_description']),
-      armRatingType: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}arm_rating_type']),
     );
   }
 
@@ -7311,20 +7256,10 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
   final int? legacyAssessmentId;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final String? pestCode;
   final String? pestName;
   final String? eppoCodeLocal;
   final String? bbchScale;
   final String? cropStageAtAssessment;
-
-  /// SE Name from shell (row 17), display-oriented; may differ in casing from [pestCode].
-  final String? seName;
-
-  /// SE Description from shell (row 14).
-  final String? seDescription;
-
-  /// Rating type from shell (row 20).
-  final String? armRatingType;
   const TrialAssessment(
       {required this.id,
       required this.trialId,
@@ -7345,14 +7280,10 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       this.legacyAssessmentId,
       required this.createdAt,
       required this.updatedAt,
-      this.pestCode,
       this.pestName,
       this.eppoCodeLocal,
       this.bbchScale,
-      this.cropStageAtAssessment,
-      this.seName,
-      this.seDescription,
-      this.armRatingType});
+      this.cropStageAtAssessment});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -7391,9 +7322,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
-    if (!nullToAbsent || pestCode != null) {
-      map['pest_code'] = Variable<String>(pestCode);
-    }
     if (!nullToAbsent || pestName != null) {
       map['pest_name'] = Variable<String>(pestName);
     }
@@ -7405,15 +7333,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
     }
     if (!nullToAbsent || cropStageAtAssessment != null) {
       map['crop_stage_at_assessment'] = Variable<String>(cropStageAtAssessment);
-    }
-    if (!nullToAbsent || seName != null) {
-      map['se_name'] = Variable<String>(seName);
-    }
-    if (!nullToAbsent || seDescription != null) {
-      map['se_description'] = Variable<String>(seDescription);
-    }
-    if (!nullToAbsent || armRatingType != null) {
-      map['arm_rating_type'] = Variable<String>(armRatingType);
     }
     return map;
   }
@@ -7455,9 +7374,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           : Value(legacyAssessmentId),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
-      pestCode: pestCode == null && nullToAbsent
-          ? const Value.absent()
-          : Value(pestCode),
       pestName: pestName == null && nullToAbsent
           ? const Value.absent()
           : Value(pestName),
@@ -7470,14 +7386,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       cropStageAtAssessment: cropStageAtAssessment == null && nullToAbsent
           ? const Value.absent()
           : Value(cropStageAtAssessment),
-      seName:
-          seName == null && nullToAbsent ? const Value.absent() : Value(seName),
-      seDescription: seDescription == null && nullToAbsent
-          ? const Value.absent()
-          : Value(seDescription),
-      armRatingType: armRatingType == null && nullToAbsent
-          ? const Value.absent()
-          : Value(armRatingType),
     );
   }
 
@@ -7508,15 +7416,11 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       legacyAssessmentId: serializer.fromJson<int?>(json['legacyAssessmentId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
-      pestCode: serializer.fromJson<String?>(json['pestCode']),
       pestName: serializer.fromJson<String?>(json['pestName']),
       eppoCodeLocal: serializer.fromJson<String?>(json['eppoCodeLocal']),
       bbchScale: serializer.fromJson<String?>(json['bbchScale']),
       cropStageAtAssessment:
           serializer.fromJson<String?>(json['cropStageAtAssessment']),
-      seName: serializer.fromJson<String?>(json['seName']),
-      seDescription: serializer.fromJson<String?>(json['seDescription']),
-      armRatingType: serializer.fromJson<String?>(json['armRatingType']),
     );
   }
   @override
@@ -7542,15 +7446,11 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       'legacyAssessmentId': serializer.toJson<int?>(legacyAssessmentId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
-      'pestCode': serializer.toJson<String?>(pestCode),
       'pestName': serializer.toJson<String?>(pestName),
       'eppoCodeLocal': serializer.toJson<String?>(eppoCodeLocal),
       'bbchScale': serializer.toJson<String?>(bbchScale),
       'cropStageAtAssessment':
           serializer.toJson<String?>(cropStageAtAssessment),
-      'seName': serializer.toJson<String?>(seName),
-      'seDescription': serializer.toJson<String?>(seDescription),
-      'armRatingType': serializer.toJson<String?>(armRatingType),
     };
   }
 
@@ -7574,14 +7474,10 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           Value<int?> legacyAssessmentId = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt,
-          Value<String?> pestCode = const Value.absent(),
           Value<String?> pestName = const Value.absent(),
           Value<String?> eppoCodeLocal = const Value.absent(),
           Value<String?> bbchScale = const Value.absent(),
-          Value<String?> cropStageAtAssessment = const Value.absent(),
-          Value<String?> seName = const Value.absent(),
-          Value<String?> seDescription = const Value.absent(),
-          Value<String?> armRatingType = const Value.absent()}) =>
+          Value<String?> cropStageAtAssessment = const Value.absent()}) =>
       TrialAssessment(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -7614,7 +7510,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
             : this.legacyAssessmentId,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
-        pestCode: pestCode.present ? pestCode.value : this.pestCode,
         pestName: pestName.present ? pestName.value : this.pestName,
         eppoCodeLocal:
             eppoCodeLocal.present ? eppoCodeLocal.value : this.eppoCodeLocal,
@@ -7622,11 +7517,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
         cropStageAtAssessment: cropStageAtAssessment.present
             ? cropStageAtAssessment.value
             : this.cropStageAtAssessment,
-        seName: seName.present ? seName.value : this.seName,
-        seDescription:
-            seDescription.present ? seDescription.value : this.seDescription,
-        armRatingType:
-            armRatingType.present ? armRatingType.value : this.armRatingType,
       );
   TrialAssessment copyWithCompanion(TrialAssessmentsCompanion data) {
     return TrialAssessment(
@@ -7671,7 +7561,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           : this.legacyAssessmentId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      pestCode: data.pestCode.present ? data.pestCode.value : this.pestCode,
       pestName: data.pestName.present ? data.pestName.value : this.pestName,
       eppoCodeLocal: data.eppoCodeLocal.present
           ? data.eppoCodeLocal.value
@@ -7680,13 +7569,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       cropStageAtAssessment: data.cropStageAtAssessment.present
           ? data.cropStageAtAssessment.value
           : this.cropStageAtAssessment,
-      seName: data.seName.present ? data.seName.value : this.seName,
-      seDescription: data.seDescription.present
-          ? data.seDescription.value
-          : this.seDescription,
-      armRatingType: data.armRatingType.present
-          ? data.armRatingType.value
-          : this.armRatingType,
     );
   }
 
@@ -7712,14 +7594,10 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           ..write('legacyAssessmentId: $legacyAssessmentId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('pestCode: $pestCode, ')
           ..write('pestName: $pestName, ')
           ..write('eppoCodeLocal: $eppoCodeLocal, ')
           ..write('bbchScale: $bbchScale, ')
-          ..write('cropStageAtAssessment: $cropStageAtAssessment, ')
-          ..write('seName: $seName, ')
-          ..write('seDescription: $seDescription, ')
-          ..write('armRatingType: $armRatingType')
+          ..write('cropStageAtAssessment: $cropStageAtAssessment')
           ..write(')'))
         .toString();
   }
@@ -7745,14 +7623,10 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
         legacyAssessmentId,
         createdAt,
         updatedAt,
-        pestCode,
         pestName,
         eppoCodeLocal,
         bbchScale,
-        cropStageAtAssessment,
-        seName,
-        seDescription,
-        armRatingType
+        cropStageAtAssessment
       ]);
   @override
   bool operator ==(Object other) =>
@@ -7777,14 +7651,10 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           other.legacyAssessmentId == this.legacyAssessmentId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.pestCode == this.pestCode &&
           other.pestName == this.pestName &&
           other.eppoCodeLocal == this.eppoCodeLocal &&
           other.bbchScale == this.bbchScale &&
-          other.cropStageAtAssessment == this.cropStageAtAssessment &&
-          other.seName == this.seName &&
-          other.seDescription == this.seDescription &&
-          other.armRatingType == this.armRatingType);
+          other.cropStageAtAssessment == this.cropStageAtAssessment);
 }
 
 class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
@@ -7807,14 +7677,10 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
   final Value<int?> legacyAssessmentId;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
-  final Value<String?> pestCode;
   final Value<String?> pestName;
   final Value<String?> eppoCodeLocal;
   final Value<String?> bbchScale;
   final Value<String?> cropStageAtAssessment;
-  final Value<String?> seName;
-  final Value<String?> seDescription;
-  final Value<String?> armRatingType;
   const TrialAssessmentsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -7835,14 +7701,10 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     this.legacyAssessmentId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
-    this.pestCode = const Value.absent(),
     this.pestName = const Value.absent(),
     this.eppoCodeLocal = const Value.absent(),
     this.bbchScale = const Value.absent(),
     this.cropStageAtAssessment = const Value.absent(),
-    this.seName = const Value.absent(),
-    this.seDescription = const Value.absent(),
-    this.armRatingType = const Value.absent(),
   });
   TrialAssessmentsCompanion.insert({
     this.id = const Value.absent(),
@@ -7864,14 +7726,10 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     this.legacyAssessmentId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
-    this.pestCode = const Value.absent(),
     this.pestName = const Value.absent(),
     this.eppoCodeLocal = const Value.absent(),
     this.bbchScale = const Value.absent(),
     this.cropStageAtAssessment = const Value.absent(),
-    this.seName = const Value.absent(),
-    this.seDescription = const Value.absent(),
-    this.armRatingType = const Value.absent(),
   })  : trialId = Value(trialId),
         assessmentDefinitionId = Value(assessmentDefinitionId);
   static Insertable<TrialAssessment> custom({
@@ -7894,14 +7752,10 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     Expression<int>? legacyAssessmentId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
-    Expression<String>? pestCode,
     Expression<String>? pestName,
     Expression<String>? eppoCodeLocal,
     Expression<String>? bbchScale,
     Expression<String>? cropStageAtAssessment,
-    Expression<String>? seName,
-    Expression<String>? seDescription,
-    Expression<String>? armRatingType,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -7929,15 +7783,11 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
         'legacy_assessment_id': legacyAssessmentId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
-      if (pestCode != null) 'pest_code': pestCode,
       if (pestName != null) 'pest_name': pestName,
       if (eppoCodeLocal != null) 'eppo_code_local': eppoCodeLocal,
       if (bbchScale != null) 'bbch_scale': bbchScale,
       if (cropStageAtAssessment != null)
         'crop_stage_at_assessment': cropStageAtAssessment,
-      if (seName != null) 'se_name': seName,
-      if (seDescription != null) 'se_description': seDescription,
-      if (armRatingType != null) 'arm_rating_type': armRatingType,
     });
   }
 
@@ -7961,14 +7811,10 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       Value<int?>? legacyAssessmentId,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
-      Value<String?>? pestCode,
       Value<String?>? pestName,
       Value<String?>? eppoCodeLocal,
       Value<String?>? bbchScale,
-      Value<String?>? cropStageAtAssessment,
-      Value<String?>? seName,
-      Value<String?>? seDescription,
-      Value<String?>? armRatingType}) {
+      Value<String?>? cropStageAtAssessment}) {
     return TrialAssessmentsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -7990,15 +7836,11 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       legacyAssessmentId: legacyAssessmentId ?? this.legacyAssessmentId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      pestCode: pestCode ?? this.pestCode,
       pestName: pestName ?? this.pestName,
       eppoCodeLocal: eppoCodeLocal ?? this.eppoCodeLocal,
       bbchScale: bbchScale ?? this.bbchScale,
       cropStageAtAssessment:
           cropStageAtAssessment ?? this.cropStageAtAssessment,
-      seName: seName ?? this.seName,
-      seDescription: seDescription ?? this.seDescription,
-      armRatingType: armRatingType ?? this.armRatingType,
     );
   }
 
@@ -8065,9 +7907,6 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
-    if (pestCode.present) {
-      map['pest_code'] = Variable<String>(pestCode.value);
-    }
     if (pestName.present) {
       map['pest_name'] = Variable<String>(pestName.value);
     }
@@ -8080,15 +7919,6 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     if (cropStageAtAssessment.present) {
       map['crop_stage_at_assessment'] =
           Variable<String>(cropStageAtAssessment.value);
-    }
-    if (seName.present) {
-      map['se_name'] = Variable<String>(seName.value);
-    }
-    if (seDescription.present) {
-      map['se_description'] = Variable<String>(seDescription.value);
-    }
-    if (armRatingType.present) {
-      map['arm_rating_type'] = Variable<String>(armRatingType.value);
     }
     return map;
   }
@@ -8115,14 +7945,10 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
           ..write('legacyAssessmentId: $legacyAssessmentId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('pestCode: $pestCode, ')
           ..write('pestName: $pestName, ')
           ..write('eppoCodeLocal: $eppoCodeLocal, ')
           ..write('bbchScale: $bbchScale, ')
-          ..write('cropStageAtAssessment: $cropStageAtAssessment, ')
-          ..write('seName: $seName, ')
-          ..write('seDescription: $seDescription, ')
-          ..write('armRatingType: $armRatingType')
+          ..write('cropStageAtAssessment: $cropStageAtAssessment')
           ..write(')'))
         .toString();
   }
@@ -35522,14 +35348,10 @@ typedef $$TrialAssessmentsTableCreateCompanionBuilder
   Value<int?> legacyAssessmentId,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
-  Value<String?> pestCode,
   Value<String?> pestName,
   Value<String?> eppoCodeLocal,
   Value<String?> bbchScale,
   Value<String?> cropStageAtAssessment,
-  Value<String?> seName,
-  Value<String?> seDescription,
-  Value<String?> armRatingType,
 });
 typedef $$TrialAssessmentsTableUpdateCompanionBuilder
     = TrialAssessmentsCompanion Function({
@@ -35552,14 +35374,10 @@ typedef $$TrialAssessmentsTableUpdateCompanionBuilder
   Value<int?> legacyAssessmentId,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
-  Value<String?> pestCode,
   Value<String?> pestName,
   Value<String?> eppoCodeLocal,
   Value<String?> bbchScale,
   Value<String?> cropStageAtAssessment,
-  Value<String?> seName,
-  Value<String?> seDescription,
-  Value<String?> armRatingType,
 });
 
 class $$TrialAssessmentsTableTableManager extends RootTableManager<
@@ -35599,14 +35417,10 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             Value<int?> legacyAssessmentId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
-            Value<String?> pestCode = const Value.absent(),
             Value<String?> pestName = const Value.absent(),
             Value<String?> eppoCodeLocal = const Value.absent(),
             Value<String?> bbchScale = const Value.absent(),
             Value<String?> cropStageAtAssessment = const Value.absent(),
-            Value<String?> seName = const Value.absent(),
-            Value<String?> seDescription = const Value.absent(),
-            Value<String?> armRatingType = const Value.absent(),
           }) =>
               TrialAssessmentsCompanion(
             id: id,
@@ -35628,14 +35442,10 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             legacyAssessmentId: legacyAssessmentId,
             createdAt: createdAt,
             updatedAt: updatedAt,
-            pestCode: pestCode,
             pestName: pestName,
             eppoCodeLocal: eppoCodeLocal,
             bbchScale: bbchScale,
             cropStageAtAssessment: cropStageAtAssessment,
-            seName: seName,
-            seDescription: seDescription,
-            armRatingType: armRatingType,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -35657,14 +35467,10 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             Value<int?> legacyAssessmentId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
-            Value<String?> pestCode = const Value.absent(),
             Value<String?> pestName = const Value.absent(),
             Value<String?> eppoCodeLocal = const Value.absent(),
             Value<String?> bbchScale = const Value.absent(),
             Value<String?> cropStageAtAssessment = const Value.absent(),
-            Value<String?> seName = const Value.absent(),
-            Value<String?> seDescription = const Value.absent(),
-            Value<String?> armRatingType = const Value.absent(),
           }) =>
               TrialAssessmentsCompanion.insert(
             id: id,
@@ -35686,14 +35492,10 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             legacyAssessmentId: legacyAssessmentId,
             createdAt: createdAt,
             updatedAt: updatedAt,
-            pestCode: pestCode,
             pestName: pestName,
             eppoCodeLocal: eppoCodeLocal,
             bbchScale: bbchScale,
             cropStageAtAssessment: cropStageAtAssessment,
-            seName: seName,
-            seDescription: seDescription,
-            armRatingType: armRatingType,
           ),
         ));
 }
@@ -35781,11 +35583,6 @@ class $$TrialAssessmentsTableFilterComposer
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
-  ColumnFilters<String> get pestCode => $state.composableBuilder(
-      column: $state.table.pestCode,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
   ColumnFilters<String> get pestName => $state.composableBuilder(
       column: $state.table.pestName,
       builder: (column, joinBuilders) =>
@@ -35803,21 +35600,6 @@ class $$TrialAssessmentsTableFilterComposer
 
   ColumnFilters<String> get cropStageAtAssessment => $state.composableBuilder(
       column: $state.table.cropStageAtAssessment,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get seName => $state.composableBuilder(
-      column: $state.table.seName,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get seDescription => $state.composableBuilder(
-      column: $state.table.seDescription,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get armRatingType => $state.composableBuilder(
-      column: $state.table.armRatingType,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -36023,11 +35805,6 @@ class $$TrialAssessmentsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
-  ColumnOrderings<String> get pestCode => $state.composableBuilder(
-      column: $state.table.pestCode,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
   ColumnOrderings<String> get pestName => $state.composableBuilder(
       column: $state.table.pestName,
       builder: (column, joinBuilders) =>
@@ -36045,21 +35822,6 @@ class $$TrialAssessmentsTableOrderingComposer
 
   ColumnOrderings<String> get cropStageAtAssessment => $state.composableBuilder(
       column: $state.table.cropStageAtAssessment,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get seName => $state.composableBuilder(
-      column: $state.table.seName,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get seDescription => $state.composableBuilder(
-      column: $state.table.seDescription,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get armRatingType => $state.composableBuilder(
-      column: $state.table.armRatingType,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
