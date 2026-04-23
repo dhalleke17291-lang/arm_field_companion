@@ -30170,6 +30170,30 @@ class $ArmAssessmentMetadataTable extends ArmAssessmentMetadata
   late final GeneratedColumn<String> pestCodeSecondary =
       GeneratedColumn<String>('pest_code_secondary', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _armImportColumnIndexMeta =
+      const VerificationMeta('armImportColumnIndex');
+  @override
+  late final GeneratedColumn<int> armImportColumnIndex = GeneratedColumn<int>(
+      'arm_import_column_index', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _armShellColumnIdMeta =
+      const VerificationMeta('armShellColumnId');
+  @override
+  late final GeneratedColumn<String> armShellColumnId = GeneratedColumn<String>(
+      'arm_shell_column_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _armColumnIdIntegerMeta =
+      const VerificationMeta('armColumnIdInteger');
+  @override
+  late final GeneratedColumn<int> armColumnIdInteger = GeneratedColumn<int>(
+      'arm_column_id_integer', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _armShellRatingDateMeta =
+      const VerificationMeta('armShellRatingDate');
+  @override
+  late final GeneratedColumn<String> armShellRatingDate =
+      GeneratedColumn<String>('arm_shell_rating_date', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -30193,6 +30217,10 @@ class $ArmAssessmentMetadataTable extends ArmAssessmentMetadata
         numSubsamples,
         pestCode,
         pestCodeSecondary,
+        armImportColumnIndex,
+        armShellColumnId,
+        armColumnIdInteger,
+        armShellRatingDate,
         createdAt
       ];
   @override
@@ -30273,6 +30301,30 @@ class $ArmAssessmentMetadataTable extends ArmAssessmentMetadata
           pestCodeSecondary.isAcceptableOrUnknown(
               data['pest_code_secondary']!, _pestCodeSecondaryMeta));
     }
+    if (data.containsKey('arm_import_column_index')) {
+      context.handle(
+          _armImportColumnIndexMeta,
+          armImportColumnIndex.isAcceptableOrUnknown(
+              data['arm_import_column_index']!, _armImportColumnIndexMeta));
+    }
+    if (data.containsKey('arm_shell_column_id')) {
+      context.handle(
+          _armShellColumnIdMeta,
+          armShellColumnId.isAcceptableOrUnknown(
+              data['arm_shell_column_id']!, _armShellColumnIdMeta));
+    }
+    if (data.containsKey('arm_column_id_integer')) {
+      context.handle(
+          _armColumnIdIntegerMeta,
+          armColumnIdInteger.isAcceptableOrUnknown(
+              data['arm_column_id_integer']!, _armColumnIdIntegerMeta));
+    }
+    if (data.containsKey('arm_shell_rating_date')) {
+      context.handle(
+          _armShellRatingDateMeta,
+          armShellRatingDate.isAcceptableOrUnknown(
+              data['arm_shell_rating_date']!, _armShellRatingDateMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -30313,6 +30365,14 @@ class $ArmAssessmentMetadataTable extends ArmAssessmentMetadata
           .read(DriftSqlType.string, data['${effectivePrefix}pest_code']),
       pestCodeSecondary: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}pest_code_secondary']),
+      armImportColumnIndex: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}arm_import_column_index']),
+      armShellColumnId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}arm_shell_column_id']),
+      armColumnIdInteger: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}arm_column_id_integer']),
+      armShellRatingDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}arm_shell_rating_date']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -30356,6 +30416,22 @@ class ArmAssessmentMetadataData extends DataClass
 
   /// Optional secondary target code when the assessment covers two.
   final String? pestCodeSecondary;
+
+  /// Original CSV column index (0-based) of the assessment column in the
+  /// source Plot Data file. Used to preserve export ordering round-trip.
+  final int? armImportColumnIndex;
+
+  /// ARM shell Column ID (row 7) as a raw string (e.g. "0001"). Preserved
+  /// verbatim so round-trip export can emit the exact cell ARM provided.
+  final String? armShellColumnId;
+
+  /// Integer form of the ARM Column ID (row 7, parsed). Primary export
+  /// anchor when we need to key by number rather than the raw string.
+  final int? armColumnIdInteger;
+
+  /// Shell rating-date cell (row 15) as the raw display string, including
+  /// any trailing markers; paired with [ArmSessionMetadata.armRatingDate].
+  final String? armShellRatingDate;
   final DateTime createdAt;
   const ArmAssessmentMetadataData(
       {required this.id,
@@ -30371,6 +30447,10 @@ class ArmAssessmentMetadataData extends DataClass
       this.numSubsamples,
       this.pestCode,
       this.pestCodeSecondary,
+      this.armImportColumnIndex,
+      this.armShellColumnId,
+      this.armColumnIdInteger,
+      this.armShellRatingDate,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -30409,6 +30489,18 @@ class ArmAssessmentMetadataData extends DataClass
     }
     if (!nullToAbsent || pestCodeSecondary != null) {
       map['pest_code_secondary'] = Variable<String>(pestCodeSecondary);
+    }
+    if (!nullToAbsent || armImportColumnIndex != null) {
+      map['arm_import_column_index'] = Variable<int>(armImportColumnIndex);
+    }
+    if (!nullToAbsent || armShellColumnId != null) {
+      map['arm_shell_column_id'] = Variable<String>(armShellColumnId);
+    }
+    if (!nullToAbsent || armColumnIdInteger != null) {
+      map['arm_column_id_integer'] = Variable<int>(armColumnIdInteger);
+    }
+    if (!nullToAbsent || armShellRatingDate != null) {
+      map['arm_shell_rating_date'] = Variable<String>(armShellRatingDate);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -30450,6 +30542,18 @@ class ArmAssessmentMetadataData extends DataClass
       pestCodeSecondary: pestCodeSecondary == null && nullToAbsent
           ? const Value.absent()
           : Value(pestCodeSecondary),
+      armImportColumnIndex: armImportColumnIndex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armImportColumnIndex),
+      armShellColumnId: armShellColumnId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armShellColumnId),
+      armColumnIdInteger: armColumnIdInteger == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armColumnIdInteger),
+      armShellRatingDate: armShellRatingDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(armShellRatingDate),
       createdAt: Value(createdAt),
     );
   }
@@ -30472,6 +30576,12 @@ class ArmAssessmentMetadataData extends DataClass
       pestCode: serializer.fromJson<String?>(json['pestCode']),
       pestCodeSecondary:
           serializer.fromJson<String?>(json['pestCodeSecondary']),
+      armImportColumnIndex:
+          serializer.fromJson<int?>(json['armImportColumnIndex']),
+      armShellColumnId: serializer.fromJson<String?>(json['armShellColumnId']),
+      armColumnIdInteger: serializer.fromJson<int?>(json['armColumnIdInteger']),
+      armShellRatingDate:
+          serializer.fromJson<String?>(json['armShellRatingDate']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -30492,6 +30602,10 @@ class ArmAssessmentMetadataData extends DataClass
       'numSubsamples': serializer.toJson<int?>(numSubsamples),
       'pestCode': serializer.toJson<String?>(pestCode),
       'pestCodeSecondary': serializer.toJson<String?>(pestCodeSecondary),
+      'armImportColumnIndex': serializer.toJson<int?>(armImportColumnIndex),
+      'armShellColumnId': serializer.toJson<String?>(armShellColumnId),
+      'armColumnIdInteger': serializer.toJson<int?>(armColumnIdInteger),
+      'armShellRatingDate': serializer.toJson<String?>(armShellRatingDate),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -30510,6 +30624,10 @@ class ArmAssessmentMetadataData extends DataClass
           Value<int?> numSubsamples = const Value.absent(),
           Value<String?> pestCode = const Value.absent(),
           Value<String?> pestCodeSecondary = const Value.absent(),
+          Value<int?> armImportColumnIndex = const Value.absent(),
+          Value<String?> armShellColumnId = const Value.absent(),
+          Value<int?> armColumnIdInteger = const Value.absent(),
+          Value<String?> armShellRatingDate = const Value.absent(),
           DateTime? createdAt}) =>
       ArmAssessmentMetadataData(
         id: id ?? this.id,
@@ -30530,6 +30648,18 @@ class ArmAssessmentMetadataData extends DataClass
         pestCodeSecondary: pestCodeSecondary.present
             ? pestCodeSecondary.value
             : this.pestCodeSecondary,
+        armImportColumnIndex: armImportColumnIndex.present
+            ? armImportColumnIndex.value
+            : this.armImportColumnIndex,
+        armShellColumnId: armShellColumnId.present
+            ? armShellColumnId.value
+            : this.armShellColumnId,
+        armColumnIdInteger: armColumnIdInteger.present
+            ? armColumnIdInteger.value
+            : this.armColumnIdInteger,
+        armShellRatingDate: armShellRatingDate.present
+            ? armShellRatingDate.value
+            : this.armShellRatingDate,
         createdAt: createdAt ?? this.createdAt,
       );
   ArmAssessmentMetadataData copyWithCompanion(
@@ -30560,6 +30690,18 @@ class ArmAssessmentMetadataData extends DataClass
       pestCodeSecondary: data.pestCodeSecondary.present
           ? data.pestCodeSecondary.value
           : this.pestCodeSecondary,
+      armImportColumnIndex: data.armImportColumnIndex.present
+          ? data.armImportColumnIndex.value
+          : this.armImportColumnIndex,
+      armShellColumnId: data.armShellColumnId.present
+          ? data.armShellColumnId.value
+          : this.armShellColumnId,
+      armColumnIdInteger: data.armColumnIdInteger.present
+          ? data.armColumnIdInteger.value
+          : this.armColumnIdInteger,
+      armShellRatingDate: data.armShellRatingDate.present
+          ? data.armShellRatingDate.value
+          : this.armShellRatingDate,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -30580,6 +30722,10 @@ class ArmAssessmentMetadataData extends DataClass
           ..write('numSubsamples: $numSubsamples, ')
           ..write('pestCode: $pestCode, ')
           ..write('pestCodeSecondary: $pestCodeSecondary, ')
+          ..write('armImportColumnIndex: $armImportColumnIndex, ')
+          ..write('armShellColumnId: $armShellColumnId, ')
+          ..write('armColumnIdInteger: $armColumnIdInteger, ')
+          ..write('armShellRatingDate: $armShellRatingDate, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -30600,6 +30746,10 @@ class ArmAssessmentMetadataData extends DataClass
       numSubsamples,
       pestCode,
       pestCodeSecondary,
+      armImportColumnIndex,
+      armShellColumnId,
+      armColumnIdInteger,
+      armShellRatingDate,
       createdAt);
   @override
   bool operator ==(Object other) =>
@@ -30618,6 +30768,10 @@ class ArmAssessmentMetadataData extends DataClass
           other.numSubsamples == this.numSubsamples &&
           other.pestCode == this.pestCode &&
           other.pestCodeSecondary == this.pestCodeSecondary &&
+          other.armImportColumnIndex == this.armImportColumnIndex &&
+          other.armShellColumnId == this.armShellColumnId &&
+          other.armColumnIdInteger == this.armColumnIdInteger &&
+          other.armShellRatingDate == this.armShellRatingDate &&
           other.createdAt == this.createdAt);
 }
 
@@ -30636,6 +30790,10 @@ class ArmAssessmentMetadataCompanion
   final Value<int?> numSubsamples;
   final Value<String?> pestCode;
   final Value<String?> pestCodeSecondary;
+  final Value<int?> armImportColumnIndex;
+  final Value<String?> armShellColumnId;
+  final Value<int?> armColumnIdInteger;
+  final Value<String?> armShellRatingDate;
   final Value<DateTime> createdAt;
   const ArmAssessmentMetadataCompanion({
     this.id = const Value.absent(),
@@ -30651,6 +30809,10 @@ class ArmAssessmentMetadataCompanion
     this.numSubsamples = const Value.absent(),
     this.pestCode = const Value.absent(),
     this.pestCodeSecondary = const Value.absent(),
+    this.armImportColumnIndex = const Value.absent(),
+    this.armShellColumnId = const Value.absent(),
+    this.armColumnIdInteger = const Value.absent(),
+    this.armShellRatingDate = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   ArmAssessmentMetadataCompanion.insert({
@@ -30667,6 +30829,10 @@ class ArmAssessmentMetadataCompanion
     this.numSubsamples = const Value.absent(),
     this.pestCode = const Value.absent(),
     this.pestCodeSecondary = const Value.absent(),
+    this.armImportColumnIndex = const Value.absent(),
+    this.armShellColumnId = const Value.absent(),
+    this.armColumnIdInteger = const Value.absent(),
+    this.armShellRatingDate = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : trialAssessmentId = Value(trialAssessmentId);
   static Insertable<ArmAssessmentMetadataData> custom({
@@ -30683,6 +30849,10 @@ class ArmAssessmentMetadataCompanion
     Expression<int>? numSubsamples,
     Expression<String>? pestCode,
     Expression<String>? pestCodeSecondary,
+    Expression<int>? armImportColumnIndex,
+    Expression<String>? armShellColumnId,
+    Expression<int>? armColumnIdInteger,
+    Expression<String>? armShellRatingDate,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -30699,6 +30869,13 @@ class ArmAssessmentMetadataCompanion
       if (numSubsamples != null) 'num_subsamples': numSubsamples,
       if (pestCode != null) 'pest_code': pestCode,
       if (pestCodeSecondary != null) 'pest_code_secondary': pestCodeSecondary,
+      if (armImportColumnIndex != null)
+        'arm_import_column_index': armImportColumnIndex,
+      if (armShellColumnId != null) 'arm_shell_column_id': armShellColumnId,
+      if (armColumnIdInteger != null)
+        'arm_column_id_integer': armColumnIdInteger,
+      if (armShellRatingDate != null)
+        'arm_shell_rating_date': armShellRatingDate,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -30717,6 +30894,10 @@ class ArmAssessmentMetadataCompanion
       Value<int?>? numSubsamples,
       Value<String?>? pestCode,
       Value<String?>? pestCodeSecondary,
+      Value<int?>? armImportColumnIndex,
+      Value<String?>? armShellColumnId,
+      Value<int?>? armColumnIdInteger,
+      Value<String?>? armShellRatingDate,
       Value<DateTime>? createdAt}) {
     return ArmAssessmentMetadataCompanion(
       id: id ?? this.id,
@@ -30732,6 +30913,10 @@ class ArmAssessmentMetadataCompanion
       numSubsamples: numSubsamples ?? this.numSubsamples,
       pestCode: pestCode ?? this.pestCode,
       pestCodeSecondary: pestCodeSecondary ?? this.pestCodeSecondary,
+      armImportColumnIndex: armImportColumnIndex ?? this.armImportColumnIndex,
+      armShellColumnId: armShellColumnId ?? this.armShellColumnId,
+      armColumnIdInteger: armColumnIdInteger ?? this.armColumnIdInteger,
+      armShellRatingDate: armShellRatingDate ?? this.armShellRatingDate,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -30778,6 +30963,19 @@ class ArmAssessmentMetadataCompanion
     if (pestCodeSecondary.present) {
       map['pest_code_secondary'] = Variable<String>(pestCodeSecondary.value);
     }
+    if (armImportColumnIndex.present) {
+      map['arm_import_column_index'] =
+          Variable<int>(armImportColumnIndex.value);
+    }
+    if (armShellColumnId.present) {
+      map['arm_shell_column_id'] = Variable<String>(armShellColumnId.value);
+    }
+    if (armColumnIdInteger.present) {
+      map['arm_column_id_integer'] = Variable<int>(armColumnIdInteger.value);
+    }
+    if (armShellRatingDate.present) {
+      map['arm_shell_rating_date'] = Variable<String>(armShellRatingDate.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -30800,6 +30998,10 @@ class ArmAssessmentMetadataCompanion
           ..write('numSubsamples: $numSubsamples, ')
           ..write('pestCode: $pestCode, ')
           ..write('pestCodeSecondary: $pestCodeSecondary, ')
+          ..write('armImportColumnIndex: $armImportColumnIndex, ')
+          ..write('armShellColumnId: $armShellColumnId, ')
+          ..write('armColumnIdInteger: $armColumnIdInteger, ')
+          ..write('armShellRatingDate: $armShellRatingDate, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -45979,6 +46181,10 @@ typedef $$ArmAssessmentMetadataTableCreateCompanionBuilder
   Value<int?> numSubsamples,
   Value<String?> pestCode,
   Value<String?> pestCodeSecondary,
+  Value<int?> armImportColumnIndex,
+  Value<String?> armShellColumnId,
+  Value<int?> armColumnIdInteger,
+  Value<String?> armShellRatingDate,
   Value<DateTime> createdAt,
 });
 typedef $$ArmAssessmentMetadataTableUpdateCompanionBuilder
@@ -45996,6 +46202,10 @@ typedef $$ArmAssessmentMetadataTableUpdateCompanionBuilder
   Value<int?> numSubsamples,
   Value<String?> pestCode,
   Value<String?> pestCodeSecondary,
+  Value<int?> armImportColumnIndex,
+  Value<String?> armShellColumnId,
+  Value<int?> armColumnIdInteger,
+  Value<String?> armShellRatingDate,
   Value<DateTime> createdAt,
 });
 
@@ -46030,6 +46240,10 @@ class $$ArmAssessmentMetadataTableTableManager extends RootTableManager<
             Value<int?> numSubsamples = const Value.absent(),
             Value<String?> pestCode = const Value.absent(),
             Value<String?> pestCodeSecondary = const Value.absent(),
+            Value<int?> armImportColumnIndex = const Value.absent(),
+            Value<String?> armShellColumnId = const Value.absent(),
+            Value<int?> armColumnIdInteger = const Value.absent(),
+            Value<String?> armShellRatingDate = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               ArmAssessmentMetadataCompanion(
@@ -46046,6 +46260,10 @@ class $$ArmAssessmentMetadataTableTableManager extends RootTableManager<
             numSubsamples: numSubsamples,
             pestCode: pestCode,
             pestCodeSecondary: pestCodeSecondary,
+            armImportColumnIndex: armImportColumnIndex,
+            armShellColumnId: armShellColumnId,
+            armColumnIdInteger: armColumnIdInteger,
+            armShellRatingDate: armShellRatingDate,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
@@ -46062,6 +46280,10 @@ class $$ArmAssessmentMetadataTableTableManager extends RootTableManager<
             Value<int?> numSubsamples = const Value.absent(),
             Value<String?> pestCode = const Value.absent(),
             Value<String?> pestCodeSecondary = const Value.absent(),
+            Value<int?> armImportColumnIndex = const Value.absent(),
+            Value<String?> armShellColumnId = const Value.absent(),
+            Value<int?> armColumnIdInteger = const Value.absent(),
+            Value<String?> armShellRatingDate = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               ArmAssessmentMetadataCompanion.insert(
@@ -46078,6 +46300,10 @@ class $$ArmAssessmentMetadataTableTableManager extends RootTableManager<
             numSubsamples: numSubsamples,
             pestCode: pestCode,
             pestCodeSecondary: pestCodeSecondary,
+            armImportColumnIndex: armImportColumnIndex,
+            armShellColumnId: armShellColumnId,
+            armColumnIdInteger: armColumnIdInteger,
+            armShellRatingDate: armShellRatingDate,
             createdAt: createdAt,
           ),
         ));
@@ -46143,6 +46369,26 @@ class $$ArmAssessmentMetadataTableFilterComposer
 
   ColumnFilters<String> get pestCodeSecondary => $state.composableBuilder(
       column: $state.table.pestCodeSecondary,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get armImportColumnIndex => $state.composableBuilder(
+      column: $state.table.armImportColumnIndex,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get armShellColumnId => $state.composableBuilder(
+      column: $state.table.armShellColumnId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get armColumnIdInteger => $state.composableBuilder(
+      column: $state.table.armColumnIdInteger,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get armShellRatingDate => $state.composableBuilder(
+      column: $state.table.armShellRatingDate,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -46225,6 +46471,26 @@ class $$ArmAssessmentMetadataTableOrderingComposer
 
   ColumnOrderings<String> get pestCodeSecondary => $state.composableBuilder(
       column: $state.table.pestCodeSecondary,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get armImportColumnIndex => $state.composableBuilder(
+      column: $state.table.armImportColumnIndex,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get armShellColumnId => $state.composableBuilder(
+      column: $state.table.armShellColumnId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get armColumnIdInteger => $state.composableBuilder(
+      column: $state.table.armColumnIdInteger,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get armShellRatingDate => $state.composableBuilder(
+      column: $state.table.armShellRatingDate,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

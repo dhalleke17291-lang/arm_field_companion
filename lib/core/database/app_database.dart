@@ -1025,6 +1025,22 @@ class ArmAssessmentMetadata extends Table {
   /// Optional secondary target code when the assessment covers two.
   TextColumn get pestCodeSecondary => text().nullable()();
 
+  /// Original CSV column index (0-based) of the assessment column in the
+  /// source Plot Data file. Used to preserve export ordering round-trip.
+  IntColumn get armImportColumnIndex => integer().nullable()();
+
+  /// ARM shell Column ID (row 7) as a raw string (e.g. "0001"). Preserved
+  /// verbatim so round-trip export can emit the exact cell ARM provided.
+  TextColumn get armShellColumnId => text().nullable()();
+
+  /// Integer form of the ARM Column ID (row 7, parsed). Primary export
+  /// anchor when we need to key by number rather than the raw string.
+  IntColumn get armColumnIdInteger => integer().nullable()();
+
+  /// Shell rating-date cell (row 15) as the raw display string, including
+  /// any trailing markers; paired with [ArmSessionMetadata.armRatingDate].
+  TextColumn get armShellRatingDate => text().nullable()();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -1116,7 +1132,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 58;
+  int get schemaVersion => 59;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1973,6 +1989,189 @@ WHERE COALESCE(is_arm_linked, 0) != 0
                 if (fresh.contains(col)) {
                   await customStatement('ALTER TABLE trials DROP COLUMN $col');
                 }
+              }
+            }
+          }
+
+          if (from < 59) {
+            // ── Phase 0b-ta (expand phase): per-column ARM fields move
+            //    from trial_assessments → arm_assessment_metadata.
+            //
+            // Additive only: new columns are added to arm_assessment_metadata
+            // and backfilled from trial_assessments. Old columns on
+            // trial_assessments are kept untouched here; readers/writers are
+            // flipped in later units, and the old columns are dropped in a
+            // later schema bump. Safe to re-run.
+            final aamCols59 = await customSelect(
+              "SELECT name FROM pragma_table_info('arm_assessment_metadata')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+
+            if (!aamCols59.contains('arm_import_column_index')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.armImportColumnIndex);
+            }
+            if (!aamCols59.contains('arm_shell_column_id')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.armShellColumnId);
+            }
+            if (!aamCols59.contains('arm_column_id_integer')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.armColumnIdInteger);
+            }
+            if (!aamCols59.contains('arm_shell_rating_date')) {
+              await m.addColumn(
+                  armAssessmentMetadata, armAssessmentMetadata.armShellRatingDate);
+            }
+
+            // Ensure an arm_assessment_metadata row exists for every
+            // trial_assessment that carries any ARM field. This covers
+            // trials imported before Phase 1a created the metadata table,
+            // where ARM data lives only on trial_assessments today.
+            final taCols59 = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_assessments')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+
+            final hasArmFieldsOnTa = taCols59.contains('arm_import_column_index') ||
+                taCols59.contains('arm_shell_column_id') ||
+                taCols59.contains('arm_column_id_integer') ||
+                taCols59.contains('arm_shell_rating_date') ||
+                taCols59.contains('se_name') ||
+                taCols59.contains('se_description') ||
+                taCols59.contains('arm_rating_type') ||
+                taCols59.contains('pest_code');
+
+            if (hasArmFieldsOnTa) {
+              // Build predicate only from columns that actually exist on TA.
+              final predicateParts = <String>[];
+              if (taCols59.contains('arm_import_column_index')) {
+                predicateParts.add('arm_import_column_index IS NOT NULL');
+              }
+              if (taCols59.contains('arm_shell_column_id')) {
+                predicateParts.add(
+                    "(arm_shell_column_id IS NOT NULL AND TRIM(arm_shell_column_id) != '')");
+              }
+              if (taCols59.contains('arm_column_id_integer')) {
+                predicateParts.add('arm_column_id_integer IS NOT NULL');
+              }
+              if (taCols59.contains('arm_shell_rating_date')) {
+                predicateParts.add(
+                    "(arm_shell_rating_date IS NOT NULL AND TRIM(arm_shell_rating_date) != '')");
+              }
+              if (taCols59.contains('se_name')) {
+                predicateParts
+                    .add("(se_name IS NOT NULL AND TRIM(se_name) != '')");
+              }
+              if (taCols59.contains('se_description')) {
+                predicateParts.add(
+                    "(se_description IS NOT NULL AND TRIM(se_description) != '')");
+              }
+              if (taCols59.contains('arm_rating_type')) {
+                predicateParts.add(
+                    "(arm_rating_type IS NOT NULL AND TRIM(arm_rating_type) != '')");
+              }
+              if (taCols59.contains('pest_code')) {
+                predicateParts
+                    .add("(pest_code IS NOT NULL AND TRIM(pest_code) != '')");
+              }
+              final armTaPredicate = predicateParts.join(' OR ');
+
+              // 1) Backfill missing AAM rows for any TA that carries ARM data.
+              await customStatement('''
+INSERT INTO arm_assessment_metadata (trial_assessment_id, created_at)
+SELECT ta.id, strftime('%s', 'now')
+FROM trial_assessments ta
+WHERE ($armTaPredicate)
+  AND NOT EXISTS (
+    SELECT 1 FROM arm_assessment_metadata aam
+    WHERE aam.trial_assessment_id = ta.id
+  )
+''');
+
+              // 2) Copy the 4 per-column ARM fields TA → AAM (column-by-column,
+              //    only if the source column actually exists on TA).
+              if (taCols59.contains('arm_import_column_index')) {
+                await customStatement('''
+UPDATE arm_assessment_metadata
+SET arm_import_column_index = (
+  SELECT arm_import_column_index FROM trial_assessments
+  WHERE trial_assessments.id = arm_assessment_metadata.trial_assessment_id
+)
+WHERE arm_import_column_index IS NULL
+''');
+              }
+              if (taCols59.contains('arm_shell_column_id')) {
+                await customStatement('''
+UPDATE arm_assessment_metadata
+SET arm_shell_column_id = (
+  SELECT arm_shell_column_id FROM trial_assessments
+  WHERE trial_assessments.id = arm_assessment_metadata.trial_assessment_id
+)
+WHERE arm_shell_column_id IS NULL
+''');
+              }
+              if (taCols59.contains('arm_column_id_integer')) {
+                await customStatement('''
+UPDATE arm_assessment_metadata
+SET arm_column_id_integer = (
+  SELECT arm_column_id_integer FROM trial_assessments
+  WHERE trial_assessments.id = arm_assessment_metadata.trial_assessment_id
+)
+WHERE arm_column_id_integer IS NULL
+''');
+              }
+              if (taCols59.contains('arm_shell_rating_date')) {
+                await customStatement('''
+UPDATE arm_assessment_metadata
+SET arm_shell_rating_date = (
+  SELECT arm_shell_rating_date FROM trial_assessments
+  WHERE trial_assessments.id = arm_assessment_metadata.trial_assessment_id
+)
+WHERE arm_shell_rating_date IS NULL
+''');
+              }
+
+              // 3) Backfill the already-existing AAM measurement-identity
+              //    columns where AAM is NULL but TA has the value. Makes AAM
+              //    a complete source of truth before later units flip reads.
+              if (taCols59.contains('se_name')) {
+                await customStatement('''
+UPDATE arm_assessment_metadata
+SET se_name = (
+  SELECT se_name FROM trial_assessments
+  WHERE trial_assessments.id = arm_assessment_metadata.trial_assessment_id
+)
+WHERE se_name IS NULL
+''');
+              }
+              if (taCols59.contains('se_description')) {
+                await customStatement('''
+UPDATE arm_assessment_metadata
+SET se_description = (
+  SELECT se_description FROM trial_assessments
+  WHERE trial_assessments.id = arm_assessment_metadata.trial_assessment_id
+)
+WHERE se_description IS NULL
+''');
+              }
+              if (taCols59.contains('arm_rating_type')) {
+                await customStatement('''
+UPDATE arm_assessment_metadata
+SET rating_type = (
+  SELECT arm_rating_type FROM trial_assessments
+  WHERE trial_assessments.id = arm_assessment_metadata.trial_assessment_id
+)
+WHERE rating_type IS NULL
+''');
+              }
+              if (taCols59.contains('pest_code')) {
+                await customStatement('''
+UPDATE arm_assessment_metadata
+SET pest_code = (
+  SELECT pest_code FROM trial_assessments
+  WHERE trial_assessments.id = arm_assessment_metadata.trial_assessment_id
+)
+WHERE pest_code IS NULL
+''');
               }
             }
           }
