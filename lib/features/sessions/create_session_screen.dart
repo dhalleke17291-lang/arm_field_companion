@@ -331,14 +331,9 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
                         if (def.trtEvalInterval != null &&
                             def.trtEvalInterval!.trim().isNotEmpty)
                           def.trtEvalInterval!.trim(),
-                        if ((aamMap[ta.id]?.armShellRatingDate ??
-                                    ta.armShellRatingDate)
-                                ?.trim()
-                                .isNotEmpty ??
+                        if (aamMap[ta.id]?.armShellRatingDate?.trim().isNotEmpty ??
                             false)
-                          (aamMap[ta.id]?.armShellRatingDate ??
-                                  ta.armShellRatingDate)!
-                              .trim(),
+                          aamMap[ta.id]!.armShellRatingDate!.trim(),
                       ];
                       final contextLine = contextParts.isNotEmpty
                           ? contextParts.join(' · ')

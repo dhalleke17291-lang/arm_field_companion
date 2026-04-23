@@ -284,14 +284,10 @@ class TrialAssessments extends Table {
   TextColumn get bbchScale => text().nullable()();
   TextColumn get cropStageAtAssessment => text().nullable()();
 
-  /// Original CSV column index for this assessment (ARM import); guides export ordering.
-  IntColumn get armImportColumnIndex => integer().nullable()();
-
-  /// ARM shell column ID (row 7) for this trial assessment when linked from a Rating Shell.
-  TextColumn get armShellColumnId => text().nullable()();
-
-  /// ARM shell rating date cell (row 15), display string as in shell.
-  TextColumn get armShellRatingDate => text().nullable()();
+  // v60 (Phase 0b-ta contract phase) moved the per-column ARM anchor fields
+  // (armImportColumnIndex, armShellColumnId, armShellRatingDate,
+  // armColumnIdInteger) to arm_assessment_metadata. Readers/writers were
+  // flipped in Units 2–3 and the TA columns were dropped here.
 
   /// SE Name from shell (row 17), display-oriented; may differ in casing from [pestCode].
   TextColumn get seName => text().nullable()();
@@ -301,10 +297,6 @@ class TrialAssessments extends Table {
 
   /// Rating type from shell (row 20).
   TextColumn get armRatingType => text().nullable()();
-
-  /// Integer ARM Column ID from shell row 7 (0-based). Primary export anchor.
-  /// Distinct from [armShellColumnId] (text) which stores the raw cell string.
-  IntColumn get armColumnIdInteger => integer().nullable()();
 }
 
 class Plots extends Table {
@@ -1132,7 +1124,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 59;
+  int get schemaVersion => 60;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1508,8 +1500,18 @@ SET status = 'completed',
           if (from < 41) {
             await m.addColumn(plots, plots.armPlotNumber);
             await m.addColumn(plots, plots.armImportDataRowIndex);
-            await m.addColumn(
-                trialAssessments, trialAssessments.armImportColumnIndex);
+            // Historical column added to trial_assessments in v41, then moved
+            // to arm_assessment_metadata and dropped in v60. Keep the v41 ADD
+            // here via raw SQL so users upgrading from pre-v41 still land at
+            // a valid v60 schema (v60 drops the column again idempotently).
+            final taCols41 = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_assessments')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!taCols41.contains('arm_import_column_index')) {
+              await customStatement(
+                'ALTER TABLE trial_assessments ADD COLUMN arm_import_column_index INTEGER',
+              );
+            }
             final tc41 = await customSelect(
               "SELECT name FROM pragma_table_info('trials')",
             ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
@@ -1535,10 +1537,24 @@ SET status = 'completed',
             }
           }
           if (from < 43) {
-            await m.addColumn(
-                trialAssessments, trialAssessments.armShellColumnId);
-            await m.addColumn(
-                trialAssessments, trialAssessments.armShellRatingDate);
+            // Historical v43 additions. Two of the per-column ARM fields
+            // (armShellColumnId, armShellRatingDate) were later moved to
+            // arm_assessment_metadata and dropped from trial_assessments in
+            // v60; the ADD here uses raw SQL so pre-v43 upgrades still pass
+            // through v60's drop cleanly.
+            final taCols43 = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_assessments')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!taCols43.contains('arm_shell_column_id')) {
+              await customStatement(
+                'ALTER TABLE trial_assessments ADD COLUMN arm_shell_column_id TEXT',
+              );
+            }
+            if (!taCols43.contains('arm_shell_rating_date')) {
+              await customStatement(
+                'ALTER TABLE trial_assessments ADD COLUMN arm_shell_rating_date TEXT',
+              );
+            }
             await m.addColumn(trialAssessments, trialAssessments.seName);
             await m.addColumn(trialAssessments, trialAssessments.seDescription);
             await m.addColumn(trialAssessments, trialAssessments.armRatingType);
@@ -2172,6 +2188,31 @@ SET pest_code = (
 )
 WHERE pest_code IS NULL
 ''');
+              }
+            }
+          }
+
+          if (from < 60) {
+            // ── Phase 0b-ta (contract phase): drop the four per-column ARM
+            //    anchor fields from trial_assessments now that
+            //    arm_assessment_metadata is the source of truth (v59 backfill
+            //    ran; Units 2–3 flipped writers and readers). Idempotent: we
+            //    inspect the live schema before each DROP so re-runs or
+            //    installs that never had the column are a no-op.
+            final taCols60 = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_assessments')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            const taColsToDrop = <String>[
+              'arm_import_column_index',
+              'arm_shell_column_id',
+              'arm_shell_rating_date',
+              'arm_column_id_integer',
+            ];
+            for (final col in taColsToDrop) {
+              if (taCols60.contains(col)) {
+                await customStatement(
+                  'ALTER TABLE trial_assessments DROP COLUMN $col',
+                );
               }
             }
           }

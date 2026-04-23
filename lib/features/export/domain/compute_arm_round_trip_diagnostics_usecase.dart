@@ -144,8 +144,7 @@ class ComputeArmRoundTripDiagnosticsUseCase {
     int trialId,
     List<ArmRoundTripDiagnostic> out,
   ) {
-    int? armIdx(TrialAssessment a) =>
-        aamByTaId[a.id]?.armImportColumnIndex ?? a.armImportColumnIndex;
+    int? armIdx(TrialAssessment a) => aamByTaId[a.id]?.armImportColumnIndex;
 
     final missingIdx = assessments.where((a) => armIdx(a) == null).toList();
     if (missingIdx.isNotEmpty) {

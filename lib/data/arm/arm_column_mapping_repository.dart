@@ -102,6 +102,76 @@ class ArmColumnMappingRepository {
     });
   }
 
+  /// Applies ARM Rating Shell per-column metadata to one
+  /// [ArmAssessmentMetadata] row (identified by `trialAssessmentId`). If no
+  /// row exists yet, one is inserted with the given values so shell-link
+  /// proposals can target trials whose v59 backfill produced a blank AAM row.
+  ///
+  /// Merge semantics mirror [TrialAssessmentRepository.applyArmShellLinkFields]:
+  /// only non-empty incoming values are applied, and existing non-empty
+  /// values that equal the incoming value are left untouched.
+  /// Returns whether any field was written.
+  Future<bool> applyShellLinkFieldsForTrialAssessment({
+    required int trialAssessmentId,
+    String? armShellColumnId,
+    String? armShellRatingDate,
+    int? armColumnIdInteger,
+  }) async {
+    final existing = await (_db.select(_db.armAssessmentMetadata)
+          ..where((m) => m.trialAssessmentId.equals(trialAssessmentId))
+          ..limit(1))
+        .getSingleOrNull();
+
+    String? mergeText(String? current, String? incoming) {
+      if (incoming == null) return null;
+      final s = incoming.trim();
+      if (s.isEmpty) return null;
+      final c = current?.trim() ?? '';
+      if (c.isNotEmpty && c == s) return null;
+      return s;
+    }
+
+    final nextColId = mergeText(existing?.armShellColumnId, armShellColumnId);
+    final nextRatingDate =
+        mergeText(existing?.armShellRatingDate, armShellRatingDate);
+    final incomingColInt = armColumnIdInteger;
+    final nextColInt = (incomingColInt != null &&
+            incomingColInt != existing?.armColumnIdInteger)
+        ? incomingColInt
+        : null;
+
+    final touched = nextColId != null ||
+        nextRatingDate != null ||
+        nextColInt != null;
+    if (!touched) return false;
+
+    if (existing == null) {
+      await _db.into(_db.armAssessmentMetadata).insert(
+            ArmAssessmentMetadataCompanion.insert(
+              trialAssessmentId: trialAssessmentId,
+              armShellColumnId: Value(nextColId),
+              armShellRatingDate: Value(nextRatingDate),
+              armColumnIdInteger: Value(nextColInt),
+            ),
+          );
+      return true;
+    }
+
+    final companion = ArmAssessmentMetadataCompanion(
+      armShellColumnId:
+          nextColId == null ? const Value.absent() : Value(nextColId),
+      armShellRatingDate: nextRatingDate == null
+          ? const Value.absent()
+          : Value(nextRatingDate),
+      armColumnIdInteger:
+          nextColInt == null ? const Value.absent() : Value(nextColInt),
+    );
+    await (_db.update(_db.armAssessmentMetadata)
+          ..where((m) => m.trialAssessmentId.equals(trialAssessmentId)))
+        .write(companion);
+    return true;
+  }
+
   /// ARM assessment header rows for [trialId] (deduplicated per trial assessment).
   Future<List<ArmAssessmentMetadataData>> getAssessmentMetadatasForTrial(
     int trialId,

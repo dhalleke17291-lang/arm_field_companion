@@ -112,15 +112,13 @@ class AssessmentDisplayHelper {
 
   /// Rating date: "Apr 2" format, or null.
   ///
-  /// Phase 0b-ta: prefer [ArmAssessmentMetadataData.armShellRatingDate] when
-  /// [aam] is provided (new home), falling back to
-  /// [TrialAssessment.armShellRatingDate] for legacy trials imported
-  /// before the v59 backfill ran.
+  /// v60 moved `armShellRatingDate` to [ArmAssessmentMetadata]; callers pass
+  /// the AAM row for the trial-assessment when available.
   static String? ratingDateShort(
     TrialAssessment ta, {
     ArmAssessmentMetadataData? aam,
   }) {
-    final raw = (aam?.armShellRatingDate ?? ta.armShellRatingDate)?.trim();
+    final raw = aam?.armShellRatingDate?.trim();
     if (raw == null || raw.isEmpty) return null;
     final dt = _parseShellRatingDate(raw);
     if (dt == null) return null;

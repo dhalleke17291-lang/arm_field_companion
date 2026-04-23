@@ -90,13 +90,7 @@ Future<void> _pinArmExportAnchors(
   await (db.update(db.plots)..where((p) => p.id.equals(plotPk))).write(
     PlotsCompanion(armPlotNumber: Value(armPlotNumber)),
   );
-  await (db.update(db.trialAssessments)
-        ..where((t) => t.id.equals(trialAssessmentId)))
-      .write(
-    TrialAssessmentsCompanion(
-      armImportColumnIndex: Value(armImportColumnIndex),
-    ),
-  );
+  await _upsertAamImportColumnIndex(db, trialAssessmentId, armImportColumnIndex);
   await upsertArmTrialMetadataForTest(
     db,
     trialId: trialId,
@@ -104,6 +98,31 @@ Future<void> _pinArmExportAnchors(
     armImportSessionId: sessionId,
     armImportedAt: armImportedAt,
   );
+}
+
+Future<void> _upsertAamImportColumnIndex(
+  AppDatabase db,
+  int trialAssessmentId,
+  int armImportColumnIndex,
+) async {
+  final existing = await (db.select(db.armAssessmentMetadata)
+        ..where((m) => m.trialAssessmentId.equals(trialAssessmentId))
+        ..limit(1))
+      .getSingleOrNull();
+  if (existing == null) {
+    await db.into(db.armAssessmentMetadata).insert(
+          ArmAssessmentMetadataCompanion.insert(
+            trialAssessmentId: trialAssessmentId,
+            armImportColumnIndex: Value(armImportColumnIndex),
+          ),
+        );
+  } else {
+    await (db.update(db.armAssessmentMetadata)
+          ..where((m) => m.trialAssessmentId.equals(trialAssessmentId)))
+        .write(ArmAssessmentMetadataCompanion(
+      armImportColumnIndex: Value(armImportColumnIndex),
+    ));
+  }
 }
 
 Trial _trial({
@@ -591,12 +610,7 @@ void main() {
           trialAssessmentId: taId,
           sessionId: sessionId,
         );
-        await (db.update(db.trialAssessments)..where((t) => t.id.equals(taId)))
-            .write(
-          const TrialAssessmentsCompanion(
-            armImportColumnIndex: Value(99),
-          ),
-        );
+        await _upsertAamImportColumnIndex(db, taId, 99);
 
         await _insertCompatibilityProfile(
           db: db,
@@ -721,12 +735,7 @@ void main() {
           trialAssessmentId: taId,
           sessionId: sessionId,
         );
-        await (db.update(db.trialAssessments)..where((t) => t.id.equals(taId)))
-            .write(
-          const TrialAssessmentsCompanion(
-            armImportColumnIndex: Value(99),
-          ),
-        );
+        await _upsertAamImportColumnIndex(db, taId, 99);
 
         await _insertCompatibilityProfile(
           db: db,
@@ -1218,12 +1227,7 @@ void main() {
           trialAssessmentId: taId,
           sessionId: sessionId,
         );
-        await (db.update(db.trialAssessments)..where((t) => t.id.equals(taId)))
-            .write(
-          const TrialAssessmentsCompanion(
-            armImportColumnIndex: Value(99),
-          ),
-        );
+        await _upsertAamImportColumnIndex(db, taId, 99);
 
         await _insertCompatibilityProfile(
           db: db,
@@ -1358,12 +1362,7 @@ void main() {
           trialAssessmentId: taId,
           sessionId: sessionId,
         );
-        await (db.update(db.trialAssessments)..where((t) => t.id.equals(taId)))
-            .write(
-          const TrialAssessmentsCompanion(
-            armImportColumnIndex: Value(99),
-          ),
-        );
+        await _upsertAamImportColumnIndex(db, taId, 99);
 
         await _insertCompatibilityProfile(
           db: db,
@@ -1588,16 +1587,16 @@ void main() {
               name: 'Legacy A',
             ),
           );
-      await db.into(db.trialAssessments).insert(
+      final dupTaId = await db.into(db.trialAssessments).insert(
             TrialAssessmentsCompanion.insert(
               trialId: trialId,
               assessmentDefinitionId: defId,
               legacyAssessmentId: Value(legacyAsmId),
               sortOrder: const Value(0),
               pestCode: const Value('AVEFA'),
-              armImportColumnIndex: const Value(2),
             ),
           );
+      await _upsertAamImportColumnIndex(db, dupTaId, 2);
       final sessionId = await db.into(db.sessions).insert(
             SessionsCompanion.insert(
               trialId: trialId,
@@ -1671,7 +1670,8 @@ void main() {
                 trialId: trialId, name: 'CONTRO AA', unit: const Value('%')),
           );
 
-      // Two TrialAssessments with distinct armColumnIdInteger values
+      // Two TrialAssessments with distinct armColumnIdInteger values; per-column
+      // ARM anchor fields live on arm_assessment_metadata after v60.
       final taId1 = await db.into(db.trialAssessments).insert(
             TrialAssessmentsCompanion.insert(
               trialId: trialId,
@@ -1679,6 +1679,11 @@ void main() {
               legacyAssessmentId: Value(legacyId1),
               sortOrder: const Value(0),
               pestCode: const Value('CONTRO'),
+            ),
+          );
+      await db.into(db.armAssessmentMetadata).insert(
+            ArmAssessmentMetadataCompanion.insert(
+              trialAssessmentId: taId1,
               armColumnIdInteger: const Value(3),
               armImportColumnIndex: const Value(2),
             ),
@@ -1690,6 +1695,11 @@ void main() {
               legacyAssessmentId: Value(legacyId2),
               sortOrder: const Value(1),
               pestCode: const Value('CONTRO'),
+            ),
+          );
+      await db.into(db.armAssessmentMetadata).insert(
+            ArmAssessmentMetadataCompanion.insert(
+              trialAssessmentId: taId2,
               armColumnIdInteger: const Value(16),
               armImportColumnIndex: const Value(3),
             ),
@@ -1740,12 +1750,9 @@ void main() {
         armImportColumnIndex: 2,
         sessionId: sessionId,
       );
-      // Pin second assessment too
-      await (db.update(db.trialAssessments)
-            ..where((t) => t.id.equals(taId2)))
-          .write(const TrialAssessmentsCompanion(
-        armImportColumnIndex: Value(3),
-      ));
+      // Pin second assessment too (AAM already has index 3; call is a no-op
+      // update path but keeps intent explicit).
+      await _upsertAamImportColumnIndex(db, taId2, 3);
 
       await _insertCompatibilityProfile(
         db: db,

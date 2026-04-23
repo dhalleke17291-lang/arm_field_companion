@@ -428,9 +428,8 @@ class ArmImportUseCase {
         sortOrder: sortOrder,
         isActive: true,
         pestCode: token.armCode,
-        armImportColumnIndex: shellIdx,
       );
-      // Phase 0b-ta: per-column ARM fields live on AAM going forward.
+      // v60 moved the per-column ARM fields to arm_assessment_metadata.
       // The legacy CSV path only has `armImportColumnIndex` + `pestCode`
       // to offer; shell IDs and rating-date cells come from the XLSX
       // shell importer and are null here.
@@ -529,7 +528,9 @@ class ArmImportUseCase {
   }
 
   /// CSV [AssessmentToken.columnIndex] → legacy [Assessments.id] for rating rows.
-  /// Matches [TrialAssessment] rows by shell-aligned [TrialAssessment.armImportColumnIndex].
+  /// Matches [TrialAssessment] rows by shell-aligned
+  /// `ArmAssessmentMetadata.armImportColumnIndex` (moved off
+  /// `TrialAssessments` in v60).
   Future<Map<int, int>> _buildColumnIndexToLegacyAssessmentId({
     required int trialId,
     required ParsedArmCsv parsed,
@@ -537,9 +538,7 @@ class ArmImportUseCase {
     required int firstAssessmentCsvColumnIndex,
   }) async {
     final trialAssessments = await _trialAssessmentRepository.getForTrial(trialId);
-    // Phase 0b-ta: per-column ARM fields live on arm_assessment_metadata.
-    // Prefer AAM's armImportColumnIndex; fall back to trial_assessments for
-    // legacy CSV imports made before the v59 backfill ran.
+    // v60 moved per-column ARM fields to arm_assessment_metadata.
     final aamRows = await _armColumnMappingRepository
         .getAssessmentMetadatasForTrial(trialId);
     final aamByTaId = <int, ArmAssessmentMetadataData>{
@@ -556,8 +555,7 @@ class ArmImportUseCase {
       );
       TrialAssessment? trialAssess;
       for (final t in trialAssessments) {
-        final taIdx =
-            aamByTaId[t.id]?.armImportColumnIndex ?? t.armImportColumnIndex;
+        final taIdx = aamByTaId[t.id]?.armImportColumnIndex;
         if (t.assessmentDefinitionId == defId && taIdx == shellIdx) {
           trialAssess = t;
           break;

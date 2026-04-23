@@ -278,19 +278,14 @@ class ImportArmRatingShellUseCase {
                   defaultInSessions: const Value(true),
                   sortOrder: Value(sortOrder),
                   pestCode: Value(pestCode),
-                  // Legacy per-column anchor fields: populated from the *first*
-                  // ARM column in this dedup group so the legacy exporter path
-                  // and token-based heuristics still have something to match
-                  // on. arm_column_mappings holds the complete per-column
-                  // identity; these fields are advisory shadows until the
-                  // Phase 0b cleanup removes them.
-                  armImportColumnIndex: Value(first.columnIndex),
-                  armColumnIdInteger: Value(first.armColumnIdInteger),
+                  // Duplicated fields (seName/seDescription/armRatingType) are
+                  // still written here pending Unit 5; the four per-column ARM
+                  // anchor fields (armImportColumnIndex, armColumnIdInteger,
+                  // armShellColumnId, armShellRatingDate) moved to
+                  // arm_assessment_metadata in v60 and are written below.
                   seDescription: Value(_firstNonEmpty([first.seDescription])),
                   seName: Value(_firstNonEmpty([first.seName, first.pestCode])),
                   armRatingType: Value(_firstNonEmpty([first.ratingType])),
-                  armShellColumnId: Value(_firstNonEmpty([first.armColumnId])),
-                  armShellRatingDate: Value(_firstNonEmpty([first.ratingDate])),
                 ),
               );
 

@@ -145,19 +145,24 @@ class ArmShellLinkUseCase {
       }
       for (final e in byTa.entries) {
         final m = e.value;
-        final wrote = await _trialAssessmentRepository.applyArmShellLinkFields(
+        final wroteTa =
+            await _trialAssessmentRepository.applyArmShellLinkFields(
           id: e.key,
           pestCode: m['pestCode'],
-          armShellColumnId: m['arm_shell_column_id'],
-          armShellRatingDate: m['arm_shell_rating_date'],
           seName: m['se_name'],
           seDescription: m['se_description'],
           armRatingType: m['arm_rating_type'],
+        );
+        final wroteAam = await _armColumnMappingRepository
+            .applyShellLinkFieldsForTrialAssessment(
+          trialAssessmentId: e.key,
+          armShellColumnId: m['arm_shell_column_id'],
+          armShellRatingDate: m['arm_shell_rating_date'],
           armColumnIdInteger: m['arm_column_id_integer'] != null
               ? int.tryParse(m['arm_column_id_integer']!)
               : null,
         );
-        if (wrote) assessmentWriteCount++;
+        if (wroteTa || wroteAam) assessmentWriteCount++;
       }
 
       // Store shell internally so export doesn't need a file picker.
@@ -373,18 +378,16 @@ class ArmShellLinkUseCase {
     final assessments = await _trialAssessmentRepository.getForTrial(trialId);
     final defById = await _loadDefinitions(assessments);
 
-    // Phase 0b-ta: per-column ARM fields now live on
-    // arm_assessment_metadata. Prefer AAM; fall back to TA for legacy
-    // trials imported before the v59 backfill ran.
+    // v60 moved per-column ARM fields to arm_assessment_metadata.
     final aamRows = await _armColumnMappingRepository
         .getAssessmentMetadatasForTrial(trialId);
     final aamByTaId = <int, ArmAssessmentMetadataData>{
       for (final r in aamRows) r.trialAssessmentId: r,
     };
     int? armImportColumnIndexFor(TrialAssessment a) =>
-        aamByTaId[a.id]?.armImportColumnIndex ?? a.armImportColumnIndex;
+        aamByTaId[a.id]?.armImportColumnIndex;
     int? armColumnIdIntegerFor(TrialAssessment a) =>
-        aamByTaId[a.id]?.armColumnIdInteger ?? a.armColumnIdInteger;
+        aamByTaId[a.id]?.armColumnIdInteger;
 
     final sortedAssessments = List<TrialAssessment>.from(assessments);
     final withColIdx =
@@ -471,14 +474,14 @@ class ArmShellLinkUseCase {
         assessmentFieldChanges,
         trialAssessmentId: ta.id,
         fieldName: 'arm_shell_column_id',
-        currentDb: aamForTa?.armShellColumnId ?? ta.armShellColumnId,
+        currentDb: aamForTa?.armShellColumnId,
         shellRaw: col.armColumnId,
       );
       _proposeShellTaField(
         assessmentFieldChanges,
         trialAssessmentId: ta.id,
         fieldName: 'arm_shell_rating_date',
-        currentDb: aamForTa?.armShellRatingDate ?? ta.armShellRatingDate,
+        currentDb: aamForTa?.armShellRatingDate,
         shellRaw: col.ratingDate,
       );
       _proposeShellTaField(

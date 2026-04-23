@@ -298,19 +298,29 @@ void main() {
               category: 'pest',
             ),
           );
-      await db.into(db.trialAssessments).insert(
+      final taId0 = await db.into(db.trialAssessments).insert(
             TrialAssessmentsCompanion.insert(
               trialId: trialId,
               assessmentDefinitionId: defId,
               sortOrder: const Value(0),
+            ),
+          );
+      await db.into(db.armAssessmentMetadata).insert(
+            ArmAssessmentMetadataCompanion.insert(
+              trialAssessmentId: taId0,
               armImportColumnIndex: const Value(4),
             ),
           );
-      await db.into(db.trialAssessments).insert(
+      final taId1 = await db.into(db.trialAssessments).insert(
             TrialAssessmentsCompanion.insert(
               trialId: trialId,
               assessmentDefinitionId: defId,
               sortOrder: const Value(1),
+            ),
+          );
+      await db.into(db.armAssessmentMetadata).insert(
+            ArmAssessmentMetadataCompanion.insert(
+              trialAssessmentId: taId1,
               armImportColumnIndex: const Value(4),
             ),
           );

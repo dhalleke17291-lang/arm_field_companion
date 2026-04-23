@@ -245,8 +245,11 @@ void main() {
             ..where((t) => t.trialId.equals(trialId)))
           .get();
       expect(tas, hasLength(1));
+      final aams = await ArmColumnMappingRepository(db)
+          .getAssessmentMetadatasForTrial(trialId);
+      final aamByTa = {for (final a in aams) a.trialAssessmentId: a};
       expect(
-        tas.single.armImportColumnIndex,
+        aamByTa[tas.single.id]?.armImportColumnIndex,
         2,
         reason: 'Import stores shell-aligned index (CSV col 3 → sheet col 2)',
       );

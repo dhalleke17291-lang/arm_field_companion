@@ -229,15 +229,11 @@ class _ArmAssessmentsSection extends ConsumerWidget {
         // still loading to avoid a flash of emptiness on ARM trials.
         final aamMap = aamMapAsync.valueOrNull ?? const <int, ArmAssessmentMetadataData>{};
 
-        // Phase 0b-ta: per-column ARM fields now live on
-        // arm_assessment_metadata. An assessment is "ARM-tagged" when
-        // either its AAM row has `armImportColumnIndex` set (new source of
-        // truth) or — for legacy trials imported before the AAM backfill
-        // ran — the old column on trial_assessments is still populated.
+        // v60 moved per-column ARM fields to arm_assessment_metadata. An
+        // assessment is "ARM-tagged" when its AAM row has
+        // `armImportColumnIndex` set.
         int? armColIndexFor((TrialAssessment, AssessmentDefinition) pair) {
-          final fromAam = aamMap[pair.$1.id]?.armImportColumnIndex;
-          if (fromAam != null) return fromAam;
-          return pair.$1.armImportColumnIndex;
+          return aamMap[pair.$1.id]?.armImportColumnIndex;
         }
 
         final armPairs = pairs.where((p) => armColIndexFor(p) != null).toList()
@@ -282,19 +278,16 @@ class _ArmAssessmentRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Prefer arm_assessment_metadata (the new home for per-column ARM
-    // fields); fall back to trial_assessments for trials imported before
-    // the v59 backfill ran. TA columns are dropped in a later unit.
-    String? pick(String? fromAam, String? fromTa) =>
-        (fromAam != null && fromAam.isNotEmpty) ? fromAam : fromTa;
-
+    // v60 moved per-column ARM fields to arm_assessment_metadata; seName /
+    // ratingType still live on trial_assessments pending Unit 5.
     final name =
         ta.displayNameOverride?.isNotEmpty == true ? ta.displayNameOverride! : def.name;
-    final colIdx = aam?.armImportColumnIndex ?? ta.armImportColumnIndex;
-    final columnId = pick(aam?.armShellColumnId, ta.armShellColumnId);
-    final ratingDate = pick(aam?.armShellRatingDate, ta.armShellRatingDate);
-    final seName = pick(aam?.seName, ta.seName);
-    final ratingType = pick(aam?.ratingType, ta.armRatingType);
+    final colIdx = aam?.armImportColumnIndex;
+    final columnId = aam?.armShellColumnId;
+    final ratingDate = aam?.armShellRatingDate;
+    final seName = (aam?.seName?.isNotEmpty == true) ? aam!.seName : ta.seName;
+    final ratingType =
+        (aam?.ratingType?.isNotEmpty == true) ? aam!.ratingType : ta.armRatingType;
 
     return Container(
       padding: const EdgeInsets.symmetric(

@@ -99,6 +99,11 @@ void main() {
             assessmentDefinitionId: defId,
             sortOrder: const Value(0),
             pestCode: const Value.absent(),
+          ),
+        );
+    await db.into(db.armAssessmentMetadata).insert(
+          ArmAssessmentMetadataCompanion.insert(
+            trialAssessmentId: taId,
             armImportColumnIndex: const Value(2),
           ),
         );
@@ -154,13 +159,16 @@ void main() {
     final ta = await (db.select(db.trialAssessments)
           ..where((t) => t.id.equals(taId)))
         .getSingle();
+    final aam = await (db.select(db.armAssessmentMetadata)
+          ..where((m) => m.trialAssessmentId.equals(taId)))
+        .getSingle();
     expect(ta.pestCode, 'AVEFA');
-    expect(ta.armImportColumnIndex, 2);
-    expect(ta.armShellColumnId, '001EID001');
+    expect(aam.armImportColumnIndex, 2);
+    expect(aam.armShellColumnId, '001EID001');
     expect(ta.seDescription, 'Percent weed control');
     expect(ta.seName, 'AVEFA');
     expect(ta.armRatingType, 'CONTRO');
-    expect(ta.armShellRatingDate, '1-Jul-26');
+    expect(aam.armShellRatingDate, '1-Jul-26');
 
     final audits = await (db.select(db.auditEvents)
           ..where((e) => e.eventType.equals('arm_shell_linked')))
@@ -204,12 +212,17 @@ void main() {
           ),
         );
 
-    await db.into(db.trialAssessments).insert(
+    final idempTaId = await db.into(db.trialAssessments).insert(
           TrialAssessmentsCompanion.insert(
             trialId: trialId,
             assessmentDefinitionId: defId,
             sortOrder: const Value(0),
             pestCode: const Value('AVEFA'),
+          ),
+        );
+    await db.into(db.armAssessmentMetadata).insert(
+          ArmAssessmentMetadataCompanion.insert(
+            trialAssessmentId: idempTaId,
             armImportColumnIndex: const Value(2),
           ),
         );
@@ -273,6 +286,11 @@ void main() {
             assessmentDefinitionId: defId,
             sortOrder: const Value(0),
             pestCode: const Value('AVEFA'),
+          ),
+        );
+    await db.into(db.armAssessmentMetadata).insert(
+          ArmAssessmentMetadataCompanion.insert(
+            trialAssessmentId: taId,
             armImportColumnIndex: const Value(99),
           ),
         );
@@ -293,10 +311,10 @@ void main() {
     );
 
     await uc.apply(trialId, shellPath);
-    final ta = await (db.select(db.trialAssessments)
-          ..where((t) => t.id.equals(taId)))
+    final aam = await (db.select(db.armAssessmentMetadata)
+          ..where((m) => m.trialAssessmentId.equals(taId)))
         .getSingle();
-    expect(ta.armImportColumnIndex, 99);
+    expect(aam.armImportColumnIndex, 99);
   });
 
   test('empty shell SE description does not overwrite existing seDescription',
@@ -341,8 +359,13 @@ void main() {
             assessmentDefinitionId: defId,
             sortOrder: const Value(0),
             pestCode: const Value('AVEFA'),
-            armImportColumnIndex: const Value(2),
             seDescription: const Value('Keep me'),
+          ),
+        );
+    await db.into(db.armAssessmentMetadata).insert(
+          ArmAssessmentMetadataCompanion.insert(
+            trialAssessmentId: taId,
+            armImportColumnIndex: const Value(2),
           ),
         );
 

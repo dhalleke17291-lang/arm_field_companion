@@ -220,13 +220,18 @@ void main() {
                 name: 'L$i',
               ),
             );
-        await db.into(db.trialAssessments).insert(
+        final taId = await db.into(db.trialAssessments).insert(
               TrialAssessmentsCompanion.insert(
                 trialId: trialId,
                 assessmentDefinitionId: defId,
                 legacyAssessmentId: Value(legacyId),
                 sortOrder: Value(i),
                 pestCode: Value('WC$i'),
+              ),
+            );
+        await db.into(db.armAssessmentMetadata).insert(
+              ArmAssessmentMetadataCompanion.insert(
+                trialAssessmentId: taId,
                 armImportColumnIndex: Value(colIdx),
               ),
             );

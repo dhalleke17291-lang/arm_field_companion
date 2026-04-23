@@ -7017,24 +7017,6 @@ class $TrialAssessmentsTable extends TrialAssessments
   late final GeneratedColumn<String> cropStageAtAssessment =
       GeneratedColumn<String>('crop_stage_at_assessment', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _armImportColumnIndexMeta =
-      const VerificationMeta('armImportColumnIndex');
-  @override
-  late final GeneratedColumn<int> armImportColumnIndex = GeneratedColumn<int>(
-      'arm_import_column_index', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _armShellColumnIdMeta =
-      const VerificationMeta('armShellColumnId');
-  @override
-  late final GeneratedColumn<String> armShellColumnId = GeneratedColumn<String>(
-      'arm_shell_column_id', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _armShellRatingDateMeta =
-      const VerificationMeta('armShellRatingDate');
-  @override
-  late final GeneratedColumn<String> armShellRatingDate =
-      GeneratedColumn<String>('arm_shell_rating_date', aliasedName, true,
-          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _seNameMeta = const VerificationMeta('seName');
   @override
   late final GeneratedColumn<String> seName = GeneratedColumn<String>(
@@ -7052,12 +7034,6 @@ class $TrialAssessmentsTable extends TrialAssessments
   late final GeneratedColumn<String> armRatingType = GeneratedColumn<String>(
       'arm_rating_type', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _armColumnIdIntegerMeta =
-      const VerificationMeta('armColumnIdInteger');
-  @override
-  late final GeneratedColumn<int> armColumnIdInteger = GeneratedColumn<int>(
-      'arm_column_id_integer', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -7084,13 +7060,9 @@ class $TrialAssessmentsTable extends TrialAssessments
         eppoCodeLocal,
         bbchScale,
         cropStageAtAssessment,
-        armImportColumnIndex,
-        armShellColumnId,
-        armShellRatingDate,
         seName,
         seDescription,
-        armRatingType,
-        armColumnIdInteger
+        armRatingType
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7229,24 +7201,6 @@ class $TrialAssessmentsTable extends TrialAssessments
           cropStageAtAssessment.isAcceptableOrUnknown(
               data['crop_stage_at_assessment']!, _cropStageAtAssessmentMeta));
     }
-    if (data.containsKey('arm_import_column_index')) {
-      context.handle(
-          _armImportColumnIndexMeta,
-          armImportColumnIndex.isAcceptableOrUnknown(
-              data['arm_import_column_index']!, _armImportColumnIndexMeta));
-    }
-    if (data.containsKey('arm_shell_column_id')) {
-      context.handle(
-          _armShellColumnIdMeta,
-          armShellColumnId.isAcceptableOrUnknown(
-              data['arm_shell_column_id']!, _armShellColumnIdMeta));
-    }
-    if (data.containsKey('arm_shell_rating_date')) {
-      context.handle(
-          _armShellRatingDateMeta,
-          armShellRatingDate.isAcceptableOrUnknown(
-              data['arm_shell_rating_date']!, _armShellRatingDateMeta));
-    }
     if (data.containsKey('se_name')) {
       context.handle(_seNameMeta,
           seName.isAcceptableOrUnknown(data['se_name']!, _seNameMeta));
@@ -7262,12 +7216,6 @@ class $TrialAssessmentsTable extends TrialAssessments
           _armRatingTypeMeta,
           armRatingType.isAcceptableOrUnknown(
               data['arm_rating_type']!, _armRatingTypeMeta));
-    }
-    if (data.containsKey('arm_column_id_integer')) {
-      context.handle(
-          _armColumnIdIntegerMeta,
-          armColumnIdInteger.isAcceptableOrUnknown(
-              data['arm_column_id_integer']!, _armColumnIdIntegerMeta));
     }
     return context;
   }
@@ -7328,20 +7276,12 @@ class $TrialAssessmentsTable extends TrialAssessments
       cropStageAtAssessment: attachedDatabase.typeMapping.read(
           DriftSqlType.string,
           data['${effectivePrefix}crop_stage_at_assessment']),
-      armImportColumnIndex: attachedDatabase.typeMapping.read(
-          DriftSqlType.int, data['${effectivePrefix}arm_import_column_index']),
-      armShellColumnId: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}arm_shell_column_id']),
-      armShellRatingDate: attachedDatabase.typeMapping.read(
-          DriftSqlType.string, data['${effectivePrefix}arm_shell_rating_date']),
       seName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}se_name']),
       seDescription: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}se_description']),
       armRatingType: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}arm_rating_type']),
-      armColumnIdInteger: attachedDatabase.typeMapping.read(
-          DriftSqlType.int, data['${effectivePrefix}arm_column_id_integer']),
     );
   }
 
@@ -7377,15 +7317,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
   final String? bbchScale;
   final String? cropStageAtAssessment;
 
-  /// Original CSV column index for this assessment (ARM import); guides export ordering.
-  final int? armImportColumnIndex;
-
-  /// ARM shell column ID (row 7) for this trial assessment when linked from a Rating Shell.
-  final String? armShellColumnId;
-
-  /// ARM shell rating date cell (row 15), display string as in shell.
-  final String? armShellRatingDate;
-
   /// SE Name from shell (row 17), display-oriented; may differ in casing from [pestCode].
   final String? seName;
 
@@ -7394,10 +7325,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
 
   /// Rating type from shell (row 20).
   final String? armRatingType;
-
-  /// Integer ARM Column ID from shell row 7 (0-based). Primary export anchor.
-  /// Distinct from [armShellColumnId] (text) which stores the raw cell string.
-  final int? armColumnIdInteger;
   const TrialAssessment(
       {required this.id,
       required this.trialId,
@@ -7423,13 +7350,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       this.eppoCodeLocal,
       this.bbchScale,
       this.cropStageAtAssessment,
-      this.armImportColumnIndex,
-      this.armShellColumnId,
-      this.armShellRatingDate,
       this.seName,
       this.seDescription,
-      this.armRatingType,
-      this.armColumnIdInteger});
+      this.armRatingType});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -7483,15 +7406,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
     if (!nullToAbsent || cropStageAtAssessment != null) {
       map['crop_stage_at_assessment'] = Variable<String>(cropStageAtAssessment);
     }
-    if (!nullToAbsent || armImportColumnIndex != null) {
-      map['arm_import_column_index'] = Variable<int>(armImportColumnIndex);
-    }
-    if (!nullToAbsent || armShellColumnId != null) {
-      map['arm_shell_column_id'] = Variable<String>(armShellColumnId);
-    }
-    if (!nullToAbsent || armShellRatingDate != null) {
-      map['arm_shell_rating_date'] = Variable<String>(armShellRatingDate);
-    }
     if (!nullToAbsent || seName != null) {
       map['se_name'] = Variable<String>(seName);
     }
@@ -7500,9 +7414,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
     }
     if (!nullToAbsent || armRatingType != null) {
       map['arm_rating_type'] = Variable<String>(armRatingType);
-    }
-    if (!nullToAbsent || armColumnIdInteger != null) {
-      map['arm_column_id_integer'] = Variable<int>(armColumnIdInteger);
     }
     return map;
   }
@@ -7559,15 +7470,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       cropStageAtAssessment: cropStageAtAssessment == null && nullToAbsent
           ? const Value.absent()
           : Value(cropStageAtAssessment),
-      armImportColumnIndex: armImportColumnIndex == null && nullToAbsent
-          ? const Value.absent()
-          : Value(armImportColumnIndex),
-      armShellColumnId: armShellColumnId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(armShellColumnId),
-      armShellRatingDate: armShellRatingDate == null && nullToAbsent
-          ? const Value.absent()
-          : Value(armShellRatingDate),
       seName:
           seName == null && nullToAbsent ? const Value.absent() : Value(seName),
       seDescription: seDescription == null && nullToAbsent
@@ -7576,9 +7478,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       armRatingType: armRatingType == null && nullToAbsent
           ? const Value.absent()
           : Value(armRatingType),
-      armColumnIdInteger: armColumnIdInteger == null && nullToAbsent
-          ? const Value.absent()
-          : Value(armColumnIdInteger),
     );
   }
 
@@ -7615,15 +7514,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       bbchScale: serializer.fromJson<String?>(json['bbchScale']),
       cropStageAtAssessment:
           serializer.fromJson<String?>(json['cropStageAtAssessment']),
-      armImportColumnIndex:
-          serializer.fromJson<int?>(json['armImportColumnIndex']),
-      armShellColumnId: serializer.fromJson<String?>(json['armShellColumnId']),
-      armShellRatingDate:
-          serializer.fromJson<String?>(json['armShellRatingDate']),
       seName: serializer.fromJson<String?>(json['seName']),
       seDescription: serializer.fromJson<String?>(json['seDescription']),
       armRatingType: serializer.fromJson<String?>(json['armRatingType']),
-      armColumnIdInteger: serializer.fromJson<int?>(json['armColumnIdInteger']),
     );
   }
   @override
@@ -7655,13 +7548,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       'bbchScale': serializer.toJson<String?>(bbchScale),
       'cropStageAtAssessment':
           serializer.toJson<String?>(cropStageAtAssessment),
-      'armImportColumnIndex': serializer.toJson<int?>(armImportColumnIndex),
-      'armShellColumnId': serializer.toJson<String?>(armShellColumnId),
-      'armShellRatingDate': serializer.toJson<String?>(armShellRatingDate),
       'seName': serializer.toJson<String?>(seName),
       'seDescription': serializer.toJson<String?>(seDescription),
       'armRatingType': serializer.toJson<String?>(armRatingType),
-      'armColumnIdInteger': serializer.toJson<int?>(armColumnIdInteger),
     };
   }
 
@@ -7690,13 +7579,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           Value<String?> eppoCodeLocal = const Value.absent(),
           Value<String?> bbchScale = const Value.absent(),
           Value<String?> cropStageAtAssessment = const Value.absent(),
-          Value<int?> armImportColumnIndex = const Value.absent(),
-          Value<String?> armShellColumnId = const Value.absent(),
-          Value<String?> armShellRatingDate = const Value.absent(),
           Value<String?> seName = const Value.absent(),
           Value<String?> seDescription = const Value.absent(),
-          Value<String?> armRatingType = const Value.absent(),
-          Value<int?> armColumnIdInteger = const Value.absent()}) =>
+          Value<String?> armRatingType = const Value.absent()}) =>
       TrialAssessment(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -7737,23 +7622,11 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
         cropStageAtAssessment: cropStageAtAssessment.present
             ? cropStageAtAssessment.value
             : this.cropStageAtAssessment,
-        armImportColumnIndex: armImportColumnIndex.present
-            ? armImportColumnIndex.value
-            : this.armImportColumnIndex,
-        armShellColumnId: armShellColumnId.present
-            ? armShellColumnId.value
-            : this.armShellColumnId,
-        armShellRatingDate: armShellRatingDate.present
-            ? armShellRatingDate.value
-            : this.armShellRatingDate,
         seName: seName.present ? seName.value : this.seName,
         seDescription:
             seDescription.present ? seDescription.value : this.seDescription,
         armRatingType:
             armRatingType.present ? armRatingType.value : this.armRatingType,
-        armColumnIdInteger: armColumnIdInteger.present
-            ? armColumnIdInteger.value
-            : this.armColumnIdInteger,
       );
   TrialAssessment copyWithCompanion(TrialAssessmentsCompanion data) {
     return TrialAssessment(
@@ -7807,15 +7680,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       cropStageAtAssessment: data.cropStageAtAssessment.present
           ? data.cropStageAtAssessment.value
           : this.cropStageAtAssessment,
-      armImportColumnIndex: data.armImportColumnIndex.present
-          ? data.armImportColumnIndex.value
-          : this.armImportColumnIndex,
-      armShellColumnId: data.armShellColumnId.present
-          ? data.armShellColumnId.value
-          : this.armShellColumnId,
-      armShellRatingDate: data.armShellRatingDate.present
-          ? data.armShellRatingDate.value
-          : this.armShellRatingDate,
       seName: data.seName.present ? data.seName.value : this.seName,
       seDescription: data.seDescription.present
           ? data.seDescription.value
@@ -7823,9 +7687,6 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
       armRatingType: data.armRatingType.present
           ? data.armRatingType.value
           : this.armRatingType,
-      armColumnIdInteger: data.armColumnIdInteger.present
-          ? data.armColumnIdInteger.value
-          : this.armColumnIdInteger,
     );
   }
 
@@ -7856,13 +7717,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           ..write('eppoCodeLocal: $eppoCodeLocal, ')
           ..write('bbchScale: $bbchScale, ')
           ..write('cropStageAtAssessment: $cropStageAtAssessment, ')
-          ..write('armImportColumnIndex: $armImportColumnIndex, ')
-          ..write('armShellColumnId: $armShellColumnId, ')
-          ..write('armShellRatingDate: $armShellRatingDate, ')
           ..write('seName: $seName, ')
           ..write('seDescription: $seDescription, ')
-          ..write('armRatingType: $armRatingType, ')
-          ..write('armColumnIdInteger: $armColumnIdInteger')
+          ..write('armRatingType: $armRatingType')
           ..write(')'))
         .toString();
   }
@@ -7893,13 +7750,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
         eppoCodeLocal,
         bbchScale,
         cropStageAtAssessment,
-        armImportColumnIndex,
-        armShellColumnId,
-        armShellRatingDate,
         seName,
         seDescription,
-        armRatingType,
-        armColumnIdInteger
+        armRatingType
       ]);
   @override
   bool operator ==(Object other) =>
@@ -7929,13 +7782,9 @@ class TrialAssessment extends DataClass implements Insertable<TrialAssessment> {
           other.eppoCodeLocal == this.eppoCodeLocal &&
           other.bbchScale == this.bbchScale &&
           other.cropStageAtAssessment == this.cropStageAtAssessment &&
-          other.armImportColumnIndex == this.armImportColumnIndex &&
-          other.armShellColumnId == this.armShellColumnId &&
-          other.armShellRatingDate == this.armShellRatingDate &&
           other.seName == this.seName &&
           other.seDescription == this.seDescription &&
-          other.armRatingType == this.armRatingType &&
-          other.armColumnIdInteger == this.armColumnIdInteger);
+          other.armRatingType == this.armRatingType);
 }
 
 class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
@@ -7963,13 +7812,9 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
   final Value<String?> eppoCodeLocal;
   final Value<String?> bbchScale;
   final Value<String?> cropStageAtAssessment;
-  final Value<int?> armImportColumnIndex;
-  final Value<String?> armShellColumnId;
-  final Value<String?> armShellRatingDate;
   final Value<String?> seName;
   final Value<String?> seDescription;
   final Value<String?> armRatingType;
-  final Value<int?> armColumnIdInteger;
   const TrialAssessmentsCompanion({
     this.id = const Value.absent(),
     this.trialId = const Value.absent(),
@@ -7995,13 +7840,9 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     this.eppoCodeLocal = const Value.absent(),
     this.bbchScale = const Value.absent(),
     this.cropStageAtAssessment = const Value.absent(),
-    this.armImportColumnIndex = const Value.absent(),
-    this.armShellColumnId = const Value.absent(),
-    this.armShellRatingDate = const Value.absent(),
     this.seName = const Value.absent(),
     this.seDescription = const Value.absent(),
     this.armRatingType = const Value.absent(),
-    this.armColumnIdInteger = const Value.absent(),
   });
   TrialAssessmentsCompanion.insert({
     this.id = const Value.absent(),
@@ -8028,13 +7869,9 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     this.eppoCodeLocal = const Value.absent(),
     this.bbchScale = const Value.absent(),
     this.cropStageAtAssessment = const Value.absent(),
-    this.armImportColumnIndex = const Value.absent(),
-    this.armShellColumnId = const Value.absent(),
-    this.armShellRatingDate = const Value.absent(),
     this.seName = const Value.absent(),
     this.seDescription = const Value.absent(),
     this.armRatingType = const Value.absent(),
-    this.armColumnIdInteger = const Value.absent(),
   })  : trialId = Value(trialId),
         assessmentDefinitionId = Value(assessmentDefinitionId);
   static Insertable<TrialAssessment> custom({
@@ -8062,13 +7899,9 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     Expression<String>? eppoCodeLocal,
     Expression<String>? bbchScale,
     Expression<String>? cropStageAtAssessment,
-    Expression<int>? armImportColumnIndex,
-    Expression<String>? armShellColumnId,
-    Expression<String>? armShellRatingDate,
     Expression<String>? seName,
     Expression<String>? seDescription,
     Expression<String>? armRatingType,
-    Expression<int>? armColumnIdInteger,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -8102,16 +7935,9 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       if (bbchScale != null) 'bbch_scale': bbchScale,
       if (cropStageAtAssessment != null)
         'crop_stage_at_assessment': cropStageAtAssessment,
-      if (armImportColumnIndex != null)
-        'arm_import_column_index': armImportColumnIndex,
-      if (armShellColumnId != null) 'arm_shell_column_id': armShellColumnId,
-      if (armShellRatingDate != null)
-        'arm_shell_rating_date': armShellRatingDate,
       if (seName != null) 'se_name': seName,
       if (seDescription != null) 'se_description': seDescription,
       if (armRatingType != null) 'arm_rating_type': armRatingType,
-      if (armColumnIdInteger != null)
-        'arm_column_id_integer': armColumnIdInteger,
     });
   }
 
@@ -8140,13 +7966,9 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       Value<String?>? eppoCodeLocal,
       Value<String?>? bbchScale,
       Value<String?>? cropStageAtAssessment,
-      Value<int?>? armImportColumnIndex,
-      Value<String?>? armShellColumnId,
-      Value<String?>? armShellRatingDate,
       Value<String?>? seName,
       Value<String?>? seDescription,
-      Value<String?>? armRatingType,
-      Value<int?>? armColumnIdInteger}) {
+      Value<String?>? armRatingType}) {
     return TrialAssessmentsCompanion(
       id: id ?? this.id,
       trialId: trialId ?? this.trialId,
@@ -8174,13 +7996,9 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       bbchScale: bbchScale ?? this.bbchScale,
       cropStageAtAssessment:
           cropStageAtAssessment ?? this.cropStageAtAssessment,
-      armImportColumnIndex: armImportColumnIndex ?? this.armImportColumnIndex,
-      armShellColumnId: armShellColumnId ?? this.armShellColumnId,
-      armShellRatingDate: armShellRatingDate ?? this.armShellRatingDate,
       seName: seName ?? this.seName,
       seDescription: seDescription ?? this.seDescription,
       armRatingType: armRatingType ?? this.armRatingType,
-      armColumnIdInteger: armColumnIdInteger ?? this.armColumnIdInteger,
     );
   }
 
@@ -8263,16 +8081,6 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
       map['crop_stage_at_assessment'] =
           Variable<String>(cropStageAtAssessment.value);
     }
-    if (armImportColumnIndex.present) {
-      map['arm_import_column_index'] =
-          Variable<int>(armImportColumnIndex.value);
-    }
-    if (armShellColumnId.present) {
-      map['arm_shell_column_id'] = Variable<String>(armShellColumnId.value);
-    }
-    if (armShellRatingDate.present) {
-      map['arm_shell_rating_date'] = Variable<String>(armShellRatingDate.value);
-    }
     if (seName.present) {
       map['se_name'] = Variable<String>(seName.value);
     }
@@ -8281,9 +8089,6 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
     }
     if (armRatingType.present) {
       map['arm_rating_type'] = Variable<String>(armRatingType.value);
-    }
-    if (armColumnIdInteger.present) {
-      map['arm_column_id_integer'] = Variable<int>(armColumnIdInteger.value);
     }
     return map;
   }
@@ -8315,13 +8120,9 @@ class TrialAssessmentsCompanion extends UpdateCompanion<TrialAssessment> {
           ..write('eppoCodeLocal: $eppoCodeLocal, ')
           ..write('bbchScale: $bbchScale, ')
           ..write('cropStageAtAssessment: $cropStageAtAssessment, ')
-          ..write('armImportColumnIndex: $armImportColumnIndex, ')
-          ..write('armShellColumnId: $armShellColumnId, ')
-          ..write('armShellRatingDate: $armShellRatingDate, ')
           ..write('seName: $seName, ')
           ..write('seDescription: $seDescription, ')
-          ..write('armRatingType: $armRatingType, ')
-          ..write('armColumnIdInteger: $armColumnIdInteger')
+          ..write('armRatingType: $armRatingType')
           ..write(')'))
         .toString();
   }
@@ -35726,13 +35527,9 @@ typedef $$TrialAssessmentsTableCreateCompanionBuilder
   Value<String?> eppoCodeLocal,
   Value<String?> bbchScale,
   Value<String?> cropStageAtAssessment,
-  Value<int?> armImportColumnIndex,
-  Value<String?> armShellColumnId,
-  Value<String?> armShellRatingDate,
   Value<String?> seName,
   Value<String?> seDescription,
   Value<String?> armRatingType,
-  Value<int?> armColumnIdInteger,
 });
 typedef $$TrialAssessmentsTableUpdateCompanionBuilder
     = TrialAssessmentsCompanion Function({
@@ -35760,13 +35557,9 @@ typedef $$TrialAssessmentsTableUpdateCompanionBuilder
   Value<String?> eppoCodeLocal,
   Value<String?> bbchScale,
   Value<String?> cropStageAtAssessment,
-  Value<int?> armImportColumnIndex,
-  Value<String?> armShellColumnId,
-  Value<String?> armShellRatingDate,
   Value<String?> seName,
   Value<String?> seDescription,
   Value<String?> armRatingType,
-  Value<int?> armColumnIdInteger,
 });
 
 class $$TrialAssessmentsTableTableManager extends RootTableManager<
@@ -35811,13 +35604,9 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             Value<String?> eppoCodeLocal = const Value.absent(),
             Value<String?> bbchScale = const Value.absent(),
             Value<String?> cropStageAtAssessment = const Value.absent(),
-            Value<int?> armImportColumnIndex = const Value.absent(),
-            Value<String?> armShellColumnId = const Value.absent(),
-            Value<String?> armShellRatingDate = const Value.absent(),
             Value<String?> seName = const Value.absent(),
             Value<String?> seDescription = const Value.absent(),
             Value<String?> armRatingType = const Value.absent(),
-            Value<int?> armColumnIdInteger = const Value.absent(),
           }) =>
               TrialAssessmentsCompanion(
             id: id,
@@ -35844,13 +35633,9 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             eppoCodeLocal: eppoCodeLocal,
             bbchScale: bbchScale,
             cropStageAtAssessment: cropStageAtAssessment,
-            armImportColumnIndex: armImportColumnIndex,
-            armShellColumnId: armShellColumnId,
-            armShellRatingDate: armShellRatingDate,
             seName: seName,
             seDescription: seDescription,
             armRatingType: armRatingType,
-            armColumnIdInteger: armColumnIdInteger,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -35877,13 +35662,9 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             Value<String?> eppoCodeLocal = const Value.absent(),
             Value<String?> bbchScale = const Value.absent(),
             Value<String?> cropStageAtAssessment = const Value.absent(),
-            Value<int?> armImportColumnIndex = const Value.absent(),
-            Value<String?> armShellColumnId = const Value.absent(),
-            Value<String?> armShellRatingDate = const Value.absent(),
             Value<String?> seName = const Value.absent(),
             Value<String?> seDescription = const Value.absent(),
             Value<String?> armRatingType = const Value.absent(),
-            Value<int?> armColumnIdInteger = const Value.absent(),
           }) =>
               TrialAssessmentsCompanion.insert(
             id: id,
@@ -35910,13 +35691,9 @@ class $$TrialAssessmentsTableTableManager extends RootTableManager<
             eppoCodeLocal: eppoCodeLocal,
             bbchScale: bbchScale,
             cropStageAtAssessment: cropStageAtAssessment,
-            armImportColumnIndex: armImportColumnIndex,
-            armShellColumnId: armShellColumnId,
-            armShellRatingDate: armShellRatingDate,
             seName: seName,
             seDescription: seDescription,
             armRatingType: armRatingType,
-            armColumnIdInteger: armColumnIdInteger,
           ),
         ));
 }
@@ -36029,21 +35806,6 @@ class $$TrialAssessmentsTableFilterComposer
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
-  ColumnFilters<int> get armImportColumnIndex => $state.composableBuilder(
-      column: $state.table.armImportColumnIndex,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get armShellColumnId => $state.composableBuilder(
-      column: $state.table.armShellColumnId,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<String> get armShellRatingDate => $state.composableBuilder(
-      column: $state.table.armShellRatingDate,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
   ColumnFilters<String> get seName => $state.composableBuilder(
       column: $state.table.seName,
       builder: (column, joinBuilders) =>
@@ -36056,11 +35818,6 @@ class $$TrialAssessmentsTableFilterComposer
 
   ColumnFilters<String> get armRatingType => $state.composableBuilder(
       column: $state.table.armRatingType,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<int> get armColumnIdInteger => $state.composableBuilder(
-      column: $state.table.armColumnIdInteger,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -36291,21 +36048,6 @@ class $$TrialAssessmentsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
-  ColumnOrderings<int> get armImportColumnIndex => $state.composableBuilder(
-      column: $state.table.armImportColumnIndex,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get armShellColumnId => $state.composableBuilder(
-      column: $state.table.armShellColumnId,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<String> get armShellRatingDate => $state.composableBuilder(
-      column: $state.table.armShellRatingDate,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
   ColumnOrderings<String> get seName => $state.composableBuilder(
       column: $state.table.seName,
       builder: (column, joinBuilders) =>
@@ -36318,11 +36060,6 @@ class $$TrialAssessmentsTableOrderingComposer
 
   ColumnOrderings<String> get armRatingType => $state.composableBuilder(
       column: $state.table.armRatingType,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<int> get armColumnIdInteger => $state.composableBuilder(
-      column: $state.table.armColumnIdInteger,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

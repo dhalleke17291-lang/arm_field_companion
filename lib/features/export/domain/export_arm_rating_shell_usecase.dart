@@ -316,19 +316,17 @@ class ExportArmRatingShellUseCase {
     final parser = ArmShellParser(shellPath);
     final shellImport = await parser.parse();
 
-    // Phase 0b-ta: per-column ARM fields (armImportColumnIndex,
-    // armColumnIdInteger, …) now live on arm_assessment_metadata. Load
-    // the map once and prefer AAM's value; fall back to the TA column
-    // for legacy trials imported before the v59 backfill ran.
+    // v60 moved per-column ARM fields (armImportColumnIndex,
+    // armColumnIdInteger, …) to arm_assessment_metadata.
     final aamRows = await _armColumnMappingRepository
         .getAssessmentMetadatasForTrial(trial.id);
     final aamByTaId = <int, ArmAssessmentMetadataData>{
       for (final r in aamRows) r.trialAssessmentId: r,
     };
     int? armImportColumnIndexFor(TrialAssessment a) =>
-        aamByTaId[a.id]?.armImportColumnIndex ?? a.armImportColumnIndex;
+        aamByTaId[a.id]?.armImportColumnIndex;
     int? armColumnIdIntegerFor(TrialAssessment a) =>
-        aamByTaId[a.id]?.armColumnIdInteger ?? a.armColumnIdInteger;
+        aamByTaId[a.id]?.armColumnIdInteger;
 
     final sortedAssessments = List<TrialAssessment>.from(assessments);
     final withColIdx =
@@ -347,8 +345,7 @@ class ExportArmRatingShellUseCase {
       } else if (assessments.isNotEmpty && withColIdx == 0) {
         debugPrint(
           'ExportArmRatingShell: trial ${trial.id} has no armImportColumnIndex '
-          'on arm_assessment_metadata or trial_assessments; using sortOrder '
-          '(legacy data).',
+          'on arm_assessment_metadata; using sortOrder (legacy data).',
         );
       }
       sortedAssessments.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));

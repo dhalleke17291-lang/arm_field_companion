@@ -4,7 +4,7 @@
 /// - [assessmentKey] — semantic grouping (`armCode|timing|unit`) for diagnostics and definition reuse.
 /// - [columnInstanceKey] — physical CSV column (`assessmentKey|col{index}`) for diagnostics
 ///   and duplicate detection.
-/// - [columnIndex] — raw CSV position for reading cells; [TrialAssessment.armImportColumnIndex]
+/// - [columnIndex] — raw CSV position for reading cells; `ArmAssessmentMetadata.armImportColumnIndex`
 ///   is stored in **shell** space (see [ArmImportUseCase]).
 /// Trials imported before per-column anchoring must be **re-imported** to fix collapsed assessments.
 class AssessmentToken {

@@ -198,8 +198,11 @@ void main() {
           ..where((t) => t.trialId.equals(tid)))
         .get();
     expect(tas, hasLength(1));
+    final aams = await ArmColumnMappingRepository(db)
+        .getAssessmentMetadatasForTrial(tid);
+    final aamByTa = {for (final a in aams) a.trialAssessmentId: a};
     // CSV assessment col 3 → shell-aligned index 2 (Plot Data assessments start at col 2).
-    expect(tas.single.armImportColumnIndex, 2);
+    expect(aamByTa[tas.single.id]?.armImportColumnIndex, 2);
   });
 
   test('ERA column sets trial location', () async {
@@ -491,14 +494,18 @@ void main() {
     expect(r.success, true);
     expect(r.confidence, ImportConfidence.high);
     final tid = r.trialId!;
-    final tas = await (db.select(db.trialAssessments)
-          ..where((t) => t.trialId.equals(tid))
-          ..orderBy([(t) => OrderingTerm.asc(t.armImportColumnIndex)]))
-        .get();
+    final aamRows = await ArmColumnMappingRepository(db)
+        .getAssessmentMetadatasForTrial(tid);
+    final aamByTa = {for (final a in aamRows) a.trialAssessmentId: a};
+    final tas = (await (db.select(db.trialAssessments)
+              ..where((t) => t.trialId.equals(tid)))
+            .get())
+      ..sort((a, b) => (aamByTa[a.id]?.armImportColumnIndex ?? 0)
+          .compareTo(aamByTa[b.id]?.armImportColumnIndex ?? 0));
     expect(tas, hasLength(2));
     expect(tas[0].assessmentDefinitionId, tas[1].assessmentDefinitionId);
-    expect(tas[0].armImportColumnIndex, 2);
-    expect(tas[1].armImportColumnIndex, 3);
+    expect(aamByTa[tas[0].id]?.armImportColumnIndex, 2);
+    expect(aamByTa[tas[1].id]?.armImportColumnIndex, 3);
 
     final sid = r.importSessionId!;
     final plot = await (db.select(db.plots)
@@ -809,13 +816,17 @@ void main() {
     final tid = r.trialId!;
     final sid = r.importSessionId!;
 
-    final tasQuery = db.select(db.trialAssessments)
-      ..where((t) => t.trialId.equals(tid))
-      ..orderBy([(t) => OrderingTerm.asc(t.armImportColumnIndex)]);
-    final tas = await tasQuery.get();
+    final aamRows = await ArmColumnMappingRepository(db)
+        .getAssessmentMetadatasForTrial(tid);
+    final aamByTa = {for (final a in aamRows) a.trialAssessmentId: a};
+    final tas = (await (db.select(db.trialAssessments)
+              ..where((t) => t.trialId.equals(tid)))
+            .get())
+      ..sort((a, b) => (aamByTa[a.id]?.armImportColumnIndex ?? 0)
+          .compareTo(aamByTa[b.id]?.armImportColumnIndex ?? 0));
     expect(tas.length, 2);
-    expect(tas[0].armImportColumnIndex, 2);
-    expect(tas[1].armImportColumnIndex, 3);
+    expect(aamByTa[tas[0].id]?.armImportColumnIndex, 2);
+    expect(aamByTa[tas[1].id]?.armImportColumnIndex, 3);
     expect(tas[0].assessmentDefinitionId, tas[1].assessmentDefinitionId);
 
     final plot = await (db.select(db.plots)

@@ -1,4 +1,5 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/data/arm/arm_column_mapping_repository.dart';
 import 'package:arm_field_companion/features/arm_import/data/arm_csv_parser.dart';
 import 'package:arm_field_companion/features/export/export_format.dart';
 import 'package:arm_field_companion/features/photos/photo_export_name_builder.dart';
@@ -87,7 +88,13 @@ void main() {
             ..where((t) => t.trialId.equals(tid)))
           .get();
       expect(tas.length, 15);
-      expect(tas.map((e) => e.armImportColumnIndex).toSet().length, 15);
+      final aams = await ArmColumnMappingRepository(db)
+          .getAssessmentMetadatasForTrial(tid);
+      final aamByTa = {for (final a in aams) a.trialAssessmentId: a};
+      expect(
+        tas.map((e) => aamByTa[e.id]?.armImportColumnIndex).toSet().length,
+        15,
+      );
 
       final bundle = await exportStressTrialUseCase(db).execute(
         trial: (await (db.select(db.trials)..where((t) => t.id.equals(tid)))
@@ -198,10 +205,14 @@ void main() {
           .execute(csv, sourceFileName: 'duplicate_columns_$u.csv');
       expect(r.success, isTrue);
       final tid = r.trialId!;
-      final tas = await (db.select(db.trialAssessments)
-            ..where((t) => t.trialId.equals(tid))
-            ..orderBy([(t) => OrderingTerm.asc(t.armImportColumnIndex)]))
-          .get();
+      final aamRows2 = await ArmColumnMappingRepository(db)
+          .getAssessmentMetadatasForTrial(tid);
+      final aamByTa2 = {for (final a in aamRows2) a.trialAssessmentId: a};
+      final tas = (await (db.select(db.trialAssessments)
+                ..where((t) => t.trialId.equals(tid)))
+              .get())
+        ..sort((a, b) => (aamByTa2[a.id]?.armImportColumnIndex ?? 0)
+            .compareTo(aamByTa2[b.id]?.armImportColumnIndex ?? 0));
       expect(tas.length, 3);
 
       final trial = await (db.select(db.trials)..where((t) => t.id.equals(tid)))

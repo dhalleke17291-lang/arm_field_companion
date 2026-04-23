@@ -81,21 +81,22 @@ class TrialAssessmentRepository {
   }
 
   /// Applies ARM Rating Shell metadata on one trial assessment without
-  /// [assertCanEditProtocolForTrialId]. Never modifies [armImportColumnIndex].
+  /// [assertCanEditProtocolForTrialId].
   ///
-  /// Only non-empty [shell*] values are applied. Empty shell strings are ignored.
-  /// Non-empty existing values are not replaced by empty shell values (callers
-  /// should omit empty keys).
+  /// Only non-empty incoming values are applied. Empty shell strings are
+  /// ignored. Non-empty existing values are not replaced by empty shell
+  /// values (callers should omit empty keys).
+  ///
+  /// Per-column ARM anchor fields (armImportColumnIndex, armShellColumnId,
+  /// armShellRatingDate, armColumnIdInteger) moved to arm_assessment_metadata
+  /// in v60; callers apply those via [ArmColumnMappingRepository] separately.
   /// Returns whether any column was written.
   Future<bool> applyArmShellLinkFields({
     required int id,
     String? pestCode,
-    String? armShellColumnId,
-    String? armShellRatingDate,
     String? seName,
     String? seDescription,
     String? armRatingType,
-    int? armColumnIdInteger,
   }) async {
     final existing = await getById(id);
     if (existing == null) return false;
@@ -119,9 +120,6 @@ class TrialAssessmentRepository {
     }
 
     final nextPest = mergePest(pestCode);
-    final nextColId = mergeText(existing.armShellColumnId, armShellColumnId);
-    final nextRatingDate =
-        mergeText(existing.armShellRatingDate, armShellRatingDate);
     final nextSeName = mergeText(existing.seName, seName);
     final nextSeDesc = mergeText(existing.seDescription, seDescription);
     final nextRatingType = mergeText(existing.armRatingType, armRatingType);
@@ -129,30 +127,19 @@ class TrialAssessmentRepository {
     final companion = TrialAssessmentsCompanion(
       pestCode:
           nextPest == null ? const Value.absent() : Value(nextPest),
-      armShellColumnId:
-          nextColId == null ? const Value.absent() : Value(nextColId),
-      armShellRatingDate: nextRatingDate == null
-          ? const Value.absent()
-          : Value(nextRatingDate),
       seName: nextSeName == null ? const Value.absent() : Value(nextSeName),
       seDescription:
           nextSeDesc == null ? const Value.absent() : Value(nextSeDesc),
       armRatingType: nextRatingType == null
           ? const Value.absent()
           : Value(nextRatingType),
-      armColumnIdInteger: armColumnIdInteger != null
-          ? Value(armColumnIdInteger)
-          : const Value.absent(),
       updatedAt: Value(DateTime.now().toUtc()),
     );
 
     final touched = nextPest != null ||
-        nextColId != null ||
-        nextRatingDate != null ||
         nextSeName != null ||
         nextSeDesc != null ||
-        nextRatingType != null ||
-        armColumnIdInteger != null;
+        nextRatingType != null;
     if (!touched) return false;
 
     await (_db.update(_db.trialAssessments)..where((t) => t.id.equals(id)))
@@ -173,8 +160,6 @@ class TrialAssessmentRepository {
     bool isActive = true,
     /// ARM assessment code (e.g. CONTRO, AVEFA); stored in [TrialAssessments.pestCode].
     String? pestCode,
-    int? armImportColumnIndex,
-    int? armColumnIdInteger,
     /// Optional machine tag (e.g. curated library source id); not shown in rating UI.
     String? instructionOverride,
   }) async {
@@ -191,8 +176,6 @@ class TrialAssessmentRepository {
             sortOrder: Value(sortOrder),
             isActive: Value(isActive),
             pestCode: Value(pestCode),
-            armImportColumnIndex: Value(armImportColumnIndex),
-            armColumnIdInteger: Value(armColumnIdInteger),
             instructionOverride: Value(instructionOverride),
           ),
         );
