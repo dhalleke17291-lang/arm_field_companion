@@ -76,16 +76,27 @@ lib/
 
 `test/core/arm_separation_boundary_test.dart` enforces rule 1 with a file scan. PRs that add a new core→ARM import will fail the test.
 
-## Acknowledged leakage (pre-existing)
+## Schema cleanup (Phase 0b — complete)
 
-For honesty: the current codebase has ARM fields on core tables. These are **grandfathered** and will be migrated off in a dedicated schema-migration phase (Phase 0b). Until then, they pass the boundary test by being tracked on the core tables themselves, not as imports from ARM-only folders.
+All ARM-specific fields that were grandfathered on core tables have now been migrated into the extension tables. Core tables carry no ARM-coded fields.
 
-Pre-existing ARM fields on core tables (not to be extended):
+| Field | Originally on | Moved to | Schema version |
+|---|---|---|---|
+| `isArmLinked`, `armImportedAt`, `armSourceFile`, `armVersion`, `armImportSessionId`, `armLinkedShellPath`, `armLinkedShellAt`, `shellInternalPath` | `Trials` | `ArmTrialMetadata` | v58 |
+| `armImportColumnIndex`, `armShellColumnId`, `armShellRatingDate`, `armColumnIdInteger` | `TrialAssessments` | `ArmAssessmentMetadata` | v60 |
+| `pestCode`, `seName`, `seDescription`, `armRatingType` | `TrialAssessments` | `ArmAssessmentMetadata` | v61 |
 
-- `Trials`: `isArmLinked`, `armLinkedShellPath`, `shellInternalPath`, `armSourceFile`, `armImportedAt`
-- `TrialAssessments`: `armColumnIdInteger`, `armImportColumnIndex`, `armShellColumnId`, `armShellRatingDate`, `seName`, `seDescription`, `armRatingType`, `displayNameOverride`, `pestCode`
+Each migration used the same three-step pattern — additive v(N) (new columns + backfill), flip writers then readers to the new location with a fallback, and a contract-phase v(N+1) that drops the legacy columns. Legacy `ALTER TABLE ADD COLUMN` calls in older upgrade paths were rewritten as idempotent raw SQL so pre-v58 installs still pass through the drops cleanly.
 
-**New ARM-specific fields must not be added to these tables.** They belong in the `arm_*_metadata` extension tables introduced in Phase 1a.
+**Rule going forward:** new ARM-specific fields must land in an `arm_*_metadata` extension table (or a new one if needed). Core tables (`Trials`, `TrialAssessments`, `Sessions`, `Plots`, etc.) are for fields every trial has.
+
+### Residual fields with ARM-ish names on core tables
+
+One generic override is kept on the core tables because it is not ARM-specific:
+
+- `TrialAssessments.displayNameOverride` — a per-trial display label that any trial can use (ARM importers populate it from the ARM SE name, but standalone trials can set it manually). Not gated behind ARM.
+
+The constitution's "concept vs coding" rule applies: the concept (display label) is core; the ARM-specific coding (`AVEFA`, `CONTRO`, …) lives on `ArmAssessmentMetadata`.
 
 ## ARM extension tables (Phase 1a)
 
@@ -120,7 +131,7 @@ Phase 1b turns the Phase 1a tables into active infrastructure: the importer writ
 3. **Writes `arm_column_mappings`** — one row per ARM column in the shell. Each row carries the ARM Column ID, column index, and references the deduplicated trial_assessment and planned session for that column. Orphan columns (blank measurement metadata) keep `trial_assessment_id` and `session_id` null so export can re-emit them as structurally present but empty.
 4. **Writes `arm_assessment_metadata`** (one row per deduplicated trial_assessment, verbatim ARM identity fields) and **`arm_session_metadata`** (one row per planned session, with Rating Date, timing code, crop stage, DA-A/DP intervals).
 
-Legacy per-column fields on `trial_assessments` (`armImportColumnIndex`, `armColumnIdInteger`, `seName`, `seDescription`, `armRatingType`, `armShellColumnId`, `armShellRatingDate`, `pestCode`) are still populated but with the **first** ARM column of each dedup group. `arm_column_mappings` + `arm_assessment_metadata` are the authoritative sources from Phase 1b forward; the core-table fields are advisory shadows until Phase 0b removes them.
+Historically the importer also populated legacy per-column fields on `trial_assessments` (`armImportColumnIndex`, `armColumnIdInteger`, `seName`, `seDescription`, `armRatingType`, `armShellColumnId`, `armShellRatingDate`, `pestCode`) as advisory shadows. Those shadows were retired in v60 (4 anchor fields) and v61 (4 duplicate SE/pest/rating-type fields); see "Schema cleanup (Phase 0b — complete)" above. `arm_column_mappings` + `arm_assessment_metadata` are now the only sources.
 
 ### Exporter (`ExportArmRatingShellUseCase`)
 
@@ -137,7 +148,7 @@ The branch is a pure append; every existing export test exercises the legacy pat
 
 ### Not introduced in Phase 1b
 
-- Core-table cleanup (dropping the grandfathered ARM columns from `Trials` / `TrialAssessments`): stays deferred to Phase 0b. Phase 1b keeps them populated so the legacy exporter path and token/positional heuristics still have an anchor, and so a rollback to the Phase 1a boundary is a single commit.
+- Core-table cleanup (dropping the grandfathered ARM columns from `Trials` / `TrialAssessments`): deferred at the time; **now complete** in v58 / v60 / v61. See "Schema cleanup (Phase 0b — complete)" above.
 - ARM Protocol tab: still deferred. Phase 1b has no user-visible UI surface beyond the dedup itself (which is what the user wanted).
 
 ## Planned-session surface (Phase 1c)
@@ -199,4 +210,4 @@ ARM-linked trials (`isArmLinked = true`):
 
 Complementing the import-level separation, `lib/core/trial_state.dart` enforces **write-path** guards: `canEditProtocol()` and `ProtocolEditBlockedException` prevent structural mutation of ARM-linked trials from any code path. See `test/core/arm_protocol_structure_guard_test.dart` for the canonical enforcement suite.
 
-Import-level separation (this doc) + write-path guardrails (existing) + schema extension tables (Phase 0b) are the three layers that keep standalone clean and ARM rich.
+Import-level separation (this doc) + write-path guardrails (existing) + schema extension tables (Phase 0b — complete at v61) are the three layers that keep standalone clean and ARM rich.
