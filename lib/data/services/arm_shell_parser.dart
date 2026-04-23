@@ -9,6 +9,7 @@ import '../../core/excel_column_letters.dart';
 import '../../domain/models/arm_column_map.dart';
 import '../../domain/models/arm_plot_row.dart';
 import '../../domain/models/arm_shell_import.dart';
+import '../../domain/models/arm_treatment_sheet_row.dart';
 
 /// Arguments for isolate parse ([compute]).
 class ArmShellParseParams {
@@ -48,7 +49,7 @@ ArmShellImport parseArmShellBytes(ArmShellParseParams p) {
   }
 
   // --- Find Plot Data worksheet path ---
-  final plotDataPath = _resolvePlotDataWorksheetPath(archive);
+  final plotDataPath = _resolveSheetPath(archive, 'Plot Data');
   if (plotDataPath == null) {
     throw ArgumentError(
       'Rating sheet not found — expected "Plot Data" (Excel rating sheet format).',
@@ -156,6 +157,20 @@ ArmShellImport parseArmShellBytes(ArmShellParseParams p) {
     );
   }
 
+  // --- Treatments sheet (optional; legacy shells without it still parse) ---
+  //
+  // Best-effort: any parse failure on the Treatments sheet yields an
+  // empty list rather than aborting the whole import. The existing
+  // Plot Data-derived treatment path (TRT column → bare Treatments rows)
+  // remains the authoritative structural source; the Treatments sheet
+  // only enriches it with product / rate / formulation values.
+  List<ArmTreatmentSheetRow> treatmentSheetRows = const [];
+  try {
+    treatmentSheetRows = _parseTreatmentsSheet(archive, strings);
+  } catch (_) {
+    treatmentSheetRows = const [];
+  }
+
   return ArmShellImport(
     title: title,
     trialId: trialId,
@@ -163,8 +178,86 @@ ArmShellImport parseArmShellBytes(ArmShellParseParams p) {
     crop: crop,
     assessmentColumns: assessmentColumns,
     plotRows: plotRows,
+    treatmentSheetRows: treatmentSheetRows,
     shellFilePath: p.shellFilePath,
   );
+}
+
+/// Reads the optional **Treatments** sheet (sheet 7 in ARM 2026.0 shells).
+///
+/// Layout: two header rows (`R1`: `Trt`/blank/`Treatment`/`Form`/…,
+/// `R2`: `No.`/`Type`/`Name`/`Conc`/`Unit`/`Type`/`Rate`/`Unit`), then
+/// one data row per treatment starting at R3 (0-based row index 2).
+///
+/// Returns an empty list if the sheet is missing, the worksheet file is
+/// unreadable, or no data row has a valid Trt No.
+List<ArmTreatmentSheetRow> _parseTreatmentsSheet(
+  Archive archive,
+  List<String> sharedStrings,
+) {
+  final path = _resolveSheetPath(archive, 'Treatments');
+  if (path == null) return const [];
+  final entry = archive.findFile(path);
+  if (entry == null) return const [];
+
+  final doc = XmlDocument.parse(utf8.decode(entry.content as List<int>));
+
+  final cells = <(int, int), String>{};
+  for (final row in doc.findAllElements('row')) {
+    final rowNum = int.tryParse(row.getAttribute('r') ?? '');
+    if (rowNum == null) continue;
+    final rowIdx = rowNum - 1;
+    for (final c in row.findElements('c')) {
+      final ref = c.getAttribute('r');
+      if (ref == null) continue;
+      final colIdx = _colIdxFromRef(ref);
+      if (colIdx == null) continue;
+      final val = _cellValue(c, sharedStrings);
+      if (val != null) cells[(rowIdx, colIdx)] = val;
+    }
+  }
+
+  String? cell(int row, int col) {
+    final v = cells[(row, col)];
+    if (v == null) return null;
+    final trimmed = v.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  double? cellDouble(int row, int col) {
+    final s = cell(row, col);
+    if (s == null) return null;
+    return double.tryParse(s);
+  }
+
+  // Data rows start at the third sheet row (0-based index 2), because the
+  // first two rows are the two-line header. Stop at the first row with a
+  // blank or non-integer Trt No.
+  final rows = <ArmTreatmentSheetRow>[];
+  const dataStartRow = 2;
+  // 256 is a defensive upper bound — ARM trials cap well below this.
+  for (var rowIdx = dataStartRow; rowIdx < dataStartRow + 256; rowIdx++) {
+    final rawTrt = cell(rowIdx, 0);
+    if (rawTrt == null) break;
+    final trt = int.tryParse(rawTrt);
+    if (trt == null) break;
+
+    rows.add(
+      ArmTreatmentSheetRow(
+        trtNumber: trt,
+        rowIndex: rowIdx - dataStartRow,
+        typeCode: cell(rowIdx, 1),
+        treatmentName: cell(rowIdx, 2),
+        formConc: cellDouble(rowIdx, 3),
+        formConcUnit: cell(rowIdx, 4),
+        formType: cell(rowIdx, 5),
+        rate: cellDouble(rowIdx, 6),
+        rateUnit: cell(rowIdx, 7),
+      ),
+    );
+  }
+
+  return rows;
 }
 
 /// Reads an ARM Excel Rating Shell and extracts trial metadata, columns, and plot rows.
@@ -208,23 +301,28 @@ class ArmShellParser {
 
 // --- Private helpers ---
 
-/// Resolves workbook.xml + rels to find the Plot Data sheet XML path.
-String? _resolvePlotDataWorksheetPath(Archive archive) {
+/// Resolves workbook.xml + rels to find the XML path of a worksheet by
+/// its display name (e.g. `'Plot Data'`, `'Treatments'`).
+///
+/// Returns null when the named sheet is absent or the relationship it
+/// references cannot be resolved. Callers handle absence per their own
+/// policy — `Plot Data` is required; `Treatments` is optional.
+String? _resolveSheetPath(Archive archive, String sheetName) {
   final wbFile = archive.findFile('xl/workbook.xml');
   if (wbFile == null) return null;
   final wbDoc = XmlDocument.parse(utf8.decode(wbFile.content as List<int>));
 
-  XmlElement? plotSheet;
+  XmlElement? match;
   for (final sheet in wbDoc.findAllElements('sheet')) {
-    if (sheet.getAttribute('name') == 'Plot Data') {
-      plotSheet = sheet;
+    if (sheet.getAttribute('name') == sheetName) {
+      match = sheet;
       break;
     }
   }
-  if (plotSheet == null) return null;
+  if (match == null) return null;
 
   String? rid;
-  for (final a in plotSheet.attributes) {
+  for (final a in match.attributes) {
     if (a.name.local == 'id' && a.name.prefix == 'r') {
       rid = a.value;
       break;
