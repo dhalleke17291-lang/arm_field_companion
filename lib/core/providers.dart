@@ -295,6 +295,20 @@ final armAssessmentMetadataMapForTrialProvider =
   return {for (final r in rows) r.trialAssessmentId: r};
 });
 
+/// Map of treatment PK → [ArmTreatmentMetadataData] for every treatment
+/// of an ARM-linked trial that has Treatments-sheet data (Phase 2b).
+/// Used by the ARM Protocol tab's Treatments sub-section (Phase 2c) to
+/// read the verbatim ARM coding (`armTypeCode`, `formConc`,
+/// `formConcUnit`, `formType`, `armRowSortOrder`) alongside the core
+/// treatment rows. Standalone trials return an empty map because they
+/// never receive AAM rows. See docs/ARM_SEPARATION.md.
+final armTreatmentMetadataMapForTrialProvider =
+    FutureProvider.family<Map<int, ArmTreatmentMetadataData>, int>(
+  (ref, trialId) async => ref
+      .watch(armTreatmentMetadataRepositoryProvider)
+      .getMapForTrial(trialId),
+);
+
 final importArmRatingShellUseCaseProvider =
     Provider<ImportArmRatingShellUseCase>((ref) {
   return ImportArmRatingShellUseCase(
@@ -1564,6 +1578,26 @@ final treatmentComponentsForTreatmentProvider = StreamProvider.autoDispose
             c.treatmentId.equals(treatmentId) & c.isDeleted.equals(false))
         ..orderBy([(c) => drift.OrderingTerm.asc(c.sortOrder)]))
       .watch();
+});
+
+/// All non-deleted components for a trial, grouped by `treatmentId`. Used
+/// by the ARM Protocol tab Treatments sub-section (Phase 2c) so the whole
+/// trial's product / rate data can be fetched in one round-trip rather
+/// than N per-treatment watches. Empty list for a treatmentId means the
+/// treatment has no components (typical for CHK / untreated checks).
+final treatmentComponentsByTreatmentForTrialProvider =
+    FutureProvider.family<Map<int, List<TreatmentComponent>>, int>(
+        (ref, trialId) async {
+  final db = ref.watch(databaseProvider);
+  final rows = await (db.select(db.treatmentComponents)
+        ..where((c) => c.trialId.equals(trialId) & c.isDeleted.equals(false))
+        ..orderBy([(c) => drift.OrderingTerm.asc(c.sortOrder)]))
+      .get();
+  final map = <int, List<TreatmentComponent>>{};
+  for (final c in rows) {
+    (map[c.treatmentId] ??= <TreatmentComponent>[]).add(c);
+  }
+  return map;
 });
 
 final assignmentsForTrialProvider =

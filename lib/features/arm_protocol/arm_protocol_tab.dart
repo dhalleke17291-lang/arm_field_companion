@@ -113,6 +113,7 @@ class _ArmProtocolContent extends ConsumerWidget {
         _ImportSummaryCard(meta: meta),
         if (meta.armLinkedShellPath != null || meta.armLinkedShellAt != null)
           _ShellLinkCard(meta: meta),
+        ArmTreatmentsSection(trialId: trialId),
         _ArmAssessmentsSection(trialId: trialId),
         if (meta.armImportSessionId != null)
           _ImportSessionCard(sessionId: meta.armImportSessionId!),
@@ -195,6 +196,229 @@ class _ShellLinkCard extends StatelessWidget {
   String _basenameOf(String path) {
     final sep = path.contains('/') ? '/' : r'\';
     return path.split(sep).last;
+  }
+}
+
+// ─── ARM Treatments Section ──────────────────────────────────────────────────
+//
+// Phase 2c: renders the data parsed from the ARM Rating Shell's
+// "Treatments" sheet (sheet 7). Read-only — the authoritative record
+// lives in `arm_treatment_metadata` (ARM-specific coding) + core
+// `treatments` / `treatment_components` (universal product + rate).
+//
+// Only ARM-linked trials reach this widget (the tab itself is gated on
+// `isArmLinked`). Standalone trials never render this section — they
+// have zero rows in `arm_treatment_metadata`.
+/// Read-only Treatments sub-section of the ARM Protocol tab. Public so
+/// it can be widget-tested in isolation with static provider overrides —
+/// mounting the full [ArmProtocolTab] under `testWidgets` is impractical
+/// because its Drift `watch()` streams schedule teardown timers that the
+/// FakeAsync test zone cannot drain.
+class ArmTreatmentsSection extends ConsumerWidget {
+  const ArmTreatmentsSection({super.key, required this.trialId});
+
+  final int trialId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trialId));
+    final aamMapAsync =
+        ref.watch(armTreatmentMetadataMapForTrialProvider(trialId));
+    final componentsMapAsync =
+        ref.watch(treatmentComponentsByTreatmentForTrialProvider(trialId));
+
+    return treatmentsAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(AppDesignTokens.spacing16),
+        child: Center(child: CircularProgressIndicator.adaptive()),
+      ),
+      error: (e, _) => Padding(
+        padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+        child: Text(
+          'Could not load treatments: $e',
+          style: const TextStyle(color: AppDesignTokens.warningFg),
+        ),
+      ),
+      data: (treatments) {
+        final aamMap =
+            aamMapAsync.valueOrNull ?? const <int, ArmTreatmentMetadataData>{};
+        final componentsMap = componentsMapAsync.valueOrNull ??
+            const <int, List<TreatmentComponent>>{};
+
+        // A treatment is "ARM-tagged" when it has an AAM row (Phase 2b
+        // writes one per parsed Treatments-sheet row, including CHK).
+        // Treatments with no AAM row are hidden from this section —
+        // they'd appear as orphan rows with blank coding, which is
+        // confusing for the user. Users still see them on the standard
+        // Treatments tab.
+        final tagged = treatments.where((t) => aamMap.containsKey(t.id)).toList();
+        if (tagged.isEmpty) {
+          return const _SectionCard(
+            icon: Icons.science_outlined,
+            title: 'Treatments',
+            iconColor: Color(0xFFC2410C),
+            children: [
+              _EmptyRowHint(text: 'No ARM Treatments sheet data for this trial.'),
+            ],
+          );
+        }
+
+        // Order by Treatments-sheet row position so on-screen order
+        // matches the sheet (Phase 2b writes `armRowSortOrder`).
+        int sortKey(Treatment t) =>
+            aamMap[t.id]?.armRowSortOrder ?? 1 << 30;
+        tagged.sort((a, b) => sortKey(a).compareTo(sortKey(b)));
+
+        return _SectionCard(
+          icon: Icons.science_outlined,
+          title: 'Treatments',
+          iconColor: const Color(0xFFC2410C),
+          children: [
+            for (final t in tagged)
+              _ArmTreatmentRow(
+                treatment: t,
+                aam: aamMap[t.id]!,
+                components: componentsMap[t.id] ?? const <TreatmentComponent>[],
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ArmTreatmentRow extends StatelessWidget {
+  const _ArmTreatmentRow({
+    required this.treatment,
+    required this.aam,
+    required this.components,
+  });
+
+  final Treatment treatment;
+  final ArmTreatmentMetadataData aam;
+  final List<TreatmentComponent> components;
+
+  @override
+  Widget build(BuildContext context) {
+    final typeCode = aam.armTypeCode;
+    final subtitle = _buildFormulationSubtitle();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignTokens.spacing16,
+        vertical: 10,
+      ),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: AppDesignTokens.divider,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFEDD5),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              treatment.code,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFC2410C),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        treatment.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppDesignTokens.primaryText,
+                        ),
+                      ),
+                    ),
+                    if (typeCode != null && typeCode.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      _MicroChip(
+                        label: typeCode,
+                        color: const Color(0xFFC2410C),
+                      ),
+                    ],
+                  ],
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Joins the first component's rate + rate unit (universal, core)
+  /// with ARM-only formulation coding (Form Conc / Unit / Type) from
+  /// AAM, skipping any piece that's null/blank. Returns null when
+  /// there's nothing to show — typical for CHK rows.
+  String? _buildFormulationSubtitle() {
+    final parts = <String>[];
+
+    if (components.isNotEmpty) {
+      final c = components.first;
+      final rate = c.rate;
+      final rateUnit = c.rateUnit;
+      if (rate != null) {
+        final rateStr = rate == rate.roundToDouble()
+            ? rate.toInt().toString()
+            : rate.toString();
+        parts.add(rateUnit != null && rateUnit.isNotEmpty
+            ? '$rateStr $rateUnit'
+            : rateStr);
+      }
+    }
+
+    final formConc = aam.formConc;
+    final formConcUnit = aam.formConcUnit;
+    if (formConc != null) {
+      final concStr = formConc == formConc.roundToDouble()
+          ? formConc.toInt().toString()
+          : formConc.toString();
+      parts.add(formConcUnit != null && formConcUnit.isNotEmpty
+          ? '$concStr $formConcUnit'
+          : concStr);
+    }
+
+    final formType = aam.formType;
+    if (formType != null && formType.isNotEmpty) {
+      parts.add(formType);
+    }
+
+    return parts.isEmpty ? null : parts.join(' • ');
   }
 }
 
