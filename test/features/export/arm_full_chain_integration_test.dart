@@ -57,6 +57,7 @@ ArmImportUseCase _makeArmImport(AppDatabase db) {
     CompatibilityProfileBuilder(),
     ArmImportPersistenceRepository(db),
     ArmImportReportBuilder(),
+    ArmColumnMappingRepository(db),
   );
 }
 

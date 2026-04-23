@@ -307,6 +307,14 @@ class ImportArmRatingShellUseCase {
               collectBasis: Value(_firstNonEmpty([first.collectBasis])),
               numSubsamples: Value(first.numSubsamples),
               pestCode: Value(_firstNonEmpty([first.pestCode])),
+              // Phase 0b-ta: per-column ARM fields live on AAM going forward.
+              // Still dual-written to trial_assessments above during the
+              // transition; readers flip to AAM in a later unit and the TA
+              // columns are dropped in v60.
+              armImportColumnIndex: Value(first.columnIndex),
+              armColumnIdInteger: Value(first.armColumnIdInteger),
+              armShellColumnId: Value(_firstNonEmpty([first.armColumnId])),
+              armShellRatingDate: Value(_firstNonEmpty([first.ratingDate])),
             ),
           ]);
 

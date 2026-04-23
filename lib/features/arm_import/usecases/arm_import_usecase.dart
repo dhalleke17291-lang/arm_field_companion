@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 
 import '../../../core/database/app_database.dart';
 import '../../../core/diagnostics/diagnostic_finding.dart';
+import '../../../data/arm/arm_column_mapping_repository.dart';
 import '../../../domain/ratings/assessment_scale_resolver.dart';
 import '../../../data/repositories/assignment_repository.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
@@ -70,6 +71,7 @@ class ArmImportUseCase {
     this._profileBuilder,
     this._persistence,
     this._reportBuilder,
+    this._armColumnMappingRepository,
   );
 
   final AppDatabase _db;
@@ -86,6 +88,7 @@ class ArmImportUseCase {
   final CompatibilityProfileBuilder _profileBuilder;
   final ArmImportPersistenceRepository _persistence;
   final ArmImportReportBuilder _reportBuilder;
+  final ArmColumnMappingRepository _armColumnMappingRepository;
 
   /// Imports from raw [content] (full CSV text). [sourceFileName] is stored on snapshot / trial ARM fields.
   Future<ArmImportResult> execute(
@@ -401,6 +404,7 @@ class ArmImportUseCase {
     required int firstAssessmentCsvColumnIndex,
   }) async {
     final linkWarnings = <String>[];
+    final aamRows = <ArmAssessmentMetadataCompanion>[];
     var sortOrder = 0;
     for (final token in parsed.assessments) {
       final key = token.assessmentKey;
@@ -413,7 +417,7 @@ class ArmImportUseCase {
         tokenCsvColumnIndex: token.columnIndex,
         firstAssessmentCsvColumnIndex: firstAssessmentCsvColumnIndex,
       );
-      await _trialAssessmentRepository.addToTrial(
+      final taId = await _trialAssessmentRepository.addToTrial(
         trialId: trialId,
         assessmentDefinitionId: defId,
         displayNameOverride: null,
@@ -426,7 +430,21 @@ class ArmImportUseCase {
         pestCode: token.armCode,
         armImportColumnIndex: shellIdx,
       );
+      // Phase 0b-ta: per-column ARM fields live on AAM going forward.
+      // The legacy CSV path only has `armImportColumnIndex` + `pestCode`
+      // to offer; shell IDs and rating-date cells come from the XLSX
+      // shell importer and are null here.
+      aamRows.add(
+        ArmAssessmentMetadataCompanion.insert(
+          trialAssessmentId: taId,
+          pestCode: Value(token.armCode),
+          armImportColumnIndex: Value(shellIdx),
+        ),
+      );
       sortOrder++;
+    }
+    if (aamRows.isNotEmpty) {
+      await _armColumnMappingRepository.insertAssessmentMetadataBulk(aamRows);
     }
     return linkWarnings;
   }

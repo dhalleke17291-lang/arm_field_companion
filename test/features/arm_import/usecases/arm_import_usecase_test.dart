@@ -1,4 +1,5 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/data/arm/arm_column_mapping_repository.dart';
 import 'package:arm_field_companion/data/repositories/assessment_definition_repository.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
@@ -52,6 +53,7 @@ ArmImportUseCase _makeUseCase(
     CompatibilityProfileBuilder(),
     persistence ?? ArmImportPersistenceRepository(db),
     ArmImportReportBuilder(),
+    ArmColumnMappingRepository(db),
   );
 }
 
@@ -610,6 +612,7 @@ void main() {
       CompatibilityProfileBuilder(),
       ArmImportPersistenceRepository(db),
       ArmImportReportBuilder(),
+      ArmColumnMappingRepository(db),
     );
     const content =
         'Plot No.,trt,reps,AVEFA 1-Jul-26 CONTRO %\n101,1,1,5\n';
@@ -653,6 +656,7 @@ void main() {
       CompatibilityProfileBuilder(),
       ArmImportPersistenceRepository(db),
       ArmImportReportBuilder(),
+      ArmColumnMappingRepository(db),
     );
 
     final unique = DateTime.now().microsecondsSinceEpoch;
@@ -694,6 +698,7 @@ void main() {
       CompatibilityProfileBuilder(),
       _ThrowOnProfileInsert(db),
       ArmImportReportBuilder(),
+      ArmColumnMappingRepository(db),
     );
 
     final unique = DateTime.now().microsecondsSinceEpoch;

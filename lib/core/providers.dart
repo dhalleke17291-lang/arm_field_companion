@@ -220,6 +220,7 @@ final armImportUseCaseProvider = Provider<ArmImportUseCase>((ref) {
     ref.watch(compatibilityProfileBuilderProvider),
     ref.watch(armImportPersistenceRepositoryProvider),
     ref.watch(armImportReportBuilderProvider),
+    ref.watch(armColumnMappingRepositoryProvider),
   );
 });
 
