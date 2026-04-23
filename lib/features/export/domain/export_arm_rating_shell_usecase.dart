@@ -79,6 +79,7 @@ class ExportArmRatingShellUseCase {
           trialAssessmentRepository: trialAssessmentRepository,
           sessionRepository: sessionRepository,
           ratingRepository: ratingRepository,
+          armColumnMappingRepository: armColumnMappingRepository,
         );
 
   final PublishTrialExportDiagnostics? _publishExportDiagnostics;
@@ -315,12 +316,27 @@ class ExportArmRatingShellUseCase {
     final parser = ArmShellParser(shellPath);
     final shellImport = await parser.parse();
 
+    // Phase 0b-ta: per-column ARM fields (armImportColumnIndex,
+    // armColumnIdInteger, …) now live on arm_assessment_metadata. Load
+    // the map once and prefer AAM's value; fall back to the TA column
+    // for legacy trials imported before the v59 backfill ran.
+    final aamRows = await _armColumnMappingRepository
+        .getAssessmentMetadatasForTrial(trial.id);
+    final aamByTaId = <int, ArmAssessmentMetadataData>{
+      for (final r in aamRows) r.trialAssessmentId: r,
+    };
+    int? armImportColumnIndexFor(TrialAssessment a) =>
+        aamByTaId[a.id]?.armImportColumnIndex ?? a.armImportColumnIndex;
+    int? armColumnIdIntegerFor(TrialAssessment a) =>
+        aamByTaId[a.id]?.armColumnIdInteger ?? a.armColumnIdInteger;
+
     final sortedAssessments = List<TrialAssessment>.from(assessments);
     final withColIdx =
-        assessments.where((a) => a.armImportColumnIndex != null).length;
+        assessments.where((a) => armImportColumnIndexFor(a) != null).length;
     if (withColIdx == assessments.length && assessments.isNotEmpty) {
       sortedAssessments.sort(
-        (a, b) => a.armImportColumnIndex!.compareTo(b.armImportColumnIndex!),
+        (a, b) =>
+            armImportColumnIndexFor(a)!.compareTo(armImportColumnIndexFor(b)!),
       );
     } else {
       if (assessments.isNotEmpty && withColIdx > 0) {
@@ -331,7 +347,8 @@ class ExportArmRatingShellUseCase {
       } else if (assessments.isNotEmpty && withColIdx == 0) {
         debugPrint(
           'ExportArmRatingShell: trial ${trial.id} has no armImportColumnIndex '
-          'on trial_assessments; using sortOrder (legacy data).',
+          'on arm_assessment_metadata or trial_assessments; using sortOrder '
+          '(legacy data).',
         );
       }
       sortedAssessments.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
@@ -459,8 +476,8 @@ class ExportArmRatingShellUseCase {
           final match = _armAssessmentMatcher.findMatchingColumn(
             assessment: identity,
             columns: effectiveColumns,
-            armImportColumnIndex: ta.armImportColumnIndex,
-            armColumnIdInteger: ta.armColumnIdInteger,
+            armImportColumnIndex: armImportColumnIndexFor(ta),
+            armColumnIdInteger: armColumnIdIntegerFor(ta),
             positionalIndex: i,
             logDebug: debugPrint,
           );
@@ -508,7 +525,10 @@ class ExportArmRatingShellUseCase {
       );
 
       final deterministic = deterministicAssessmentAnchorsExpectedForShellExport(
-        assessments: assessments,
+        assessmentAnchoredFlags: [
+          for (final a in assessments)
+            armImportColumnIndexFor(a) != null,
+        ],
         latestProfileExportConfidence: profile?.exportConfidence,
       );
       final fallbackStrict = evaluateArmRatingShellStrictBlock(

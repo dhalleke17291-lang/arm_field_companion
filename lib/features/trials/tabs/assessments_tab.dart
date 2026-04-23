@@ -76,6 +76,13 @@ class AssessmentsTab extends ConsumerWidget {
             .valueOrNull
             ?.isArmLinked ??
         false;
+    // Phase 0b-ta: per-column ARM fields (rating date, shell column id)
+    // now live on arm_assessment_metadata. Load the map once and pass
+    // the matching row to display helpers that accept an [aam] param.
+    final aamMap = ref
+            .watch(armAssessmentMetadataMapForTrialProvider(trial.id))
+            .valueOrNull ??
+        const <int, ArmAssessmentMetadataData>{};
     final config = safeConfigFromString(trial.workspaceType);
     final isStandalone = config.isStandalone;
     final isGlp = config.studyType == StudyType.glp;
@@ -199,7 +206,10 @@ class AssessmentsTab extends ConsumerWidget {
                   final displayNumber = entry.key + 1;
                   final ta = entry.value.$1;
                   final def = entry.value.$2;
-                  final dateShort = AssessmentDisplayHelper.ratingDateShort(ta);
+                  final dateShort = AssessmentDisplayHelper.ratingDateShort(
+                    ta,
+                    aam: aamMap[ta.id],
+                  );
                   final seDesc = AssessmentDisplayHelper.description(ta);
                   return Container(
                     margin:

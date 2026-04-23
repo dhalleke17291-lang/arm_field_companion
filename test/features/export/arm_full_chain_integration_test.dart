@@ -386,6 +386,7 @@ void main() {
         trialAssessmentRepository: TrialAssessmentRepository(db),
         sessionRepository: SessionRepository(db),
         ratingRepository: ratingRepo,
+        armColumnMappingRepository: ArmColumnMappingRepository(db),
       ).execute(trial: trialRow);
 
       expect(rtReport.resolvedShellSessionId, armMeta.armImportSessionId);

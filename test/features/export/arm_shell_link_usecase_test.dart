@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/trial_state.dart';
+import 'package:arm_field_companion/data/arm/arm_column_mapping_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
 import 'package:arm_field_companion/features/export/domain/arm_shell_link_usecase.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
@@ -29,6 +30,7 @@ void main() {
       TrialRepository(db),
       TrialAssessmentRepository(db),
       PlotRepository(db),
+      ArmColumnMappingRepository(db),
     );
   });
 

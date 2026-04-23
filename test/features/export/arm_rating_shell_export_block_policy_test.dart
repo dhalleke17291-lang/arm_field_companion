@@ -1,31 +1,13 @@
-import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/domain/models/arm_round_trip_diagnostics.dart';
 import 'package:arm_field_companion/features/export/domain/arm_rating_shell_export_block_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  final epoch = DateTime.utc(2020);
-
-  TrialAssessment taFixture({int? armImportColumnIndex}) => TrialAssessment(
-        id: 1,
-        trialId: 1,
-        assessmentDefinitionId: 1,
-        required: false,
-        selectedFromProtocol: false,
-        selectedManually: false,
-        defaultInSessions: true,
-        sortOrder: 0,
-        isActive: true,
-        createdAt: epoch,
-        updatedAt: epoch,
-        armImportColumnIndex: armImportColumnIndex,
-      );
-
   group('deterministicAssessmentAnchorsExpectedForShellExport', () {
     test('false when assessments empty', () {
       expect(
         deterministicAssessmentAnchorsExpectedForShellExport(
-          assessments: const [],
+          assessmentAnchoredFlags: const [],
           latestProfileExportConfidence: 'high',
         ),
         false,
@@ -35,7 +17,7 @@ void main() {
     test('false when profile confidence is not high', () {
       expect(
         deterministicAssessmentAnchorsExpectedForShellExport(
-          assessments: [taFixture(armImportColumnIndex: 2)],
+          assessmentAnchoredFlags: const [true],
           latestProfileExportConfidence: 'medium',
         ),
         false,
@@ -45,7 +27,7 @@ void main() {
     test('false when any assessment lacks armImportColumnIndex', () {
       expect(
         deterministicAssessmentAnchorsExpectedForShellExport(
-          assessments: [taFixture(armImportColumnIndex: null)],
+          assessmentAnchoredFlags: const [false],
           latestProfileExportConfidence: 'high',
         ),
         false,
@@ -55,7 +37,7 @@ void main() {
     test('true when all anchored and profile is high', () {
       expect(
         deterministicAssessmentAnchorsExpectedForShellExport(
-          assessments: [taFixture(armImportColumnIndex: 2)],
+          assessmentAnchoredFlags: const [true],
           latestProfileExportConfidence: 'high',
         ),
         true,

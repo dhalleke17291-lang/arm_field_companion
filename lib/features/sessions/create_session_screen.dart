@@ -98,6 +98,14 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     final legacyAsync = ref.watch(assessmentsForTrialProvider(widget.trial.id));
     final trialAsync = ref.watch(
         trialAssessmentsWithDefinitionsForTrialProvider(widget.trial.id));
+    // Phase 0b-ta: per-column ARM rating date lives on
+    // arm_assessment_metadata. Pull the map once; missing AAM values
+    // fall back to trial_assessments in the row builder below.
+    final aamMap = ref
+            .watch(
+                armAssessmentMetadataMapForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        const <int, ArmAssessmentMetadataData>{};
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
@@ -106,17 +114,21 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
         loading: () => const AppLoadingView(),
         error: (e, st) => Center(child: Text('Error: $e')),
         data: (legacy) => trialAsync.when(
-          loading: () => _buildForm(context, legacy, []),
-          error: (e, st) => _buildForm(context, legacy, []),
-          data: (trialPairs) => _buildForm(context, legacy, trialPairs),
+          loading: () => _buildForm(context, legacy, [], aamMap),
+          error: (e, st) => _buildForm(context, legacy, [], aamMap),
+          data: (trialPairs) => _buildForm(context, legacy, trialPairs, aamMap),
         ),
       )),
       bottomNavigationBar: _buildStartButton(context),
     );
   }
 
-  Widget _buildForm(BuildContext context, List<Assessment> legacy,
-      List<(TrialAssessment, AssessmentDefinition)> trialPairs) {
+  Widget _buildForm(
+    BuildContext context,
+    List<Assessment> legacy,
+    List<(TrialAssessment, AssessmentDefinition)> trialPairs,
+    Map<int, ArmAssessmentMetadataData> aamMap,
+  ) {
     // Exclude legacy Assessment rows already linked to a TrialAssessment
     // to avoid duplicates in the list.
     final linkedLegacyIds = <int>{
@@ -319,9 +331,14 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
                         if (def.trtEvalInterval != null &&
                             def.trtEvalInterval!.trim().isNotEmpty)
                           def.trtEvalInterval!.trim(),
-                        if (ta.armShellRatingDate != null &&
-                            ta.armShellRatingDate!.trim().isNotEmpty)
-                          ta.armShellRatingDate!.trim(),
+                        if ((aamMap[ta.id]?.armShellRatingDate ??
+                                    ta.armShellRatingDate)
+                                ?.trim()
+                                .isNotEmpty ??
+                            false)
+                          (aamMap[ta.id]?.armShellRatingDate ??
+                                  ta.armShellRatingDate)!
+                              .trim(),
                       ];
                       final contextLine = contextParts.isNotEmpty
                           ? contextParts.join(' · ')

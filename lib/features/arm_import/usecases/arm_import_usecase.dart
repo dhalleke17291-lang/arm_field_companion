@@ -537,6 +537,14 @@ class ArmImportUseCase {
     required int firstAssessmentCsvColumnIndex,
   }) async {
     final trialAssessments = await _trialAssessmentRepository.getForTrial(trialId);
+    // Phase 0b-ta: per-column ARM fields live on arm_assessment_metadata.
+    // Prefer AAM's armImportColumnIndex; fall back to trial_assessments for
+    // legacy CSV imports made before the v59 backfill ran.
+    final aamRows = await _armColumnMappingRepository
+        .getAssessmentMetadatasForTrial(trialId);
+    final aamByTaId = <int, ArmAssessmentMetadataData>{
+      for (final r in aamRows) r.trialAssessmentId: r,
+    };
     final out = <int, int>{};
     for (final token in parsed.assessments) {
       final key = token.assessmentKey;
@@ -548,8 +556,9 @@ class ArmImportUseCase {
       );
       TrialAssessment? trialAssess;
       for (final t in trialAssessments) {
-        if (t.assessmentDefinitionId == defId &&
-            t.armImportColumnIndex == shellIdx) {
+        final taIdx =
+            aamByTaId[t.id]?.armImportColumnIndex ?? t.armImportColumnIndex;
+        if (t.assessmentDefinitionId == defId && taIdx == shellIdx) {
           trialAssess = t;
           break;
         }

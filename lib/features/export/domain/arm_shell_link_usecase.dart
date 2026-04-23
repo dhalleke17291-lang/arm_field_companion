@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../core/database/app_database.dart';
+import '../../../data/arm/arm_column_mapping_repository.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/services/shell_storage_service.dart';
 import '../../trials/trial_repository.dart';
@@ -61,12 +62,14 @@ class ArmShellLinkUseCase {
     this._trialRepository,
     this._trialAssessmentRepository,
     this._plotRepository,
+    this._armColumnMappingRepository,
   );
 
   final AppDatabase _db;
   final TrialRepository _trialRepository;
   final TrialAssessmentRepository _trialAssessmentRepository;
   final PlotRepository _plotRepository;
+  final ArmColumnMappingRepository _armColumnMappingRepository;
 
   static const ArmAssessmentMatcher _matcher = ArmAssessmentMatcher();
 
@@ -370,12 +373,26 @@ class ArmShellLinkUseCase {
     final assessments = await _trialAssessmentRepository.getForTrial(trialId);
     final defById = await _loadDefinitions(assessments);
 
+    // Phase 0b-ta: per-column ARM fields now live on
+    // arm_assessment_metadata. Prefer AAM; fall back to TA for legacy
+    // trials imported before the v59 backfill ran.
+    final aamRows = await _armColumnMappingRepository
+        .getAssessmentMetadatasForTrial(trialId);
+    final aamByTaId = <int, ArmAssessmentMetadataData>{
+      for (final r in aamRows) r.trialAssessmentId: r,
+    };
+    int? armImportColumnIndexFor(TrialAssessment a) =>
+        aamByTaId[a.id]?.armImportColumnIndex ?? a.armImportColumnIndex;
+    int? armColumnIdIntegerFor(TrialAssessment a) =>
+        aamByTaId[a.id]?.armColumnIdInteger ?? a.armColumnIdInteger;
+
     final sortedAssessments = List<TrialAssessment>.from(assessments);
     final withColIdx =
-        assessments.where((a) => a.armImportColumnIndex != null).length;
+        assessments.where((a) => armImportColumnIndexFor(a) != null).length;
     if (withColIdx == assessments.length && assessments.isNotEmpty) {
       sortedAssessments.sort(
-        (a, b) => a.armImportColumnIndex!.compareTo(b.armImportColumnIndex!),
+        (a, b) =>
+            armImportColumnIndexFor(a)!.compareTo(armImportColumnIndexFor(b)!),
       );
     } else {
       sortedAssessments.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
@@ -395,8 +412,8 @@ class ArmShellLinkUseCase {
       final match = _matcher.findMatchingColumn(
         assessment: identity,
         columns: effectiveColumns,
-        armImportColumnIndex: ta.armImportColumnIndex,
-        armColumnIdInteger: ta.armColumnIdInteger,
+        armImportColumnIndex: armImportColumnIndexFor(ta),
+        armColumnIdInteger: armColumnIdIntegerFor(ta),
         positionalIndex: i,
       );
       final col = match.column;
@@ -405,7 +422,7 @@ class ArmShellLinkUseCase {
           ShellUnmatchedTrialAssessment(
             trialAssessmentId: ta.id,
             pestCode: ta.pestCode,
-            armImportColumnIndex: ta.armImportColumnIndex,
+            armImportColumnIndex: armImportColumnIndexFor(ta),
           ),
         );
         continue;
@@ -418,7 +435,7 @@ class ArmShellLinkUseCase {
           assessmentFieldChanges,
           trialAssessmentId: ta.id,
           fieldName: 'arm_column_id_integer',
-          currentDb: ta.armColumnIdInteger?.toString(),
+          currentDb: armColumnIdIntegerFor(ta)?.toString(),
           shellRaw: col.armColumnIdInteger.toString(),
         );
       }
@@ -449,18 +466,19 @@ class ArmShellLinkUseCase {
         }
       }
 
+      final aamForTa = aamByTaId[ta.id];
       _proposeShellTaField(
         assessmentFieldChanges,
         trialAssessmentId: ta.id,
         fieldName: 'arm_shell_column_id',
-        currentDb: ta.armShellColumnId,
+        currentDb: aamForTa?.armShellColumnId ?? ta.armShellColumnId,
         shellRaw: col.armColumnId,
       );
       _proposeShellTaField(
         assessmentFieldChanges,
         trialAssessmentId: ta.id,
         fieldName: 'arm_shell_rating_date',
-        currentDb: ta.armShellRatingDate,
+        currentDb: aamForTa?.armShellRatingDate ?? ta.armShellRatingDate,
         shellRaw: col.ratingDate,
       );
       _proposeShellTaField(

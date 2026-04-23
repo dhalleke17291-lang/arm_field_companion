@@ -1,20 +1,22 @@
-import '../../../core/database/app_database.dart';
 import '../../../domain/models/arm_round_trip_diagnostics.dart';
 
 /// True when shell export is expected to resolve assessment columns from ARM
-/// anchors, not positional guesswork: every [TrialAssessment] has
-/// [TrialAssessment.armImportColumnIndex] and the latest compatibility profile
-/// records high import confidence (`exportConfidence == 'high'` on the profile).
+/// anchors, not positional guesswork: every trial assessment has an
+/// `armImportColumnIndex` (on `arm_assessment_metadata`, falling back to
+/// `trial_assessments` during the Phase 0b-ta transition) and the latest
+/// compatibility profile records high import confidence
+/// (`exportConfidence == 'high'` on the profile).
 ///
 /// Used for Phase 3 strict blocking when [ExportArmRatingShellUseCase] still
-/// relies on positional column matching for one or more assessments.
+/// relies on positional column matching for one or more assessments. Callers
+/// pass the already-resolved anchoredness flags so this helper stays
+/// database-agnostic.
 bool deterministicAssessmentAnchorsExpectedForShellExport({
-  required List<TrialAssessment> assessments,
+  required List<bool> assessmentAnchoredFlags,
   required String? latestProfileExportConfidence,
 }) {
-  if (assessments.isEmpty) return false;
-  final allAnchored =
-      assessments.every((a) => a.armImportColumnIndex != null);
+  if (assessmentAnchoredFlags.isEmpty) return false;
+  final allAnchored = assessmentAnchoredFlags.every((v) => v);
   final highConfidence = latestProfileExportConfidence == 'high';
   return allAnchored && highConfidence;
 }

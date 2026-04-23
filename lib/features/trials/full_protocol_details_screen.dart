@@ -23,6 +23,12 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
         trialAssessmentsWithDefinitionsForTrialProvider(trial.id));
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final assignmentsAsync = ref.watch(assignmentsForTrialProvider(trial.id));
+    // Phase 0b-ta: per-column ARM fields (rating date) now live on
+    // arm_assessment_metadata. Pull the map once for the whole screen.
+    final aamMap = ref
+            .watch(armAssessmentMetadataMapForTrialProvider(trial.id))
+            .valueOrNull ??
+        const <int, ArmAssessmentMetadataData>{};
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
@@ -100,7 +106,10 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
                         final ta = pair.$1;
                         final def = pair.$2;
                         final dateShort =
-                            AssessmentDisplayHelper.ratingDateShort(ta);
+                            AssessmentDisplayHelper.ratingDateShort(
+                          ta,
+                          aam: aamMap[ta.id],
+                        );
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 6),
                           child: Row(

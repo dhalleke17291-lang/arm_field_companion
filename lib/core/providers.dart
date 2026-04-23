@@ -267,6 +267,20 @@ final armSessionMetadataProvider =
       .getSessionMetadata(sessionId);
 });
 
+/// Map of `trialAssessmentId → ArmAssessmentMetadataData` for an ARM-linked
+/// trial. Used by the ARM Protocol tab to read the per-column ARM fields
+/// (column IDs, rating dates, SE codes) from `arm_assessment_metadata`
+/// rather than `trial_assessments`, so per-column ARM data can live on
+/// the extension table. See docs/ARM_SEPARATION.md.
+final armAssessmentMetadataMapForTrialProvider =
+    FutureProvider.family<Map<int, ArmAssessmentMetadataData>, int>(
+        (ref, trialId) async {
+  final rows = await ref
+      .watch(armColumnMappingRepositoryProvider)
+      .getAssessmentMetadatasForTrial(trialId);
+  return {for (final r in rows) r.trialAssessmentId: r};
+});
+
 final importArmRatingShellUseCaseProvider =
     Provider<ImportArmRatingShellUseCase>((ref) {
   return ImportArmRatingShellUseCase(
@@ -1303,6 +1317,7 @@ final armShellLinkUseCaseProvider = Provider<ArmShellLinkUseCase>((ref) {
     ref.watch(trialRepositoryProvider),
     ref.watch(trialAssessmentRepositoryProvider),
     ref.watch(plotRepositoryProvider),
+    ref.watch(armColumnMappingRepositoryProvider),
   );
 });
 
@@ -1314,6 +1329,7 @@ final computeArmRoundTripDiagnosticsUseCaseProvider =
     trialAssessmentRepository: ref.watch(trialAssessmentRepositoryProvider),
     sessionRepository: ref.watch(sessionRepositoryProvider),
     ratingRepository: ref.watch(ratingRepositoryProvider),
+    armColumnMappingRepository: ref.watch(armColumnMappingRepositoryProvider),
   );
 });
 

@@ -49,6 +49,11 @@ const _allowList = <String>{
   // not used on the standalone path.
   'lib/features/export/domain/export_arm_rating_shell_usecase.dart',
   'lib/features/export/usecases/arm_export_preflight_usecase.dart',
+  // Phase 0b-ta additions — both read ARM per-column metadata via the
+  // column-mapping repository instead of trial_assessments. Same
+  // "ARM usecase under features/export/" category as the two above.
+  'lib/features/export/domain/arm_shell_link_usecase.dart',
+  'lib/features/export/domain/compute_arm_round_trip_diagnostics_usecase.dart',
 
   // Generic export usecases that currently reach into ARM persistence for
   // "is this trial ARM-linked?" context. Phase 0b will replace those reads

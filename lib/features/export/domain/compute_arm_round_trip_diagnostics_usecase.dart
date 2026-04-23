@@ -1,5 +1,6 @@
 import '../../../core/database/app_database.dart';
 import '../../../core/diagnostics/diagnostic_finding.dart';
+import '../../../data/arm/arm_column_mapping_repository.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../domain/models/arm_round_trip_diagnostics.dart';
 import '../../../domain/ratings/result_status.dart';
@@ -18,17 +19,20 @@ class ComputeArmRoundTripDiagnosticsUseCase {
     required TrialAssessmentRepository trialAssessmentRepository,
     required SessionRepository sessionRepository,
     required RatingRepository ratingRepository,
+    required ArmColumnMappingRepository armColumnMappingRepository,
   })  : _db = db,
         _plotRepository = plotRepository,
         _trialAssessmentRepository = trialAssessmentRepository,
         _sessionRepository = sessionRepository,
-        _ratingRepository = ratingRepository;
+        _ratingRepository = ratingRepository,
+        _armColumnMappingRepository = armColumnMappingRepository;
 
   final AppDatabase _db;
   final PlotRepository _plotRepository;
   final TrialAssessmentRepository _trialAssessmentRepository;
   final SessionRepository _sessionRepository;
   final RatingRepository _ratingRepository;
+  final ArmColumnMappingRepository _armColumnMappingRepository;
 
   /// When [plots] / [assessments] are omitted, they are loaded from repositories.
   Future<ArmRoundTripDiagnosticReport> execute({
@@ -51,13 +55,21 @@ class ComputeArmRoundTripDiagnosticsUseCase {
     final assessmentList =
         assessments ?? await _trialAssessmentRepository.getForTrial(trial.id);
 
+    // Phase 0b-ta: per-column ARM fields live on arm_assessment_metadata.
+    // Pre-load and pass to the rules that need them.
+    final aamRows = await _armColumnMappingRepository
+        .getAssessmentMetadatasForTrial(trial.id);
+    final aamByTaId = <int, ArmAssessmentMetadataData>{
+      for (final r in aamRows) r.trialAssessmentId: r,
+    };
+
     final resolved =
         await _sessionRepository.resolveSessionIdForRatingShell(trial);
 
     final out = <ArmRoundTripDiagnostic>[];
 
     _applyPlotRules(plotList, trial.id, out);
-    _applyAssessmentColumnRules(assessmentList, trial.id, out);
+    _applyAssessmentColumnRules(assessmentList, aamByTaId, trial.id, out);
     await _applySessionAndRatingRules(trial, arm, resolved, plotList, out);
 
     return ArmRoundTripDiagnosticReport(
@@ -128,11 +140,14 @@ class ComputeArmRoundTripDiagnosticsUseCase {
 
   void _applyAssessmentColumnRules(
     List<TrialAssessment> assessments,
+    Map<int, ArmAssessmentMetadataData> aamByTaId,
     int trialId,
     List<ArmRoundTripDiagnostic> out,
   ) {
-    final missingIdx =
-        assessments.where((a) => a.armImportColumnIndex == null).toList();
+    int? armIdx(TrialAssessment a) =>
+        aamByTaId[a.id]?.armImportColumnIndex ?? a.armImportColumnIndex;
+
+    final missingIdx = assessments.where((a) => armIdx(a) == null).toList();
     if (missingIdx.isNotEmpty) {
       final ids = missingIdx.map((a) => a.id).toList()..sort();
       out.add(
@@ -149,7 +164,7 @@ class ComputeArmRoundTripDiagnosticsUseCase {
 
     final byCol = <int, List<TrialAssessment>>{};
     for (final a in assessments) {
-      final c = a.armImportColumnIndex;
+      final c = armIdx(a);
       if (c == null) continue;
       byCol.putIfAbsent(c, () => []).add(a);
     }

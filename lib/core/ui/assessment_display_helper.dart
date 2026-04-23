@@ -110,9 +110,17 @@ class AssessmentDisplayHelper {
     return _nonShellFallback(ta, def, fallback: fallback);
   }
 
-  /// Rating date: "Apr 2" format, or null
-  static String? ratingDateShort(TrialAssessment ta) {
-    final raw = ta.armShellRatingDate?.trim();
+  /// Rating date: "Apr 2" format, or null.
+  ///
+  /// Phase 0b-ta: prefer [ArmAssessmentMetadataData.armShellRatingDate] when
+  /// [aam] is provided (new home), falling back to
+  /// [TrialAssessment.armShellRatingDate] for legacy trials imported
+  /// before the v59 backfill ran.
+  static String? ratingDateShort(
+    TrialAssessment ta, {
+    ArmAssessmentMetadataData? aam,
+  }) {
+    final raw = (aam?.armShellRatingDate ?? ta.armShellRatingDate)?.trim();
     if (raw == null || raw.isEmpty) return null;
     final dt = _parseShellRatingDate(raw);
     if (dt == null) return null;
