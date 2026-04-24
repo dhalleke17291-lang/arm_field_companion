@@ -2013,9 +2013,8 @@ final trialInsightsProvider = FutureProvider.autoDispose
   final assessmentNames = <int, String>{
     for (final pair in assessmentPairs)
       if (pair.$1.legacyAssessmentId != null)
-        pair.$1.legacyAssessmentId!: pair.$2.name.trim().isNotEmpty
-            ? pair.$2.name.trim()
-            : 'Assessment ${pair.$1.sortOrder + 1}',
+        pair.$1.legacyAssessmentId!: _cleanAssessmentName(
+            pair.$2.name, pair.$1.sortOrder),
   };
   return ref
       .watch(trialIntelligenceServiceProvider)
@@ -2024,3 +2023,11 @@ final trialInsightsProvider = FutureProvider.autoDispose
           treatments: treatments,
           assessmentNames: assessmentNames);
 });
+
+String _cleanAssessmentName(String raw, int sortOrder) {
+  final cleaned = raw
+      .replaceAll(RegExp(r'\(\s*\)'), '')
+      .replaceAll(RegExp(r'—\s*TA\d+'), '')
+      .trim();
+  return cleaned.isNotEmpty ? cleaned : 'Assessment ${sortOrder + 1}';
+}

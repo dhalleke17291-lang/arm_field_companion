@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'backup_audit_preferences.dart';
 import 'backup_passphrase_store.dart';
+import 'backup_reminder_store.dart';
 import 'backup_service.dart';
 
 /// Silently creates a local backup after session close.
@@ -83,6 +84,7 @@ class AutoBackupService {
       final dest = File(
           '${dir.path}/${backup.uri.pathSegments.last}');
       await backup.copy(dest.path);
+      await BackupReminderStore(prefs).recordBackupCompleted();
 
       await _pruneOldBackups(dir);
     } catch (_) {
