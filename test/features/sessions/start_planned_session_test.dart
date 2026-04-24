@@ -111,6 +111,25 @@ void main() {
       expect(row?.status, kSessionStatusPlanned);
     });
 
+    test('writes cropStageBbch to session row when provided', () async {
+      final sessionId = await insertPlannedSession(date: '2026-04-02');
+
+      final started = await sessionRepo.startPlannedSession(
+        sessionId,
+        cropStageBbch: 65,
+      );
+
+      expect(started.cropStageBbch, 65);
+    });
+
+    test('leaves cropStageBbch null when not provided', () async {
+      final sessionId = await insertPlannedSession(date: '2026-04-02');
+
+      final started = await sessionRepo.startPlannedSession(sessionId);
+
+      expect(started.cropStageBbch, isNull);
+    });
+
     test('rejects non-planned sessions', () async {
       final openId = await db.into(db.sessions).insert(
             SessionsCompanion.insert(

@@ -3686,11 +3686,16 @@ class SessionsView extends ConsumerWidget {
     try {
       final user = await ref.read(currentUserProvider.future);
       final userId = await ref.read(currentUserIdProvider.future);
+      final armMeta =
+          ref.read(armSessionMetadataProvider(session.id)).valueOrNull;
+      final cropStageBbch =
+          int.tryParse(armMeta?.cropStageMaj?.trim() ?? '');
       final started =
           await ref.read(sessionRepositoryProvider).startPlannedSession(
                 session.id,
                 raterName: user?.displayName,
                 startedByUserId: userId,
+                cropStageBbch: cropStageBbch,
               );
       if (!context.mounted) return;
       ref.invalidate(sessionsForTrialProvider(trial.id));

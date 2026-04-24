@@ -90,6 +90,7 @@ class _MockSessionRepository implements SessionRepository {
     int sessionId, {
     String? raterName,
     int? startedByUserId,
+    int? cropStageBbch,
   }) async =>
       throw UnimplementedError();
 

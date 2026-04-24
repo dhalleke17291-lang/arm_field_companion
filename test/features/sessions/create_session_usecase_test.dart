@@ -86,7 +86,7 @@ class MockSessionRepository implements SessionRepository {
 
   @override
   Future<Session> startPlannedSession(int sessionId,
-          {String? raterName, int? startedByUserId}) async =>
+          {String? raterName, int? startedByUserId, int? cropStageBbch}) async =>
       throw UnimplementedError();
 
   @override

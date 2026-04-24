@@ -291,6 +291,14 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       final last = prefs.getString(_kLastRaterNameKey);
       if (last != null && last.trim().isNotEmpty) {
         setState(() => _raterName = last.trim());
+      } else {
+        // Fall back to the ARM-specified rater on the session (set by the
+        // importer from the shell's assessedBy field) when no personal
+        // preference has been stored yet.
+        final sessionRater = widget.session.raterName?.trim();
+        if (sessionRater != null && sessionRater.isNotEmpty) {
+          setState(() => _raterName = sessionRater);
+        }
       }
       final mode = SessionWalkOrderStore(prefs).getMode(widget.session.id);
       if (mounted) setState(() => _walkOrderMode = mode);

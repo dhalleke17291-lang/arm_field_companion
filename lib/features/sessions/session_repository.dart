@@ -157,6 +157,7 @@ class SessionRepository {
     int sessionId, {
     String? raterName,
     int? startedByUserId,
+    int? cropStageBbch,
   }) async {
     return _db.transaction(() async {
       final session = await (_db.select(_db.sessions)
@@ -179,6 +180,8 @@ class SessionRepository {
           .write(SessionsCompanion(
         status: const Value(kSessionStatusOpen),
         startedAt: Value(now),
+        cropStageBbch:
+            cropStageBbch != null ? Value(cropStageBbch) : const Value.absent(),
       ));
 
       await _db.into(_db.auditEvents).insert(
