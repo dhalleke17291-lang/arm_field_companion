@@ -303,6 +303,16 @@ class ArmTreatmentsSection extends ConsumerWidget {
             aamMap[t.id]?.armRowSortOrder ?? 1 << 30;
         tagged.sort((a, b) => sortKey(a).compareTo(sortKey(b)));
 
+        // Color each treatment's code chip using the same palette and index
+        // scheme as the RCBD randomized grid (Plots tab). Index is position in
+        // the full treatments list (ordered by code) so the same treatment
+        // shows the same color in every view.
+        final colorById = <int, Color>{
+          for (var i = 0; i < treatments.length; i++)
+            treatments[i].id: AppDesignTokens
+                .treatmentPalette[i % AppDesignTokens.treatmentPalette.length],
+        };
+
         return _SectionCard(
           icon: Icons.science_outlined,
           title: 'Treatments',
@@ -313,6 +323,7 @@ class ArmTreatmentsSection extends ConsumerWidget {
                 treatment: t,
                 aam: aamMap[t.id]!,
                 components: componentsMap[t.id] ?? const <TreatmentComponent>[],
+                tileColor: colorById[t.id] ?? AppDesignTokens.primary,
               ),
           ],
         );
@@ -326,11 +337,13 @@ class _ArmTreatmentRow extends StatelessWidget {
     required this.treatment,
     required this.aam,
     required this.components,
+    required this.tileColor,
   });
 
   final Treatment treatment;
   final ArmTreatmentMetadataData aam;
   final List<TreatmentComponent> components;
+  final Color tileColor;
 
   @override
   Widget build(BuildContext context) {
@@ -358,15 +371,15 @@ class _ArmTreatmentRow extends StatelessWidget {
             height: 32,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: const Color(0xFFFFEDD5),
+              color: tileColor,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               treatment.code,
               style: const TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFFC2410C),
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
               ),
             ),
           ),
