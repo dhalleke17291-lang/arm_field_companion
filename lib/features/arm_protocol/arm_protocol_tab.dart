@@ -148,8 +148,6 @@ class _ImportSummaryCard extends StatelessWidget {
       title: 'ARM Import',
       iconColor: AppDesignTokens.primary,
       children: [
-        if (meta.armSourceFile != null)
-          _InfoRow(label: 'Source file', value: meta.armSourceFile!),
         if (meta.armVersion != null)
           _InfoRow(label: 'ARM version', value: meta.armVersion!),
         if (importedAtStr != null)
@@ -188,12 +186,6 @@ class _ShellLinkCard extends StatelessWidget {
       iconColor: const Color(0xFF0369A1),
       children: [
         if (shellName != null) _InfoRow(label: 'Linked file', value: shellName),
-        if (meta.armLinkedShellPath != null)
-          _InfoRow(
-            label: 'Full path',
-            value: meta.armLinkedShellPath!,
-            muted: true,
-          ),
         if (linkedAtStr != null)
           _InfoRow(label: 'Linked on', value: linkedAtStr),
       ],
@@ -692,7 +684,25 @@ class _ArmAssessmentsSection extends ConsumerWidget {
         final sessionMetaMap = sessionMetaAsync.valueOrNull ??
             const <int, ArmSessionMetadataData>{};
 
-        if (mappings.isEmpty) {
+        // Orphan columns (null trialAssessmentId) are preserved in the DB for
+        // export round-trip but must never surface in the UI — they have no
+        // assessment identity, only structural ARM column metadata.
+        // Sort by session date ASC then by shell column index so the list
+        // matches the protocol schedule (earliest timing first).
+        final visibleMappings =
+            mappings.where((m) => m.trialAssessmentId != null).toList()
+              ..sort((a, b) {
+                final dateA = a.sessionId != null
+                    ? (sessionById[a.sessionId!]?.sessionDateLocal ?? '')
+                    : '';
+                final dateB = b.sessionId != null
+                    ? (sessionById[b.sessionId!]?.sessionDateLocal ?? '')
+                    : '';
+                final cmp = dateA.compareTo(dateB);
+                return cmp != 0 ? cmp : a.armColumnIndex.compareTo(b.armColumnIndex);
+              });
+
+        if (visibleMappings.isEmpty) {
           return const _SectionCard(
             icon: Icons.assessment_outlined,
             title: 'ARM Assessments',
@@ -708,18 +718,21 @@ class _ArmAssessmentsSection extends ConsumerWidget {
           title: 'ARM Assessments',
           iconColor: const Color(0xFF7C3AED),
           children: [
-            for (final m in mappings)
+            for (final entry in visibleMappings.asMap().entries)
               _ArmAssessmentRow(
-                mapping: m,
-                pair: m.trialAssessmentId != null
-                    ? pairById[m.trialAssessmentId!]
+                displayIndex: entry.key + 1,
+                mapping: entry.value,
+                pair: entry.value.trialAssessmentId != null
+                    ? pairById[entry.value.trialAssessmentId!]
                     : null,
-                aam: m.trialAssessmentId != null
-                    ? aamMap[m.trialAssessmentId!]
+                aam: entry.value.trialAssessmentId != null
+                    ? aamMap[entry.value.trialAssessmentId!]
                     : null,
-                session: m.sessionId != null ? sessionById[m.sessionId!] : null,
-                sessionMeta: m.sessionId != null
-                    ? sessionMetaMap[m.sessionId!]
+                session: entry.value.sessionId != null
+                    ? sessionById[entry.value.sessionId!]
+                    : null,
+                sessionMeta: entry.value.sessionId != null
+                    ? sessionMetaMap[entry.value.sessionId!]
                     : null,
               ),
           ],
@@ -731,6 +744,7 @@ class _ArmAssessmentsSection extends ConsumerWidget {
 
 class _ArmAssessmentRow extends StatelessWidget {
   const _ArmAssessmentRow({
+    required this.displayIndex,
     required this.mapping,
     required this.pair,
     required this.aam,
@@ -738,6 +752,7 @@ class _ArmAssessmentRow extends StatelessWidget {
     required this.sessionMeta,
   });
 
+  final int displayIndex;
   final ArmColumnMapping mapping;
   final (TrialAssessment, AssessmentDefinition)? pair;
   final ArmAssessmentMetadataData? aam;
@@ -752,10 +767,6 @@ class _ArmAssessmentRow extends StatelessWidget {
         ? ta!.displayNameOverride!
         : def?.name ?? 'Orphan column';
 
-    // Per-column identifiers from the mapping itself — these vary across rows
-    // even when the identity (AAM) is shared.
-    final colIdx = mapping.armColumnIndex;
-    final columnId = mapping.armColumnId;
     // Per-date fields come from the session's ARM metadata when available,
     // falling back to the AAM snapshot of the first column for shells that
     // pre-date the session-metadata split.
@@ -763,18 +774,10 @@ class _ArmAssessmentRow extends StatelessWidget {
         session?.sessionDateLocal ?? aam?.armShellRatingDate;
     final timingCode =
         sessionMeta?.timingCode ?? aam?.shellAppTimingCode;
-    final cropStageMaj =
-        sessionMeta?.cropStageMaj ?? aam?.shellCropStageMaj;
-    final cropStageMin =
-        sessionMeta?.cropStageMin ?? aam?.shellCropStageMin;
-    final cropStageScale =
-        sessionMeta?.cropStageScale ?? aam?.shellStageScale;
     final trtEvalInterval =
         sessionMeta?.trtEvalInterval ?? aam?.shellTrtEvalInterval;
     final plantEvalInterval =
         sessionMeta?.plantEvalInterval ?? aam?.shellPlantEvalInterval;
-    final assessedBy =
-        sessionMeta?.raterInitials ?? aam?.shellAssessedBy;
     // Identity fields (shared across every column in the dedup group) come
     // from AAM.
     final seName = aam?.seName;
@@ -782,65 +785,21 @@ class _ArmAssessmentRow extends StatelessWidget {
 
     final m = aam;
     final detailParts = <String>[
-      if (m != null) ...[
-        if (m.seDescription != null &&
-            m.seDescription!.trim().isNotEmpty &&
-            m.seDescription!.trim() != name.trim())
-          m.seDescription!,
-        if (m.partRated != null && m.partRated!.isNotEmpty)
-          'Part: ${m.partRated}',
-        if (m.ratingUnit != null && m.ratingUnit!.isNotEmpty)
-          'Unit: ${m.ratingUnit}',
-        if (m.collectBasis != null && m.collectBasis!.isNotEmpty)
-          'Collect: ${m.collectBasis}',
-        if (m.shellSizeUnit != null && m.shellSizeUnit!.isNotEmpty)
-          'Size unit: ${m.shellSizeUnit}',
-        if (m.shellSampleSize != null && m.shellSampleSize!.isNotEmpty)
-          'Sample size: ${m.shellSampleSize}',
-        if (m.numSubsamples != null) '# subsamples: ${m.numSubsamples}',
-        if (m.shellCollectionBasisUnit != null &&
-            m.shellCollectionBasisUnit!.trim().isNotEmpty)
-          'Coll. basis unit: ${m.shellCollectionBasisUnit}',
-        if (m.shellCropOrPest != null &&
-            m.shellCropOrPest!.trim().isNotEmpty)
-          'Crop/Pest: ${m.shellCropOrPest}',
-        if (m.shellRatingTime != null &&
-            m.shellRatingTime!.trim().isNotEmpty)
-          'Rating time: ${m.shellRatingTime}',
-        if (m.shellPestType != null && m.shellPestType!.trim().isNotEmpty)
-          'Pest type: ${m.shellPestType}',
-        if (m.shellPestName != null && m.shellPestName!.trim().isNotEmpty)
-          'Pest: ${m.shellPestName}',
-        if (m.shellReportingBasis != null &&
-                m.shellReportingBasis!.trim().isNotEmpty ||
-            m.shellReportingBasisUnit != null &&
-                m.shellReportingBasisUnit!.trim().isNotEmpty)
-          'Report: ${[
-            if (m.shellReportingBasis != null &&
-                m.shellReportingBasis!.trim().isNotEmpty)
-              m.shellReportingBasis!,
-            if (m.shellReportingBasisUnit != null &&
-                m.shellReportingBasisUnit!.trim().isNotEmpty)
-              m.shellReportingBasisUnit!,
-          ].join(' ')}',
-      ],
-      // Per-date details now live outside the AAM block.
-      if (cropStageScale != null && cropStageScale.trim().isNotEmpty)
-        'Stage scale: $cropStageScale',
-      if ((cropStageMaj != null && cropStageMaj.trim().isNotEmpty) ||
-          (cropStageMin != null && cropStageMin.trim().isNotEmpty))
-        'Crop stage: ${[
-          if (cropStageMaj != null && cropStageMaj.trim().isNotEmpty)
-            cropStageMaj,
-          if (cropStageMin != null && cropStageMin.trim().isNotEmpty)
-            cropStageMin,
-        ].join('–')}',
+      if (m != null && m.partRated != null && m.partRated!.trim().isNotEmpty)
+        m.partRated!.trim(),
+      if (m != null && m.ratingUnit != null && m.ratingUnit!.trim().isNotEmpty)
+        m.ratingUnit!.trim(),
       if (trtEvalInterval != null && trtEvalInterval.trim().isNotEmpty)
-        'Trt interval: $trtEvalInterval',
+        trtEvalInterval.trim(),
       if (plantEvalInterval != null && plantEvalInterval.trim().isNotEmpty)
-        'Plant interval: $plantEvalInterval',
-      if (assessedBy != null && assessedBy.trim().isNotEmpty)
-        'Assessed by: $assessedBy',
+        plantEvalInterval.trim(),
+      if (m != null &&
+          m.shellSampleSize != null &&
+          m.shellSampleSize!.trim().isNotEmpty &&
+          m.shellSampleSize!.trim() != '1')
+        m.shellSampleSize!.trim(),
+      if (m != null && m.numSubsamples != null && m.numSubsamples! > 1)
+        '${m.numSubsamples} subsamples',
     ];
 
     return Container(
@@ -868,7 +827,7 @@ class _ArmAssessmentRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              '$colIdx',
+              '$displayIndex',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -894,7 +853,6 @@ class _ArmAssessmentRow extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 2,
                   children: [
-                    _MicroChip(label: columnId, color: const Color(0xFF7C3AED)),
                     if (ratingDate != null)
                       _MicroChip(
                         label: ratingDate,
@@ -1061,15 +1019,10 @@ class _CardHeader extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    this.muted = false,
-  });
+  const _InfoRow({required this.label, required this.value});
 
   final String label;
   final String value;
-  final bool muted;
 
   @override
   Widget build(BuildContext context) {
@@ -1100,11 +1053,9 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 13,
-                color: muted
-                    ? AppDesignTokens.secondaryText
-                    : AppDesignTokens.primaryText,
+                color: AppDesignTokens.primaryText,
               ),
             ),
           ),

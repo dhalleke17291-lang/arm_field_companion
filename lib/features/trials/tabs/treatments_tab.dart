@@ -16,7 +16,9 @@ import 'add_treatment_sheet.dart';
 
 /// Builds a single-line formula string for a treatment from its components (paper-protocol style).
 /// Includes formulation type when present (e.g. "Headline SC 1.0 L/ha").
-String buildTreatmentFormula(List<TreatmentComponent> components) {
+/// Pass [aam] for ARM-linked trials to append formulation concentration and form type.
+String buildTreatmentFormula(List<TreatmentComponent> components,
+    {ArmTreatmentMetadataData? aam}) {
   if (components.isEmpty) return 'No products added yet';
   String one(TreatmentComponent c) {
     final parts = <String>[
@@ -27,6 +29,20 @@ String buildTreatmentFormula(List<TreatmentComponent> components) {
       if (c.rateUnit != null && c.rateUnit!.trim().isNotEmpty)
         c.rateUnit!.trim(),
     ];
+    if (aam != null) {
+      final formConc = aam.formConc;
+      final formConcUnit = aam.formConcUnit;
+      if (formConc != null) {
+        final concStr = formConc == formConc.roundToDouble()
+            ? formConc.toInt().toString()
+            : formConc.toString();
+        parts.add(formConcUnit != null && formConcUnit.isNotEmpty
+            ? '$concStr $formConcUnit'
+            : concStr);
+      }
+      final formType = aam.formType;
+      if (formType != null && formType.isNotEmpty) parts.add(formType);
+    }
     return parts.where((s) => s.isNotEmpty).join(' ');
   }
 
@@ -62,7 +78,8 @@ Future<bool> _treatmentHasApplications(WidgetRef ref, int treatmentId) async {
 }
 
 /// One line per component for the compact treatments list.
-String _componentOneLine(TreatmentComponent c) {
+/// Pass [aam] for ARM-linked trials to append formConc, formConcUnit, formType.
+String _componentOneLine(TreatmentComponent c, {ArmTreatmentMetadataData? aam}) {
   final parts = <String>[];
   final pn = c.productName.trim();
   if (pn.isNotEmpty) parts.add(pn);
@@ -76,6 +93,20 @@ String _componentOneLine(TreatmentComponent c) {
   }
   final ft = c.formulationType?.trim();
   if (ft != null && ft.isNotEmpty) parts.add(ft);
+  if (aam != null) {
+    final formConc = aam.formConc;
+    final formConcUnit = aam.formConcUnit;
+    if (formConc != null) {
+      final concStr = formConc == formConc.roundToDouble()
+          ? formConc.toInt().toString()
+          : formConc.toString();
+      parts.add(formConcUnit != null && formConcUnit.isNotEmpty
+          ? '$concStr $formConcUnit'
+          : concStr);
+    }
+    final formType = aam.formType;
+    if (formType != null && formType.isNotEmpty) parts.add(formType);
+  }
   return parts.isEmpty ? '—' : parts.join(' · ');
 }
 
@@ -684,6 +715,9 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
                 (trialId, treatment.id)))
             .valueOrNull ??
         const <String>[];
+    final aam = ref
+        .watch(armTreatmentMetadataMapForTrialProvider(trialId))
+        .valueOrNull?[treatment.id];
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
@@ -698,18 +732,21 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
           ref,
           components: null,
           applicationSummaries: applicationSummaries,
+          aam: aam,
         ),
         error: (_, __) => _buildBody(
           context,
           ref,
           components: null,
           applicationSummaries: applicationSummaries,
+          aam: aam,
         ),
         data: (components) => _buildBody(
           context,
           ref,
           components: components,
           applicationSummaries: applicationSummaries,
+          aam: aam,
         ),
       ),
     );
@@ -720,6 +757,7 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
     WidgetRef ref, {
     required List<TreatmentComponent>? components,
     required List<String> applicationSummaries,
+    ArmTreatmentMetadataData? aam,
   }) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -765,7 +803,12 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
         subtitleRows = [
           Padding(
             padding: const EdgeInsets.only(left: 46, top: 2),
-            child: Text('No products added yet', style: subtitleStyle),
+            child: Text(
+              widget.treatment.treatmentType == 'CHK'
+                  ? 'Untreated check'
+                  : 'No products added yet',
+              style: subtitleStyle,
+            ),
           ),
         ];
       }
@@ -779,7 +822,7 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
               children: [
                 Expanded(
                   child: Text(
-                    _componentOneLine(c),
+                    _componentOneLine(c, aam: aam),
                     style: subtitleStyle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

@@ -51,7 +51,7 @@ class SessionRepository {
   Future<List<Session>> getSessionsForTrial(int trialId) {
     return (_db.select(_db.sessions)
           ..where((s) => s.trialId.equals(trialId) & s.isDeleted.equals(false))
-          ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
+          ..orderBy([(s) => OrderingTerm.asc(s.startedAt)]))
         .get();
   }
 

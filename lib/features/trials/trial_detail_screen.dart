@@ -914,7 +914,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                   color: AppDesignTokens.primary,
                 ),
                 label: const Text(
-                  'Protocol',
+                  'Trial Info',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -2803,7 +2803,7 @@ class _TrialModuleHub extends StatelessWidget {
       ...allItems.where((item) =>
           item.$4 == null || workspaceConfig.visibleTabs.contains(item.$4!)),
       if (isArmLinked)
-        (_armProtocolTabIndex, Icons.biotech_outlined, 'ARM Protocol',
+        (_armProtocolTabIndex, Icons.biotech_outlined, 'Field Plan',
             null as TrialTab?),
     ];
 

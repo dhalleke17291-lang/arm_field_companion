@@ -70,6 +70,15 @@ class ShellImportResult {
       ShellImportResult._(success: false, errorMessage: message);
 }
 
+class DuplicateShellImportException implements Exception {
+  final String shellFileName;
+  const DuplicateShellImportException(this.shellFileName);
+  @override
+  String toString() =>
+      'Shell "$shellFileName" has already been imported. '
+      'Delete the existing trial before importing again.';
+}
+
 /// Imports a trial directly from an ARM Rating Shell (.xlsx file).
 ///
 /// **Phase 1b model.** This importer no longer creates one `trial_assessment`
@@ -168,6 +177,16 @@ class ImportArmRatingShellUseCase {
       }
 
       final trialName = shell.title.isNotEmpty ? shell.title : 'Imported Trial';
+
+      // Duplicate-import guard: reject if this shell file was already imported.
+      final existingMeta = await (_db.select(_db.armTrialMetadata)
+            ..where((m) => m.armSourceFile.equals(shell.shellFilePath)))
+          .getSingleOrNull();
+      if (existingMeta != null) {
+        throw DuplicateShellImportException(
+          shell.shellFilePath.split('/').last,
+        );
+      }
 
       // 1–4: DB transaction only — trial stays draft, isArmLinked false until
       // structure + internal shell copy succeed.
@@ -642,7 +661,7 @@ class ImportArmRatingShellUseCase {
         armColumnCount: plan.armColumnCount,
       );
     } catch (e) {
-      return ShellImportResult.failure('Shell import failed: $e');
+      return ShellImportResult.failure('$e');
     }
   }
 

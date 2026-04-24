@@ -197,6 +197,8 @@ class AssessmentStatistics {
     this.repConsistencyIssues = const [],
     this.totalReps = 0,
     this.anovaResult,
+    this.sessionId,
+    this.sessionDate,
   });
 
   final AssessmentProgress progress;
@@ -210,6 +212,14 @@ class AssessmentStatistics {
   final List<RepConsistencyIssue> repConsistencyIssues;
   final int totalReps;
   final AnovaResult? anovaResult;
+
+  /// DB session ID for which statistics were computed. Null when pooled or
+  /// when no session context is available (standalone, no ratings yet).
+  final int? sessionId;
+
+  /// ISO-8601 date string from arm_session_metadata. Null for standalone trials
+  /// or assessments with no ARM session metadata.
+  final String? sessionDate;
 
   bool get hasAnyData => progress.hasAnyData;
   bool get isPreliminary => progress.isPreliminary;
@@ -465,6 +475,8 @@ AssessmentStatistics computeAssessmentStatistics(
   int totalPlots,
   Set<int> allReps, {
   String? assessmentCode,
+  int? sessionId,
+  String? sessionDate,
 }) {
   final progress = computeProgress(
     rows,
@@ -515,6 +527,8 @@ AssessmentStatistics computeAssessmentStatistics(
     repConsistencyIssues: repIssues,
     totalReps: allReps.length,
     anovaResult: anova,
+    sessionId: sessionId,
+    sessionDate: sessionDate,
   );
 }
 
@@ -525,6 +539,19 @@ AnovaResult? _computeAnovaForAssessment(
   String assessmentName,
   Set<int> allReps,
 ) {
+  // Enforce single-session contract: ANOVA on pooled multi-session data is
+  // scientifically invalid. Caller must pre-filter rows to one session.
+  final distinctSessionIds = rows
+      .where((r) => r.assessmentName == assessmentName && r.sessionId != null)
+      .map((r) => r.sessionId!)
+      .toSet();
+  if (distinctSessionIds.length > 1) {
+    throw ArgumentError(
+      '_computeAnovaForAssessment: rows span ${distinctSessionIds.length} '
+      'sessions $distinctSessionIds. Filter to a single session before calling.',
+    );
+  }
+
   // Build treatmentCode → {rep → mean of values in that cell}.
   // In a proper RCBD each cell has exactly one observation; if multiple
   // plots share the same (treatment, rep), average them.

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/assessment_result_direction.dart';
 import '../../../core/design/app_design_tokens.dart';
@@ -57,16 +58,24 @@ class AssessmentResultsScreen extends ConsumerWidget {
     required this.trialId,
     required this.trialName,
     required this.workspaceType,
+    required this.sessionId,
+    required this.sessionDate,
   });
 
   final AssessmentStatistics stat;
   final int trialId;
   final String trialName;
   final String workspaceType;
+  /// DB session ID for filtering per-plot data. Null falls back to trial-wide rows.
+  final int? sessionId;
+  /// ISO-8601 date shown in the header. Null suppresses the date subtitle.
+  final String? sessionDate;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rowsAsync = ref.watch(trialRatingRowsProvider(trialId));
+    final rowsAsync = sessionId != null
+        ? ref.watch(trialRatingRowsForSessionProvider((trialId, sessionId!)))
+        : ref.watch(trialRatingRowsProvider(trialId));
     final p = stat.progress;
     final completeness = p.completeness;
     final config = safeConfigFromString(workspaceType);
@@ -126,6 +135,20 @@ class AssessmentResultsScreen extends ConsumerWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+            if (sessionDate != null && sessionDate!.isNotEmpty)
+              Text(
+                () {
+                  final dt = DateTime.tryParse(sessionDate!);
+                  return dt != null
+                      ? DateFormat('MMM d, yyyy').format(dt)
+                      : sessionDate!;
+                }(),
+                style: TextStyle(
+                  color: AppDesignTokens.onPrimary.withValues(alpha: 0.65),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
           ],
         ),
       ),

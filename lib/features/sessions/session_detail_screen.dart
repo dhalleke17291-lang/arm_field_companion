@@ -28,6 +28,8 @@ import 'session_summary_screen.dart';
 import 'session_export_trust_dialog.dart';
 import 'session_export_trust_messaging.dart';
 import '../../core/ui/field_note_timestamp_format.dart';
+import '../trials/tabs/assessment_results_screen.dart';
+import '../derived/domain/trial_statistics.dart' show AssessmentStatistics;
 import '../../core/widgets/loading_error_widgets.dart';
 import 'crop_stage_bbch_editor_dialog.dart';
 import '../notes/field_note_editor_sheet.dart';
@@ -1096,6 +1098,10 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             .watch(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
             .valueOrNull ??
         const <int, ArmAssessmentMetadataData>{};
+    final statsMap = ref
+            .watch(trialAssessmentStatisticsProvider(widget.trial.id))
+            .valueOrNull ??
+        const <int, List<AssessmentStatistics>>{};
     final scheme = Theme.of(context).colorScheme;
     final ratedCount = ratings.map((r) => r.plotPk).toSet().length;
     final treatmentMap = {for (final t in treatments) t.id: t};
@@ -1156,7 +1162,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             flaggedIds,
           ),
         ],
-        // Assessment chips
+        // Assessment chips — tap to open per-session results screen.
         if (assessments.isNotEmpty)
           SizedBox(
             height: 44,
@@ -1173,12 +1179,38 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                     ? AssessmentDisplayHelper.compactName(ta,
                         aam: aamMap[ta.id])
                     : AssessmentDisplayHelper.legacyAssessmentDisplayName(a.name);
+                // Find the stat for this (assessment, session) pair.
+                AssessmentStatistics? matchedStat;
+                if (ta != null) {
+                  matchedStat = statsMap[ta.id]?.firstWhere(
+                    (s) => s.sessionId == session.id,
+                    orElse: () => statsMap[ta.id]!.first,
+                  );
+                }
                 return Padding(
                   padding:
                       const EdgeInsets.only(right: AppDesignTokens.spacing8),
-                  child: Chip(
+                  child: ActionChip(
                     label: Text(chipLabel,
                         style: const TextStyle(fontSize: 12)),
+                    onPressed: matchedStat == null
+                        ? null
+                        : () {
+                            Navigator.push<void>(
+                              context,
+                              MaterialPageRoute<void>(
+                                builder: (_) => AssessmentResultsScreen(
+                                  stat: matchedStat!,
+                                  trialId: widget.trial.id,
+                                  trialName: widget.trial.name,
+                                  workspaceType: widget.trial.workspaceType,
+                                  sessionId: session.id,
+                                  sessionDate:
+                                      matchedStat.sessionDate,
+                                ),
+                              ),
+                            );
+                          },
                   ),
                 );
               },

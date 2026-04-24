@@ -204,6 +204,7 @@ class ExportRepository {
         'result_status': effectiveStatus,
         'result_direction': definition?.resultDirection ?? 'neutral',
         'plot_excluded': !isAnalyzablePlot(plot),
+        'session_id': rating.sessionId,
       };
     }).toList();
   }

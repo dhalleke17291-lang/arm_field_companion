@@ -242,6 +242,7 @@ class RatingResultRow {
   final String resultStatus;
   /// Result direction for numeric summary: higherBetter | lowerBetter | neutral.
   final String resultDirection;
+  final int? sessionId;
 
   const RatingResultRow({
     required this.plotId,
@@ -252,6 +253,7 @@ class RatingResultRow {
     required this.value,
     required this.resultStatus,
     this.resultDirection = 'neutral',
+    this.sessionId,
   });
 }
 

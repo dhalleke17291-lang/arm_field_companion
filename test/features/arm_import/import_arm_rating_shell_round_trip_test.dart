@@ -608,14 +608,18 @@ void main() {
       final first = await useCase.execute(_fixturePath);
       expect(first.success, isTrue, reason: first.errorMessage);
 
-      // The importer rejects a second import when the shell's trial
-      // name collides with an existing trial (prevents accidental
-      // double-import in the field). Rename the first trial out of
-      // the way so the second import can take the canonical name.
+      // Rename the first trial out of the way and clear its armSourceFile so
+      // the duplicate-import guard does not block the second import. This test
+      // verifies structural idempotency, not the duplicate-import guard itself.
       await (db.update(db.trials)
             ..where((t) => t.id.equals(first.trialId!)))
           .write(const TrialsCompanion(
         name: Value('__round_trip_first_import__'),
+      ));
+      await (db.update(db.armTrialMetadata)
+            ..where((m) => m.trialId.equals(first.trialId!)))
+          .write(const ArmTrialMetadataCompanion(
+        armSourceFile: Value(null),
       ));
 
       final second = await useCase.execute(_fixturePath);
@@ -643,6 +647,11 @@ void main() {
             ..where((t) => t.id.equals(first.trialId!)))
           .write(const TrialsCompanion(
         name: Value('__round_trip_first_import__'),
+      ));
+      await (db.update(db.armTrialMetadata)
+            ..where((m) => m.trialId.equals(first.trialId!)))
+          .write(const ArmTrialMetadataCompanion(
+        armSourceFile: Value(null),
       ));
       await useCase.execute(_fixturePath);
 
@@ -807,6 +816,11 @@ void main() {
           .write(const TrialsCompanion(
         name: Value('__round_trip_app_first__'),
       ));
+      await (db.update(db.armTrialMetadata)
+            ..where((m) => m.trialId.equals(first.trialId!)))
+          .write(const ArmTrialMetadataCompanion(
+        armSourceFile: Value(null),
+      ));
 
       final second = await useCase.execute(path);
       expect(second.success, isTrue, reason: second.errorMessage);
@@ -831,6 +845,11 @@ void main() {
 
       await (db.update(db.trials)..where((t) => t.id.equals(first.trialId!)))
           .write(const TrialsCompanion(name: Value('__round_trip_app_first__')));
+      await (db.update(db.armTrialMetadata)
+            ..where((m) => m.trialId.equals(first.trialId!)))
+          .write(const ArmTrialMetadataCompanion(
+        armSourceFile: Value(null),
+      ));
       await useCase.execute(path);
 
       final after = await _snapshotApplications(repo, first.trialId!);

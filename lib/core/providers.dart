@@ -478,11 +478,12 @@ Future<String> _assessmentNameForTrialStatistics(
   return '$displayBase — TA${ta.id}';
 }
 
-/// Statistics for all assessments in a trial, keyed by assessmentId.
-/// Returns an empty map if no rating data or assessments exist.
+/// Statistics for all assessments in a trial, keyed by trialAssessmentId.
+/// Each value is a list sorted by sessionDate ASC — one entry per session that
+/// has ratings for that assessment. Returns an empty map if no assessments exist.
 /// Recomputes when operational trial data changes.
 final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
-    .family<Map<int, AssessmentStatistics>, int>((ref, trialId) {
+    .family<Map<int, List<AssessmentStatistics>>, int>((ref, trialId) {
   final db = ref.watch(databaseProvider);
   return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) async {
     final plots = await ref.watch(plotsForTrialProvider(trialId).future);
@@ -501,6 +502,10 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
       for (final r in aamRows) r.trialAssessmentId: r,
     };
 
+    // Session date lookup for ARM trials (no-op for standalone).
+    final sessionMetaMap = await ref
+        .read(armSessionMetadataMapForTrialProvider(trialId).future);
+
     final exportRepo = ref.read(exportRepositoryProvider);
     final rawRows = await exportRepo.buildTrialExportRows(trialId: trialId);
 
@@ -515,6 +520,7 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
             value: (r['value'] ?? '').toString(),
             resultStatus: (r['result_status'] ?? '').toString(),
             resultDirection: (r['result_direction'] ?? 'neutral').toString(),
+            sessionId: r['session_id'] as int?,
           ),
         )
         .toList();
@@ -526,25 +532,58 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
         ratingRows.where((r) => analyzablePlotLabels.contains(r.plotId)).toList();
     final allReps = analyzablePlots.map((p) => p.rep).whereType<int>().toSet();
 
-    final result = <int, AssessmentStatistics>{};
+    final result = <int, List<AssessmentStatistics>>{};
     for (final pair in assessmentPairs) {
       final ta = pair.$1;
       final def = pair.$2;
-      final name =
-          await _assessmentNameForTrialStatistics(db, ta, def);
+      final name = await _assessmentNameForTrialStatistics(db, ta, def);
       final unit = def.unit ?? '';
       final direction = _normalizeResultDirection(def.resultDirection);
       final ratingType = aamByTaId[ta.id]?.ratingType;
-      result[ta.id] = computeAssessmentStatistics(
-        filteredRatingRows,
-        name,
-        ta.id,
-        unit,
-        direction,
-        totalPlots,
-        allReps,
-        assessmentCode: ratingType,
-      );
+
+      // Find all sessions that have ratings for this assessment, sorted by date.
+      final sessionIds = filteredRatingRows
+          .where((r) => r.assessmentName == name && r.sessionId != null)
+          .map((r) => r.sessionId!)
+          .toSet()
+          .toList()
+        ..sort();
+
+      if (sessionIds.isEmpty) {
+        // No ratings yet — one empty stat so the card shows "no data".
+        result[ta.id] = [
+          computeAssessmentStatistics(
+            const [],
+            name,
+            ta.id,
+            unit,
+            direction,
+            totalPlots,
+            allReps,
+            assessmentCode: ratingType,
+          ),
+        ];
+        continue;
+      }
+
+      result[ta.id] = [
+        for (final sid in sessionIds)
+          computeAssessmentStatistics(
+            filteredRatingRows
+                .where(
+                    (r) => r.assessmentName == name && r.sessionId == sid)
+                .toList(),
+            name,
+            ta.id,
+            unit,
+            direction,
+            totalPlots,
+            allReps,
+            assessmentCode: ratingType,
+            sessionId: sid,
+            sessionDate: sessionMetaMap[sid]?.armRatingDate,
+          ),
+      ];
     }
     return result;
   });
@@ -575,6 +614,41 @@ final trialRatingRowsProvider = StreamProvider.autoDispose
             resultDirection: _normalizeResultDirection(
               (r['result_direction'] ?? 'neutral').toString(),
             ),
+            sessionId: r['session_id'] as int?,
+          ),
+        )
+        .where((r) => analyzablePlotLabels.contains(r.plotId))
+        .toList();
+  });
+});
+
+/// Rating rows for a single session — used by AssessmentResultsScreen to show
+/// per-plot detail without pooling data from other sessions.
+final trialRatingRowsForSessionProvider = StreamProvider.autoDispose
+    .family<List<RatingResultRow>, (int, int)>((ref, params) {
+  final (trialId, sessionId) = params;
+  final db = ref.watch(databaseProvider);
+  return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) async {
+    final exportRepo = ref.read(exportRepositoryProvider);
+    final rawRows = await exportRepo.buildTrialExportRows(trialId: trialId);
+    final plots = await ref.watch(plotsForTrialProvider(trialId).future);
+    final analyzablePlotLabels =
+        plots.where(isAnalyzablePlot).map((p) => p.plotId).toSet();
+    return rawRows
+        .where((r) => r['session_id'] == sessionId)
+        .map(
+          (r) => RatingResultRow(
+            plotId: (r['plot_id'] ?? '').toString(),
+            rep: (r['rep'] as int?) ?? 0,
+            treatmentCode: (r['treatment_code'] ?? '-').toString(),
+            assessmentName: (r['assessment_name'] ?? '').toString(),
+            unit: (r['unit'] ?? '').toString(),
+            value: (r['value'] ?? '').toString(),
+            resultStatus: (r['result_status'] ?? '').toString(),
+            resultDirection: _normalizeResultDirection(
+              (r['result_direction'] ?? 'neutral').toString(),
+            ),
+            sessionId: r['session_id'] as int?,
           ),
         )
         .where((r) => analyzablePlotLabels.contains(r.plotId))
@@ -1011,7 +1085,7 @@ final sessionsForTrialProvider =
   final db = ref.watch(databaseProvider);
   return (db.select(db.sessions)
         ..where((s) => s.trialId.equals(trialId) & s.isDeleted.equals(false))
-        ..orderBy([(s) => drift.OrderingTerm.desc(s.startedAt)]))
+        ..orderBy([(s) => drift.OrderingTerm.asc(s.startedAt)]))
       .watch();
 });
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/trial_state.dart';
@@ -8,6 +9,8 @@ import '../../core/ui/assessment_display_helper.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/widgets/loading_error_widgets.dart';
+import '../derived/domain/trial_statistics.dart' show AssessmentStatistics;
+import 'tabs/assessment_results_screen.dart';
 
 /// Read-only drill-down showing full trial protocol: trial info, treatments,
 /// assessments, plots count, and assignment summary.
@@ -29,6 +32,37 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
             .watch(armAssessmentMetadataMapForTrialProvider(trial.id))
             .valueOrNull ??
         const <int, ArmAssessmentMetadataData>{};
+    final columnMappings =
+        ref.watch(armColumnMappingsForTrialProvider(trial.id)).valueOrNull ??
+            const [];
+    final sessionMetaMap =
+        ref.watch(armSessionMetadataMapForTrialProvider(trial.id)).valueOrNull ??
+            const <int, ArmSessionMetadataData>{};
+    final taDates = <int, List<String>>{};
+    final taSessions = <int, List<(int, String)>>{};
+    for (final m in columnMappings) {
+      if (m.trialAssessmentId == null || m.sessionId == null) continue;
+      final date = sessionMetaMap[m.sessionId!]?.armRatingDate;
+      if (date == null || date.isEmpty) continue;
+      final taId = m.trialAssessmentId!;
+      final sid = m.sessionId!;
+      taDates.putIfAbsent(taId, () => []);
+      if (!taDates[taId]!.contains(date)) taDates[taId]!.add(date);
+      taSessions.putIfAbsent(taId, () => []);
+      if (!taSessions[taId]!.any((e) => e.$1 == sid)) {
+        taSessions[taId]!.add((sid, date));
+      }
+    }
+    for (final dates in taDates.values) {
+      dates.sort();
+    }
+    for (final list in taSessions.values) {
+      list.sort((a, b) => a.$2.compareTo(b.$2));
+    }
+    final statsMap = ref
+            .watch(trialAssessmentStatisticsProvider(trial.id))
+            .valueOrNull ??
+        const <int, List<AssessmentStatistics>>{};
 
     return Scaffold(
       backgroundColor: AppDesignTokens.backgroundSurface,
@@ -105,11 +139,7 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
                       children: list.map((pair) {
                         final ta = pair.$1;
                         final def = pair.$2;
-                        final dateShort =
-                            AssessmentDisplayHelper.ratingDateShort(
-                          ta,
-                          aam: aamMap[ta.id],
-                        );
+                        final sessionEntries = taSessions[ta.id] ?? [];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 6),
                           child: Row(
@@ -127,15 +157,52 @@ class FullProtocolDetailsScreen extends ConsumerWidget {
                                       color: AppDesignTokens.primaryText),
                                 ),
                               ),
-                              if (dateShort != null) ...[
+                              if (sessionEntries.isNotEmpty) ...[
                                 const SizedBox(width: 8),
-                                Text(
-                                  dateShort,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppDesignTokens.secondaryText,
+                                for (final (sid, isoDate) in sessionEntries)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 2),
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        final statList = statsMap[ta.id];
+                                        final matched = statList?.firstWhere(
+                                          (s) => s.sessionId == sid,
+                                          orElse: () => statList.first,
+                                        );
+                                        if (matched == null) return;
+                                        Navigator.push<void>(
+                                          context,
+                                          MaterialPageRoute<void>(
+                                            builder: (_) =>
+                                                AssessmentResultsScreen(
+                                              stat: matched,
+                                              trialId: trial.id,
+                                              trialName: trial.name,
+                                              workspaceType:
+                                                  trial.workspaceType,
+                                              sessionId: sid,
+                                              sessionDate: isoDate,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: Text(
+                                        () {
+                                          final dt =
+                                              DateTime.tryParse(isoDate);
+                                          return dt != null
+                                              ? DateFormat('MMM d').format(dt)
+                                              : isoDate;
+                                        }(),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppDesignTokens.primary,
+                                          decoration:
+                                              TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
                               ],
                             ],
                           ),

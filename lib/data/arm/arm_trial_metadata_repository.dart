@@ -24,4 +24,10 @@ class ArmTrialMetadataRepository {
   Future<void> upsert(ArmTrialMetadataCompanion row) {
     return _db.into(_db.armTrialMetadata).insertOnConflictUpdate(row);
   }
+
+  Future<ArmTrialMetadataData?> getBySourceFilePath(String filePath) {
+    return (_db.select(_db.armTrialMetadata)
+          ..where((m) => m.armSourceFile.equals(filePath)))
+        .getSingleOrNull();
+  }
 }

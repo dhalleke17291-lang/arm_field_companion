@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/assessment_result_direction.dart';
 import '../../../core/database/app_database.dart';
@@ -68,7 +69,7 @@ class AssessmentsTab extends ConsumerWidget {
         .toList();
 
     final statsAsync = ref.watch(trialAssessmentStatisticsProvider(trial.id));
-    final stats = statsAsync.valueOrNull ?? {};
+    final stats = statsAsync.valueOrNull ?? <int, List<AssessmentStatistics>>{};
     final hasSessionData =
         ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
     final trialIsArmLinked = ref
@@ -83,6 +84,36 @@ class AssessmentsTab extends ConsumerWidget {
             .watch(armAssessmentMetadataMapForTrialProvider(trial.id))
             .valueOrNull ??
         const <int, ArmAssessmentMetadataData>{};
+    // Build a map of trialAssessmentId → sorted list of rating dates from
+    // arm_column_mappings so each assessment card can show all scheduled dates.
+    final columnMappings =
+        ref.watch(armColumnMappingsForTrialProvider(trial.id)).valueOrNull ??
+            const [];
+    final sessionMetaMap =
+        ref.watch(armSessionMetadataMapForTrialProvider(trial.id)).valueOrNull ??
+            const <int, ArmSessionMetadataData>{};
+    final taDates = <int, List<String>>{};
+    // (sessionId, isoDate) pairs per taId — drives tappable chip navigation.
+    final taSessions = <int, List<(int, String)>>{};
+    for (final m in columnMappings) {
+      if (m.trialAssessmentId == null || m.sessionId == null) continue;
+      final date = sessionMetaMap[m.sessionId!]?.armRatingDate;
+      if (date == null || date.isEmpty) continue;
+      final taId = m.trialAssessmentId!;
+      final sid = m.sessionId!;
+      taDates.putIfAbsent(taId, () => []);
+      if (!taDates[taId]!.contains(date)) taDates[taId]!.add(date);
+      taSessions.putIfAbsent(taId, () => []);
+      if (!taSessions[taId]!.any((e) => e.$1 == sid)) {
+        taSessions[taId]!.add((sid, date));
+      }
+    }
+    for (final dates in taDates.values) {
+      dates.sort();
+    }
+    for (final list in taSessions.values) {
+      list.sort((a, b) => a.$2.compareTo(b.$2));
+    }
     final config = safeConfigFromString(trial.workspaceType);
     final isStandalone = config.isStandalone;
     final isGlp = config.studyType == StudyType.glp;
@@ -206,10 +237,11 @@ class AssessmentsTab extends ConsumerWidget {
                   final displayNumber = entry.key + 1;
                   final ta = entry.value.$1;
                   final def = entry.value.$2;
-                  final dateShort = AssessmentDisplayHelper.ratingDateShort(
-                    ta,
-                    aam: aamMap[ta.id],
-                  );
+                  final dateLabels = (taDates[ta.id] ?? []).map((d) {
+                    final dt = DateTime.tryParse(d);
+                    return dt != null ? DateFormat('MMM d').format(dt) : d;
+                  }).toList();
+                  final sessionEntries = taSessions[ta.id] ?? [];
                   final seDesc = AssessmentDisplayHelper.description(
                     ta,
                     aam: aamMap[ta.id],
@@ -258,26 +290,60 @@ class AssessmentsTab extends ConsumerWidget {
                                         ),
                                       ),
                                     ),
-                                    if (dateShort != null)
+                                    for (int ci = 0;
+                                        ci < dateLabels.length;
+                                        ci++)
                                       Padding(
                                         padding: const EdgeInsets.only(
-                                            left: 6, right: 4),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: scheme.secondaryContainer
-                                                .withValues(alpha: 0.65),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            dateShort,
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                              color:
-                                                  scheme.onSecondaryContainer,
+                                            left: 4, right: 2),
+                                        child: GestureDetector(
+                                          onTap: ci < sessionEntries.length
+                                              ? () {
+                                                  final (sid, isoDate) =
+                                                      sessionEntries[ci];
+                                                  final statList =
+                                                      stats[ta.id];
+                                                  final matched =
+                                                      statList?.firstWhere(
+                                                    (s) => s.sessionId == sid,
+                                                    orElse: () =>
+                                                        statList.first,
+                                                  );
+                                                  if (matched == null) return;
+                                                  Navigator.push<void>(
+                                                    context,
+                                                    MaterialPageRoute<void>(
+                                                      builder: (_) =>
+                                                          AssessmentResultsScreen(
+                                                        stat: matched,
+                                                        trialId: trial.id,
+                                                        trialName: trial.name,
+                                                        workspaceType:
+                                                            trial.workspaceType,
+                                                        sessionId: sid,
+                                                        sessionDate: isoDate,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              : null,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: scheme.secondaryContainer
+                                                  .withValues(alpha: 0.65),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              dateLabels[ci],
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w600,
+                                                color:
+                                                    scheme.onSecondaryContainer,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -486,8 +552,8 @@ class AssessmentsTab extends ConsumerWidget {
   Widget _buildAssessmentStatSlot(
     BuildContext context,
     ThemeData theme,
-    AsyncValue<Map<int, AssessmentStatistics>> statsAsync,
-    Map<int, AssessmentStatistics> stats,
+    AsyncValue<Map<int, List<AssessmentStatistics>>> statsAsync,
+    Map<int, List<AssessmentStatistics>> stats,
     int? libraryTrialAssessmentId,
     String? legacyAssessmentName,
     bool isStandalone,
@@ -513,14 +579,18 @@ class AssessmentsTab extends ConsumerWidget {
     if (statsAsync.hasError) {
       return const SizedBox.shrink();
     }
+    // Show the first (earliest) session's stats in the card summary.
     AssessmentStatistics? stat;
     if (libraryTrialAssessmentId != null) {
-      stat = stats[libraryTrialAssessmentId];
+      stat = stats[libraryTrialAssessmentId]?.first;
     } else if (legacyAssessmentName != null) {
-      for (final s in stats.values) {
-        if (s.progress.assessmentName == legacyAssessmentName) {
-          stat = s;
-          break;
+      outer:
+      for (final list in stats.values) {
+        for (final s in list) {
+          if (s.progress.assessmentName == legacyAssessmentName) {
+            stat = s;
+            break outer;
+          }
         }
       }
     }
@@ -843,6 +913,8 @@ class AssessmentsTab extends ConsumerWidget {
                         trialId: trial.id,
                         trialName: trial.name,
                         workspaceType: trial.workspaceType,
+                        sessionId: stat.sessionId,
+                        sessionDate: stat.sessionDate,
                       ),
                     ),
                   );
