@@ -226,6 +226,52 @@ void main() {
     });
   });
 
+  group('startPlannedSession on-demand legacy assessment', () {
+    test(
+        'creates legacy Assessment row when trial_assessment.legacyAssessmentId is null',
+        () async {
+      // This is the ARM rating-shell import shape: trial_assessments are created
+      // without a legacyAssessmentId, so the legacy Assessment row has to be
+      // materialized at session-start time.
+      final asmtDefId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'WEDCON',
+              name: 'Weed Control',
+              category: 'percent',
+            ),
+          );
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: asmtDefId,
+              // legacyAssessmentId intentionally null
+            ),
+          );
+      final sessionId = await insertPlannedSession(date: '2026-04-02');
+      await db.into(db.armColumnMappings).insert(
+            ArmColumnMappingsCompanion.insert(
+              trialId: trialId,
+              armColumnId: '1',
+              armColumnIndex: 0,
+              trialAssessmentId: Value(taId),
+              sessionId: Value(sessionId),
+            ),
+          );
+
+      await sessionRepo.startPlannedSession(sessionId);
+
+      // Legacy Assessment row was created and linked back to the trial_assessment
+      final assessments = await sessionRepo.getSessionAssessments(sessionId);
+      expect(assessments, hasLength(1));
+      expect(assessments.single.name, contains('Weed Control'));
+
+      final taAfter = await (db.select(db.trialAssessments)
+            ..where((t) => t.id.equals(taId)))
+          .getSingle();
+      expect(taAfter.legacyAssessmentId, isNotNull);
+    });
+  });
+
   group('getSessionAssessments self-heal', () {
     test(
         'populates session_assessments on read when empty and mappings exist',

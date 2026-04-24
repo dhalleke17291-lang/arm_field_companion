@@ -225,30 +225,65 @@ class SessionRepository {
         .get();
 
     final seenTaIds = <int>{};
-    final assessmentIds = <int>[];
+    final orderedTaIds = <int>[];
     for (final m in mappings) {
       final taId = m.trialAssessmentId!;
-      if (!seenTaIds.add(taId)) continue;
-      final ta = await (_db.select(_db.trialAssessments)
-            ..where((t) => t.id.equals(taId)))
-          .getSingleOrNull();
-      if (ta?.legacyAssessmentId != null) {
-        assessmentIds.add(ta!.legacyAssessmentId!);
-      }
+      if (seenTaIds.add(taId)) orderedTaIds.add(taId);
     }
 
-    if (assessmentIds.isEmpty) {
+    // Fallback: trial's defaultInSessions assessments when no ARM mappings.
+    if (orderedTaIds.isEmpty) {
       final defaults = await (_db.select(_db.trialAssessments)
             ..where((ta) =>
                 ta.trialId.equals(trialId) &
                 ta.defaultInSessions.equals(true) &
-                ta.isActive.equals(true) &
-                ta.legacyAssessmentId.isNotNull())
+                ta.isActive.equals(true))
             ..orderBy([(ta) => OrderingTerm.asc(ta.sortOrder)]))
           .get();
       for (final ta in defaults) {
-        assessmentIds.add(ta.legacyAssessmentId!);
+        orderedTaIds.add(ta.id);
       }
+    }
+
+    // Resolve each trial_assessment to a legacy assessment row, creating the
+    // legacy row on demand when the ARM import never populated legacyAssessmentId.
+    // Mirrors TrialAssessmentRepository.getOrCreateLegacyAssessmentIdsForTrialAssessments
+    // but inlined to avoid a cross-repository dependency.
+    final assessmentIds = <int>[];
+    for (final taId in orderedTaIds) {
+      final ta = await (_db.select(_db.trialAssessments)
+            ..where((t) => t.id.equals(taId)))
+          .getSingleOrNull();
+      if (ta == null || ta.trialId != trialId) continue;
+      if (ta.legacyAssessmentId != null) {
+        assessmentIds.add(ta.legacyAssessmentId!);
+        continue;
+      }
+      final def = await (_db.select(_db.assessmentDefinitions)
+            ..where((d) => d.id.equals(ta.assessmentDefinitionId)))
+          .getSingleOrNull();
+      if (def == null) continue;
+      final displayName = ta.displayNameOverride ?? def.name;
+      final uniqueName = '$displayName — TA$taId';
+      final existing = await (_db.select(_db.assessments)
+            ..where((a) =>
+                a.trialId.equals(trialId) & a.name.equals(uniqueName)))
+          .getSingleOrNull();
+      final legacyId = existing?.id ??
+          await _db.into(_db.assessments).insert(
+                AssessmentsCompanion.insert(
+                  trialId: trialId,
+                  name: uniqueName,
+                  dataType: Value(def.dataType),
+                  unit: Value(def.unit),
+                  minValue: Value(def.scaleMin),
+                  maxValue: Value(def.scaleMax),
+                ),
+              );
+      await (_db.update(_db.trialAssessments)
+            ..where((t) => t.id.equals(taId)))
+          .write(TrialAssessmentsCompanion(legacyAssessmentId: Value(legacyId)));
+      assessmentIds.add(legacyId);
     }
 
     for (var i = 0; i < assessmentIds.length; i++) {
