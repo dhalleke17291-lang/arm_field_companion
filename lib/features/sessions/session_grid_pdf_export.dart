@@ -260,7 +260,7 @@ class SessionGridPdfExport {
               headers: null,
               data: [statsRow],
               cellStyle: const pw.TextStyle(
-                fontSize: 5.5,
+                fontSize: 5.0,
                 color: PdfColors.grey600,
               ),
               cellAlignment: pw.Alignment.center,
