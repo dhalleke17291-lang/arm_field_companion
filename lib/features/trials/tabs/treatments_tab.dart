@@ -15,44 +15,18 @@ import '../../../shared/widgets/app_empty_state.dart';
 import 'add_treatment_sheet.dart';
 
 /// Builds a single-line formula string for a treatment from its components (paper-protocol style).
-/// Includes formulation type when present (e.g. "Headline SC 1.0 L/ha").
-/// Pass [aam] for ARM-linked trials to append formulation concentration and form type.
+/// Pass [aam] for ARM-linked trials so lines match the ARM Protocol / Field Plan subtitle:
+/// product · rate unit · form conc · form type (core formulation type omitted when [aam] is present).
 String buildTreatmentFormula(List<TreatmentComponent> components,
     {ArmTreatmentMetadataData? aam}) {
   if (components.isEmpty) return 'No products added yet';
-  String one(TreatmentComponent c) {
-    final parts = <String>[
-      c.productName.trim(),
-      if (c.formulationType != null && c.formulationType!.trim().isNotEmpty)
-        c.formulationType!.trim(),
-      if (c.rate != null) '${c.rate}',
-      if (c.rateUnit != null && c.rateUnit!.trim().isNotEmpty)
-        c.rateUnit!.trim(),
-    ];
-    if (aam != null) {
-      final formConc = aam.formConc;
-      final formConcUnit = aam.formConcUnit;
-      if (formConc != null) {
-        final concStr = formConc == formConc.roundToDouble()
-            ? formConc.toInt().toString()
-            : formConc.toString();
-        parts.add(formConcUnit != null && formConcUnit.isNotEmpty
-            ? '$concStr $formConcUnit'
-            : concStr);
-      }
-      final formType = aam.formType;
-      if (formType != null && formType.isNotEmpty) parts.add(formType);
-    }
-    return parts.where((s) => s.isNotEmpty).join(' ');
-  }
-
   if (components.length == 1) {
-    return one(components.first);
+    return _componentOneLine(components.first, aam: aam);
   }
   if (components.length == 2) {
-    return '${one(components[0])} + ${one(components[1])}';
+    return '${_componentOneLine(components[0], aam: aam)} + ${_componentOneLine(components[1], aam: aam)}';
   }
-  return '${one(components.first)} + ${components.length - 1} more';
+  return '${_componentOneLine(components.first, aam: aam)} + ${components.length - 1} more';
 }
 
 Future<void> _deleteTreatmentComponent(
@@ -78,7 +52,8 @@ Future<bool> _treatmentHasApplications(WidgetRef ref, int treatmentId) async {
 }
 
 /// One line per component for the compact treatments list.
-/// Pass [aam] for ARM-linked trials to append formConc, formConcUnit, formType.
+/// With [aam], matches ARM Protocol subtitle order: rate, then Form Conc / Type
+/// (core [TreatmentComponent.formulationType] omitted to avoid clashing with ARM form type).
 String _componentOneLine(TreatmentComponent c, {ArmTreatmentMetadataData? aam}) {
   final parts = <String>[];
   final pn = c.productName.trim();
@@ -86,13 +61,13 @@ String _componentOneLine(TreatmentComponent c, {ArmTreatmentMetadataData? aam}) 
   final rate = c.rate;
   final unit = c.rateUnit?.trim();
   if (rate != null) {
-    final rateStr = '$rate';
+    final rateStr = rate == rate.roundToDouble()
+        ? rate.toInt().toString()
+        : rate.toString();
     parts.add(unit != null && unit.isNotEmpty ? '$rateStr $unit' : rateStr);
   } else if (unit != null && unit.isNotEmpty) {
     parts.add(unit);
   }
-  final ft = c.formulationType?.trim();
-  if (ft != null && ft.isNotEmpty) parts.add(ft);
   if (aam != null) {
     final formConc = aam.formConc;
     final formConcUnit = aam.formConcUnit;
@@ -106,6 +81,9 @@ String _componentOneLine(TreatmentComponent c, {ArmTreatmentMetadataData? aam}) 
     }
     final formType = aam.formType;
     if (formType != null && formType.isNotEmpty) parts.add(formType);
+  } else {
+    final ft = c.formulationType?.trim();
+    if (ft != null && ft.isNotEmpty) parts.add(ft);
   }
   return parts.isEmpty ? '—' : parts.join(' · ');
 }
@@ -715,9 +693,11 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
                 (trialId, treatment.id)))
             .valueOrNull ??
         const <String>[];
-    final aam = ref
-        .watch(armTreatmentMetadataMapForTrialProvider(trialId))
-        .valueOrNull?[treatment.id];
+    final aamMap = ref
+            .watch(armTreatmentMetadataMapForTrialProvider(trialId))
+            .valueOrNull ??
+        const <int, ArmTreatmentMetadataData>{};
+    final aam = aamMap[treatment.id];
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(

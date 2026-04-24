@@ -19,13 +19,22 @@ class ArmColumnMappingRepository {
 
   final AppDatabase _db;
 
-  /// All mapping rows for [trialId], ordered by ARM column index so the
-  /// returned list matches the shell's left-to-right column order.
-  Future<List<ArmColumnMapping>> getForTrial(int trialId) {
-    return (_db.select(_db.armColumnMappings)
-          ..where((m) => m.trialId.equals(trialId))
-          ..orderBy([(m) => OrderingTerm.asc(m.armColumnIndex)]))
-        .get();
+  /// All mapping rows for [trialId], ordered by session rating date
+  /// ([Sessions.sessionDateLocal]) then ARM column index.
+  Future<List<ArmColumnMapping>> getForTrial(int trialId) async {
+    final query = _db.select(_db.armColumnMappings).join([
+      leftOuterJoin(
+        _db.sessions,
+        _db.sessions.id.equalsExp(_db.armColumnMappings.sessionId),
+      ),
+    ])
+      ..where(_db.armColumnMappings.trialId.equals(trialId))
+      ..orderBy([
+        OrderingTerm.asc(_db.sessions.sessionDateLocal),
+        OrderingTerm.asc(_db.armColumnMappings.armColumnIndex),
+      ]);
+    final rows = await query.get();
+    return rows.map((r) => r.readTable(_db.armColumnMappings)).toList();
   }
 
   /// ARM session metadata for [sessionId], or null when the session was not
