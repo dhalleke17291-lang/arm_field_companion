@@ -184,59 +184,8 @@ class SessionRepository {
             cropStageBbch != null ? Value(cropStageBbch) : const Value.absent(),
       ));
 
-      // Populate session_assessments from ARM column mappings if none exist yet.
-      // ARM-imported planned sessions skip createSession, so they have no
-      // session_assessments rows. Derive them from arm_column_mappings ordered
-      // by column index, falling back to the trial's defaultInSessions assessments.
-      final existingSA = await (_db.select(_db.sessionAssessments)
-            ..where((sa) => sa.sessionId.equals(sessionId)))
-          .get();
-      if (existingSA.isEmpty) {
-        final mappings = await (_db.select(_db.armColumnMappings)
-              ..where((m) =>
-                  m.sessionId.equals(sessionId) &
-                  m.trialAssessmentId.isNotNull())
-              ..orderBy([(m) => OrderingTerm.asc(m.armColumnIndex)]))
-            .get();
-
-        final seenTaIds = <int>{};
-        final assessmentIds = <int>[];
-        for (final m in mappings) {
-          final taId = m.trialAssessmentId!;
-          if (!seenTaIds.add(taId)) continue;
-          final ta = await (_db.select(_db.trialAssessments)
-                ..where((t) => t.id.equals(taId)))
-              .getSingleOrNull();
-          if (ta?.legacyAssessmentId != null) {
-            assessmentIds.add(ta!.legacyAssessmentId!);
-          }
-        }
-
-        // Fallback: trial's defaultInSessions assessments when no ARM mappings
-        if (assessmentIds.isEmpty) {
-          final defaults = await (_db.select(_db.trialAssessments)
-                ..where((ta) =>
-                    ta.trialId.equals(session.trialId) &
-                    ta.defaultInSessions.equals(true) &
-                    ta.isActive.equals(true) &
-                    ta.legacyAssessmentId.isNotNull())
-                ..orderBy([(ta) => OrderingTerm.asc(ta.sortOrder)]))
-              .get();
-          for (final ta in defaults) {
-            assessmentIds.add(ta.legacyAssessmentId!);
-          }
-        }
-
-        for (var i = 0; i < assessmentIds.length; i++) {
-          await _db.into(_db.sessionAssessments).insert(
-                SessionAssessmentsCompanion.insert(
-                  sessionId: sessionId,
-                  assessmentId: assessmentIds[i],
-                  sortOrder: Value(i),
-                ),
-              );
-        }
-      }
+      await _ensureSessionAssessments(
+          sessionId: sessionId, trialId: session.trialId);
 
       await _db.into(_db.auditEvents).insert(
             AuditEventsCompanion.insert(
@@ -252,6 +201,65 @@ class SessionRepository {
       return (_db.select(_db.sessions)..where((s) => s.id.equals(sessionId)))
           .getSingle();
     });
+  }
+
+  /// Populate session_assessments from arm_column_mappings if none exist yet.
+  /// ARM-imported planned sessions skip createSession, so they have no
+  /// session_assessments rows. Derives them from arm_column_mappings ordered
+  /// by column index, falling back to the trial's defaultInSessions assessments.
+  /// Idempotent — returns immediately if rows already exist.
+  Future<void> _ensureSessionAssessments({
+    required int sessionId,
+    required int trialId,
+  }) async {
+    final existingSA = await (_db.select(_db.sessionAssessments)
+          ..where((sa) => sa.sessionId.equals(sessionId)))
+        .get();
+    if (existingSA.isNotEmpty) return;
+
+    final mappings = await (_db.select(_db.armColumnMappings)
+          ..where((m) =>
+              m.sessionId.equals(sessionId) &
+              m.trialAssessmentId.isNotNull())
+          ..orderBy([(m) => OrderingTerm.asc(m.armColumnIndex)]))
+        .get();
+
+    final seenTaIds = <int>{};
+    final assessmentIds = <int>[];
+    for (final m in mappings) {
+      final taId = m.trialAssessmentId!;
+      if (!seenTaIds.add(taId)) continue;
+      final ta = await (_db.select(_db.trialAssessments)
+            ..where((t) => t.id.equals(taId)))
+          .getSingleOrNull();
+      if (ta?.legacyAssessmentId != null) {
+        assessmentIds.add(ta!.legacyAssessmentId!);
+      }
+    }
+
+    if (assessmentIds.isEmpty) {
+      final defaults = await (_db.select(_db.trialAssessments)
+            ..where((ta) =>
+                ta.trialId.equals(trialId) &
+                ta.defaultInSessions.equals(true) &
+                ta.isActive.equals(true) &
+                ta.legacyAssessmentId.isNotNull())
+            ..orderBy([(ta) => OrderingTerm.asc(ta.sortOrder)]))
+          .get();
+      for (final ta in defaults) {
+        assessmentIds.add(ta.legacyAssessmentId!);
+      }
+    }
+
+    for (var i = 0; i < assessmentIds.length; i++) {
+      await _db.into(_db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+              sessionId: sessionId,
+              assessmentId: assessmentIds[i],
+              sortOrder: Value(i),
+            ),
+          );
+    }
   }
 
   Future<void> closeSession(
@@ -287,13 +295,34 @@ class SessionRepository {
   Future<List<Assessment>> getSessionAssessments(int sessionId) async {
     await deduplicateSessionAssessments(sessionId);
 
-    final sessionAssessmentRows = await (_db.select(_db.sessionAssessments)
+    var sessionAssessmentRows = await (_db.select(_db.sessionAssessments)
           ..where((sa) => sa.sessionId.equals(sessionId))
           ..orderBy([
             (sa) => OrderingTerm.asc(sa.sortOrder),
             (sa) => OrderingTerm.asc(sa.id)
           ]))
         .get();
+
+    // Self-heal: ARM-imported sessions started before the populate-on-start
+    // fix landed have no session_assessments rows. Derive them on first read
+    // from arm_column_mappings (or trial defaults) so the rating screen has
+    // something to show.
+    if (sessionAssessmentRows.isEmpty) {
+      final session = await (_db.select(_db.sessions)
+            ..where((s) => s.id.equals(sessionId)))
+          .getSingleOrNull();
+      if (session != null) {
+        await _ensureSessionAssessments(
+            sessionId: sessionId, trialId: session.trialId);
+        sessionAssessmentRows = await (_db.select(_db.sessionAssessments)
+              ..where((sa) => sa.sessionId.equals(sessionId))
+              ..orderBy([
+                (sa) => OrderingTerm.asc(sa.sortOrder),
+                (sa) => OrderingTerm.asc(sa.id)
+              ]))
+            .get();
+      }
+    }
 
     final assessmentIds =
         sessionAssessmentRows.map((sa) => sa.assessmentId).toList();

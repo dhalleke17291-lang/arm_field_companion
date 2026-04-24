@@ -226,6 +226,62 @@ void main() {
     });
   });
 
+  group('getSessionAssessments self-heal', () {
+    test(
+        'populates session_assessments on read when empty and mappings exist',
+        () async {
+      // Simulates a pre-fix ARM session: started (not planned) but with no
+      // session_assessments rows. getSessionAssessments should back-fill from
+      // arm_column_mappings so the rating screen has something to show.
+      final asmtDefId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'WEDCON',
+              name: 'Weed Control',
+              category: 'percent',
+            ),
+          );
+      final asmtId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(trialId: trialId, name: 'Weed Control'),
+          );
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: asmtDefId,
+              legacyAssessmentId: Value(asmtId),
+            ),
+          );
+      // Insert a session directly in 'open' status — no planned→open flip —
+      // matching the pre-fix broken state on-device.
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'Pre-fix open session',
+              sessionDateLocal: '2026-04-02',
+            ),
+          );
+      await db.into(db.armColumnMappings).insert(
+            ArmColumnMappingsCompanion.insert(
+              trialId: trialId,
+              armColumnId: '1',
+              armColumnIndex: 0,
+              trialAssessmentId: Value(taId),
+              sessionId: Value(sessionId),
+            ),
+          );
+
+      final assessments = await sessionRepo.getSessionAssessments(sessionId);
+
+      expect(assessments, hasLength(1));
+      expect(assessments.single.id, asmtId);
+
+      // And session_assessments row was persisted, not just returned on-the-fly
+      final sa = await (db.select(db.sessionAssessments)
+            ..where((r) => r.sessionId.equals(sessionId)))
+          .get();
+      expect(sa, hasLength(1));
+    });
+  });
+
   group('ArmColumnMappingRepository.getSessionMetadata', () {
     test('returns null when no metadata row exists', () async {
       final sessionId = await insertPlannedSession(date: '2026-04-02');
