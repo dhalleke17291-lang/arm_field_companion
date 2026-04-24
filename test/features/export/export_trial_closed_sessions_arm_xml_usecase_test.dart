@@ -140,6 +140,9 @@ class _MockSessionRepository implements SessionRepository {
 
   @override
   Future<Map<int, DateTime>> getLatestSessionStartedAtByTrial() async => {};
+
+  @override
+  Future<int> backfillArmPlannedSessionNames(int trialId) async => 0;
 }
 
 class _FakePathProvider extends PathProviderPlatform {

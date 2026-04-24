@@ -39,6 +39,9 @@ class _FakeSessionRepository implements SessionRepository {
   Future<Map<int, DateTime>> getLatestSessionStartedAtByTrial() async => {};
 
   @override
+  Future<int> backfillArmPlannedSessionNames(int trialId) async => 0;
+
+  @override
   Future<bool> isAssessmentInSession(int assessmentId, int sessionId) async {
     final list = _sessionAssessments[sessionId] ?? const [];
     return list.any((a) => a.id == assessmentId);

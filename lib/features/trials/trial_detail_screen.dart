@@ -262,6 +262,23 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     _hubScrollController = ScrollController();
     _hubScrollController.addListener(_onHubScroll);
     _scheduleHubHintOnce();
+    _backfillArmSessionNamesOnce();
+  }
+
+  /// Eager one-shot rename of legacy "Planned — $date" session names for this
+  /// trial so the session tiles show assessment-based labels without waiting
+  /// for the user to open each session. Invalidates sessions provider on
+  /// success so the list rebuilds with the new names.
+  Future<void> _backfillArmSessionNamesOnce() async {
+    try {
+      final renamed = await ref
+          .read(sessionRepositoryProvider)
+          .backfillArmPlannedSessionNames(widget.trial.id);
+      if (!mounted || renamed == 0) return;
+      ref.invalidate(sessionsForTrialProvider(widget.trial.id));
+    } catch (_) {
+      // Best-effort cleanup; never block the screen on this.
+    }
   }
 
   void _onHubScroll() {
@@ -3534,15 +3551,28 @@ class SessionsView extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Primary: what will be rated (session.name is now the
+                      // comma-joined assessment names from ARM import).
+                      // Fall back to the date when the name is empty or still
+                      // the legacy "Planned — date" pattern that slipped past
+                      // the back-fill.
                       Text(
-                        _formatDateHeader(session.sessionDateLocal),
+                        _sessionHeadline(session),
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
                           color: AppDesignTokens.primaryText,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _formatDateHeader(session.sessionDateLocal),
+                        style: subtitleStyle?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
                       ),
                       if (metadataLine.isNotEmpty) ...[
                         const SizedBox(height: 4),
@@ -3619,6 +3649,17 @@ class SessionsView extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Headline text for a session tile: the session name, with a date fallback
+  /// when the name is empty or still the legacy "Planned — $date" form.
+  String _sessionHeadline(Session session) {
+    final raw = session.name.trim();
+    if (raw.isEmpty) return _formatDateHeader(session.sessionDateLocal);
+    if (RegExp(r'^Planned\s*[—-]\s*').hasMatch(raw)) {
+      return _formatDateHeader(session.sessionDateLocal);
+    }
+    return raw;
   }
 
   /// Composes "Timing · Stage · Interval" from ARM session metadata.

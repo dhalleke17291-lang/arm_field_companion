@@ -356,6 +356,93 @@ class SessionRepository {
     await _backfillArmSessionName(sessionId: sessionId, trialId: trialId);
   }
 
+  /// Batch-rename every "Planned — $date" session in [trialId] to a
+  /// comma-joined list of assessment names, derived from arm_column_mappings
+  /// (preferred) or session_assessments (fallback). Exists so the trial
+  /// detail screen can back-fill *all* pre-fix planned sessions on load
+  /// without waiting for the user to tap into each one. Returns the number
+  /// of sessions renamed.
+  Future<int> backfillArmPlannedSessionNames(int trialId) async {
+    final legacyPattern = RegExp(r'^Planned\s*[—-]\s*');
+    final sessions = await (_db.select(_db.sessions)
+          ..where((s) => s.trialId.equals(trialId) & s.isDeleted.equals(false)))
+        .get();
+    var renamed = 0;
+    for (final s in sessions) {
+      if (!legacyPattern.hasMatch(s.name)) continue;
+      final names = await _computeArmAssessmentNamesForSession(s.id, trialId);
+      if (names.isEmpty) continue;
+      await (_db.update(_db.sessions)..where((t) => t.id.equals(s.id)))
+          .write(SessionsCompanion(name: Value(names.join(', '))));
+      renamed++;
+    }
+    return renamed;
+  }
+
+  /// Returns the ordered, deduplicated assessment display names for a
+  /// session, looking first at arm_column_mappings (planned sessions with
+  /// no session_assessments yet) and falling back to session_assessments
+  /// (sessions populated by createSession or the self-heal path).
+  Future<List<String>> _computeArmAssessmentNamesForSession(
+    int sessionId,
+    int trialId,
+  ) async {
+    final names = <String>[];
+    final seen = <String>{};
+
+    // Prefer arm_column_mappings so we can rename planned sessions before
+    // they're ever opened (no session_assessments rows yet).
+    final mappings = await (_db.select(_db.armColumnMappings)
+          ..where((m) =>
+              m.sessionId.equals(sessionId) &
+              m.trialAssessmentId.isNotNull())
+          ..orderBy([(m) => OrderingTerm.asc(m.armColumnIndex)]))
+        .get();
+    final seenTa = <int>{};
+    for (final m in mappings) {
+      final taId = m.trialAssessmentId!;
+      if (!seenTa.add(taId)) continue;
+      final ta = await (_db.select(_db.trialAssessments)
+            ..where((t) => t.id.equals(taId)))
+          .getSingleOrNull();
+      if (ta == null) continue;
+      var name = ta.displayNameOverride?.trim();
+      if (name == null || name.isEmpty) {
+        final def = await (_db.select(_db.assessmentDefinitions)
+              ..where((d) => d.id.equals(ta.assessmentDefinitionId)))
+            .getSingleOrNull();
+        name = def?.name.trim();
+      }
+      if (name == null || name.isEmpty) continue;
+      if (seen.add(name)) names.add(name);
+    }
+    if (names.isNotEmpty) return names;
+
+    // Fallback: session_assessments already populated.
+    final saRows = await (_db.select(_db.sessionAssessments)
+          ..where((sa) => sa.sessionId.equals(sessionId))
+          ..orderBy([
+            (sa) => OrderingTerm.asc(sa.sortOrder),
+            (sa) => OrderingTerm.asc(sa.id),
+          ]))
+        .get();
+    if (saRows.isEmpty) return names;
+    final ids = saRows.map((sa) => sa.assessmentId).toList();
+    final asmtRows = await (_db.select(_db.assessments)
+          ..where((a) => a.id.isIn(ids)))
+        .get();
+    final byId = {for (final a in asmtRows) a.id: a};
+    for (final id in ids) {
+      final a = byId[id];
+      if (a == null) continue;
+      final cleaned =
+          a.name.replaceAll(RegExp(r'\s+—\s+TA\d+$'), '').trim();
+      if (cleaned.isEmpty) continue;
+      if (seen.add(cleaned)) names.add(cleaned);
+    }
+    return names;
+  }
+
   /// Rename an ARM-imported planned session from the legacy
   /// "Planned — $date" form to a comma-joined assessment-names form.
   /// The session tile already shows the date separately, so keeping the date
@@ -372,32 +459,11 @@ class SessionRepository {
     final oldPattern = RegExp(r'^Planned\s*[—-]\s*');
     if (!oldPattern.hasMatch(session.name)) return;
 
-    final saRows = await (_db.select(_db.sessionAssessments)
-          ..where((sa) => sa.sessionId.equals(sessionId))
-          ..orderBy([
-            (sa) => OrderingTerm.asc(sa.sortOrder),
-            (sa) => OrderingTerm.asc(sa.id),
-          ]))
-        .get();
-    if (saRows.isEmpty) return;
-    final ids = saRows.map((sa) => sa.assessmentId).toList();
-    final asmtRows = await (_db.select(_db.assessments)
-          ..where((a) => a.id.isIn(ids)))
-        .get();
-    final byId = {for (final a in asmtRows) a.id: a};
-    final ordered = [for (final id in ids) byId[id]].whereType<Assessment>();
-
-    final uniqueNames = <String>{};
-    final orderedNames = <String>[];
-    for (final a in ordered) {
-      final cleaned = a.name.replaceAll(RegExp(r'\s+—\s+TA\d+$'), '').trim();
-      if (cleaned.isEmpty) continue;
-      if (uniqueNames.add(cleaned)) orderedNames.add(cleaned);
-    }
-    if (orderedNames.isEmpty) return;
+    final names = await _computeArmAssessmentNamesForSession(sessionId, trialId);
+    if (names.isEmpty) return;
 
     await (_db.update(_db.sessions)..where((s) => s.id.equals(sessionId)))
-        .write(SessionsCompanion(name: Value(orderedNames.join(', '))));
+        .write(SessionsCompanion(name: Value(names.join(', '))));
   }
 
   Future<void> closeSession(
