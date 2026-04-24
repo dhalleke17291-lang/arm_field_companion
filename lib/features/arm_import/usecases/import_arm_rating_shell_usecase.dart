@@ -378,6 +378,7 @@ class ImportArmRatingShellUseCase {
         final dedupGroups = _groupColumnsByDedupKey(shell.assessmentColumns);
 
         final dedupAssessmentIds = <String, int>{};
+        final dedupAssessmentNames = <String, String>{};
         var sortOrder = 0;
         for (final entry in dedupGroups.entries) {
           final first = entry.value.first;
@@ -393,6 +394,7 @@ class ImportArmRatingShellUseCase {
                 pestCode,
               ]) ??
               'Assessment ${sortOrder + 1}';
+          dedupAssessmentNames[entry.key] = name;
           final unit = first.ratingUnit;
 
           var defId = await _findDefinitionByCode(code);
@@ -512,11 +514,26 @@ class ImportArmRatingShellUseCase {
         for (final dateStr in sortedDates) {
           final parsed = tryParseShellRatingDate(dateStr);
           final sessionDateLocal = parsed?.canonicalYyyyMmDd ?? dateStr.trim();
-          final sessionName = 'Planned — $sessionDateLocal';
           final repCol = shell.assessmentColumns.firstWhere(
             (c) => (c.ratingDate?.trim() ?? '') == dateStr,
           );
           final rater = _firstNonEmpty([repCol.assessedBy]);
+
+          // Name the session by the distinct assessments rated on this date
+          // rather than the date itself — the session tile already shows the
+          // date elsewhere, so including it in the name was duplication. Fall
+          // back to "Planned — date" only when no assessment columns map here.
+          final namesForDate = <String>{};
+          for (final col in shell.assessmentColumns) {
+            if ((col.ratingDate?.trim() ?? '') != dateStr) continue;
+            final k = _dedupKeyFor(col);
+            if (k == null) continue;
+            final n = dedupAssessmentNames[k];
+            if (n != null && n.trim().isNotEmpty) namesForDate.add(n.trim());
+          }
+          final sessionName = namesForDate.isEmpty
+              ? 'Planned — $sessionDateLocal'
+              : namesForDate.join(', ');
 
           final sessionId = await _db.into(_db.sessions).insert(
                 SessionsCompanion.insert(

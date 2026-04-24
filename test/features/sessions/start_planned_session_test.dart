@@ -274,6 +274,72 @@ void main() {
     });
   });
 
+  group('ARM session name back-fill', () {
+    test('renames "Planned — date" to comma-joined assessment names', () async {
+      // An ARM-imported planned session shows up initially as "Planned — date".
+      // After the session is populated with assessments we rename it to the
+      // cleaner comma-joined form so the session tile's date isn't duplicated.
+      final asmtId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(trialId: trialId, name: 'CONTRO'),
+          );
+      final asmt2 = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(trialId: trialId, name: 'LODGIN'),
+          );
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'Planned — 2026-04-02',
+              sessionDateLocal: '2026-04-02',
+            ),
+          );
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+                sessionId: sessionId,
+                assessmentId: asmtId,
+                sortOrder: const Value(0)),
+          );
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+                sessionId: sessionId,
+                assessmentId: asmt2,
+                sortOrder: const Value(1)),
+          );
+
+      await sessionRepo.getSessionAssessments(sessionId);
+
+      final session = await (db.select(db.sessions)
+            ..where((s) => s.id.equals(sessionId)))
+          .getSingle();
+      expect(session.name, 'CONTRO, LODGIN');
+    });
+
+    test('leaves user-customized session names untouched', () async {
+      final asmtId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(trialId: trialId, name: 'CONTRO'),
+          );
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'Week 1 rating walk',
+              sessionDateLocal: '2026-04-02',
+            ),
+          );
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+                sessionId: sessionId,
+                assessmentId: asmtId,
+                sortOrder: const Value(0)),
+          );
+
+      await sessionRepo.getSessionAssessments(sessionId);
+
+      final session = await (db.select(db.sessions)
+            ..where((s) => s.id.equals(sessionId)))
+          .getSingle();
+      expect(session.name, 'Week 1 rating walk');
+    });
+  });
+
   group('getSessionAssessments self-heal', () {
     test(
         'populates session_assessments on read when empty and mappings exist',

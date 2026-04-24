@@ -207,7 +207,8 @@ class SessionRepository {
   /// ARM-imported planned sessions skip createSession, so they have no
   /// session_assessments rows. Derives them from arm_column_mappings ordered
   /// by column index, falling back to the trial's defaultInSessions assessments.
-  /// Idempotent — returns immediately if rows already exist.
+  /// Also back-fills ARM-imported session names from the old "Planned — $date"
+  /// form to the cleaner assessment-names form.
   Future<void> _ensureSessionAssessments({
     required int sessionId,
     required int trialId,
@@ -215,7 +216,10 @@ class SessionRepository {
     final existingSA = await (_db.select(_db.sessionAssessments)
           ..where((sa) => sa.sessionId.equals(sessionId)))
         .get();
-    if (existingSA.isNotEmpty) return;
+    if (existingSA.isNotEmpty) {
+      await _backfillArmSessionName(sessionId: sessionId, trialId: trialId);
+      return;
+    }
 
     final mappings = await (_db.select(_db.armColumnMappings)
           ..where((m) =>
@@ -348,6 +352,52 @@ class SessionRepository {
             ),
           );
     }
+
+    await _backfillArmSessionName(sessionId: sessionId, trialId: trialId);
+  }
+
+  /// Rename an ARM-imported planned session from the legacy
+  /// "Planned — $date" form to a comma-joined assessment-names form.
+  /// The session tile already shows the date separately, so keeping the date
+  /// in the name was duplication. Only runs for sessions whose current name
+  /// matches the old pattern — any user-customized name is left alone.
+  Future<void> _backfillArmSessionName({
+    required int sessionId,
+    required int trialId,
+  }) async {
+    final session = await (_db.select(_db.sessions)
+          ..where((s) => s.id.equals(sessionId)))
+        .getSingleOrNull();
+    if (session == null) return;
+    final oldPattern = RegExp(r'^Planned\s*[—-]\s*');
+    if (!oldPattern.hasMatch(session.name)) return;
+
+    final saRows = await (_db.select(_db.sessionAssessments)
+          ..where((sa) => sa.sessionId.equals(sessionId))
+          ..orderBy([
+            (sa) => OrderingTerm.asc(sa.sortOrder),
+            (sa) => OrderingTerm.asc(sa.id),
+          ]))
+        .get();
+    if (saRows.isEmpty) return;
+    final ids = saRows.map((sa) => sa.assessmentId).toList();
+    final asmtRows = await (_db.select(_db.assessments)
+          ..where((a) => a.id.isIn(ids)))
+        .get();
+    final byId = {for (final a in asmtRows) a.id: a};
+    final ordered = [for (final id in ids) byId[id]].whereType<Assessment>();
+
+    final uniqueNames = <String>{};
+    final orderedNames = <String>[];
+    for (final a in ordered) {
+      final cleaned = a.name.replaceAll(RegExp(r'\s+—\s+TA\d+$'), '').trim();
+      if (cleaned.isEmpty) continue;
+      if (uniqueNames.add(cleaned)) orderedNames.add(cleaned);
+    }
+    if (orderedNames.isEmpty) return;
+
+    await (_db.update(_db.sessions)..where((s) => s.id.equals(sessionId)))
+        .write(SessionsCompanion(name: Value(orderedNames.join(', '))));
   }
 
   Future<void> closeSession(
@@ -391,17 +441,16 @@ class SessionRepository {
           ]))
         .get();
 
-    // Self-heal: ARM-imported sessions started before the populate-on-start
-    // fix landed have no session_assessments rows. Derive them on first read
-    // from arm_column_mappings (or trial defaults) so the rating screen has
-    // something to show.
-    if (sessionAssessmentRows.isEmpty) {
-      final session = await (_db.select(_db.sessions)
-            ..where((s) => s.id.equals(sessionId)))
-          .getSingleOrNull();
-      if (session != null) {
-        await _ensureSessionAssessments(
-            sessionId: sessionId, trialId: session.trialId);
+    // Self-heal: always run the ensure helper — it populates rows when empty
+    // and back-fills legacy "Planned — date" session names either way. Both
+    // operations are idempotent, so running on every read is cheap.
+    final session = await (_db.select(_db.sessions)
+          ..where((s) => s.id.equals(sessionId)))
+        .getSingleOrNull();
+    if (session != null) {
+      await _ensureSessionAssessments(
+          sessionId: sessionId, trialId: session.trialId);
+      if (sessionAssessmentRows.isEmpty) {
         sessionAssessmentRows = await (_db.select(_db.sessionAssessments)
               ..where((sa) => sa.sessionId.equals(sessionId))
               ..orderBy([
