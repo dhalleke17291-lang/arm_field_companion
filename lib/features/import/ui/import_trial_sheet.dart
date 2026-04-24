@@ -10,7 +10,6 @@ import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../export/domain/shell_link_preview.dart';
-import '../../protocol_import/protocol_import_screen.dart';
 import '../../trials/trial_detail_screen.dart';
 
 /// Bottom sheet: Rating Shell, protocol CSV, or link rating sheet to a trial.
@@ -151,22 +150,6 @@ class ImportTrialSheet extends ConsumerWidget {
                     ),
                   );
                 }
-              },
-            ),
-            const SizedBox(height: AppDesignTokens.spacing8),
-            _ImportOptionTile(
-              icon: Icons.file_download_outlined,
-              title: 'Import from CSV',
-              subtitle:
-                  'Import trial structure from a CSV file (protocol format)',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push<void>(
-                  parentContext,
-                  MaterialPageRoute<void>(
-                    builder: (_) => const ProtocolImportScreen(),
-                  ),
-                );
               },
             ),
             const SizedBox(height: AppDesignTokens.spacing8),

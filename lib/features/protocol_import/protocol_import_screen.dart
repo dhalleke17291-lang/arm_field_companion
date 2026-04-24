@@ -19,6 +19,13 @@ import 'imported_protocol_file_screen.dart';
 /// **Trials hub:** New protocol-typed trials are created here (or ARM import), not via
 /// the Custom Trials manual-create dialog. [trial] null = create new trial from file;
 /// non-null = add treatments/plots to this trial.
+@Deprecated(
+  'CSV import entry point was removed from the import sheet for pilot; '
+  'pilot users import only via Rating Shell (.xlsx). Class retained so '
+  'historical protocol-imported trials continue to render; slated for '
+  'removal post-pilot once confirmed no user databases still depend on '
+  'this screen. Do not add new UI entry points to it.',
+)
 class ProtocolImportScreen extends ConsumerStatefulWidget {
   final Trial? trial;
 

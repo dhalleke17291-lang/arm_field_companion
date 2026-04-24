@@ -11,6 +11,13 @@ import '../trials/trial_repository.dart';
 import 'protocol_import_models.dart';
 
 /// Full protocol import: Source Detection → Structural Scan → Mapping → Validation → Review → User Approval → Integration (Charter PART 16).
+@Deprecated(
+  'CSV import entry point was removed from the import sheet for pilot; '
+  'pilot users import only via Rating Shell (.xlsx). Use case retained so '
+  'historical protocol-imported trials continue to render; slated for '
+  'removal post-pilot once confirmed no user databases still depend on '
+  'this code path. Do not add new callers.',
+)
 class ProtocolImportUseCase {
   final AppDatabase _db;
   final TrialRepository _trialRepository;
