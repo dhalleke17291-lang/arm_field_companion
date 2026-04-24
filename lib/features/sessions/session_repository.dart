@@ -184,6 +184,60 @@ class SessionRepository {
             cropStageBbch != null ? Value(cropStageBbch) : const Value.absent(),
       ));
 
+      // Populate session_assessments from ARM column mappings if none exist yet.
+      // ARM-imported planned sessions skip createSession, so they have no
+      // session_assessments rows. Derive them from arm_column_mappings ordered
+      // by column index, falling back to the trial's defaultInSessions assessments.
+      final existingSA = await (_db.select(_db.sessionAssessments)
+            ..where((sa) => sa.sessionId.equals(sessionId)))
+          .get();
+      if (existingSA.isEmpty) {
+        final mappings = await (_db.select(_db.armColumnMappings)
+              ..where((m) =>
+                  m.sessionId.equals(sessionId) &
+                  m.trialAssessmentId.isNotNull())
+              ..orderBy([(m) => OrderingTerm.asc(m.armColumnIndex)]))
+            .get();
+
+        final seenTaIds = <int>{};
+        final assessmentIds = <int>[];
+        for (final m in mappings) {
+          final taId = m.trialAssessmentId!;
+          if (!seenTaIds.add(taId)) continue;
+          final ta = await (_db.select(_db.trialAssessments)
+                ..where((t) => t.id.equals(taId)))
+              .getSingleOrNull();
+          if (ta?.legacyAssessmentId != null) {
+            assessmentIds.add(ta!.legacyAssessmentId!);
+          }
+        }
+
+        // Fallback: trial's defaultInSessions assessments when no ARM mappings
+        if (assessmentIds.isEmpty) {
+          final defaults = await (_db.select(_db.trialAssessments)
+                ..where((ta) =>
+                    ta.trialId.equals(session.trialId) &
+                    ta.defaultInSessions.equals(true) &
+                    ta.isActive.equals(true) &
+                    ta.legacyAssessmentId.isNotNull())
+                ..orderBy([(ta) => OrderingTerm.asc(ta.sortOrder)]))
+              .get();
+          for (final ta in defaults) {
+            assessmentIds.add(ta.legacyAssessmentId!);
+          }
+        }
+
+        for (var i = 0; i < assessmentIds.length; i++) {
+          await _db.into(_db.sessionAssessments).insert(
+                SessionAssessmentsCompanion.insert(
+                  sessionId: sessionId,
+                  assessmentId: assessmentIds[i],
+                  sortOrder: Value(i),
+                ),
+              );
+        }
+      }
+
       await _db.into(_db.auditEvents).insert(
             AuditEventsCompanion.insert(
               trialId: Value(session.trialId),

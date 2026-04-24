@@ -278,6 +278,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   void initState() {
     super.initState();
     final raw = widget.initialAssessmentIndex ?? 0;
+    // Guard: assessments list must be non-empty. If somehow empty (e.g. session
+    // started before session_assessments were populated), pop immediately rather
+    // than crashing with a RangeError on an out-of-bounds index.
+    if (widget.assessments.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) Navigator.of(context).pop();
+      });
+      return;
+    }
     _assessmentIndex = raw.clamp(0, widget.assessments.length - 1);
     _currentAssessment = widget.assessments[_assessmentIndex];
     _loadPriorRating();

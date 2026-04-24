@@ -151,6 +151,79 @@ void main() {
         throwsA(isA<SessionNotFoundException>()),
       );
     });
+
+    test('populates session_assessments from arm_column_mappings on start',
+        () async {
+      // Set up: assessment_definition → assessment → trial_assessment → arm mapping
+      final asmtDefId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'WEDCON',
+              name: 'Weed Control',
+              category: 'percent',
+            ),
+          );
+      final asmtId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(trialId: trialId, name: 'Weed Control'),
+          );
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: asmtDefId,
+              legacyAssessmentId: Value(asmtId),
+            ),
+          );
+      final sessionId = await insertPlannedSession(date: '2026-04-02');
+      await db.into(db.armColumnMappings).insert(
+            ArmColumnMappingsCompanion.insert(
+              trialId: trialId,
+              armColumnId: '1',
+              armColumnIndex: 0,
+              trialAssessmentId: Value(taId),
+              sessionId: Value(sessionId),
+            ),
+          );
+
+      await sessionRepo.startPlannedSession(sessionId);
+
+      final sa = await (db.select(db.sessionAssessments)
+            ..where((r) => r.sessionId.equals(sessionId)))
+          .get();
+      expect(sa, hasLength(1));
+      expect(sa.single.assessmentId, asmtId);
+    });
+
+    test(
+        'falls back to defaultInSessions assessments when no arm column mappings',
+        () async {
+      final asmtDefId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'WEDCON',
+              name: 'Weed Control',
+              category: 'percent',
+            ),
+          );
+      final asmtId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(trialId: trialId, name: 'Weed Control'),
+          );
+      await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: asmtDefId,
+              legacyAssessmentId: Value(asmtId),
+              // defaultInSessions defaults to true
+            ),
+          );
+      final sessionId = await insertPlannedSession(date: '2026-04-02');
+      // No arm_column_mappings inserted
+
+      await sessionRepo.startPlannedSession(sessionId);
+
+      final sa = await (db.select(db.sessionAssessments)
+            ..where((r) => r.sessionId.equals(sessionId)))
+          .get();
+      expect(sa, hasLength(1));
+      expect(sa.single.assessmentId, asmtId);
+    });
   });
 
   group('ArmColumnMappingRepository.getSessionMetadata', () {
