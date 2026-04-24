@@ -263,7 +263,9 @@ void main() {
       // Legacy Assessment row was created and linked back to the trial_assessment
       final assessments = await sessionRepo.getSessionAssessments(sessionId);
       expect(assessments, hasLength(1));
-      expect(assessments.single.name, contains('Weed Control'));
+      // Clean display name (no "— TA$id" suffix) so the rating screen doesn't
+      // surface internal row ids.
+      expect(assessments.single.name, 'Weed Control');
 
       final taAfter = await (db.select(db.trialAssessments)
             ..where((t) => t.id.equals(taId)))

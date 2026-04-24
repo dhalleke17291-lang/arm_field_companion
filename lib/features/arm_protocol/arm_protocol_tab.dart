@@ -655,12 +655,21 @@ class _ArmAssessmentsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // One row per ARM column, not one per dedup group. An "assessment" in the
+    // researcher's mental model is a specific measurement at a specific timing,
+    // so the same identity (CONTRO / PLANT / % / PLOT) rated on three dates
+    // must render as three rows with different dates and growth stages — not
+    // a single collapsed row.
+    final mappingsAsync = ref.watch(armColumnMappingsForTrialProvider(trialId));
     final assessmentsAsync =
         ref.watch(trialAssessmentsWithDefinitionsForTrialProvider(trialId));
     final aamMapAsync =
         ref.watch(armAssessmentMetadataMapForTrialProvider(trialId));
+    final sessionsAsync = ref.watch(sessionsForTrialProvider(trialId));
+    final sessionMetaAsync =
+        ref.watch(armSessionMetadataMapForTrialProvider(trialId));
 
-    return assessmentsAsync.when(
+    return mappingsAsync.when(
       loading: () => const Padding(
         padding: EdgeInsets.all(AppDesignTokens.spacing16),
         child: Center(child: CircularProgressIndicator.adaptive()),
@@ -672,23 +681,18 @@ class _ArmAssessmentsSection extends ConsumerWidget {
           style: const TextStyle(color: AppDesignTokens.warningFg),
         ),
       ),
-      data: (pairs) {
-        // AAM map is additive context; render assessments even while it is
-        // still loading to avoid a flash of emptiness on ARM trials.
-        final aamMap = aamMapAsync.valueOrNull ?? const <int, ArmAssessmentMetadataData>{};
+      data: (mappings) {
+        final aamMap = aamMapAsync.valueOrNull ??
+            const <int, ArmAssessmentMetadataData>{};
+        final pairs = assessmentsAsync.valueOrNull ??
+            const <(TrialAssessment, AssessmentDefinition)>[];
+        final pairById = {for (final p in pairs) p.$1.id: p};
+        final sessions = sessionsAsync.valueOrNull ?? const <Session>[];
+        final sessionById = {for (final s in sessions) s.id: s};
+        final sessionMetaMap = sessionMetaAsync.valueOrNull ??
+            const <int, ArmSessionMetadataData>{};
 
-        // v60 moved per-column ARM fields to arm_assessment_metadata. An
-        // assessment is "ARM-tagged" when its AAM row has
-        // `armImportColumnIndex` set.
-        int? armColIndexFor((TrialAssessment, AssessmentDefinition) pair) {
-          return aamMap[pair.$1.id]?.armImportColumnIndex;
-        }
-
-        final armPairs = pairs.where((p) => armColIndexFor(p) != null).toList()
-          ..sort((a, b) => (armColIndexFor(a) ?? 0)
-              .compareTo(armColIndexFor(b) ?? 0));
-
-        if (armPairs.isEmpty) {
+        if (mappings.isEmpty) {
           return const _SectionCard(
             icon: Icons.assessment_outlined,
             title: 'ARM Assessments',
@@ -704,8 +708,20 @@ class _ArmAssessmentsSection extends ConsumerWidget {
           title: 'ARM Assessments',
           iconColor: const Color(0xFF7C3AED),
           children: [
-            for (final (ta, def) in armPairs)
-              _ArmAssessmentRow(ta: ta, def: def, aam: aamMap[ta.id]),
+            for (final m in mappings)
+              _ArmAssessmentRow(
+                mapping: m,
+                pair: m.trialAssessmentId != null
+                    ? pairById[m.trialAssessmentId!]
+                    : null,
+                aam: m.trialAssessmentId != null
+                    ? aamMap[m.trialAssessmentId!]
+                    : null,
+                session: m.sessionId != null ? sessionById[m.sessionId!] : null,
+                sessionMeta: m.sessionId != null
+                    ? sessionMetaMap[m.sessionId!]
+                    : null,
+              ),
           ],
         );
       },
@@ -715,29 +731,54 @@ class _ArmAssessmentsSection extends ConsumerWidget {
 
 class _ArmAssessmentRow extends StatelessWidget {
   const _ArmAssessmentRow({
-    required this.ta,
-    required this.def,
+    required this.mapping,
+    required this.pair,
     required this.aam,
+    required this.session,
+    required this.sessionMeta,
   });
 
-  final TrialAssessment ta;
-  final AssessmentDefinition def;
+  final ArmColumnMapping mapping;
+  final (TrialAssessment, AssessmentDefinition)? pair;
   final ArmAssessmentMetadataData? aam;
+  final Session? session;
+  final ArmSessionMetadataData? sessionMeta;
 
   @override
   Widget build(BuildContext context) {
-    // v60 moved per-column ARM fields to arm_assessment_metadata; v61
-    // (Unit 5d) finished the cutover by dropping seName / seDescription /
-    // armRatingType / pestCode from trial_assessments. All ARM display
-    // fields are now read from AAM.
-    final name =
-        ta.displayNameOverride?.isNotEmpty == true ? ta.displayNameOverride! : def.name;
-    final colIdx = aam?.armImportColumnIndex;
-    final columnId = aam?.armShellColumnId;
-    final ratingDate = aam?.armShellRatingDate;
+    final ta = pair?.$1;
+    final def = pair?.$2;
+    final name = ta?.displayNameOverride?.isNotEmpty == true
+        ? ta!.displayNameOverride!
+        : def?.name ?? 'Orphan column';
+
+    // Per-column identifiers from the mapping itself — these vary across rows
+    // even when the identity (AAM) is shared.
+    final colIdx = mapping.armColumnIndex;
+    final columnId = mapping.armColumnId;
+    // Per-date fields come from the session's ARM metadata when available,
+    // falling back to the AAM snapshot of the first column for shells that
+    // pre-date the session-metadata split.
+    final ratingDate =
+        session?.sessionDateLocal ?? aam?.armShellRatingDate;
+    final timingCode =
+        sessionMeta?.timingCode ?? aam?.shellAppTimingCode;
+    final cropStageMaj =
+        sessionMeta?.cropStageMaj ?? aam?.shellCropStageMaj;
+    final cropStageMin =
+        sessionMeta?.cropStageMin ?? aam?.shellCropStageMin;
+    final cropStageScale =
+        sessionMeta?.cropStageScale ?? aam?.shellStageScale;
+    final trtEvalInterval =
+        sessionMeta?.trtEvalInterval ?? aam?.shellTrtEvalInterval;
+    final plantEvalInterval =
+        sessionMeta?.plantEvalInterval ?? aam?.shellPlantEvalInterval;
+    final assessedBy =
+        sessionMeta?.raterInitials ?? aam?.shellAssessedBy;
+    // Identity fields (shared across every column in the dedup group) come
+    // from AAM.
     final seName = aam?.seName;
     final ratingType = aam?.ratingType;
-    final appTimingCode = aam?.shellAppTimingCode;
 
     final m = aam;
     final detailParts = <String>[
@@ -756,32 +797,20 @@ class _ArmAssessmentRow extends StatelessWidget {
           'Size unit: ${m.shellSizeUnit}',
         if (m.shellSampleSize != null && m.shellSampleSize!.isNotEmpty)
           'Sample size: ${m.shellSampleSize}',
-        if (m.numSubsamples != null)
-          '# subsamples: ${m.numSubsamples}',
+        if (m.numSubsamples != null) '# subsamples: ${m.numSubsamples}',
         if (m.shellCollectionBasisUnit != null &&
             m.shellCollectionBasisUnit!.trim().isNotEmpty)
           'Coll. basis unit: ${m.shellCollectionBasisUnit}',
-        if (m.shellCropOrPest != null && m.shellCropOrPest!.trim().isNotEmpty)
+        if (m.shellCropOrPest != null &&
+            m.shellCropOrPest!.trim().isNotEmpty)
           'Crop/Pest: ${m.shellCropOrPest}',
-        if (m.shellRatingTime != null && m.shellRatingTime!.trim().isNotEmpty)
+        if (m.shellRatingTime != null &&
+            m.shellRatingTime!.trim().isNotEmpty)
           'Rating time: ${m.shellRatingTime}',
         if (m.shellPestType != null && m.shellPestType!.trim().isNotEmpty)
           'Pest type: ${m.shellPestType}',
         if (m.shellPestName != null && m.shellPestName!.trim().isNotEmpty)
           'Pest: ${m.shellPestName}',
-        if (m.shellCropCode != null && m.shellCropCode!.trim().isNotEmpty ||
-            m.shellCropName != null && m.shellCropName!.trim().isNotEmpty ||
-            m.shellCropVariety != null &&
-                m.shellCropVariety!.trim().isNotEmpty)
-          [
-            if (m.shellCropCode != null && m.shellCropCode!.trim().isNotEmpty)
-              m.shellCropCode!,
-            if (m.shellCropName != null && m.shellCropName!.trim().isNotEmpty)
-              m.shellCropName!,
-            if (m.shellCropVariety != null &&
-                m.shellCropVariety!.trim().isNotEmpty)
-              m.shellCropVariety!,
-          ].join(' · '),
         if (m.shellReportingBasis != null &&
                 m.shellReportingBasis!.trim().isNotEmpty ||
             m.shellReportingBasisUnit != null &&
@@ -794,81 +823,24 @@ class _ArmAssessmentRow extends StatelessWidget {
                 m.shellReportingBasisUnit!.trim().isNotEmpty)
               m.shellReportingBasisUnit!,
           ].join(' ')}',
-        if (m.shellStageScale != null && m.shellStageScale!.trim().isNotEmpty)
-          'Stage scale: ${m.shellStageScale}',
-        if (m.shellCropStageMaj != null && m.shellCropStageMaj!.isNotEmpty ||
-            m.shellCropStageMin != null &&
-                m.shellCropStageMin!.trim().isNotEmpty ||
-            m.shellCropStageMax != null &&
-                m.shellCropStageMax!.trim().isNotEmpty)
-          'Crop stage: ${[
-            if (m.shellCropStageMaj != null &&
-                m.shellCropStageMaj!.trim().isNotEmpty)
-              m.shellCropStageMaj!,
-            if (m.shellCropStageMin != null &&
-                m.shellCropStageMin!.trim().isNotEmpty)
-              m.shellCropStageMin!,
-            if (m.shellCropStageMax != null &&
-                m.shellCropStageMax!.trim().isNotEmpty)
-              m.shellCropStageMax!,
-          ].join('–')}',
-        if (m.shellCropDensity != null &&
-                m.shellCropDensity!.trim().isNotEmpty ||
-            m.shellCropDensityUnit != null &&
-                m.shellCropDensityUnit!.trim().isNotEmpty)
-          'Crop density: ${[
-            if (m.shellCropDensity != null &&
-                m.shellCropDensity!.trim().isNotEmpty)
-              m.shellCropDensity!,
-            if (m.shellCropDensityUnit != null &&
-                m.shellCropDensityUnit!.trim().isNotEmpty)
-              m.shellCropDensityUnit!,
-          ].join(' ')}',
-        if (m.shellPestStageMaj != null &&
-                m.shellPestStageMaj!.trim().isNotEmpty ||
-            m.shellPestStageMin != null &&
-                m.shellPestStageMin!.trim().isNotEmpty ||
-            m.shellPestStageMax != null &&
-                m.shellPestStageMax!.trim().isNotEmpty)
-          'Pest stage: ${[
-            if (m.shellPestStageMaj != null &&
-                m.shellPestStageMaj!.trim().isNotEmpty)
-              m.shellPestStageMaj!,
-            if (m.shellPestStageMin != null &&
-                m.shellPestStageMin!.trim().isNotEmpty)
-              m.shellPestStageMin!,
-            if (m.shellPestStageMax != null &&
-                m.shellPestStageMax!.trim().isNotEmpty)
-              m.shellPestStageMax!,
-          ].join('–')}',
-        if (m.shellPestDensity != null &&
-                m.shellPestDensity!.trim().isNotEmpty ||
-            m.shellPestDensityUnit != null &&
-                m.shellPestDensityUnit!.trim().isNotEmpty)
-          'Pest density: ${[
-            if (m.shellPestDensity != null &&
-                m.shellPestDensity!.trim().isNotEmpty)
-              m.shellPestDensity!,
-            if (m.shellPestDensityUnit != null &&
-                m.shellPestDensityUnit!.trim().isNotEmpty)
-              m.shellPestDensityUnit!,
-          ].join(' ')}',
-        if (m.shellTrtEvalInterval != null &&
-            m.shellTrtEvalInterval!.trim().isNotEmpty)
-          'Trt interval: ${m.shellTrtEvalInterval}',
-        if (m.shellPlantEvalInterval != null &&
-            m.shellPlantEvalInterval!.trim().isNotEmpty)
-          'Plant interval: ${m.shellPlantEvalInterval}',
-        if (m.shellAssessedBy != null && m.shellAssessedBy!.isNotEmpty)
-          'Assessed by: ${m.shellAssessedBy}',
-        if (m.shellEquipment != null && m.shellEquipment!.isNotEmpty)
-          'Equipment: ${m.shellEquipment}',
-        if (m.shellUntreatedRatingType != null &&
-            m.shellUntreatedRatingType!.trim().isNotEmpty)
-          'Untrt. type: ${m.shellUntreatedRatingType}',
-        if (m.shellArmActions != null && m.shellArmActions!.trim().isNotEmpty)
-          'ARM actions: ${m.shellArmActions}',
       ],
+      // Per-date details now live outside the AAM block.
+      if (cropStageScale != null && cropStageScale.trim().isNotEmpty)
+        'Stage scale: $cropStageScale',
+      if ((cropStageMaj != null && cropStageMaj.trim().isNotEmpty) ||
+          (cropStageMin != null && cropStageMin.trim().isNotEmpty))
+        'Crop stage: ${[
+          if (cropStageMaj != null && cropStageMaj.trim().isNotEmpty)
+            cropStageMaj,
+          if (cropStageMin != null && cropStageMin.trim().isNotEmpty)
+            cropStageMin,
+        ].join('–')}',
+      if (trtEvalInterval != null && trtEvalInterval.trim().isNotEmpty)
+        'Trt interval: $trtEvalInterval',
+      if (plantEvalInterval != null && plantEvalInterval.trim().isNotEmpty)
+        'Plant interval: $plantEvalInterval',
+      if (assessedBy != null && assessedBy.trim().isNotEmpty)
+        'Assessed by: $assessedBy',
     ];
 
     return Container(
@@ -887,26 +859,24 @@ class _ArmAssessmentRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (colIdx != null) ...[
-            Container(
-              width: 32,
-              height: 32,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEDE9FE),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                '$colIdx',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF7C3AED),
-                ),
+          Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDE9FE),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              '$colIdx',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF7C3AED),
               ),
             ),
-            const SizedBox(width: 12),
-          ],
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -924,8 +894,7 @@ class _ArmAssessmentRow extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 2,
                   children: [
-                    if (columnId != null)
-                      _MicroChip(label: columnId, color: const Color(0xFF7C3AED)),
+                    _MicroChip(label: columnId, color: const Color(0xFF7C3AED)),
                     if (ratingDate != null)
                       _MicroChip(
                         label: ratingDate,
@@ -933,13 +902,14 @@ class _ArmAssessmentRow extends StatelessWidget {
                         icon: Icons.calendar_today,
                       ),
                     if (seName != null && seName.isNotEmpty)
-                      _MicroChip(label: seName, color: const Color(0xFF0369A1)),
-                    if (ratingType != null && ratingType.isNotEmpty)
-                      _MicroChip(label: ratingType, color: const Color(0xFF047857)),
-                    if (appTimingCode != null &&
-                        appTimingCode.trim().isNotEmpty)
                       _MicroChip(
-                        label: appTimingCode,
+                          label: seName, color: const Color(0xFF0369A1)),
+                    if (ratingType != null && ratingType.isNotEmpty)
+                      _MicroChip(
+                          label: ratingType, color: const Color(0xFF047857)),
+                    if (timingCode != null && timingCode.trim().isNotEmpty)
+                      _MicroChip(
+                        label: timingCode,
                         color: const Color(0xFFB45309),
                       ),
                   ],

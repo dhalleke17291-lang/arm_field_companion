@@ -256,6 +256,33 @@ class SessionRepository {
           .getSingleOrNull();
       if (ta == null || ta.trialId != trialId) continue;
       if (ta.legacyAssessmentId != null) {
+        // Back-fill cleanup: an earlier revision of this helper always named
+        // the legacy assessment "DisplayName — TA$id". Rename to the clean
+        // display name when no other assessment in the trial claims it, so the
+        // rating screen shows "CONTRO" instead of "CONTRO — TA5".
+        final existingAsmt = await (_db.select(_db.assessments)
+              ..where((a) => a.id.equals(ta.legacyAssessmentId!)))
+            .getSingleOrNull();
+        if (existingAsmt != null) {
+          final def = await (_db.select(_db.assessmentDefinitions)
+                ..where((d) => d.id.equals(ta.assessmentDefinitionId)))
+              .getSingleOrNull();
+          final cleanName = ta.displayNameOverride ?? def?.name;
+          if (cleanName != null &&
+              existingAsmt.name == '$cleanName — TA$taId') {
+            final clash = await (_db.select(_db.assessments)
+                  ..where((a) =>
+                      a.trialId.equals(trialId) &
+                      a.name.equals(cleanName) &
+                      a.id.equals(existingAsmt.id).not()))
+                .getSingleOrNull();
+            if (clash == null) {
+              await (_db.update(_db.assessments)
+                    ..where((a) => a.id.equals(existingAsmt.id)))
+                  .write(AssessmentsCompanion(name: Value(cleanName)));
+            }
+          }
+        }
         assessmentIds.add(ta.legacyAssessmentId!);
         continue;
       }
@@ -263,23 +290,49 @@ class SessionRepository {
             ..where((d) => d.id.equals(ta.assessmentDefinitionId)))
           .getSingleOrNull();
       if (def == null) continue;
+      // Prefer the clean display name ("CONTRO", "Phytotoxicity", etc.) so
+      // the rating screen doesn't surface internal row ids like "CONTRO — TA5".
+      // Fall back to the legacy uniqueness-suffixed form only when a different
+      // trial_assessment already claims the clean name (extremely rare for ARM
+      // imports — dedup guarantees one TA per identity within a trial).
       final displayName = ta.displayNameOverride ?? def.name;
-      final uniqueName = '$displayName — TA$taId';
-      final existing = await (_db.select(_db.assessments)
+      int? legacyId;
+      final existingClean = await (_db.select(_db.assessments)
             ..where((a) =>
-                a.trialId.equals(trialId) & a.name.equals(uniqueName)))
+                a.trialId.equals(trialId) & a.name.equals(displayName)))
           .getSingleOrNull();
-      final legacyId = existing?.id ??
-          await _db.into(_db.assessments).insert(
-                AssessmentsCompanion.insert(
-                  trialId: trialId,
-                  name: uniqueName,
-                  dataType: Value(def.dataType),
-                  unit: Value(def.unit),
-                  minValue: Value(def.scaleMin),
-                  maxValue: Value(def.scaleMax),
-                ),
-              );
+      if (existingClean != null) {
+        final claimed = await (_db.select(_db.trialAssessments)
+              ..where((t) =>
+                  t.trialId.equals(trialId) &
+                  t.legacyAssessmentId.equals(existingClean.id)))
+            .getSingleOrNull();
+        if (claimed == null || claimed.id == taId) {
+          legacyId = existingClean.id;
+        }
+      }
+      if (legacyId == null) {
+        final name = existingClean == null
+            ? displayName
+            : '$displayName — TA$taId';
+        final suffixed = existingClean == null
+            ? null
+            : await (_db.select(_db.assessments)
+                  ..where((a) =>
+                      a.trialId.equals(trialId) & a.name.equals(name)))
+                .getSingleOrNull();
+        legacyId = suffixed?.id ??
+            await _db.into(_db.assessments).insert(
+                  AssessmentsCompanion.insert(
+                    trialId: trialId,
+                    name: name,
+                    dataType: Value(def.dataType),
+                    unit: Value(def.unit),
+                    minValue: Value(def.scaleMin),
+                    maxValue: Value(def.scaleMax),
+                  ),
+                );
+      }
       await (_db.update(_db.trialAssessments)
             ..where((t) => t.id.equals(taId)))
           .write(TrialAssessmentsCompanion(legacyAssessmentId: Value(legacyId)));

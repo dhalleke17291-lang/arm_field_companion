@@ -312,6 +312,27 @@ final armAssessmentMetadataMapForTrialProvider =
   return {for (final r in rows) r.trialAssessmentId: r};
 });
 
+/// All ARM column mappings for [trialId], ordered by shell column index.
+/// Used by the ARM Protocol tab's Assessments sub-section to render one row
+/// per ARM column so the same assessment rated on multiple dates shows as
+/// distinct rows (same identity, different date / timing / growth stage).
+final armColumnMappingsForTrialProvider =
+    FutureProvider.family<List<ArmColumnMapping>, int>((ref, trialId) {
+  return ref.watch(armColumnMappingRepositoryProvider).getForTrial(trialId);
+});
+
+/// Map of `sessionId → ArmSessionMetadataData` for an ARM-linked trial.
+/// Lets the ARM Protocol tab look up per-date timing / crop-stage / interval
+/// fields when rendering per-column assessment rows.
+final armSessionMetadataMapForTrialProvider =
+    FutureProvider.family<Map<int, ArmSessionMetadataData>, int>(
+        (ref, trialId) async {
+  final rows = await ref
+      .watch(armColumnMappingRepositoryProvider)
+      .getSessionMetadatasForTrial(trialId);
+  return {for (final r in rows) r.sessionId: r};
+});
+
 /// Map of treatment PK → [ArmTreatmentMetadataData] for every treatment
 /// of an ARM-linked trial that has Treatments-sheet data (Phase 2b).
 /// Used by the ARM Protocol tab's Treatments sub-section (Phase 2c) to
