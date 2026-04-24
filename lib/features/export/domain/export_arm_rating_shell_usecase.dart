@@ -606,6 +606,54 @@ class ExportArmRatingShellUseCase {
       treatmentRepository: _treatmentRepository,
     );
 
+    // Subsample Plot Data — only for mapping-path trials with numSubsamples > 1.
+    final subsampleValues = <ArmSubsampleRatingValue>[];
+    if (columnMappings.isNotEmpty &&
+        shellImport.subsamplePlotRows.isNotEmpty) {
+      final taById2 = {for (final a in assessments) a.id: a};
+      // Group subsample row indices per plot to know N (rows.length = numSubsamples).
+      final subRowsByPlot = <int, List<int>>{};
+      for (final r in shellImport.subsamplePlotRows) {
+        subRowsByPlot.putIfAbsent(r.plotNumber, () => []).add(r.rowIndex);
+      }
+      for (final rows in subRowsByPlot.values) {
+        rows.sort();
+      }
+      for (final plotNumber in subRowsByPlot.keys) {
+        final rowCount = subRowsByPlot[plotNumber]!.length;
+        final plot = _plotForShellPlotNumber(shellDataPlots, plotNumber);
+        if (plot == null) continue;
+        for (final mapping in columnMappings) {
+          final taId = mapping.trialAssessmentId;
+          final mSessionId = mapping.sessionId;
+          if (taId == null || mSessionId == null) continue;
+          final ta = taById2[taId];
+          if (ta == null) continue;
+          final legacyId = ta.legacyAssessmentId;
+          if (legacyId == null) continue;
+          final numSubs = aamByTaId[taId]?.numSubsamples ?? 1;
+          if (numSubs <= 1) continue;
+          for (var sub = 1; sub <= numSubs && sub <= rowCount; sub++) {
+            final rating = await _ratingRepository.getCurrentRating(
+              trialId: trial.id,
+              plotPk: plot.id,
+              assessmentId: legacyId,
+              sessionId: mSessionId,
+              subUnitId: sub,
+            );
+            final valueStr = armRatingShellCellValueFromRating(rating);
+            if (valueStr.trim().isEmpty) continue;
+            subsampleValues.add(ArmSubsampleRatingValue(
+              plotNumber: plotNumber,
+              armColumnId: mapping.armColumnId,
+              subUnitId: sub,
+              value: valueStr,
+            ));
+          }
+        }
+      }
+    }
+
     final injector = ArmValueInjector(shellImport);
     final safeBase = trial.name
         .replaceAll(RegExp(r'[^\w\s-]'), '')
@@ -624,6 +672,7 @@ class ExportArmRatingShellUseCase {
       commentsSheetText: persistedComments != null && persistedComments.isNotEmpty
           ? persistedComments
           : null,
+      subsampleValues: subsampleValues.isEmpty ? null : subsampleValues,
     );
 
     if (injectionResult.hasSkips) {

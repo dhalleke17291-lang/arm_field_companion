@@ -193,12 +193,16 @@ Future<String> writeArmShellFixture(
   /// When true, fills **Subsample Plot Data** with the same layout as Plot Data
   /// (for parser tests).
   bool subsamplePlotDataMirror = false,
+
+  /// Number of sub-units per plot written to both sheets when
+  /// [subsamplePlotDataMirror] is true. Also sets row-46 descriptor.
+  int numSubsamples = 1,
 }) async {
   final excel = Excel.createExcel();
   excel.rename('Sheet1', 'Plot Data');
   final sheet = excel['Plot Data'];
 
-  void populatePlotDataLikeSheet(Sheet target) {
+  void populatePlotDataLikeSheet(Sheet target, {int rowsPerPlot = 1}) {
     void setText(int r, int c, String t) {
       target
           .cell(CellIndex.indexByColumnRow(columnIndex: c, rowIndex: r))
@@ -263,22 +267,27 @@ Future<String> writeArmShellFixture(
       if (plotDataAssessedBy != null) {
         setText(39, col, plotDataAssessedBy);
       }
-      setText(46, col, '1');
+      setText(46, col, '$rowsPerPlot');
     }
 
     setText(47, 0, '041TRT');
     setText(47, 1, 'Plot (Sub)');
 
     for (var i = 0; i < plotNumbers.length; i++) {
-      final row = 48 + i;
-      setInt(row, 0, 1);
-      setInt(row, 1, plotNumbers[i]);
+      for (var s = 0; s < rowsPerPlot; s++) {
+        final row = 48 + i * rowsPerPlot + s;
+        setInt(row, 0, 1);
+        setInt(row, 1, plotNumbers[i]);
+      }
     }
   }
 
   populatePlotDataLikeSheet(sheet);
   if (subsamplePlotDataMirror) {
-    populatePlotDataLikeSheet(excel['Subsample Plot Data']);
+    populatePlotDataLikeSheet(
+      excel['Subsample Plot Data'],
+      rowsPerPlot: numSubsamples,
+    );
   }
 
   if (applicationSheetColumns != null &&

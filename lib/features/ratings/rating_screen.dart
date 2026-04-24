@@ -113,6 +113,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   late Assessment _currentAssessment;
   late int _assessmentIndex;
 
+  /// Current 1-based sub-unit index; only meaningful when the active
+  /// assessment has numSubsamples > 1 (ARM-linked trials only).
+  int _currentSubUnit = 1;
+
   final TextEditingController _valueController = TextEditingController();
   String _selectedStatus = 'RECORDED';
   bool _userHasInteracted = false;
@@ -404,6 +408,21 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Resolve ARM assessment metadata early — needed for activeNumSubsamples
+    // which is consumed by existingRatingAsync below.
+    final trialAssessmentsEarly = ref
+            .watch(trialAssessmentsForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        <TrialAssessment>[];
+    final taByLegacyEarly = <int, TrialAssessment>{
+      for (final ta in trialAssessmentsEarly)
+        if (ta.legacyAssessmentId != null) ta.legacyAssessmentId!: ta,
+    };
+    final currentTaEarly = taByLegacyEarly[_currentAssessment.id];
+    final activeNumSubsamples = currentTaEarly != null
+        ? (_aamMap()[currentTaEarly.id]?.numSubsamples ?? 1)
+        : 1;
+
     final existingRatingAsync = ref.watch(
       currentRatingProvider(
         CurrentRatingParams(
@@ -411,8 +430,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           plotPk: widget.plot.id,
           assessmentId: _currentAssessment.id,
           sessionId: widget.session.id,
-          // TODO: subUnitId is not passed here. When sub-sampling (numSubsamples > 1)
-          // is implemented, pass the active subUnitId into CurrentRatingParams.
+          subUnitId: activeNumSubsamples > 1 ? _currentSubUnit : null,
         ),
       ),
     );
@@ -664,6 +682,23 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
                     ),
                   ),
                 ),
+                if (activeNumSubsamples > 1)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppDesignTokens.spacing16,
+                      0,
+                      AppDesignTokens.spacing16,
+                      AppDesignTokens.spacing4,
+                    ),
+                    child: Text(
+                      'Subsample $_currentSubUnit / $activeNumSubsamples',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -2516,6 +2551,23 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   }
 
   void _invalidateRatingStreamsAfterVoid() {
+    final taList =
+        ref.read(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
+            <TrialAssessment>[];
+    final aamData =
+        ref.read(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        <int, ArmAssessmentMetadataData>{};
+    TrialAssessment? voidTa;
+    for (final ta in taList) {
+      if (ta.legacyAssessmentId == _currentAssessment.id) {
+        voidTa = ta;
+        break;
+      }
+    }
+    final voidNumSubs = voidTa != null
+        ? (aamData[voidTa.id]?.numSubsamples ?? 1)
+        : 1;
     ref.invalidate(
       currentRatingProvider(
         CurrentRatingParams(
@@ -2523,8 +2575,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           plotPk: widget.plot.id,
           assessmentId: _currentAssessment.id,
           sessionId: widget.session.id,
-          // TODO: subUnitId is not passed here. When sub-sampling (numSubsamples > 1)
-          // is implemented, pass the active subUnitId into CurrentRatingParams.
+          subUnitId: voidNumSubs > 1 ? _currentSubUnit : null,
         ),
       ),
     );
@@ -4067,6 +4118,25 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   /// assessment or next plot or shows the end-of-plot-list dialog (navigation only, not session completeness);
   /// when false, stays on current plot/assessment.
   /// Returns true when a row was written successfully (or save was appropriate and completed).
+  /// Returns the 1-based sub-unit ID to tag this save with, or null when the
+  /// current assessment is whole-plot (numSubsamples ≤ 1).
+  int? _activeSubUnitId() {
+    final taList =
+        ref.read(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
+            <TrialAssessment>[];
+    final aamData =
+        ref.read(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        <int, ArmAssessmentMetadataData>{};
+    for (final ta in taList) {
+      if (ta.legacyAssessmentId == _currentAssessment.id) {
+        final n = aamData[ta.id]?.numSubsamples ?? 1;
+        return n > 1 ? _currentSubUnit : null;
+      }
+    }
+    return null;
+  }
+
   Future<bool> _saveRating(BuildContext context,
       {bool navigateAfterSave = true,
       bool skipCarryForwardConfirm = false}) async {
@@ -4223,6 +4293,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         plotPk: widget.plot.id,
         assessmentId: _currentAssessment.id,
         sessionId: widget.session.id,
+        subUnitId: _activeSubUnitId(),
         resultStatus: _selectedStatus,
         numericValue: numericValue,
         textValue: textValue,
@@ -4276,8 +4347,47 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
         }
         return true;
       }
+      // Subsample advance: stay on same plot+assessment, bump sub-unit index.
+      // _activeSubUnitId() is non-null only when numSubsamples > 1.
+      if (_activeSubUnitId() != null) {
+        final taList = ref
+                .read(trialAssessmentsForTrialProvider(widget.trial.id))
+                .valueOrNull ??
+            <TrialAssessment>[];
+        final aamData = ref
+                .read(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
+                .valueOrNull ??
+            <int, ArmAssessmentMetadataData>{};
+        TrialAssessment? saveTa;
+        for (final ta in taList) {
+          if (ta.legacyAssessmentId == _currentAssessment.id) {
+            saveTa = ta;
+            break;
+          }
+        }
+        final numSubs =
+            saveTa != null ? (aamData[saveTa.id]?.numSubsamples ?? 1) : 1;
+        if (_currentSubUnit < numSubs) {
+          setState(() {
+            _currentSubUnit++;
+            _valueController.clear();
+            _selectedStatus = 'RECORDED';
+            _selectedMissingReasons.clear();
+            _userHasInteracted = false;
+            _carryForwardBaselineNumeric = null;
+            _numericValueUserEditedThisVisit = false;
+            _carryForwardConfirmSuppressedAssessmentId = null;
+            _carryForwardConfirmSuppressedBaseline = null;
+            _clampAdjustMessage = null;
+          });
+          _loadPriorRating();
+          _prefillFromLastValue();
+          return true;
+        }
+      }
       if (_assessmentIndex < widget.assessments.length - 1) {
         setState(() {
+          _currentSubUnit = 1;
           _assessmentIndex++;
           _currentAssessment = widget.assessments[_assessmentIndex];
           _lastSliderSteppedValue = null;

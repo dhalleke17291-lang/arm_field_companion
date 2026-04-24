@@ -24,6 +24,25 @@ class ArmApplicationsSheetExportColumn {
   final List<String?> row01To79;
 }
 
+/// One Subsample Plot Data cell to write on export.
+class ArmSubsampleRatingValue {
+  const ArmSubsampleRatingValue({
+    required this.plotNumber,
+    required this.armColumnId,
+    required this.subUnitId,
+    required this.value,
+  });
+
+  final int plotNumber;
+  final String armColumnId;
+
+  /// 1-based sub-unit index within the plot (matches [RatingRecord.subUnitId]).
+  final int subUnitId;
+
+  /// Cell value string (numeric or text); blank → skipped.
+  final String value;
+}
+
 /// Result of an injection operation.
 class ArmInjectionResult {
   final File file;
@@ -60,6 +79,7 @@ class ArmValueInjector {
     List<ArmApplicationsSheetExportColumn>? applicationColumns,
     List<ArmTreatmentSheetRow>? treatmentRows,
     String? commentsSheetText,
+    List<ArmSubsampleRatingValue>? subsampleValues,
   }) async {
     if (outputPath == shellImport.shellFilePath) {
       throw StateError(
@@ -293,6 +313,79 @@ class ArmValueInjector {
       }
     }
 
+    List<int>? updatedSubsampleBytes;
+    String? subsamplePath;
+    if (subsampleValues != null && subsampleValues.isNotEmpty) {
+      subsamplePath = _resolveWorksheetPath(archive, 'Subsample Plot Data');
+      if (subsamplePath == null) {
+        skippedReasons.add(
+          'Subsample Plot Data sheet missing from shell — subsample values not written',
+        );
+      } else {
+        final subEntry = archive.findFile(subsamplePath);
+        if (subEntry == null) {
+          skippedReasons.add(
+            'Subsample Plot Data worksheet entry missing: $subsamplePath',
+          );
+        } else {
+          final subDoc =
+              XmlDocument.parse(utf8.decode(subEntry.content as List<int>));
+          final subColMap = <String, int>{
+            for (final c in shellImport.subsampleAssessmentColumns)
+              c.armColumnId: c.columnIndex,
+          };
+          // Group row indices by plot number (order = sub-unit 1, 2, 3, …)
+          final subRowsByPlot = <int, List<int>>{};
+          for (final r in shellImport.subsamplePlotRows) {
+            subRowsByPlot.putIfAbsent(r.plotNumber, () => []).add(r.rowIndex);
+          }
+          for (final rows in subRowsByPlot.values) {
+            rows.sort();
+          }
+          for (final v in subsampleValues) {
+            final rows = subRowsByPlot[v.plotNumber];
+            final colIdx = subColMap[v.armColumnId];
+            if (rows == null) {
+              skippedReasons.add(
+                'Plot ${v.plotNumber} not in Subsample Plot Data — skipped',
+              );
+              continue;
+            }
+            if (colIdx == null) {
+              skippedReasons.add(
+                'Column ${v.armColumnId} not in Subsample Plot Data — skipped',
+              );
+              continue;
+            }
+            final subIdx = v.subUnitId - 1;
+            if (subIdx < 0 || subIdx >= rows.length) {
+              skippedReasons.add(
+                'Sub-unit ${v.subUnitId} out of range for plot '
+                '${v.plotNumber} (${rows.length} rows) — skipped',
+              );
+              continue;
+            }
+            final rowIdx = rows[subIdx];
+            if (rowIdx < 48 || colIdx < 2) {
+              skippedReasons.add(
+                'Plot ${v.plotNumber} sub-unit ${v.subUnitId}: bounds '
+                'violation (row=$rowIdx col=$colIdx) — skipped',
+              );
+              continue;
+            }
+            final trimmed = v.value.trim();
+            if (trimmed.isEmpty) continue;
+            final numVal = double.tryParse(trimmed);
+            _writeCell(subDoc, rowIdx, colIdx, numVal?.toString() ?? trimmed,
+                numVal != null);
+            cellsWritten++;
+          }
+          updatedSubsampleBytes =
+              utf8.encode(subDoc.toXmlString(pretty: false));
+        }
+      }
+    }
+
     final newArchive = Archive();
     for (final file in archive.files) {
       if (!file.isFile) continue;
@@ -328,6 +421,16 @@ class ArmValueInjector {
             file.name,
             updatedCommentsBytes.length,
             updatedCommentsBytes,
+          ),
+        );
+      } else if (subsamplePath != null &&
+          updatedSubsampleBytes != null &&
+          file.name == subsamplePath) {
+        newArchive.addFile(
+          ArchiveFile(
+            file.name,
+            updatedSubsampleBytes.length,
+            updatedSubsampleBytes,
           ),
         );
       } else {

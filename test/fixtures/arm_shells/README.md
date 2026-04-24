@@ -24,7 +24,7 @@ This file has **7 sheets**:
 | **Treatments** | Products, rates, formulations, rate units | **Yes** (Phase 2) |
 | **Applications** | 79 descriptor fields: dates, weather, equipment, nozzles, carrier, mix | **Yes** (Phase 3b parser + Phase 3c importer) |
 | **Comments** | Free-text trial notes (`ECM` row, column B) | **Yes** — parser → `ArmShellImport.commentsSheetText`; persisted on `arm_trial_metadata.shell_comments_sheet`; **export** injects B1/A2/B2 when text is non-empty |
-| **Subsample Plot Data** | Mirror of Plot Data for subsample protocols | **Yes** — same descriptor + `041TRT` layout as Plot Data; exposed on `ArmShellImport.subsampleAssessmentColumns` / `subsamplePlotRows` (import does not yet land subsample rows in core) |
+| **Subsample Plot Data** | Mirror of Plot Data for subsample protocols | **Yes** — parser → `subsampleAssessmentColumns` / `subsamplePlotRows`; rating screen collects sub-unit ratings (`subUnitId` 1..N); export injects per-sub-unit values via `ArmValueInjector(subsampleValues: …)` |
 | **Subsample Treatment Means** | Calculated means (Excel formulas) | Output-only, not ingested |
 | **Treatment Means** | Calculated means per treatment (Excel formulas) | Output-only, not ingested |
 

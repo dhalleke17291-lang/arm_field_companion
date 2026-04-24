@@ -224,9 +224,15 @@ This numbering is **workspace shorthand** for the ARM **Rating Shell (.xlsx)** w
 
 Sheet layout, row maps, and which sheets are parsed today: **`test/fixtures/arm_shells/README.md`**.
 
-### Gaps (explicit)
+### Subsample Plot Data pipeline (complete)
 
-- **Subsample Plot Data**: parsed into `ArmShellImport.subsampleAssessmentColumns` / `subsamplePlotRows` (structure only; not persisted). **Comments** sheet: parsed and stored on `arm_trial_metadata.shell_comments_sheet`; ARM Protocol tab shows non-empty text; **export** writes B1/A2/B2 via `ArmValueInjector` when persisted text is non-empty.
+Subsamples (`numSubsamples > 1`, `collectBasis = "S"`) are fully supported end-to-end:
+
+- **Parser** → `ArmShellImport.subsampleAssessmentColumns` + `subsamplePlotRows` (N rows per plot in row-index order).
+- **Import** → `ArmAssessmentMetadata.numSubsamples` + `collectBasis` stored per assessment; `RatingRecords.subUnitId` (nullable int, 1..N) carries the sub-unit index for each saved rating.
+- **Rating screen** → when `numSubsamples > 1` the screen shows "Subsample X / N", saves with `subUnitId = X`, and auto-advances through sub-units before moving to the next plot.
+- **Export** → `ExportArmRatingShellUseCase` fetches per-sub-unit ratings and builds `List<ArmSubsampleRatingValue>`; `ArmValueInjector.inject(subsampleValues: …)` groups `subsamplePlotRows` by plot, maps sub-unit index to the correct row, and writes values into the **Subsample Plot Data** worksheet.
+- **Tests** → `test/data/arm_value_injector_test.dart` — three subsample injection tests (write/absent-sheet/omit). Fixture builder (`writeArmShellFixture`) extended with `numSubsamples` + `rowsPerPlot` to generate shells with N rows per plot.
 
 ### Non-goals (explicit)
 
