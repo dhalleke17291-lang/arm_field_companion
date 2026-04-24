@@ -490,16 +490,13 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 children: [
                   Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Linked Field Notes',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
+                      Text(
+                        'Linked Field Notes',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
+                      const Spacer(),
                       TextButton.icon(
                         onPressed: () => showFieldNoteEditorSheet(
                           context,
@@ -1128,17 +1125,14 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               const Icon(Icons.grid_on,
                   color: AppDesignTokens.primary, size: 16),
               const SizedBox(width: AppDesignTokens.spacing8),
-              Expanded(
-                child: Text(
-                  '${plots.length} plots',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      color: AppDesignTokens.primary),
-                ),
+              Text(
+                '${plots.length} plots',
+                style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    color: AppDesignTokens.primary),
               ),
+              const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppDesignTokens.spacing8,
@@ -1409,16 +1403,12 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
                 Icon(Icons.warning_amber_outlined,
                     size: 18, color: Colors.amber.shade700),
                 const SizedBox(width: AppDesignTokens.spacing8),
-                Expanded(
-                  child: Text(
-                    'Warnings — plots',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: scheme.onTertiaryContainer,
-                    ),
+                Text(
+                  'Warnings — plots',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onTertiaryContainer,
                   ),
                 ),
               ],
@@ -1503,15 +1493,11 @@ class _SessionWalkOrderBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Expanded(
-            child: Text(
-              'Walk order:',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-            ),
+          Text(
+            'Walk order:',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
           ),
           const SizedBox(width: 8),
           DropdownButton<WalkOrderMode>(

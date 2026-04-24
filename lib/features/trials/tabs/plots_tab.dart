@@ -1517,10 +1517,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ...head,
-                SizedBox(
-                  height: MediaQuery.sizeOf(context).height * 0.45,
-                  child: surface,
-                ),
+                SizedBox(height: 420, child: surface),
                 if (extra != null) extra,
               ],
             );
@@ -1540,10 +1537,7 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ...head,
-              SizedBox(
-                height: MediaQuery.sizeOf(context).height * 0.55,
-                child: surface,
-              ),
+              SizedBox(height: 520, child: surface),
             ],
           );
         }
