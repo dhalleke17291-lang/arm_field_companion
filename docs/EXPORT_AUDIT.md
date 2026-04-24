@@ -720,3 +720,216 @@ If the trial is already linked to the **same** shell path as selected, or there 
 
 - **Part 2D:** No on-device reproduction; no stack trace; no matrix of trial states (ARM vs standalone, ratings vs empty, etc.).
 - **Part 4:** No binary/hex verification of xlsx round-trip; no BOM audit on actual device exports.
+
+---
+
+## Shell Storage Reliability Investigation
+
+**Date:** 2026-04-24
+**Method:** Read-only trace of current `lib/` sources. No device repro. Premise: after Tasks 2a–2b, the happy-path goal is *import shell → rate → export → save*, with the app already holding the shell. The picker in the export flow appeared because `shellInternalPath` did not resolve at export time for a trial that had previously exported cleanly. Establish the cause from code alone before scoping a fix.
+
+### Q1 — How is `shellInternalPath` populated during Rating Shell import?
+
+Entry point: `ImportArmRatingShellUseCase.execute(String shellPath)` in [import_arm_rating_shell_usecase.dart:166](lib/features/arm_import/usecases/import_arm_rating_shell_usecase.dart#L166).
+
+Full call chain:
+
+1. Parse shell — `ArmShellParser(shellPath).parse()` at [line 168-169](lib/features/arm_import/usecases/import_arm_rating_shell_usecase.dart#L168).
+2. Duplicate-import guard on `armSourceFile` at [line 182-189](lib/features/arm_import/usecases/import_arm_rating_shell_usecase.dart#L182).
+3. DB transaction (structure only) at [line 193-623](lib/features/arm_import/usecases/import_arm_rating_shell_usecase.dart#L193) — creates trial, plots, treatments, assessments, sessions, mappings.
+4. **File I/O + mark ARM-linked** at [line 625-653](lib/features/arm_import/usecases/import_arm_rating_shell_usecase.dart#L625):
+   - [Line 627-630](lib/features/arm_import/usecases/import_arm_rating_shell_usecase.dart#L627): `ShellStorageService.storeShell(sourcePath: shellPath, trialId: plan.trialId)` — returns an absolute path.
+   - [Line 631-641](lib/features/arm_import/usecases/import_arm_rating_shell_usecase.dart#L631): `_db.into(_db.armTrialMetadata).insertOnConflictUpdate(ArmTrialMetadataCompanion(... shellInternalPath: Value(internalPath) ...))` — writes the absolute path returned by `storeShell` to the DB.
+   - [Line 642-647](lib/features/arm_import/usecases/import_arm_rating_shell_usecase.dart#L642): `updateTrialSetup` to bump `updatedAt`.
+
+The returned `internalPath` is the absolute path produced by `ShellStorageService.storeShell`. It contains the app's current iOS sandbox container UUID (see Q3). This absolute string is what the DB stores.
+
+### Q2 — Is `storeShell` wrapped in a silent catch?
+
+**Two different behaviors.** Critical distinction.
+
+**`ImportArmRatingShellUseCase` at [line 626-653](lib/features/arm_import/usecases/import_arm_rating_shell_usecase.dart#L626):**
+
+```dart
+try {
+  final internalPath = await ShellStorageService.storeShell(...);
+  await _db.into(_db.armTrialMetadata).insertOnConflictUpdate(
+    ArmTrialMetadataCompanion(... shellInternalPath: Value(internalPath) ...),
+  );
+  await _trialRepository.updateTrialSetup(plan.trialId, TrialsCompanion(...));
+} catch (e) {
+  await _rollbackFailedShellImport(plan.trialId);
+  return ShellImportResult.failure(
+    'Shell import failed: could not store shell or finalize trial ($e)',
+  );
+}
+```
+
+**Not silent.** On any failure (storeShell throwing, or the DB writes failing), the in-progress trial is rolled back via `_rollbackFailedShellImport` and a failure result with the thrown exception string is returned. No way to complete "Import Rating Shell" and end up with `shellInternalPath = null`.
+
+**`ArmShellLinkUseCase.apply` at [line 168-189](lib/features/export/domain/arm_shell_link_usecase.dart#L168):**
+
+```dart
+// Store shell internally so export doesn't need a file picker.
+String? internalPath;
+try {
+  internalPath = await ShellStorageService.storeShell(
+    sourcePath: shellPath,
+    trialId: trialId,
+  );
+} catch (_) {
+  // Storage unavailable (e.g. test environment) — continue without.
+}
+
+await _db.into(_db.armTrialMetadata).insertOnConflictUpdate(
+  ArmTrialMetadataCompanion(
+    trialId: Value(trialId),
+    armLinkedShellPath: Value(shellPath),
+    armLinkedShellAt: Value(DateTime.now().toUtc()),
+    shellInternalPath: internalPath != null
+        ? Value(internalPath)
+        : const Value.absent(),
+    shellCommentsSheet: Value(preview.shellCommentsSheetText),
+  ),
+);
+```
+
+**Silent.** If `storeShell` throws, `internalPath` stays null, the catch logs nothing and surfaces nothing, and the DB write proceeds with `shellInternalPath: const Value.absent()` — meaning that column is **not updated**. If the trial previously had a `shellInternalPath` value, the existing value is preserved. If it had none, it stays null. Either way, the user sees a successful "Link Rating Sheet" outcome, no warning, no diagnostic.
+
+The silent-catch comment *"Storage unavailable (e.g. test environment)"* describes the narrow case it was built for, but it catches **any** exception from `storeShell`.
+
+### Q3 — What does `storeShell` actually do?
+
+[shell_storage_service.dart:7-22](lib/data/services/shell_storage_service.dart#L7-L22):
+
+```dart
+static Future<String> storeShell({
+  required String sourcePath,
+  required int trialId,
+}) async {
+  final appDir = await getApplicationDocumentsDirectory();
+  final shellDir = Directory('${appDir.path}/shells');
+  if (!shellDir.existsSync()) {
+    await shellDir.create(recursive: true);
+  }
+  final destPath = '${shellDir.path}/$trialId.xlsx';
+  await File(sourcePath).copy(destPath);
+  return destPath;
+}
+```
+
+1. Asks `path_provider` for `getApplicationDocumentsDirectory()` — on iOS this returns `/var/mobile/Containers/Data/Application/{container-UUID}/Documents`.
+2. Builds `{appDir}/shells/{trialId}.xlsx` and creates the `shells` sub-directory if missing.
+3. `File(sourcePath).copy(destPath)` — copies the shell bytes to the destination.
+4. **Returns the absolute `destPath` string**, including the container UUID in the middle.
+
+Failure modes:
+- `getApplicationDocumentsDirectory()` throws if the platform plugin is uninitialized (test harnesses without `PathProviderPlatform` stub).
+- `shellDir.create(recursive: true)` throws on permission denial or read-only FS (unlikely on iOS sandbox, possible on a locked backup restore).
+- `File(sourcePath).copy(destPath)` throws if source is missing, destination is unwritable, disk is full, or the source is a cloud-only iCloud item whose download failed. The iOS document-picker via `file_picker` sometimes hands back a **temp security-scoped URL** whose download hasn't completed; copying it returns partial bytes or throws.
+- On success, the returned path is **absolute and contains the container UUID**.
+
+### Q4 — How does the preflight screen resolve the shell at export time?
+
+[arm_export_preflight_screen.dart:78-100](lib/features/export/arm_export_preflight_screen.dart#L78-L100) (current HEAD, post-Task-2c revert):
+
+```dart
+final armMeta = await ref
+    .read(armTrialMetadataRepositoryProvider)
+    .getForTrial(widget.trial.id);
+// Use internally stored shell if available; fall back to file picker.
+String? shellPath;
+final internalPath = armMeta?.shellInternalPath;
+if (internalPath != null &&
+    internalPath.isNotEmpty &&
+    File(internalPath).existsSync()) {
+  shellPath = internalPath;
+} else {
+  final pick = await FilePicker.pickFiles(...);  // fallback
+  ...
+}
+```
+
+The resolution reads the stored **absolute** `shellInternalPath` string and calls `File(storedAbsolutePath).existsSync()` to decide whether to use it or fall back to the picker.
+
+Failure conditions for this check:
+1. `shellInternalPath IS NULL` in the DB — never written. Path from the silent catch in `ArmShellLinkUseCase.apply` (Q2).
+2. `shellInternalPath` is non-empty but the stored absolute path **no longer points at a real file**. This is the interesting case.
+
+Case 2 happens when:
+- The file at that path was deleted by external means (very unlikely on iOS).
+- **The absolute path itself is wrong because the container UUID changed.** The stored string includes a UUID that was correct at import time; the current `getApplicationDocumentsDirectory()` call would return a different UUID, rendering the stored absolute string invalid even though the file still exists at `{currentAppDir}/shells/{trialId}.xlsx`.
+
+**Note the existence of a second API in the same file, [line 24-31](lib/data/services/shell_storage_service.dart#L24-L31):**
+
+```dart
+static Future<String?> resolveShellPath(int trialId) async {
+  final appDir = await getApplicationDocumentsDirectory();
+  final destPath = '${appDir.path}/shells/$trialId.xlsx';
+  final file = File(destPath);
+  if (await file.exists()) return destPath;
+  return null;
+}
+```
+
+`ShellStorageService.resolveShellPath(trialId)` rebuilds the path from the current `appDir` and checks existence. **It has zero callers in production `lib/`** — grep confirms: written but unused. This is exactly the primitive the preflight screen should be using and isn't.
+
+### Q5 — Is the picker always appearing or only sometimes?
+
+**Only sometimes, based on code.** The fallback fires only when the three-part check at line 85-87 fails:
+
+```dart
+if (internalPath != null && internalPath.isNotEmpty && File(internalPath).existsSync())
+```
+
+On a trial freshly imported in the same app session, `shellInternalPath` was just written with the current `appDir`, so the stored absolute path and `File(...).existsSync()` agree — the fallback does **not** fire, the picker does **not** appear.
+
+The user observed the picker appearing on a trial *that had previously exported cleanly*. That means the check succeeded in an earlier session and fails now. Interpretations from code:
+
+- The stored absolute path is stable (DB value hasn't changed).
+- The file either no longer exists at that exact absolute path, or the path resolves to nothing because the prefix (sandbox container) has shifted.
+
+The intermittency fits the iOS-container-UUID hypothesis (see Q6), not a silent `storeShell` failure (which would have shown up on the first export, not later).
+
+### Q6 — iOS behavior that can invalidate a stored absolute path between sessions
+
+Documented iOS behaviors that plausibly apply on device `00008120-000238A01A9B401E`:
+
+1. **Container UUID rotation on reinstall.** `/var/mobile/Containers/Data/Application/{UUID}/` contains the app's sandbox. iOS usually preserves the UUID across updates (`devicectl install` over an existing install) — but it is **not guaranteed stable** across:
+   - reinstall with a different signing team / provisioning profile
+   - device wipes / rebuilds
+   - restore from backup
+   - some `devicectl` failure modes where the app is effectively recreated
+   - iOS upgrades that migrate containers
+   During an active development cycle with many `xcrun devicectl device install app` iterations, the container UUID can shift unpredictably. Any stored **absolute** path that bakes in the old UUID will fail `existsSync()` in the new session even though the file would still be findable at `{newAppDir}/shells/{trialId}.xlsx`.
+
+2. **Documents directory preservation isn't identical to path preservation.** Apple guarantees that files in `Documents/` survive app updates — but the *path* used to reach them (the absolute container path) is not part of that guarantee. Apps are expected to resolve `Documents/` at each launch via the platform API and treat historical absolute paths as invalid.
+
+3. **iCloud Drive Documents sync** is not relevant here (the app doesn't opt in), but security-scoped bookmarks from the file picker are: a URL from `FilePicker.pickFiles` is only valid inside the bookmark's scope, which ends shortly after return. If the shell import runs against a `content://` or security-scoped path that was already revoked, `File(sourcePath).copy(destPath)` may produce a zero-byte or partial file. (This would manifest as a silent storage failure in the link use case, not as an intermittent picker — so less likely the current symptom.)
+
+4. **Background file protection.** iOS default file protection is `NSFileProtectionCompleteUntilFirstUserAuthentication`. `existsSync()` should still succeed on a locked device after the first unlock, so this is unlikely to be the symptom.
+
+The simplest explanation consistent with the evidence: **the absolute path stored in the DB includes a container UUID that has shifted since import**, so the existing `existsSync()` check fails on a file that would still be reachable via a path re-derived from the current `appDir`.
+
+### Plain statements
+
+**Does `shellInternalPath` reliably survive between import and export on the same device without reinstall?**
+On a stable install (a single `devicectl` install, no wipe, no restore) the absolute path should remain valid until the file or the container is deleted. In a development cycle where the app is being reinstalled repeatedly — or on any occasion where iOS rotates the container UUID — the stored absolute path is **not reliable**. This is exactly the user's observed situation.
+
+**Most likely cause of the picker appearing on a trial that was previously exported successfully:**
+The DB's `shellInternalPath` string embeds a now-stale iOS sandbox container UUID. The file itself is still in `{appDocumentsDir}/shells/{trialId}.xlsx`, but the absolute path stored against the old UUID no longer resolves, so `File(internalPath).existsSync()` returns `false` and the fallback picker fires. This matches: the picker appearing on a trial that had previously exported cleanly, after several app reinstalls during development.
+
+A secondary, additive cause is still possible for other trials: `ArmShellLinkUseCase.apply` silently catches any `storeShell` error, so a trial that reached the link flow but hit a transient storage error has `shellInternalPath = null` from the start. The user wouldn't notice until the first export attempt.
+
+**Targeted fix to make import → rate → export → save work with no picker:**
+
+Two complementary changes, both small.
+
+- **Fix 1 (resolves the UUID-rotation case, which is the live symptom).** Stop trusting the stored absolute path at read time. In [arm_export_preflight_screen.dart:84-88](lib/features/export/arm_export_preflight_screen.dart#L84-L88), replace the absolute-path existence check with a call to the already-written `ShellStorageService.resolveShellPath(trialId)`, which reconstructs the current absolute path from today's `appDocumentsDir` and checks existence there. That method exists; it's simply unused. This converts the stored "path" into a "did we store it?" flag and recomputes the live location on every read.
+
+  Optionally harden further by rewriting the DB column at import time to store a **relative** path (`shells/{trialId}.xlsx`) instead of the container-qualified absolute path. The helper's read-time resolver doesn't need it, but a relative string makes the DB row self-explanatory and prevents future code from blindly passing the stored string to `File()`.
+
+- **Fix 2 (prevents silent failures in the link flow).** In [arm_shell_link_usecase.dart:168-177](lib/features/export/domain/arm_shell_link_usecase.dart#L168-L177), stop silently swallowing `storeShell` exceptions. At minimum, surface them as a diagnostic so the user learns the link succeeded but storage didn't. Ideally, treat a `storeShell` failure during link as a blocker — the link flow's entire purpose is to put the shell somewhere the app can reach, and failing silently only re-introduces the exact picker-at-export condition we're trying to eliminate.
+
+After both are in, the user flow *import shell → rate → export → save* has no picker on any path that reaches a successful import, on any install state where the sandbox file survives.
+
