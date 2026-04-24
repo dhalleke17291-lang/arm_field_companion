@@ -26,6 +26,11 @@ String armImportDataRowKeyForColumnIndex(int columnIndex) =>
 // - Shell export: [ArmAssessmentMatcher] pins by armImportColumnIndex first; [ArmAssessmentIdentity] is per TrialAssessment row.
 
 /// ARM CSV header parsing and classification.
+///
+/// Retained as test-only fixture scaffolding post-ARM-CSV-deprecation. Not
+/// reachable from production UI. Used by [ArmImportUseCase] (also retained)
+/// to build ARM-linked trial fixtures for unrelated export/intelligence
+/// tests. Replace with a lighter fixture builder post-pilot.
 class ArmCsvParser {
   /// Excel on Windows often saves UTF-8 CSV with a leading BOM; remove it so the
   /// first header cell matches identity roles (e.g. `Plot No.` not `\uFEFFPlot No.`).

@@ -55,6 +55,13 @@ int _shellAlignedArmImportColumnIndex({
 }
 
 /// Orchestrates ARM CSV import: parse → snapshot/profile/report → persist (metadata only in this step).
+///
+/// Retained as test-only fixture scaffolding post-ARM-CSV-deprecation. The
+/// user-facing ARM CSV import screen was removed; this use case is no longer
+/// wired to any production UI or provider. Thirteen unrelated test files
+/// (exports, intelligence, stress) use it (via `stressArmImportUseCase`) as
+/// the fastest way to build a realistic ARM-linked trial fixture. Replace
+/// with a lighter direct-DB fixture builder post-pilot.
 class ArmImportUseCase {
   ArmImportUseCase(
     this._db,
