@@ -197,7 +197,7 @@ class SessionGridPdfExport {
         if (s == null) return '';
         final cv = colCv[a.id];
         final cvStr = cv != null ? '\nCV ${cv.toStringAsFixed(1)}% (total)' : '';
-        return 'Mean ${_fmt(s.mean)}\nRange ${_fmt(s.min)}–${_fmt(s.max)}  n=${s.n}$cvStr';
+        return 'Mean ${_fmt(s.mean)}\nRange ${_fmt(s.min)}-${_fmt(s.max)}  n=${s.n}$cvStr';
       }),
     ];
 
@@ -260,11 +260,12 @@ class SessionGridPdfExport {
               headers: null,
               data: [statsRow],
               cellStyle: const pw.TextStyle(
-                fontSize: 6.0,
+                fontSize: 5.5,
                 color: PdfColors.grey600,
               ),
               cellAlignment: pw.Alignment.center,
-              cellHeight: 28,
+              cellAlignments: const {0: pw.Alignment.centerLeft},
+              cellHeight: 32,
               cellPadding:
                   const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 2),
               border: pw.TableBorder.all(color: _borderColor, width: 0.5),
