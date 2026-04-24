@@ -2014,7 +2014,11 @@ final trialInsightsProvider = FutureProvider.autoDispose
     for (final pair in assessmentPairs)
       if (pair.$1.legacyAssessmentId != null)
         pair.$1.legacyAssessmentId!: _cleanAssessmentName(
-            pair.$2.name, pair.$1.sortOrder),
+          pair.$1.displayNameOverride?.trim().isNotEmpty == true
+              ? pair.$1.displayNameOverride!
+              : pair.$2.name,
+          pair.$1.sortOrder,
+        ),
   };
   return ref
       .watch(trialIntelligenceServiceProvider)

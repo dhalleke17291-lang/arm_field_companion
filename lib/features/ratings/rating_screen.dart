@@ -109,7 +109,8 @@ class RatingScreen extends ConsumerStatefulWidget {
   ConsumerState<RatingScreen> createState() => _RatingScreenState();
 }
 
-class _RatingScreenState extends ConsumerState<RatingScreen> {
+class _RatingScreenState extends ConsumerState<RatingScreen>
+    with WidgetsBindingObserver {
   late Assessment _currentAssessment;
   late int _assessmentIndex;
 
@@ -118,6 +119,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   int _currentSubUnit = 1;
 
   final TextEditingController _valueController = TextEditingController();
+  SharedPreferences? _prefs;
   String _selectedStatus = 'RECORDED';
   bool _userHasInteracted = false;
   bool _isSaving = false;
@@ -293,10 +295,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     _captureGps();
     _loadGpsMode();
     WakelockPlus.enable();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _scrollToActiveAssessment());
     SharedPreferences.getInstance().then((prefs) {
       if (!mounted) return;
+      _prefs = prefs;
       final last = prefs.getString(_kLastRaterNameKey);
       if (last != null && last.trim().isNotEmpty) {
         setState(() => _raterName = last.trim());
@@ -316,6 +320,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _clampBorderTimer?.cancel();
     _clampMessageTimer?.cancel();
     _assessmentScrollController.dispose();
@@ -323,6 +328,23 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     _saveResumePosition();
     _valueController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      _saveResumePositionSync();
+    }
+  }
+
+  void _saveResumePositionSync() {
+    if (_prefs == null) return;
+    SessionResumeStore(_prefs!).savePosition(
+      widget.session.id,
+      widget.plot.id,
+      _assessmentIndex,
+    );
   }
 
   void _scrollToActiveAssessment() {

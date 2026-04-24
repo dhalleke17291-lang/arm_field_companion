@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import '../../core/last_session_store.dart';
+import '../../core/plot_sort.dart';
 import '../../core/providers.dart';
+import '../../core/session_resume_store.dart';
+import '../../core/session_state.dart';
+import '../../core/session_walk_order_store.dart';
 import '../backup/backup_passphrase_store.dart';
 import '../more/more_screen.dart';
+import '../ratings/rating_screen.dart';
+import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../worklog/work_log_screen.dart';
 import '../trials/trials_hub_screen.dart';
 import 'shell_providers.dart';
@@ -43,6 +52,8 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
       final openIds = ref.read(openTrialIdsForFieldWorkProvider).valueOrNull;
       if (openIds != null && openIds.isNotEmpty) {
         _currentIndex = _workLogTabIndex;
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => _resumeRatingIfNeeded());
       }
     }
     if (!_passphraseCheckDone) {
@@ -52,6 +63,79 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
       });
     }
     return _buildScaffold(context);
+  }
+
+  Future<void> _resumeRatingIfNeeded() async {
+    if (!mounted) return;
+    final openIds = ref.read(openTrialIdsForFieldWorkProvider).valueOrNull;
+    if (openIds == null || openIds.isEmpty) return;
+
+    final sessionRepo = ref.read(sessionRepositoryProvider);
+    Session? latestSession;
+    for (final trialId in openIds) {
+      final session = await sessionRepo.getOpenSession(trialId);
+      if (session == null || !isSessionOpenForFieldWork(session)) continue;
+      if (latestSession == null ||
+          session.startedAt.isAfter(latestSession.startedAt)) {
+        latestSession = session;
+      }
+    }
+    if (latestSession == null || !mounted) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final store = SessionWalkOrderStore(prefs);
+    final walkOrder = store.getMode(latestSession.id);
+    final customIds = walkOrder == WalkOrderMode.custom
+        ? store.getCustomOrder(latestSession.id)
+        : null;
+    final useCase = ref.read(startOrContinueRatingUseCaseProvider);
+    final result = await useCase.execute(StartOrContinueRatingInput(
+      sessionId: latestSession.id,
+      walkOrderMode: walkOrder,
+      customPlotIds: customIds,
+    ));
+    if (!mounted) return;
+    if (!result.success ||
+        result.trial == null ||
+        result.session == null ||
+        result.allPlotsSerpentine == null ||
+        result.assessments == null ||
+        result.startPlotIndex == null) {
+      return;
+    }
+    final resolvedTrial = result.trial!;
+    final resolvedSession = result.session!;
+    final plots = result.allPlotsSerpentine!;
+    final assessments = result.assessments!;
+    int startIndex = result.startPlotIndex!;
+    int? initialAssessmentIndex;
+    final pos = SessionResumeStore(prefs).getPosition(resolvedSession.id);
+    if (pos != null) {
+      final resolved = pos.resolveResumeStart(
+        plots: plots,
+        fallbackStartIndex: startIndex,
+        assessmentCount: assessments.length,
+      );
+      startIndex = resolved.$1;
+      initialAssessmentIndex = resolved.$2;
+    }
+    LastSessionStore(prefs).save(resolvedTrial.id, resolvedSession.id);
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RatingScreen(
+          trial: resolvedTrial,
+          session: resolvedSession,
+          plot: plots[startIndex],
+          assessments: assessments,
+          allPlots: plots,
+          currentPlotIndex: startIndex,
+          initialAssessmentIndex: initialAssessmentIndex,
+        ),
+      ),
+    );
   }
 
   Future<void> _promptPassphraseIfNeeded() async {

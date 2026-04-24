@@ -109,7 +109,6 @@ class TrialIntelligenceService {
         }
       }
     }
-
     final repCount = dataPlots
         .map((p) => p.rep)
         .whereType<int>()
