@@ -226,7 +226,11 @@ Sheet layout, row maps, and which sheets are parsed today: **`test/fixtures/arm_
 
 ### Gaps (explicit)
 
-- **Subsample Plot Data**: parsed into `ArmShellImport.subsampleAssessmentColumns` / `subsamplePlotRows` (structure only; not persisted). **Comments** sheet: parsed and stored on `arm_trial_metadata.shell_comments_sheet`; ARM Protocol tab shows non-empty text.
+- **Subsample Plot Data**: parsed into `ArmShellImport.subsampleAssessmentColumns` / `subsamplePlotRows` (structure only; not persisted). **Comments** sheet: parsed and stored on `arm_trial_metadata.shell_comments_sheet`; ARM Protocol tab shows non-empty text; **export** writes B1/A2/B2 via `ArmValueInjector` when persisted text is non-empty.
+
+### Non-goals (explicit)
+
+- **Subsample Treatment Means (and Treatment Means) statistics in-app:** Do not implement subsample treatment means calculation (or other ARM formula-sheet aggregates) inside the companion. Those values are produced by **ARM** from the formula worksheets when the workbook is opened or processed in ARM. This app **collects** plot- and subsample-level rating data and **round-trips** structure to the shell; **ARM** owns summary stats. Keep that boundary clean.
 
 ## What standalone users see
 

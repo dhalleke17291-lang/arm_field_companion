@@ -44,18 +44,22 @@ class ArmInjectionResult {
 /// Uses sheet **Plot Data** (ARM-native shells).
 ///
 /// Updates the Plot Data worksheet XML inside the xlsx zip (and optionally
-/// **Applications** / **Treatments**). All other parts are copied byte-for-byte
-/// to avoid [excel] decode/encode corruption on other sheets.
+/// **Applications** / **Treatments** / **Comments**). All other parts are copied
+/// byte-for-byte to avoid [excel] decode/encode corruption on other sheets.
 class ArmValueInjector {
   ArmValueInjector(this.shellImport);
 
   final ArmShellImport shellImport;
 
+  /// When [commentsSheetText] is non-null, non-empty after trim, writes the ARM
+  /// Comments layout: B1 instruction, A2 `ECM`, B2 body. When null or
+  /// blank, the Comments worksheet is left unchanged.
   Future<ArmInjectionResult> inject(
     List<ArmRatingValue> values,
     String outputPath, {
     List<ArmApplicationsSheetExportColumn>? applicationColumns,
     List<ArmTreatmentSheetRow>? treatmentRows,
+    String? commentsSheetText,
   }) async {
     if (outputPath == shellImport.shellFilePath) {
       throw StateError(
@@ -192,6 +196,44 @@ class ArmValueInjector {
       }
     }
 
+    List<int>? updatedCommentsBytes;
+    String? commentsPath;
+    final commentsTrimmed = commentsSheetText?.trim();
+    if (commentsTrimmed != null && commentsTrimmed.isNotEmpty) {
+      commentsPath = _resolveWorksheetPath(archive, 'Comments');
+      if (commentsPath == null) {
+        skippedReasons.add(
+          'Comments sheet missing from shell — comments not written',
+        );
+      } else {
+        final cmEntry = archive.findFile(commentsPath);
+        if (cmEntry == null) {
+          skippedReasons.add(
+            'Comments worksheet entry missing: $commentsPath',
+          );
+        } else {
+          final cmDoc =
+              XmlDocument.parse(utf8.decode(cmEntry.content as List<int>));
+          const instruction = 'Enter all comments in cell below:';
+          _writeCell(cmDoc, 0, 1, instruction, false, ensureRow: true);
+          cellsWritten++;
+          _writeCell(cmDoc, 1, 0, 'ECM', false, ensureRow: true);
+          cellsWritten++;
+          _writeCell(
+            cmDoc,
+            1,
+            1,
+            commentsTrimmed,
+            false,
+            ensureRow: true,
+          );
+          cellsWritten++;
+          updatedCommentsBytes =
+              utf8.encode(cmDoc.toXmlString(pretty: false));
+        }
+      }
+    }
+
     List<int>? updatedTreatmentsBytes;
     String? treatmentsPath;
     if (treatmentRows != null && treatmentRows.isNotEmpty) {
@@ -276,6 +318,16 @@ class ArmValueInjector {
             file.name,
             updatedTreatmentsBytes.length,
             updatedTreatmentsBytes,
+          ),
+        );
+      } else if (commentsPath != null &&
+          updatedCommentsBytes != null &&
+          file.name == commentsPath) {
+        newArchive.addFile(
+          ArchiveFile(
+            file.name,
+            updatedCommentsBytes.length,
+            updatedCommentsBytes,
           ),
         );
       } else {

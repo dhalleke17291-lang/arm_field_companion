@@ -614,12 +614,16 @@ class ExportArmRatingShellUseCase {
     final safeName = safeBase.isEmpty ? 'trial_${trial.id}' : safeBase;
     final tempDir = await getTemporaryDirectory();
     final filePath = '${tempDir.path}/${safeName}_RatingShell_filled.xlsx';
+    final persistedComments = armLink!.shellCommentsSheet?.trim();
     final injectionResult = await injector.inject(
       ratingValues,
       filePath,
       applicationColumns:
           applicationColumns.isEmpty ? null : applicationColumns,
       treatmentRows: treatmentRows.isEmpty ? null : treatmentRows,
+      commentsSheetText: persistedComments != null && persistedComments.isNotEmpty
+          ? persistedComments
+          : null,
     );
 
     if (injectionResult.hasSkips) {

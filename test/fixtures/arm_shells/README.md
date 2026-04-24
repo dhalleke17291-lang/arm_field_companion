@@ -23,7 +23,7 @@ This file has **7 sheets**:
 | **Plot Data** | Assessment column metadata + plot layout + rating values | **Yes** — descriptor rows 9–47 (0-based 8–46) into [ArmColumnMap]; importer lands them on `arm_assessment_metadata` + normalises rating dates to `yyyy-MM-dd` on planned sessions |
 | **Treatments** | Products, rates, formulations, rate units | **Yes** (Phase 2) |
 | **Applications** | 79 descriptor fields: dates, weather, equipment, nozzles, carrier, mix | **Yes** (Phase 3b parser + Phase 3c importer) |
-| **Comments** | Free-text trial notes (`ECM` row, column B) | **Yes** — parser → `ArmShellImport.commentsSheetText`; persisted on `arm_trial_metadata.shell_comments_sheet` |
+| **Comments** | Free-text trial notes (`ECM` row, column B) | **Yes** — parser → `ArmShellImport.commentsSheetText`; persisted on `arm_trial_metadata.shell_comments_sheet`; **export** injects B1/A2/B2 when text is non-empty |
 | **Subsample Plot Data** | Mirror of Plot Data for subsample protocols | **Yes** — same descriptor + `041TRT` layout as Plot Data; exposed on `ArmShellImport.subsampleAssessmentColumns` / `subsamplePlotRows` (import does not yet land subsample rows in core) |
 | **Subsample Treatment Means** | Calculated means (Excel formulas) | Output-only, not ingested |
 | **Treatment Means** | Calculated means per treatment (Excel formulas) | Output-only, not ingested |
@@ -161,6 +161,8 @@ Single free-text cell:
 ## Subsample Plot Data & Subsample Treatment Means
 
 Only relevant when `# Subsamples > 1`. AgQuest uses subsamples = 1, so these sheets mirror the main plot data degenerately.
+
+**Non-goal (companion):** Do not compute **Subsample Treatment Means** or **Treatment Means** in the app. Those sheets are ARM formula output; ARM derives aggregates from raw plot/subsample data. The companion collects data and preserves shell structure for round-trip; it does not replicate ARM’s stats engine.
 
 **Layout note:** In AgQuest’s export, **Subsample Plot Data** uses the same descriptor *codes* and column offsets as Plot Data, but the `001EID` block starts on **Excel row 1** (not row 8). The parser finds the anchor row by scanning column A for `001EID`, then applies the standard `001EID`…`040ENS` offsets from there.
 
