@@ -638,6 +638,114 @@ void main() {
       expect(_cellString(sheet!, 48, 2), '42.5');
     });
 
+    test('export filename is <trialname>_RatingShell.xlsx (no _filled suffix)',
+        () async {
+      final trialRepo = TrialRepository(db);
+      final trialId = await trialRepo.createTrial(
+          name: 'AgQuest Demo Trial', workspaceType: 'efficacy');
+      final trtId = await TreatmentRepository(db).insertTreatment(
+        trialId: trialId,
+        code: '1',
+        name: 'Check',
+      );
+      final plotPk = await PlotRepository(db).insertPlot(
+        trialId: trialId,
+        plotId: '101',
+        rep: 1,
+        treatmentId: trtId,
+        plotSortIndex: 1,
+      );
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'AVEFA',
+              name: 'A',
+              category: 'pest',
+              timingCode: const Value('1-Jul-26'),
+            ),
+          );
+      final legacyAsmId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(
+              trialId: trialId,
+              name: 'Legacy A',
+            ),
+          );
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+              legacyAssessmentId: Value(legacyAsmId),
+              sortOrder: const Value(0),
+            ),
+          );
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-01-01',
+            ),
+          );
+      await db.into(db.ratingRecords).insert(
+            RatingRecordsCompanion.insert(
+              trialId: trialId,
+              plotPk: plotPk,
+              assessmentId: legacyAsmId,
+              sessionId: sessionId,
+              trialAssessmentId: Value(taId),
+              resultStatus: const Value('RECORDED'),
+              numericValue: const Value(42.5),
+              isCurrent: const Value(true),
+            ),
+          );
+
+      await _pinArmExportAnchors(
+        db,
+        trialId: trialId,
+        plotPk: plotPk,
+        armPlotNumber: 101,
+        trialAssessmentId: taId,
+        sessionId: sessionId,
+        pestCode: 'AVEFA',
+      );
+
+      await _insertCompatibilityProfile(
+        db: db,
+        trialId: trialId,
+        exportConfidence: ImportConfidence.high,
+        columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
+        assessmentTokens: [
+          {
+            'rawHeader': 'AVEFA 1-Jul-26 CONTRO %',
+            'armCode': 'AVEFA',
+            'timingCode': '1-Jul-26',
+            'unit': '%',
+            'ratingDate': null,
+            'assessmentKey': 'k',
+          },
+        ],
+      );
+
+      final shellPath = await writeArmShellFixture(
+        tempPath,
+        plotNumbers: const [101],
+        armColumnIds: const ['001EID001'],
+        seNames: const ['AVEFA'],
+        ratingDates: const ['1-Jul-26'],
+      );
+
+      final trialRow =
+          await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+              .getSingle();
+      final uc = makeUc(pickShellPathOverride: () async => shellPath);
+      final r = await uc.execute(trial: trialRow, suppressShare: true);
+      expect(r.success, isTrue, reason: r.errorMessage);
+
+      final path = r.filePath;
+      expect(path, isNotNull);
+      final basename = path!.split('/').last;
+      expect(basename, 'AgQuest_Demo_Trial_RatingShell.xlsx');
+      expect(basename.contains('_filled'), isFalse);
+    });
+
     test(
       'seName matches pestCode before ratingType; avoids positional fallback',
       () async {
