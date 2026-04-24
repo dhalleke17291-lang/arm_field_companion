@@ -69,6 +69,30 @@ class ArmExportPreflight {
   int get warningCount => warnings.length;
 }
 
+/// Warning-severity finding codes that indicate the export will actually
+/// take the positional-fallback path in [ExportArmRatingShellUseCase]
+/// (bridge anchors missing, duplicated, or assessment matcher must fall
+/// back to column position). Used by the preflight UI to decide whether
+/// to prompt the user to confirm a specific positional-misalignment risk
+/// before Export. Other warning codes (data-quality, readiness, generic
+/// ARM confidence warnings) do not imply positional matching and do not
+/// need a confirmation dialog.
+const kArmExportPositionalFallbackWarningCodes = <String>{
+  'arm_round_trip_fallback_assessment_match_used',
+  'arm_round_trip_missing_arm_import_column_index',
+  'arm_round_trip_duplicate_arm_import_column_index',
+};
+
+/// True when at least one preflight warning signals that positional
+/// column matching will be used during export. Informational findings
+/// and non-positional warnings do not flip this to true — those still
+/// render on the preflight screen but do not require a modal
+/// confirmation before export.
+bool preflightRequiresPositionalConfirmation(ArmExportPreflight preflight) {
+  return preflight.warnings
+      .any((w) => kArmExportPositionalFallbackWarningCodes.contains(w.code));
+}
+
 /// Gathers trial/session summary and merged quality findings before ARM shell export.
 class ArmExportPreflightUseCase {
   ArmExportPreflightUseCase({

@@ -301,6 +301,8 @@ class _ArmExportPreflightScreenState
               exportError: _exportError,
               onExport: _runExport,
               onExportAnyway: _runExportAnyway,
+              requiresPositionalConfirmation:
+                  preflightRequiresPositionalConfirmation(preflight),
             ),
           ),
           if (_exportBusy)
@@ -321,6 +323,7 @@ class _PreflightBody extends StatelessWidget {
     required this.exportError,
     required this.onExport,
     required this.onExportAnyway,
+    required this.requiresPositionalConfirmation,
   });
 
   final Trial trial;
@@ -328,6 +331,11 @@ class _PreflightBody extends StatelessWidget {
   final String? exportError;
   final VoidCallback onExport;
   final VoidCallback onExportAnyway;
+
+  /// True when a preflight warning signals actual positional-matching
+  /// risk. Drives the "Export Anyway" confirmation dialog; non-positional
+  /// warnings export directly (with warnings still visible above).
+  final bool requiresPositionalConfirmation;
 
   @override
   Widget build(BuildContext context) {
@@ -568,7 +576,7 @@ class _PreflightBody extends StatelessWidget {
           ),
           child: _ActionBar(
             canExport: preflight.canExport,
-            hasWarnings: preflight.warningCount > 0,
+            requiresPositionalConfirmation: requiresPositionalConfirmation,
             onBack: () => Navigator.pop(context),
             onExport: onExport,
             onExportAnyway: onExportAnyway,
@@ -713,14 +721,20 @@ class _FindingSection extends StatelessWidget {
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.canExport,
-    required this.hasWarnings,
+    required this.requiresPositionalConfirmation,
     required this.onBack,
     required this.onExport,
     required this.onExportAnyway,
   });
 
   final bool canExport;
-  final bool hasWarnings;
+
+  /// When true, the primary button is "Export Anyway" and tapping it
+  /// routes through [onExportAnyway] which shows the positional-risk
+  /// confirmation dialog. When false, the primary button is "Export"
+  /// and goes directly to [onExport] even if non-positional warnings
+  /// are displayed above.
+  final bool requiresPositionalConfirmation;
   final VoidCallback onBack;
   final VoidCallback onExport;
   final VoidCallback onExportAnyway;
@@ -736,7 +750,7 @@ class _ActionBar extends StatelessWidget {
         child: const Text('Back'),
       );
     }
-    if (hasWarnings) {
+    if (requiresPositionalConfirmation) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
