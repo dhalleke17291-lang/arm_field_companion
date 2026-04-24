@@ -246,181 +246,26 @@ class AssessmentsTab extends ConsumerWidget {
                     ta,
                     aam: aamMap[ta.id],
                   );
-                  return Container(
-                    margin:
-                        const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
-                    decoration: BoxDecoration(
-                      color: AppDesignTokens.cardSurface,
-                      borderRadius:
-                          BorderRadius.circular(AppDesignTokens.radiusCard),
-                      border: Border.all(color: AppDesignTokens.borderCrisp),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x08000000),
-                          blurRadius: 4,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TrialItemNumberBadge(number: displayNumber),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        AssessmentDisplayHelper.compactName(
-                                          ta,
-                                          def: def,
-                                          aam: aamMap[ta.id],
-                                        ),
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          color: AppDesignTokens.primaryText,
-                                        ),
-                                      ),
-                                    ),
-                                    for (int ci = 0;
-                                        ci < dateLabels.length;
-                                        ci++)
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                            left: 4, right: 2),
-                                        child: GestureDetector(
-                                          onTap: ci < sessionEntries.length
-                                              ? () {
-                                                  final (sid, isoDate) =
-                                                      sessionEntries[ci];
-                                                  final statList =
-                                                      stats[ta.id];
-                                                  final matched =
-                                                      statList?.firstWhere(
-                                                    (s) => s.sessionId == sid,
-                                                    orElse: () =>
-                                                        statList.first,
-                                                  );
-                                                  if (matched == null) return;
-                                                  Navigator.push<void>(
-                                                    context,
-                                                    MaterialPageRoute<void>(
-                                                      builder: (_) =>
-                                                          AssessmentResultsScreen(
-                                                        stat: matched,
-                                                        trialId: trial.id,
-                                                        trialName: trial.name,
-                                                        workspaceType:
-                                                            trial.workspaceType,
-                                                        sessionId: sid,
-                                                        sessionDate: isoDate,
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                              : null,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: scheme.secondaryContainer
-                                                  .withValues(alpha: 0.65),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              dateLabels[ci],
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                                color:
-                                                    scheme.onSecondaryContainer,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    if (ta.isActive)
-                                      const Icon(
-                                        Icons.check_circle_outline,
-                                        size: 20,
-                                        color: AppDesignTokens.primary,
-                                      )
-                                    else
-                                      const Icon(
-                                        Icons.chevron_right,
-                                        size: 20,
-                                        color: AppDesignTokens.iconSubtle,
-                                      ),
-                                  ],
-                                ),
-                                if (seDesc != null) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    seDesc,
-                                    style: const TextStyle(
-                                      color: AppDesignTokens.secondaryText,
-                                      fontSize: 12,
-                                    ),
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${def.dataType}${def.unit != null ? ' (${def.unit})' : ''}'
-                                      '${def.scaleMin != null && def.scaleMax != null ? ' · ${def.scaleMin}–${def.scaleMax}' : ''}',
-                                  style: const TextStyle(
-                                    color: AppDesignTokens.secondaryText,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                if (def.timingCode != null &&
-                                    def.timingCode!.trim().isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                            color: scheme.outline
-                                                .withValues(alpha: 0.6)),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        def.timingCode!,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: scheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                _buildAssessmentStatSlot(
-                                  context,
-                                  theme,
-                                  statsAsync,
-                                  stats,
-                                  ta.id,
-                                  null,
-                                  isStandalone,
-                                  isGlp,
-                                  checkCode,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                  return _AssessmentCard(
+                    displayNumber: displayNumber,
+                    ta: ta,
+                    def: def,
+                    dateLabels: dateLabels,
+                    sessionEntries: sessionEntries,
+                    aam: aamMap[ta.id],
+                    seDesc: seDesc,
+                    buildStatSlot: (selectedSessionId) =>
+                        _buildAssessmentStatSlot(
+                      context,
+                      theme,
+                      statsAsync,
+                      stats,
+                      ta.id,
+                      null,
+                      isStandalone,
+                      isGlp,
+                      checkCode,
+                      selectedSessionId: selectedSessionId,
                     ),
                   );
                 }),
@@ -558,8 +403,9 @@ class AssessmentsTab extends ConsumerWidget {
     String? legacyAssessmentName,
     bool isStandalone,
     bool isGlp,
-    String? checkTreatmentCode,
-  ) {
+    String? checkTreatmentCode, {
+    int? selectedSessionId,
+  }) {
     if (statsAsync.isLoading) {
       return const Padding(
         padding: EdgeInsets.only(top: 8),
@@ -579,10 +425,15 @@ class AssessmentsTab extends ConsumerWidget {
     if (statsAsync.hasError) {
       return const SizedBox.shrink();
     }
-    // Show the first (earliest) session's stats in the card summary.
     AssessmentStatistics? stat;
     if (libraryTrialAssessmentId != null) {
-      stat = stats[libraryTrialAssessmentId]?.first;
+      final list = stats[libraryTrialAssessmentId];
+      stat = selectedSessionId != null
+          ? list?.firstWhere(
+              (s) => s.sessionId == selectedSessionId,
+              orElse: () => list.first,
+            )
+          : list?.first;
     } else if (legacyAssessmentName != null) {
       outer:
       for (final list in stats.values) {
@@ -709,25 +560,49 @@ class AssessmentsTab extends ConsumerWidget {
           ),
           if (stat.cvInterpretation != null) ...[
             const SizedBox(height: 6),
-            if (stat.cvInterpretation!.showCvNumber)
+            if (stat.sessionDate != null) ...[
               Text(
-                stat.cvInterpretation!.displayValue,
+                () {
+                  final dt = DateTime.tryParse(stat.sessionDate!);
+                  final label = dt != null
+                      ? DateFormat('MMM d').format(dt)
+                      : stat.sessionDate!;
+                  final parts = <String>[label];
+                  if (stat.cvInterpretation!.showCvNumber) {
+                    parts.add(stat.cvInterpretation!.displayValue);
+                  }
+                  if (stat.cvInterpretation!.message.isNotEmpty) {
+                    parts.add(stat.cvInterpretation!.message);
+                  }
+                  return parts.join('  ·  ');
+                }(),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: _cvSignalColor(stat.cvInterpretation!.signal),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                stat.cvInterpretation!.message,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: _cvSignalColor(stat.cvInterpretation!.signal),
+            ] else ...[
+              if (stat.cvInterpretation!.showCvNumber)
+                Text(
+                  stat.cvInterpretation!.displayValue,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: _cvSignalColor(stat.cvInterpretation!.signal),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  stat.cvInterpretation!.message,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: _cvSignalColor(stat.cvInterpretation!.signal),
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
           // Show rep consistency warning only when it adds information:
           // suppress when ANOVA is not significant (inconsistency already explained
@@ -919,7 +794,16 @@ class AssessmentsTab extends ConsumerWidget {
                     ),
                   );
                 },
-                child: const Text('Details →'),
+                child: Text(
+                  () {
+                    if (stat.sessionDate == null) return 'Details →';
+                    final dt = DateTime.tryParse(stat.sessionDate!);
+                    final label = dt != null
+                        ? DateFormat('MMM d').format(dt)
+                        : stat.sessionDate!;
+                    return 'Details: $label →';
+                  }(),
+                ),
               ),
             ),
           ],
@@ -1187,6 +1071,209 @@ class AssessmentsTab extends ConsumerWidget {
       case ResultDirection.neutral:
         return AppDesignTokens.secondaryText;
     }
+  }
+}
+
+class _AssessmentCard extends StatefulWidget {
+  const _AssessmentCard({
+    required this.displayNumber,
+    required this.ta,
+    required this.def,
+    required this.dateLabels,
+    required this.sessionEntries,
+    required this.aam,
+    required this.seDesc,
+    required this.buildStatSlot,
+  });
+
+  final int displayNumber;
+  final TrialAssessment ta;
+  final AssessmentDefinition def;
+  final List<String> dateLabels;
+  final List<(int, String)> sessionEntries;
+  final ArmAssessmentMetadataData? aam;
+  final String? seDesc;
+  final Widget Function(int? selectedSessionId) buildStatSlot;
+
+  @override
+  State<_AssessmentCard> createState() => _AssessmentCardState();
+}
+
+class _AssessmentCardState extends State<_AssessmentCard> {
+  int _selectedIdx = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final selectedSessionId = _selectedIdx < widget.sessionEntries.length
+        ? widget.sessionEntries[_selectedIdx].$1
+        : null;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TrialItemNumberBadge(number: widget.displayNumber),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          AssessmentDisplayHelper.compactName(
+                            widget.ta,
+                            def: widget.def,
+                            aam: widget.aam,
+                          ),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppDesignTokens.primaryText,
+                          ),
+                        ),
+                      ),
+                      for (int ci = 0; ci < widget.dateLabels.length; ci++)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4, right: 2),
+                          child: GestureDetector(
+                            onTap: ci < widget.sessionEntries.length
+                                ? () => setState(() => _selectedIdx = ci)
+                                : null,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              decoration: ci == _selectedIdx
+                                  ? const BoxDecoration(
+                                      color: AppDesignTokens.primary,
+                                      borderRadius: BorderRadius.all(
+                                          Radius.circular(8)),
+                                    )
+                                  : BoxDecoration(
+                                      border: Border.all(
+                                          color: AppDesignTokens.primary),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.calendar_today,
+                                    size: 12,
+                                    color: ci == _selectedIdx
+                                        ? Colors.white
+                                        : AppDesignTokens.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    widget.dateLabels[ci],
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: ci == _selectedIdx
+                                          ? Colors.white
+                                          : AppDesignTokens.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (widget.ta.isActive)
+                        const Icon(
+                          Icons.check_circle_outline,
+                          size: 20,
+                          color: AppDesignTokens.primary,
+                        )
+                      else
+                        const Icon(
+                          Icons.chevron_right,
+                          size: 20,
+                          color: AppDesignTokens.iconSubtle,
+                        ),
+                    ],
+                  ),
+                  if (widget.seDesc != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.seDesc!,
+                      style: const TextStyle(
+                        color: AppDesignTokens.secondaryText,
+                        fontSize: 12,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 2),
+                  Text(
+                    '${widget.def.dataType}${widget.def.unit != null ? ' (${widget.def.unit})' : ''}'
+                        '${widget.def.scaleMin != null && widget.def.scaleMax != null ? ' · ${widget.def.scaleMin}–${widget.def.scaleMax}' : ''}',
+                    style: const TextStyle(
+                      color: AppDesignTokens.secondaryText,
+                      fontSize: 12,
+                    ),
+                  ),
+                  if (widget.def.timingCode != null &&
+                      widget.def.timingCode!.trim().isNotEmpty &&
+                      DateTime.tryParse(widget.def.timingCode!.trim()) == null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                              color: scheme.outline.withValues(alpha: 0.6)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          widget.def.timingCode!,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (widget.dateLabels.isNotEmpty) ...[
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppDesignTokens.borderCrisp,
+                      ),
+                    ),
+                  ],
+                  widget.buildStatSlot(selectedSessionId),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

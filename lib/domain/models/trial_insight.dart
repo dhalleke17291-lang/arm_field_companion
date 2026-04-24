@@ -14,6 +14,10 @@ class TrialInsight {
     this.relatedTreatmentIds = const [],
     this.timingLabel,
     this.verdict,
+    this.assessmentName,
+    this.treatmentName,
+    this.fromDate,
+    this.toDate,
   });
 
   final InsightType type;
@@ -39,6 +43,18 @@ class TrialInsight {
   /// confidence tier and situation. Null means the UI falls back to showing
   /// only [title] and [detail] — silence beats noise.
   final String? verdict;
+
+  /// ARM assessment code / name (e.g. "CONTRO"). Populated for treatmentTrend.
+  final String? assessmentName;
+
+  /// Treatment name (e.g. "APRON XL"). Populated for treatmentTrend.
+  final String? treatmentName;
+
+  /// Short date label for the first session in the trend (e.g. "Apr 2").
+  final String? fromDate;
+
+  /// Short date label for the last session in the trend (e.g. "Apr 23").
+  final String? toDate;
 }
 
 enum InsightType {

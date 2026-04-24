@@ -2137,15 +2137,42 @@ class _TrialInsightsCard extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (insights) {
         if (insights.isEmpty) return const SizedBox.shrink();
+        final hasPreliminary = insights.any(
+            (i) => i.basis.confidence == InsightConfidence.preliminary);
+        final hasTrends = insights
+            .any((i) => i.type == InsightType.treatmentTrend);
         return _OverviewDashboardCard(
           title: 'Trial insights',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (hasPreliminary) ...[
+                const Text(
+                  'Preliminary insights — trial is active. '
+                  'Results update as sessions are completed.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Divider(height: 1, color: AppDesignTokens.borderCrisp),
+              ],
               for (var i = 0; i < insights.length; i++) ...[
-                if (i > 0)
+                if (i > 0 || hasPreliminary)
                   const Divider(height: 1, color: AppDesignTokens.borderCrisp),
                 _InsightRow(insight: insights[i]),
+              ],
+              if (hasTrends) ...[
+                const Divider(height: 1, color: AppDesignTokens.borderCrisp),
+                const SizedBox(height: 6),
+                const Text(
+                  'Treatment trends: arithmetic mean per treatment per session.',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
               ],
             ],
           ),
@@ -2238,66 +2265,91 @@ class _InsightRowState extends State<_InsightRow> {
                 ],
               ),
               const SizedBox(height: 3),
-              Text(
-                insight.detail,
-                style: const TextStyle(
-                  fontSize: 12,
-                  height: 1.35,
-                  color: AppDesignTokens.secondaryText,
-                ),
-              ),
-              if (_expanded) ...[
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppDesignTokens.sectionHeaderBg,
-                    borderRadius: BorderRadius.circular(6),
+              if (insight.type == InsightType.treatmentTrend &&
+                  insight.fromDate != null &&
+                  insight.toDate != null) ...[
+                Text(
+                  '${insight.fromDate} → ${insight.toDate}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppDesignTokens.secondaryText,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        insight.basis.basisSummary,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: AppDesignTokens.primaryText,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Method: ${insight.basis.method}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppDesignTokens.secondaryText,
-                        ),
-                      ),
-                      if (insight.basis.threshold != null) ...[
-                        const SizedBox(height: 1),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  insight.detail,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
+              ] else ...[
+                Text(
+                  insight.detail,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+              ],
+              // Treatment trend rows share a single method note at the card
+              // bottom; suppress per-row method box to avoid repetition.
+              if (insight.type != InsightType.treatmentTrend) ...[
+                if (_expanded) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppDesignTokens.sectionHeaderBg,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          insight.basis.threshold!,
+                          insight.basis.basisSummary,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppDesignTokens.primaryText,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Method: ${insight.basis.method}',
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppDesignTokens.secondaryText,
                           ),
                         ),
+                        if (insight.basis.threshold != null) ...[
+                          const SizedBox(height: 1),
+                          Text(
+                            insight.basis.threshold!,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppDesignTokens.secondaryText,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                ),
-              ] else
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(
-                    'Tap for method',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color:
-                          AppDesignTokens.secondaryText.withValues(alpha: 0.6),
                     ),
                   ),
-                ),
+                ] else
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      'Tap for method',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppDesignTokens.secondaryText
+                            .withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+              ],
             ],
           ),
         ),

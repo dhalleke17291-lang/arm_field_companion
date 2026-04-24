@@ -1,5 +1,7 @@
 import 'dart:math' show sqrt;
 
+import 'package:intl/intl.dart';
+
 import '../../core/database/app_database.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../data/repositories/assignment_repository.dart';
@@ -55,6 +57,7 @@ class TrialIntelligenceService {
   Future<List<TrialInsight>> computeInsights({
     required int trialId,
     required List<Treatment> treatments,
+    Map<int, String> assessmentNames = const {},
   }) async {
     final sessions = await _sessionRepo.getSessionsForTrial(trialId);
     final closedSessions =
@@ -137,6 +140,7 @@ class TrialIntelligenceService {
         treatments: treatments,
         assessmentId: aid,
         repCount: repCount,
+        assessmentNames: assessmentNames,
       );
       insights.addAll(trendInsights);
 
@@ -367,21 +371,27 @@ class TrialIntelligenceService {
     required List<Treatment> treatments,
     required int assessmentId,
     required int repCount,
+    Map<int, String> assessmentNames = const {},
   }) {
     if (sessions.length < kMinSessionsForTrend) return [];
 
     final insights = <TrialInsight>[];
-    final treatmentIds =
-        plotToTreatment.values.toSet();
+    final treatmentIds = plotToTreatment.values.toSet();
+    final assessmentName = assessmentNames[assessmentId];
+    final displayAssessmentName = assessmentName ?? 'Treatment trend';
 
     for (final tid in treatmentIds) {
       final treatment = treatments.where((t) => t.id == tid).firstOrNull;
       if (treatment == null) continue;
+      // tCode used for internal verdict; tName used for display.
       final tCode = treatment.code.isNotEmpty ? treatment.code : treatment.name;
+      final tName = treatment.name.isNotEmpty ? treatment.name : treatment.code;
 
       final sessionMeans = <String>[];
       double? firstMean;
       double? lastMean;
+      Session? firstSession;
+      Session? lastSession;
 
       // Chronological order (oldest first)
       final chronological = sessions.reversed.toList();
@@ -392,8 +402,12 @@ class TrialIntelligenceService {
         final m = means[tid];
         if (m != null) {
           sessionMeans.add('${m.toStringAsFixed(0)}%');
-          firstMean ??= m;
+          if (firstMean == null) {
+            firstMean = m;
+            firstSession = s;
+          }
           lastMean = m;
+          lastSession = s;
         }
       }
 
@@ -401,8 +415,11 @@ class TrialIntelligenceService {
 
       final delta = lastMean! - firstMean!;
       final sign = delta >= 0 ? '+' : '';
+      final fromDate = _fmtSessionDate(firstSession?.sessionDateLocal);
+      final toDate = _fmtSessionDate(lastSession?.sessionDateLocal);
       final detail =
-          '$tCode: ${sessionMeans.join(' → ')} ($sign${delta.toStringAsFixed(0)} points).';
+          '${firstMean.toStringAsFixed(0)}% → ${lastMean.toStringAsFixed(0)}%'
+          ' ($sign${delta.toStringAsFixed(0)} points)';
 
       final confidence = resolveConfidence(
         sessionCount: sessionMeans.length,
@@ -411,8 +428,12 @@ class TrialIntelligenceService {
 
       insights.add(TrialInsight(
         type: InsightType.treatmentTrend,
-        title: 'Treatment trend — $tCode',
+        title: '$displayAssessmentName · $tName',
         detail: detail,
+        assessmentName: assessmentName,
+        treatmentName: tName,
+        fromDate: fromDate,
+        toDate: toDate,
         verdict: InsightVoice.trendVerdict(
           treatmentCode: tCode,
           delta: delta,
@@ -430,6 +451,13 @@ class TrialIntelligenceService {
     }
 
     return insights;
+  }
+
+  static String? _fmtSessionDate(String? dateLocal) {
+    if (dateLocal == null || dateLocal.isEmpty) return null;
+    final dt = DateTime.tryParse(dateLocal);
+    if (dt == null) return null;
+    return DateFormat('MMM d').format(dt);
   }
 
   /// 5.4: Check plot trend — check treatment mean per session.

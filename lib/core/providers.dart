@@ -2008,7 +2008,19 @@ final trialInsightsProvider = FutureProvider.autoDispose
     .family<List<TrialInsight>, int>((ref, trialId) async {
   final treatments =
       await ref.watch(treatmentsForTrialProvider(trialId).future);
+  final assessmentPairs = await ref.watch(
+      trialAssessmentsWithDefinitionsForTrialProvider(trialId).future);
+  final assessmentNames = <int, String>{
+    for (final pair in assessmentPairs)
+      if (pair.$1.legacyAssessmentId != null)
+        pair.$1.legacyAssessmentId!: pair.$2.name.trim().isNotEmpty
+            ? pair.$2.name.trim()
+            : 'Assessment ${pair.$1.sortOrder + 1}',
+  };
   return ref
       .watch(trialIntelligenceServiceProvider)
-      .computeInsights(trialId: trialId, treatments: treatments);
+      .computeInsights(
+          trialId: trialId,
+          treatments: treatments,
+          assessmentNames: assessmentNames);
 });
