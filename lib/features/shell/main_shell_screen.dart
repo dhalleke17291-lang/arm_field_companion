@@ -244,13 +244,16 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
 
   Widget _buildScaffold(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: const [
-          TrialsHubScreen(),
-          WorkLogScreen(),
-          MoreScreen(),
-        ],
+      body: SafeArea(
+        bottom: false,
+        child: IndexedStack(
+          index: _currentIndex,
+          children: const [
+            TrialsHubScreen(),
+            WorkLogScreen(),
+            MoreScreen(),
+          ],
+        ),
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(

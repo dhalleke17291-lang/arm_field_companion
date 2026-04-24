@@ -124,12 +124,16 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                       : AppDesignTokens.iconSubtle,
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  backupReminderModeLabel(mode),
-                  style: TextStyle(
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.w400,
-                    color: AppDesignTokens.primaryText,
+                Expanded(
+                  child: Text(
+                    backupReminderModeLabel(mode),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w400,
+                      color: AppDesignTokens.primaryText,
+                    ),
                   ),
                 ),
               ],
@@ -179,22 +183,29 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
       children: [
         const Text(
           'Create an encrypted backup file to save or share',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 13,
+            fontWeight: FontWeight.w400,
             color: AppDesignTokens.secondaryText,
           ),
         ),
         const SizedBox(height: 6),
         Row(
           children: [
-            Text(
-              'Last backup: $lastLabel',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isStale
-                    ? AppDesignTokens.warningFg
-                    : AppDesignTokens.secondaryText.withValues(alpha: 0.85),
+            Expanded(
+              child: Text(
+                'Last backup: $lastLabel',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isStale
+                      ? AppDesignTokens.warningFg
+                      : AppDesignTokens.secondaryText.withValues(alpha: 0.85),
+                ),
               ),
             ),
             if (isStale) ...[
@@ -236,6 +247,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
         leading: SizedBox(width: 48),
       ),
       body: SafeArea(
+        top: false,
         child: ListView(
           padding: const EdgeInsets.only(top: 4, bottom: 4),
           children: [
@@ -393,16 +405,29 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                   if (_auditPrefs != null || _hasCachedPassphrase)
                     const Divider(height: 1, indent: 70),
                   if (_auditPrefs case final audit?) ...[
-                    SwitchListTile(
+                    ListTile(
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 8,
                       ),
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppDesignTokens.primaryTint,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.delete_sweep_outlined,
+                          color: AppDesignTokens.primary,
+                          size: 20,
+                        ),
+                      ),
                       title: const Text(
                         'Clear audit log after backup',
                         style: TextStyle(
-                          fontWeight: FontWeight.w600,
                           fontSize: 15,
+                          fontWeight: FontWeight.w600,
                           color: AppDesignTokens.primaryText,
                         ),
                       ),
@@ -415,13 +440,15 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                           color: AppDesignTokens.secondaryText,
                         ),
                       ),
-                      value: audit.clearAuditLogAfterSuccessfulBackup,
-                      activeThumbColor: AppDesignTokens.onPrimary,
-                      activeTrackColor: AppDesignTokens.primary,
-                      onChanged: (next) async {
-                        await audit.setClearAuditLogAfterSuccessfulBackup(next);
-                        if (mounted) setState(() {});
-                      },
+                      trailing: Switch(
+                        value: audit.clearAuditLogAfterSuccessfulBackup,
+                        activeThumbColor: AppDesignTokens.onPrimary,
+                        activeTrackColor: AppDesignTokens.primary,
+                        onChanged: (next) async {
+                          await audit.setClearAuditLogAfterSuccessfulBackup(next);
+                          if (mounted) setState(() {});
+                        },
+                      ),
                     ),
                     if (_hasCachedPassphrase)
                       const Divider(height: 1, indent: 70),
@@ -491,6 +518,25 @@ class _MoreRow extends StatelessWidget {
   final Widget? subtitle;
   final VoidCallback? onTap;
 
+  static Widget _normalizeSubtitle(Widget? subtitle) {
+    if (subtitle == null) return const SizedBox.shrink();
+    if (subtitle is Text && subtitle.data != null) {
+      const baseStyle = TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+        color: AppDesignTokens.secondaryText,
+      );
+      return Text(
+        subtitle.data!,
+        style: baseStyle.merge(subtitle.style),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        textAlign: subtitle.textAlign,
+      );
+    }
+    return subtitle;
+  }
+
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -521,13 +567,13 @@ class _MoreRow extends StatelessWidget {
                     title,
                     style: const TextStyle(
                       fontSize: 15,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                       color: AppDesignTokens.primaryText,
                     ),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
-                    subtitle!,
+                    _normalizeSubtitle(subtitle),
                   ],
                 ],
               ),

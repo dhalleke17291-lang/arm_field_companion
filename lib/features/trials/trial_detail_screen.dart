@@ -1290,7 +1290,9 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           }),
         ),
         SizedBox(
-          height: 110,
+          height: MediaQuery.textScalerOf(context)
+              .scale(110)
+              .clamp(110.0, 140.0),
           child: _TrialModuleHub(
             scrollController: _hubScrollController,
             workspaceConfig: workspaceConfig,
