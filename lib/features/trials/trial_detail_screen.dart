@@ -1610,28 +1610,30 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
     final hasOpenSession = sessions.any(isSessionOpenForFieldWork);
     _maybePersistActiveWhenStandaloneOpenSession(trial, hasOpenSession);
 
-    final statusForDisplay = (hasOpenSession &&
-            trial.status != kTrialStatusClosed &&
-            trial.status != kTrialStatusArchived)
-        ? kTrialStatusActive
-        : trial.status;
+    final statusClosedOrArchived = trial.status == kTrialStatusClosed ||
+        trial.status == kTrialStatusArchived;
+    final statusForDisplay = statusClosedOrArchived
+        ? trial.status
+        : (trial.status == kTrialStatusDraft ||
+                trial.status == kTrialStatusReady ||
+                hasOpenSession ||
+                trial.status == kTrialStatusActive)
+            ? kTrialStatusActive
+            : trial.status;
     final nextStatuses = trialWorkspaceIsStandalone(trial.workspaceType)
         ? allowedNextTrialStatusesForTrial(trial.status, trial)
-        : allowedNextTrialStatuses(statusForDisplay);
+        : allowedNextTrialStatuses(trial.status);
     final nextStatus = nextStatuses.isNotEmpty ? nextStatuses.first : null;
-    final bool hideLifecycleCta = statusForDisplay == kTrialStatusClosed ||
-        statusForDisplay == kTrialStatusArchived;
+    final bool hideLifecycleCta = statusClosedOrArchived;
     final buttonLabel = hideLifecycleCta
         ? null
-        : nextStatus == kTrialStatusReady
-            ? 'Mark Ready'
-            : nextStatus == kTrialStatusActive
-                ? 'Mark Active'
-                : nextStatus == kTrialStatusClosed
-                    ? 'Close Trial'
-                    : nextStatus == kTrialStatusArchived
-                        ? 'Archive'
-                        : null;
+        : nextStatus == kTrialStatusActive
+            ? 'Begin Field Work'
+            : nextStatus == kTrialStatusClosed
+                ? 'Close Trial'
+                : nextStatus == kTrialStatusArchived
+                    ? 'Archive'
+                    : null;
     final isDisplayActive = statusForDisplay == kTrialStatusActive;
     // Tone Active down: keep the green dot as the sole bright signal,
     // but render the surrounding pill in a muted tint with neutral dark text
@@ -1679,9 +1681,7 @@ class _PinnedTrialStatusBarState extends ConsumerState<_PinnedTrialStatusBar> {
                 decoration: BoxDecoration(
                   color: pill.bg,
                   borderRadius: BorderRadius.circular(999),
-                  border: isDisplayActive ||
-                          statusForDisplay == kTrialStatusDraft ||
-                          statusForDisplay == kTrialStatusReady
+                  border: isDisplayActive
                       ? Border.all(color: AppDesignTokens.borderCrisp)
                       : null,
                 ),
@@ -3754,27 +3754,40 @@ class SessionsView extends ConsumerWidget {
     WidgetRef ref,
     Session session,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Start planned session?'),
-        content: Text(
-          'This starts the session for ${_formatDateHeader(session.sessionDateLocal)} '
-          'so you can rate plots for it. You can close it later from the Sessions tab.',
+    final latest = ref.read(trialProvider(trial.id)).valueOrNull ?? trial;
+    final prefs = await SharedPreferences.getInstance();
+    if (!context.mounted) return;
+    final fieldWorkKey = 'field_work_started_${trial.id}';
+    final fieldWorkSeen = prefs.getBool(fieldWorkKey) ?? false;
+
+    if (latest.status == kTrialStatusDraft && !fieldWorkSeen) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Starting Field Work'),
+          content: const Text(
+            'Once you begin rating or recording applications, the trial '
+            'structure will be locked:\n'
+            '• Treatments cannot be added or removed\n'
+            '• Plot layout cannot be changed\n'
+            '• Assessment types cannot be changed\n\n'
+            'Ratings and notes can always be added.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Not Yet'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Begin Field Work'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Start session'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !context.mounted) return;
+      );
+      if (confirmed != true || !context.mounted) return;
+      await prefs.setBool(fieldWorkKey, true);
+    }
 
     try {
       final user = await ref.read(currentUserProvider.future);

@@ -83,7 +83,7 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
     return 'Good evening — select a trial type to begin';
   }
 
-  /// Hub footer total line — matches trial list “N Trials” (includes Draft / Ready).
+  /// Hub footer total line — matches trial list “N Trials” (all non-deleted trials).
   static String _trialTotalLabel(int count) =>
       count == 1 ? '1 Trial' : '$count Trials';
 

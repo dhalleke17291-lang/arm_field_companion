@@ -34,9 +34,26 @@ enum TrialListFilter {
   protocolOnly,
 }
 
-enum _TrialListStatusFilter { all, active, draft, closed, archived }
+enum _TrialListStatusFilter { all, active, closed, archived }
 
 enum _TrialListSortMode { newestCreated, oldestCreated, nameAz, nameZa }
+
+/// Matches [_TrialListStatusFilter.active] row visibility (draft / ready / active / open session).
+bool _trialMatchesActiveListFilter(
+  Trial t,
+  Set<int> trialIdsWithOpenFieldSession,
+) {
+  final s = t.status.trim().toLowerCase();
+  if (s == kTrialStatusClosed || s == kTrialStatusArchived) {
+    return false;
+  }
+  if (s == kTrialStatusDraft ||
+      s == kTrialStatusReady ||
+      s == kTrialStatusActive) {
+    return true;
+  }
+  return trialIdsWithOpenFieldSession.contains(t.id);
+}
 
 /// Client-side only: search → status filter → sort. Assumes [trials] already filtered by provider.
 List<Trial> _deriveDisplayedTrials({
@@ -65,24 +82,11 @@ List<Trial> _deriveDisplayedTrials({
       break;
     case _TrialListStatusFilter.active:
       filtered = filtered
-          .where((t) => trialIsListedAsActive(
-                trialStatus: t.status,
-                hasOpenFieldSession:
-                    trialIdsWithOpenFieldSession.contains(t.id),
+          .where((t) => _trialMatchesActiveListFilter(
+                t,
+                trialIdsWithOpenFieldSession,
               ))
           .toList();
-      break;
-    case _TrialListStatusFilter.draft:
-      // Match list badges: draft + open field session is "Active" in the UI
-      // ([effectiveTrialStatusForListDisplay]); exclude those from Draft so this
-      // tab only shows idle drafts (same idea as [trialIsListedAsActive] for Active).
-      filtered = filtered.where((t) {
-        if (t.status.trim().toLowerCase() != kTrialStatusDraft) return false;
-        return !trialIsListedAsActive(
-          trialStatus: t.status,
-          hasOpenFieldSession: trialIdsWithOpenFieldSession.contains(t.id),
-        );
-      }).toList();
       break;
     case _TrialListStatusFilter.closed:
       filtered = filtered
@@ -497,10 +501,9 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                           return const SizedBox(height: 6);
                         }
                         final activeCount = trials
-                            .where((t) => trialIsListedAsActive(
-                                  trialStatus: t.status,
-                                  hasOpenFieldSession:
-                                      openTrialIds.contains(t.id),
+                            .where((t) => _trialMatchesActiveListFilter(
+                                  t,
+                                  openTrialIds,
                                 ))
                             .length;
                         return Padding(
@@ -656,8 +659,6 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
           _buildStatusFilterChip(_TrialListStatusFilter.all, 'All'),
           const SizedBox(width: 6),
           _buildStatusFilterChip(_TrialListStatusFilter.active, 'Active'),
-          const SizedBox(width: 6),
-          _buildStatusFilterChip(_TrialListStatusFilter.draft, 'Draft'),
           const SizedBox(width: 6),
           _buildStatusFilterChip(_TrialListStatusFilter.closed, 'Closed'),
           const SizedBox(width: 6),
@@ -915,8 +916,11 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                         item.type != AttentionType.openSession,
                   )
                   .firstOrNull;
-              final attentionSummary =
-                  t.status == kTrialStatusActive ? topUrgent?.label : null;
+              final attentionSummary = (t.status == kTrialStatusDraft ||
+                      t.status == kTrialStatusReady ||
+                      t.status == kTrialStatusActive)
+                  ? topUrgent?.label
+                  : null;
               return Padding(
                 padding:
                     const EdgeInsets.only(bottom: AppDesignTokens.spacing12),

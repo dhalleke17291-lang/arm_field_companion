@@ -963,7 +963,8 @@ final createSessionUseCaseProvider = Provider<CreateSessionUseCase>((ref) {
     sessionRepo,
     promoteTrialToActiveIfReady: (trialId) async {
       final t = await trialRepo.getTrialById(trialId);
-      if (t != null && t.status == kTrialStatusReady) {
+      if (t != null &&
+          (t.status == kTrialStatusReady || t.status == kTrialStatusDraft)) {
         await trialRepo.updateTrialStatus(trialId, kTrialStatusActive);
       }
     },

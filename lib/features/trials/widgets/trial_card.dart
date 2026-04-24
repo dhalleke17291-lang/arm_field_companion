@@ -51,12 +51,13 @@ String? _readinessSummaryLine(AsyncValue<TrialReadinessReport> readinessAsync) {
 String _trialStatusDisplay(String statusLower) {
   switch (statusLower) {
     case 'active':
-      return 'Active';
     case 'draft':
-      return 'Draft';
+    case 'ready':
+      return 'Active';
     case 'closed':
+      return 'Closed';
     case 'archived':
-      return 'Ready';
+      return 'Archived';
     default:
       return statusLower.isNotEmpty
           ? statusLower[0].toUpperCase() + statusLower.substring(1)

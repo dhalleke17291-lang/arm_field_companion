@@ -200,10 +200,10 @@ void main() {
           [kTrialStatusClosed]);
     });
 
-    test('efficacy draft still uses Ready', () {
+    test('efficacy draft transitions directly to active', () {
       final t = _trial(id: 1, status: kTrialStatusDraft, workspaceType: 'efficacy');
       expect(allowedNextTrialStatusesForTrial(kTrialStatusDraft, t),
-          [kTrialStatusReady]);
+          [kTrialStatusActive]);
     });
   });
 }

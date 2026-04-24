@@ -58,9 +58,13 @@ String effectiveTrialStatusForListDisplay({
   required bool hasOpenFieldSession,
 }) {
   final s = trialStatus.toLowerCase();
-  if (s != kTrialStatusClosed &&
-      s != kTrialStatusArchived &&
-      hasOpenFieldSession) {
+  if (s == kTrialStatusClosed || s == kTrialStatusArchived) {
+    return trialStatus;
+  }
+  if (s == kTrialStatusDraft || s == kTrialStatusReady) {
+    return kTrialStatusActive;
+  }
+  if (hasOpenFieldSession) {
     return kTrialStatusActive;
   }
   return trialStatus;
@@ -88,7 +92,7 @@ String labelForTrialStatus(String? status) {
 String statusDescriptionForTrialStatus(String? status) {
   switch (status) {
     case kTrialStatusDraft:
-      return 'Trial is in setup. Add plots and treatments, then mark ready.';
+      return 'Trial is in setup. When you begin field work, structure will lock until the trial is closed.';
     case kTrialStatusReady:
       return 'Setup complete. You can start sessions to collect data.';
     case kTrialStatusActive:
@@ -444,7 +448,7 @@ Future<void> assertCanEditProtocolForTrialId(AppDatabase db, int trialId) async 
 List<String> allowedNextTrialStatuses(String? status) {
   switch (status) {
     case kTrialStatusDraft:
-      return [kTrialStatusReady];
+      return [kTrialStatusActive];
     case kTrialStatusReady:
       return [kTrialStatusActive];
     case kTrialStatusActive:
