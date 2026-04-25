@@ -94,63 +94,80 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
           Expanded(
             child: FadeTransition(
               opacity: _fadeAnim,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  AppDesignTokens.spacing24,
-                  AppDesignTokens.spacing24,
-                  AppDesignTokens.spacing24,
-                  AppDesignTokens.spacing32 + AppDesignTokens.spacing8,
-                ),
-                child: Column(
-                  children: [
-                    _PortfolioHubCard(
-                      onOpen: () {
-                        Navigator.of(context).push<void>(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const TrialsPortfolioScreen(
-                              initialWorkspace: PortfolioWorkspaceSegment.all,
-                            ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Portfolio ~68lp fixed, 2 gaps 12lp each, scroll padding 12+16=28lp
+                  const fixedCost = 68 + 24 + 28;
+                  final cardMinHeight =
+                      ((constraints.maxHeight - fixedCost) / 2)
+                          .clamp(160.0, 280.0);
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppDesignTokens.spacing16,
+                      AppDesignTokens.spacing12,
+                      AppDesignTokens.spacing16,
+                      AppDesignTokens.spacing16,
+                    ),
+                    child: Column(
+                      children: [
+                        _PortfolioHubCard(
+                          onOpen: () {
+                            Navigator.of(context).push<void>(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const TrialsPortfolioScreen(
+                                  initialWorkspace:
+                                      PortfolioWorkspaceSegment.all,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: AppDesignTokens.spacing12),
+                        SizedBox(
+                          height: cardMinHeight,
+                          child: _AgTrialCard(
+                            title: 'Custom Trials',
+                            subtitle: 'Full trial design with templates',
+                            description:
+                                'RCBD/CRD randomization, statistical analysis, and evidence tracking',
+                            icon: Icons.science_outlined,
+                            accentColor: _HubPalette.accentGreen,
+                            topBadgeLeft: 'CUSTOM',
+                            footerStats: [
+                              _trialTotalLabel(stats.customTrialCount),
+                              '${stats.customActiveCount} Active',
+                              '${stats.customCompleteCount} Complete',
+                            ],
+                            footerDotColor: _HubPalette.accentGreen,
+                            onTap: () =>
+                                setState(() => _view = _HubView.customList),
                           ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: AppDesignTokens.spacing24),
-                    _AgTrialCard(
-                      title: 'Custom Trials',
-                      subtitle: 'Full trial design with templates',
-                      description:
-                          'RCBD/CRD randomization, statistical analysis, and evidence tracking',
-                      icon: Icons.science_outlined,
-                      accentColor: _HubPalette.accentGreen,
-                      topBadgeLeft: 'CUSTOM',
-                      footerStats: [
-                        _trialTotalLabel(stats.customTrialCount),
-                        '${stats.customActiveCount} Active',
-                        '${stats.customCompleteCount} Complete',
+                        ),
+                        const SizedBox(height: AppDesignTokens.spacing12),
+                        SizedBox(
+                          height: cardMinHeight,
+                          child: _AgTrialCard(
+                            title: 'Protocol Trials',
+                            subtitle: 'Import Rating Shells',
+                            description:
+                                'Collect data with full evidence tracking, export results via Rating Shell',
+                            icon: Icons.assignment_outlined,
+                            accentColor: _HubPalette.accentAmber,
+                            topBadgeLeft: 'PROTOCOL',
+                            footerStats: [
+                              _trialTotalLabel(stats.protocolTrialCount),
+                              '${stats.protocolActiveCount} Active',
+                              '${stats.protocolCompleteCount} Complete',
+                            ],
+                            footerDotColor: _HubPalette.accentAmber,
+                            onTap: () =>
+                                setState(() => _view = _HubView.protocolList),
+                          ),
+                        ),
                       ],
-                      footerDotColor: _HubPalette.accentGreen,
-                      onTap: () => setState(() => _view = _HubView.customList),
                     ),
-                    const SizedBox(height: AppDesignTokens.spacing24),
-                    _AgTrialCard(
-                      title: 'Protocol Trials',
-                      subtitle: 'Import Rating Shells',
-                      description:
-                          'Collect data with full evidence tracking, export results via Rating Shell',
-                      icon: Icons.assignment_outlined,
-                      accentColor: _HubPalette.accentAmber,
-                      topBadgeLeft: 'PROTOCOL',
-                      footerStats: [
-                        _trialTotalLabel(stats.protocolTrialCount),
-                        '${stats.protocolActiveCount} Active',
-                        '${stats.protocolCompleteCount} Complete',
-                      ],
-                      footerDotColor: _HubPalette.accentAmber,
-                      onTap: () =>
-                          setState(() => _view = _HubView.protocolList),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ),
@@ -169,66 +186,33 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppDesignTokens.spacing24,
-            28,
-            AppDesignTokens.spacing24,
-            24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.all(16),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.eco_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Trials',
-                          style: AppDesignTokens.headerTitleStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        Text(
-                          'AG RESEARCH PLATFORM',
-                          style: AppDesignTokens.bodyCrispStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.9),
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              Image.asset(
+                'assets/Branding/splash_logo.png',
+                width: 64,
+                height: 64,
+                fit: BoxFit.contain,
               ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  onTap: _openProfileSwitcher,
-                  child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              const SizedBox(width: 4),
+              const Expanded(
+                child: Text(
+                  'AGNEXIS',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w300,
+                    color: Colors.white,
+                    letterSpacing: 6,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: _openProfileSwitcher,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(20),
@@ -263,7 +247,6 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                     ],
                   ),
                 ),
-              ),
               ),
             ],
           ),
@@ -300,7 +283,7 @@ class _PortfolioHubCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppDesignTokens.spacing16,
-            vertical: AppDesignTokens.spacing12,
+            vertical: AppDesignTokens.spacing8,
           ),
           child: Row(
             children: [
@@ -457,14 +440,13 @@ class _AgTrialCardState extends State<_AgTrialCard>
                       ),
                     ),
                     // Content area
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppDesignTokens.spacing20,
-                        AppDesignTokens.spacing20,
-                        AppDesignTokens.spacing20,
-                        AppDesignTokens.spacing20,
-                      ),
+                    SizedBox(
+                      height: double.infinity,
+                      child: Center(
+                      child: Padding(
+                      padding: const EdgeInsets.all(AppDesignTokens.spacing20),
                       child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 36),
@@ -575,6 +557,8 @@ class _AgTrialCardState extends State<_AgTrialCard>
                           ),
                         ],
                       ),
+                    ),
+                    ),
                     ),
                   ],
                 ),
