@@ -42,6 +42,9 @@ const double _kGridMaxScale = 3.0;
 /// Left gutter for "Rep n" labels — same width on layout grid and ratings overlay.
 const double _kRepLabelWidth = 52.0;
 
+/// Plot-number badge on the plots list (keep compact; large squares dominate the row).
+const double _kPlotListLeadingBadgeSize = 34.0;
+
 /// Swatch size for plot layout legends (Treats / Apps / Ratings).
 const double _kPlotLayoutLegendSwatch = 12.0;
 
@@ -1371,76 +1374,52 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     required int analyzablePlotCount,
     required int excludedFromAnalysisCount,
   }) {
-    final progress = analyzablePlotCount == 0
-        ? 0.0
-        : (ratedPlotsCount / analyzablePlotCount).clamp(0.0, 1.0);
     final allAssigned = excludedFromAnalysisCount == 0;
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: const BoxDecoration(
-        color: AppDesignTokens.sectionHeaderBg,
-        border: Border(
-          bottom: BorderSide(color: AppDesignTokens.borderCrisp),
-        ),
-      ),
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _StatChip(label: '$dataPlotCount', sub: 'plots'),
-          _StatChip(label: '$treatmentCount', sub: 'trt'),
-          _StatChip(label: '$replicateCount', sub: 'reps'),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (allAssigned)
-                const Icon(Icons.check_circle,
-                    size: 14, color: AppDesignTokens.successFg)
-              else
-                const Icon(Icons.warning_amber_rounded,
-                    size: 14, color: AppDesignTokens.warningFg),
-              const SizedBox(width: 4),
-              Text(
-                allAssigned
-                    ? 'All assigned'
-                    : '$excludedFromAnalysisCount unassigned',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: allAssigned
-                      ? AppDesignTokens.successFg
-                      : AppDesignTokens.warningFg,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              _StatChip(label: '$dataPlotCount', sub: 'plots'),
+              const SizedBox(width: 12),
+              _StatChip(label: '$treatmentCount', sub: 'trt'),
+              const SizedBox(width: 12),
+              _StatChip(label: '$replicateCount', sub: 'reps'),
             ],
           ),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Icon(
+                allAssigned ? Icons.check_circle : Icons.warning,
+                size: 14,
+                color: allAssigned
+                    ? AppDesignTokens.successFg
+                    : AppDesignTokens.warningFg,
+              ),
+              const SizedBox(width: 4),
               Text(
                 '$ratedPlotsCount/$analyzablePlotCount',
-                style: TextStyle(
+                style: AppDesignTokens.bodyCrispStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: ratedPlotsCount >= analyzablePlotCount
-                      ? AppDesignTokens.successFg
-                      : AppDesignTokens.primary,
+                  color: AppDesignTokens.primary,
                 ),
               ),
               const SizedBox(width: 6),
               SizedBox(
-                width: 36,
+                width: 40,
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(2),
                   child: LinearProgressIndicator(
-                    value: progress,
+                    value: analyzablePlotCount > 0
+                        ? ratedPlotsCount / analyzablePlotCount
+                        : 0,
                     backgroundColor: AppDesignTokens.borderCrisp,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      ratedPlotsCount >= analyzablePlotCount
-                          ? AppDesignTokens.successFg
-                          : AppDesignTokens.primary,
-                    ),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppDesignTokens.primary),
                     minHeight: 4,
                   ),
                 ),
@@ -1497,13 +1476,12 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
         final surface = _TrialPlotsWorkingSurface(
           trial: trial,
           compactSurroundings: true,
+          statsStrip: ratedCard,
           onTreatmentsShortcut: widget.onSelectStackIndex == null
               ? null
               : () => widget.onSelectStackIndex!(kTrialTreatmentsStackIndex),
         );
-        final head = <Widget>[
-          ratedCard,
-        ];
+        final head = <Widget>[];
         if (plots.isEmpty) {
           final extra = _standalonePlotsEmptyExtra(
             context,
@@ -1784,11 +1762,15 @@ class _TrialPlotsWorkingSurface extends ConsumerStatefulWidget {
   /// Plots tab: jump to Treatments stack index (caller supplies navigation).
   final VoidCallback? onTreatmentsShortcut;
 
+  /// Optional stats strip rendered above the toolbar chrome (compact mode only).
+  final Widget? statsStrip;
+
   const _TrialPlotsWorkingSurface({
     required this.trial,
     this.initialShowLayoutView = false,
     this.compactSurroundings = false,
     this.onTreatmentsShortcut,
+    this.statsStrip,
   });
 
   @override
@@ -1983,6 +1965,8 @@ class _TrialPlotsWorkingSurfaceState
             trialIsArmLinked: trialIsArmLinked);
     const double maxTopSectionHeight = 380;
     final colorScheme = Theme.of(context).colorScheme;
+    final unifiedPlotsChrome =
+        widget.compactSurroundings && widget.statsStrip != null;
     final toolbarChildren = <Widget>[
       if (!widget.compactSurroundings) ...[
         _buildPlotsHeaderForDetails(context, ref, plots, hasSessionData),
@@ -1994,7 +1978,7 @@ class _TrialPlotsWorkingSurfaceState
         ),
         const SizedBox(height: 4),
       ],
-      if (widget.compactSurroundings) ...[
+      if (widget.compactSurroundings && !unifiedPlotsChrome) ...[
         const SizedBox(height: 2),
       ],
       _buildListLayoutToggleForDetails(
@@ -2023,44 +2007,75 @@ class _TrialPlotsWorkingSurfaceState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: toolbarChildren,
     );
-    final Widget toolbarChrome = widget.compactSurroundings
-        ? Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
-            child: toolbarColumn,
-          )
-        : Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.38),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-                child: toolbarColumn,
-              ),
+    final compactToolbarOnly = Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+      child: toolbarColumn,
+    );
+    final nonCompactToolbarChrome = Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.38),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
-          );
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+          child: toolbarColumn,
+        ),
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (widget.compactSurroundings)
-          toolbarChrome
+          unifiedPlotsChrome
+              ? Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: AppDesignTokens.cardSurface,
+                      borderRadius:
+                          BorderRadius.circular(AppDesignTokens.radiusCard),
+                      border: Border.all(
+                        color: AppDesignTokens.borderCrisp,
+                        width: AppDesignTokens.borderWidthCrisp,
+                      ),
+                      boxShadow: AppDesignTokens.cardShadow,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        widget.statsStrip!,
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: AppDesignTokens.borderCrisp,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(2, 4, 2, 6),
+                          child: toolbarColumn,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : compactToolbarOnly
         else
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: maxTopSectionHeight),
             child: SingleChildScrollView(
-              child: toolbarChrome,
+              child: nonCompactToolbarChrome,
             ),
           ),
         if (_showLayoutView)
@@ -2480,6 +2495,36 @@ class _TrialPlotsWorkingSurfaceState
     );
   }
 
+  /// List vs Layout: same flat look as the trial "Setup / Trial Info / Export" bar (no fill, no border).
+  Widget _listLayoutViewModeTextButton({
+    required bool selected,
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    final fg = selected
+        ? AppDesignTokens.primary
+        : AppDesignTokens.secondaryText;
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 20),
+      label: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+        ),
+      ),
+      style: TextButton.styleFrom(
+        foregroundColor: fg,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+      ),
+    );
+  }
+
   Widget _buildListLayoutToggleForDetails(
     BuildContext context,
     WidgetRef ref,
@@ -2498,51 +2543,30 @@ class _TrialPlotsWorkingSurfaceState
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
-          child: SegmentedButton<bool>(
-            showSelectedIcon: false,
-            style: ButtonStyle(
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
-              padding: const WidgetStatePropertyAll(
-                EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              ),
-              minimumSize: const WidgetStatePropertyAll(Size(0, 34)),
-              side: WidgetStatePropertyAll(
-                BorderSide(color: cs.outlineVariant.withValues(alpha: 0.45)),
-              ),
-            ),
-            segments: [
-              ButtonSegment<bool>(
-                value: false,
-                icon: Icon(Icons.view_list_rounded,
-                    size: 16, color: cs.onSurfaceVariant),
-                label: Text(
-                  'List',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: cs.onSurface,
-                  ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _listLayoutViewModeTextButton(
+                  selected: !_showLayoutView,
+                  icon: Icons.view_list_rounded,
+                  label: 'List',
+                  onPressed: () => setState(() => _showLayoutView = false),
                 ),
               ),
-              ButtonSegment<bool>(
-                value: true,
-                icon: Icon(Icons.grid_view_rounded,
-                    size: 16, color: cs.onSurfaceVariant),
-                label: Text(
-                  'Layout',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: cs.onSurface,
-                  ),
+              Container(
+                width: 1,
+                height: 28,
+                color: AppDesignTokens.divider,
+              ),
+              Expanded(
+                child: _listLayoutViewModeTextButton(
+                  selected: _showLayoutView,
+                  icon: Icons.grid_view_rounded,
+                  label: 'Layout',
+                  onPressed: () => setState(() => _showLayoutView = true),
                 ),
               ),
             ],
-            selected: {_showLayoutView},
-            onSelectionChanged: (Set<bool> selected) {
-              setState(() => _showLayoutView = selected.first);
-            },
           ),
         ),
         const SizedBox(width: 4),
@@ -2792,25 +2816,23 @@ class _TrialPlotsWorkingSurfaceState
               horizontal: AppDesignTokens.spacing16,
               vertical: AppDesignTokens.spacing12,
             ),
+            minLeadingWidth: _kPlotListLeadingBadgeSize,
+            minVerticalPadding: 6,
             leading: Container(
-              width: 40,
-              height: 40,
+              width: _kPlotListLeadingBadgeSize,
+              height: _kPlotListLeadingBadgeSize,
               alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppDesignTokens.spacing8,
-                  vertical: AppDesignTokens.spacing4),
               decoration: BoxDecoration(
                 color: leadingBg,
-                borderRadius:
-                    BorderRadius.circular(AppDesignTokens.radiusXSmall),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 displayLabel,
                 style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: plot.isGuardRow ? 11 : 13,
+                    fontSize: 10,
                     color: leadingFg),
-                maxLines: 2,
+                maxLines: 1,
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -4401,19 +4423,22 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                 horizontal: AppDesignTokens.spacing16,
                 vertical: AppDesignTokens.spacing12),
             dense: true,
+            minLeadingWidth: _kPlotListLeadingBadgeSize,
             leading: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              width: _kPlotListLeadingBadgeSize,
+              height: _kPlotListLeadingBadgeSize,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: leadingBg,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 displayLabel,
                 style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: plot.isGuardRow ? 11 : 13,
+                    fontWeight: FontWeight.w700,
+                    fontSize: plot.isGuardRow ? 9 : 10,
                     color: leadingFg),
-                maxLines: 2,
+                maxLines: 1,
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
               ),

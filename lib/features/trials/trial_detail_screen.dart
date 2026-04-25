@@ -1290,7 +1290,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           }),
         ),
         SizedBox(
-          height: 110,
+          height: 90,
           child: _TrialModuleHub(
             scrollController: _hubScrollController,
             workspaceConfig: workspaceConfig,
