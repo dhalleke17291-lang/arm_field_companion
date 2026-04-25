@@ -186,7 +186,7 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
           child: Row(
             children: [
               Image.asset(
@@ -195,7 +195,6 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                 height: 64,
                 fit: BoxFit.contain,
               ),
-              const SizedBox(width: 4),
               const Expanded(
                 child: Text(
                   'AGNEXIS',
