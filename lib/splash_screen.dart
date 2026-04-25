@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'core/config/app_info.dart';
 import 'core/current_user.dart';
+import 'core/providers.dart';
 import 'features/shell/main_shell_screen.dart';
 import 'features/users/user_selection_screen.dart';
 
@@ -18,14 +23,14 @@ const Color _splashAccent = Color(0xFF1E4D34);
 // Subtle gold accent for the divider.
 const Color _accentGold = Color(0x66C8A951);
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   static const Duration _displayDuration = Duration(milliseconds: 3400);
 
@@ -36,6 +41,7 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _titleOpacity;
   late Animation<double> _dividerWidth;
   late Animation<double> _subtitleOpacity;
+  bool _navScheduled = false;
 
   @override
   void initState() {
@@ -97,24 +103,50 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
+  }
 
-    Future.delayed(_displayDuration, () async {
+  Future<void> _navigateAfterBoot() async {
+    final userRepo = ref.read(userRepositoryProvider);
+    final usersFuture = userRepo.getActiveUsers();
+    await Future.wait<dynamic>([
+      usersFuture,
+      Future<void>.delayed(_displayDuration),
+    ]);
+    if (!mounted) return;
+    final users = await usersFuture;
+    if (!mounted) return;
+    final prefId = await getCurrentUserId();
+    if (!mounted) return;
+
+    Widget next;
+    if (users.isEmpty) {
+      next = const UserSelectionScreen();
+    } else if (users.length == 1 && !users.first.pinEnabled) {
+      await setCurrentUserId(users.first.id);
       if (!mounted) return;
-      final userId = await getCurrentUserId();
+      next = const MainShellScreen();
+    } else if (prefId != null) {
+      final u = await userRepo.getUserById(prefId);
       if (!mounted) return;
-      final next = userId == null
-          ? const UserSelectionScreen()
-          : const MainShellScreen();
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (_, __, ___) => next,
-          transitionsBuilder: (_, animation, __, child) =>
-              FadeTransition(opacity: animation, child: child),
-          transitionDuration: const Duration(milliseconds: 400),
-        ),
-      );
-    });
+      if (u != null && !u.pinEnabled) {
+        next = const MainShellScreen();
+      } else {
+        next = const UserSelectionScreen();
+      }
+    } else {
+      next = const UserSelectionScreen();
+    }
+
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder<Widget>(
+        pageBuilder: (_, __, ___) => next,
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
+    );
   }
 
   @override
@@ -125,6 +157,12 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (!_navScheduled) {
+      _navScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_navigateAfterBoot());
+      });
+    }
     return Scaffold(
       body: AnimatedBuilder(
         animation: _controller,

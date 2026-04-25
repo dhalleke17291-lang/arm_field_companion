@@ -15,6 +15,8 @@ class Users extends Table {
   TextColumn get initials => text().nullable()();
   TextColumn get roleKey => text().withDefault(const Constant('technician'))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  TextColumn get pinHash => text().nullable()();
+  BoolColumn get pinEnabled => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -1307,7 +1309,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 67;
+  int get schemaVersion => 68;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -2652,6 +2654,17 @@ WHERE pest_code IS NULL
                 armTrialMetadata,
                 armTrialMetadata.shellCommentsSheet,
               );
+            }
+          }
+          if (from < 68) {
+            final userCols = await customSelect(
+              "SELECT name FROM pragma_table_info('users')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!userCols.contains('pin_hash')) {
+              await m.addColumn(users, users.pinHash);
+            }
+            if (!userCols.contains('pin_enabled')) {
+              await m.addColumn(users, users.pinEnabled);
             }
           }
 

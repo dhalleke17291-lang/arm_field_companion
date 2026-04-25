@@ -50,6 +50,22 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
       defaultValue: const Constant(true));
+  static const VerificationMeta _pinHashMeta =
+      const VerificationMeta('pinHash');
+  @override
+  late final GeneratedColumn<String> pinHash = GeneratedColumn<String>(
+      'pin_hash', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _pinEnabledMeta =
+      const VerificationMeta('pinEnabled');
+  @override
+  late final GeneratedColumn<bool> pinEnabled = GeneratedColumn<bool>(
+      'pin_enabled', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("pin_enabled" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -67,8 +83,17 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, displayName, initials, roleKey, isActive, createdAt, updatedAt];
+  List<GeneratedColumn> get $columns => [
+        id,
+        displayName,
+        initials,
+        roleKey,
+        isActive,
+        pinHash,
+        pinEnabled,
+        createdAt,
+        updatedAt
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -102,6 +127,16 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
       context.handle(_isActiveMeta,
           isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
     }
+    if (data.containsKey('pin_hash')) {
+      context.handle(_pinHashMeta,
+          pinHash.isAcceptableOrUnknown(data['pin_hash']!, _pinHashMeta));
+    }
+    if (data.containsKey('pin_enabled')) {
+      context.handle(
+          _pinEnabledMeta,
+          pinEnabled.isAcceptableOrUnknown(
+              data['pin_enabled']!, _pinEnabledMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -129,6 +164,10 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
           .read(DriftSqlType.string, data['${effectivePrefix}role_key'])!,
       isActive: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      pinHash: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}pin_hash']),
+      pinEnabled: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}pin_enabled'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -148,6 +187,8 @@ class User extends DataClass implements Insertable<User> {
   final String? initials;
   final String roleKey;
   final bool isActive;
+  final String? pinHash;
+  final bool pinEnabled;
   final DateTime createdAt;
   final DateTime updatedAt;
   const User(
@@ -156,6 +197,8 @@ class User extends DataClass implements Insertable<User> {
       this.initials,
       required this.roleKey,
       required this.isActive,
+      this.pinHash,
+      required this.pinEnabled,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -168,6 +211,10 @@ class User extends DataClass implements Insertable<User> {
     }
     map['role_key'] = Variable<String>(roleKey);
     map['is_active'] = Variable<bool>(isActive);
+    if (!nullToAbsent || pinHash != null) {
+      map['pin_hash'] = Variable<String>(pinHash);
+    }
+    map['pin_enabled'] = Variable<bool>(pinEnabled);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -182,6 +229,10 @@ class User extends DataClass implements Insertable<User> {
           : Value(initials),
       roleKey: Value(roleKey),
       isActive: Value(isActive),
+      pinHash: pinHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pinHash),
+      pinEnabled: Value(pinEnabled),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -196,6 +247,8 @@ class User extends DataClass implements Insertable<User> {
       initials: serializer.fromJson<String?>(json['initials']),
       roleKey: serializer.fromJson<String>(json['roleKey']),
       isActive: serializer.fromJson<bool>(json['isActive']),
+      pinHash: serializer.fromJson<String?>(json['pinHash']),
+      pinEnabled: serializer.fromJson<bool>(json['pinEnabled']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -209,6 +262,8 @@ class User extends DataClass implements Insertable<User> {
       'initials': serializer.toJson<String?>(initials),
       'roleKey': serializer.toJson<String>(roleKey),
       'isActive': serializer.toJson<bool>(isActive),
+      'pinHash': serializer.toJson<String?>(pinHash),
+      'pinEnabled': serializer.toJson<bool>(pinEnabled),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -220,6 +275,8 @@ class User extends DataClass implements Insertable<User> {
           Value<String?> initials = const Value.absent(),
           String? roleKey,
           bool? isActive,
+          Value<String?> pinHash = const Value.absent(),
+          bool? pinEnabled,
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       User(
@@ -228,6 +285,8 @@ class User extends DataClass implements Insertable<User> {
         initials: initials.present ? initials.value : this.initials,
         roleKey: roleKey ?? this.roleKey,
         isActive: isActive ?? this.isActive,
+        pinHash: pinHash.present ? pinHash.value : this.pinHash,
+        pinEnabled: pinEnabled ?? this.pinEnabled,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -239,6 +298,9 @@ class User extends DataClass implements Insertable<User> {
       initials: data.initials.present ? data.initials.value : this.initials,
       roleKey: data.roleKey.present ? data.roleKey.value : this.roleKey,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      pinHash: data.pinHash.present ? data.pinHash.value : this.pinHash,
+      pinEnabled:
+          data.pinEnabled.present ? data.pinEnabled.value : this.pinEnabled,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -252,6 +314,8 @@ class User extends DataClass implements Insertable<User> {
           ..write('initials: $initials, ')
           ..write('roleKey: $roleKey, ')
           ..write('isActive: $isActive, ')
+          ..write('pinHash: $pinHash, ')
+          ..write('pinEnabled: $pinEnabled, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -259,8 +323,8 @@ class User extends DataClass implements Insertable<User> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, displayName, initials, roleKey, isActive, createdAt, updatedAt);
+  int get hashCode => Object.hash(id, displayName, initials, roleKey, isActive,
+      pinHash, pinEnabled, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -270,6 +334,8 @@ class User extends DataClass implements Insertable<User> {
           other.initials == this.initials &&
           other.roleKey == this.roleKey &&
           other.isActive == this.isActive &&
+          other.pinHash == this.pinHash &&
+          other.pinEnabled == this.pinEnabled &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -280,6 +346,8 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<String?> initials;
   final Value<String> roleKey;
   final Value<bool> isActive;
+  final Value<String?> pinHash;
+  final Value<bool> pinEnabled;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   const UsersCompanion({
@@ -288,6 +356,8 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.initials = const Value.absent(),
     this.roleKey = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.pinHash = const Value.absent(),
+    this.pinEnabled = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -297,6 +367,8 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.initials = const Value.absent(),
     this.roleKey = const Value.absent(),
     this.isActive = const Value.absent(),
+    this.pinHash = const Value.absent(),
+    this.pinEnabled = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : displayName = Value(displayName);
@@ -306,6 +378,8 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<String>? initials,
     Expression<String>? roleKey,
     Expression<bool>? isActive,
+    Expression<String>? pinHash,
+    Expression<bool>? pinEnabled,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -315,6 +389,8 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (initials != null) 'initials': initials,
       if (roleKey != null) 'role_key': roleKey,
       if (isActive != null) 'is_active': isActive,
+      if (pinHash != null) 'pin_hash': pinHash,
+      if (pinEnabled != null) 'pin_enabled': pinEnabled,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -326,6 +402,8 @@ class UsersCompanion extends UpdateCompanion<User> {
       Value<String?>? initials,
       Value<String>? roleKey,
       Value<bool>? isActive,
+      Value<String?>? pinHash,
+      Value<bool>? pinEnabled,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt}) {
     return UsersCompanion(
@@ -334,6 +412,8 @@ class UsersCompanion extends UpdateCompanion<User> {
       initials: initials ?? this.initials,
       roleKey: roleKey ?? this.roleKey,
       isActive: isActive ?? this.isActive,
+      pinHash: pinHash ?? this.pinHash,
+      pinEnabled: pinEnabled ?? this.pinEnabled,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -357,6 +437,12 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
+    if (pinHash.present) {
+      map['pin_hash'] = Variable<String>(pinHash.value);
+    }
+    if (pinEnabled.present) {
+      map['pin_enabled'] = Variable<bool>(pinEnabled.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -374,6 +460,8 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('initials: $initials, ')
           ..write('roleKey: $roleKey, ')
           ..write('isActive: $isActive, ')
+          ..write('pinHash: $pinHash, ')
+          ..write('pinEnabled: $pinEnabled, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -37196,6 +37284,8 @@ typedef $$UsersTableCreateCompanionBuilder = UsersCompanion Function({
   Value<String?> initials,
   Value<String> roleKey,
   Value<bool> isActive,
+  Value<String?> pinHash,
+  Value<bool> pinEnabled,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
 });
@@ -37205,6 +37295,8 @@ typedef $$UsersTableUpdateCompanionBuilder = UsersCompanion Function({
   Value<String?> initials,
   Value<String> roleKey,
   Value<bool> isActive,
+  Value<String?> pinHash,
+  Value<bool> pinEnabled,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
 });
@@ -37231,6 +37323,8 @@ class $$UsersTableTableManager extends RootTableManager<
             Value<String?> initials = const Value.absent(),
             Value<String> roleKey = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
+            Value<String?> pinHash = const Value.absent(),
+            Value<bool> pinEnabled = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
           }) =>
@@ -37240,6 +37334,8 @@ class $$UsersTableTableManager extends RootTableManager<
             initials: initials,
             roleKey: roleKey,
             isActive: isActive,
+            pinHash: pinHash,
+            pinEnabled: pinEnabled,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),
@@ -37249,6 +37345,8 @@ class $$UsersTableTableManager extends RootTableManager<
             Value<String?> initials = const Value.absent(),
             Value<String> roleKey = const Value.absent(),
             Value<bool> isActive = const Value.absent(),
+            Value<String?> pinHash = const Value.absent(),
+            Value<bool> pinEnabled = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
           }) =>
@@ -37258,6 +37356,8 @@ class $$UsersTableTableManager extends RootTableManager<
             initials: initials,
             roleKey: roleKey,
             isActive: isActive,
+            pinHash: pinHash,
+            pinEnabled: pinEnabled,
             createdAt: createdAt,
             updatedAt: updatedAt,
           ),
@@ -37289,6 +37389,16 @@ class $$UsersTableFilterComposer
 
   ColumnFilters<bool> get isActive => $state.composableBuilder(
       column: $state.table.isActive,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get pinHash => $state.composableBuilder(
+      column: $state.table.pinHash,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get pinEnabled => $state.composableBuilder(
+      column: $state.table.pinEnabled,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -37458,6 +37568,16 @@ class $$UsersTableOrderingComposer
 
   ColumnOrderings<bool> get isActive => $state.composableBuilder(
       column: $state.table.isActive,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get pinHash => $state.composableBuilder(
+      column: $state.table.pinHash,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get pinEnabled => $state.composableBuilder(
+      column: $state.table.pinEnabled,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

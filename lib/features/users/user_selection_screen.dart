@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../core/current_user.dart';
 import '../../core/database/app_database.dart';
+import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
+import '../../core/widgets/gradient_screen_header.dart';
 import '../shell/main_shell_screen.dart';
 import 'add_user_screen.dart';
+import 'edit_profile_screen.dart';
+import 'pin_entry_screen.dart';
 
 /// Shown when no current_user_id is set. User taps to select or adds a new user.
 class UserSelectionScreen extends ConsumerWidget {
@@ -21,7 +25,7 @@ class UserSelectionScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F1EB),
+      backgroundColor: AppDesignTokens.bgWarm,
       appBar: const GradientScreenHeader(title: 'Select User'),
       body: SafeArea(
         top: false,
@@ -99,12 +103,42 @@ class UserSelectionScreen extends ConsumerWidget {
                 style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle:
                 user.initials?.isNotEmpty == true ? Text(user.initials!) : null,
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _selectUser(context, ref, user.id),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (user.pinEnabled) ...[
+                  const Icon(
+                    Icons.lock_outline,
+                    size: 16,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                const Icon(Icons.chevron_right),
+              ],
+            ),
+            onTap: () => _selectUser(context, ref, user),
+            onLongPress: () => _openEditProfile(context, ref, user),
           ),
         );
       },
     );
+  }
+
+  Future<void> _openEditProfile(
+    BuildContext context,
+    WidgetRef ref,
+    User user,
+  ) async {
+    final u = await ref.read(userRepositoryProvider).getUserById(user.id);
+    if (u == null || !context.mounted) return;
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(user: u),
+      ),
+    );
+    ref.invalidate(activeUsersProvider);
   }
 
   /// Returns `true` if the user may proceed with the profile switch, `false` to stay.
@@ -153,15 +187,35 @@ class UserSelectionScreen extends ConsumerWidget {
   }
 
   Future<void> _selectUser(
-      BuildContext context, WidgetRef ref, int userId) async {
+    BuildContext context,
+    WidgetRef ref,
+    User user,
+  ) async {
     if (!await _warnOpenSessionsOrAllowProceed(context, ref)) return;
-    await setCurrentUserId(userId);
+    final fresh = await ref.read(userRepositoryProvider).getUserById(
+          user.id,
+        ) ??
+        user;
+    if (!context.mounted) return;
+    if (fresh.pinEnabled &&
+        (fresh.pinHash != null && fresh.pinHash!.isNotEmpty)) {
+      final ok = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PinEntryScreen(user: fresh),
+        ),
+      );
+      if (ok != true) return;
+    }
+    await setCurrentUserId(fresh.id);
     ref.invalidate(currentUserIdProvider);
     ref.invalidate(currentUserProvider);
     if (!context.mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const MainShellScreen()),
+      MaterialPageRoute(
+        builder: (_) => const MainShellScreen(),
+      ),
     );
   }
 

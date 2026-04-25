@@ -41,6 +41,38 @@ class UserRepository {
           ..orderBy([(u) => OrderingTerm.asc(u.displayName)]))
         .get();
   }
+
+  /// Updates a profile. Use [clearPin: true] to clear PIN and set [pinEnabled] false.
+  Future<void> updateUser(
+    int id, {
+    String? displayName,
+    String? initials,
+    String? pinHash,
+    bool? pinEnabled,
+    bool clearPin = false,
+  }) async {
+    await (_db.update(_db.users)..where((u) => u.id.equals(id))).write(
+          UsersCompanion(
+            displayName: displayName != null
+                ? Value(displayName)
+                : const Value.absent(),
+            initials: initials != null
+                ? Value(
+                    initials.trim().isEmpty ? null : initials.trim(),
+                  )
+                : const Value.absent(),
+            pinHash: clearPin
+                ? const Value(null)
+                : (pinHash != null ? Value(pinHash) : const Value.absent()),
+            pinEnabled: clearPin
+                ? const Value(false)
+                : (pinEnabled != null
+                    ? Value(pinEnabled)
+                    : const Value.absent()),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+  }
 }
 
 class UserNotFoundException implements Exception {

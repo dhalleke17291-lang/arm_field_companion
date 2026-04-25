@@ -655,4 +655,15 @@ void main() {
     final colNames = pragma.map((r) => r.read<String>('name')).toSet();
     expect(colNames, contains('shell_comments_sheet'));
   });
+
+  test('v68: users pin_hash and pin_enabled columns', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final pragma = await db.customSelect(
+      "SELECT name FROM pragma_table_info('users')",
+    ).get();
+    final colNames = pragma.map((r) => r.read<String>('name')).toSet();
+    expect(colNames, contains('pin_hash'));
+    expect(colNames, contains('pin_enabled'));
+  });
 }
