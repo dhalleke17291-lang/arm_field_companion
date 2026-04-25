@@ -78,13 +78,6 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
     );
   }
 
-  String _timeGreeting() {
-    final h = DateTime.now().hour;
-    if (h < 12) return 'Good morning — select a trial type to begin';
-    if (h < 17) return 'Good afternoon — select a trial type to begin';
-    return 'Good evening — select a trial type to begin';
-  }
-
   /// Hub footer total line — matches trial list “N Trials” (all non-deleted trials).
   static String _trialTotalLabel(int count) =>
       count == 1 ? '1 Trial' : '$count Trials';
@@ -236,39 +229,35 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                 ],
               ),
               const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _timeGreeting(),
-                    style: AppDesignTokens.bodyCrispStyle(
-                      fontSize: 14,
-                      color: Colors.white.withValues(alpha: 0.88),
-                      fontWeight: FontWeight.w400,
+              GestureDetector(
+                onTap: _openProfileSwitcher,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.person_outline,
+                      size: 16,
+                      color: Colors.white.withValues(alpha: 0.9),
                     ),
-                  ),
-                  GestureDetector(
-                    onTap: _openProfileSwitcher,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          displayName,
-                          style: AppDesignTokens.bodyCrispStyle(
-                            fontSize: 13,
-                            color: Colors.white.withValues(alpha: 0.75),
-                          ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        displayName,
+                        style: AppDesignTokens.bodyCrispStyle(
+                          fontSize: 15,
+                          color: Colors.white.withValues(alpha: 0.95),
                         ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.keyboard_arrow_down,
-                          size: 14,
-                          color: Colors.white.withValues(alpha: 0.75),
-                        ),
-                      ],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 16,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
