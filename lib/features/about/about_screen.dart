@@ -226,11 +226,12 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
   }
 
   void _openUserSelection(BuildContext context) {
-    Navigator.push(
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute<void>(
         builder: (_) => const UserSelectionScreen(),
       ),
+      (route) => false,
     );
   }
 }

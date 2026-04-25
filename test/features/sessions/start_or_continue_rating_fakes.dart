@@ -60,6 +60,9 @@ class FakeSessionRepository implements SessionRepository {
       .firstOrNull;
 
   @override
+  Future<List<Session>> getOpenSessionsForUser(int userId) async => [];
+
+  @override
   Stream<Session?> watchOpenSession(int trialId) => Stream.value(sessions
       .where((s) => s.trialId == trialId && s.endedAt == null)
       .firstOrNull);

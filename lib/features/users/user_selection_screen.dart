@@ -107,8 +107,49 @@ class UserSelectionScreen extends ConsumerWidget {
     );
   }
 
+  Future<bool> _checkAndBlockOpenSession(
+      BuildContext context, WidgetRef ref) async {
+    final currentId = await getCurrentUserId();
+    if (currentId == null) return false;
+
+    final sessionRepo = ref.read(sessionRepositoryProvider);
+    final openSessions = await sessionRepo.getOpenSessionsForUser(currentId);
+    if (openSessions.isEmpty) return false;
+
+    if (!context.mounted) return true;
+
+    final trialRepo = ref.read(trialRepositoryProvider);
+    final trialNames = <String>[];
+    for (final s in openSessions) {
+      final trial = await trialRepo.getTrialById(s.trialId);
+      if (trial != null) trialNames.add(trial.name);
+    }
+    final namesText = trialNames.isNotEmpty
+        ? trialNames.join(', ')
+        : 'an active trial';
+
+    if (!context.mounted) return true;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Open Session In Progress'),
+        content: Text(
+          'Close or suspend your open session in $namesText before switching profiles.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+    return true;
+  }
+
   Future<void> _selectUser(
       BuildContext context, WidgetRef ref, int userId) async {
+    if (await _checkAndBlockOpenSession(context, ref)) return;
     await setCurrentUserId(userId);
     ref.invalidate(currentUserIdProvider);
     ref.invalidate(currentUserProvider);
@@ -125,6 +166,7 @@ class UserSelectionScreen extends ConsumerWidget {
       MaterialPageRoute(builder: (_) => const AddUserScreen()),
     );
     if (userId != null && context.mounted) {
+      if (await _checkAndBlockOpenSession(context, ref)) return;
       await setCurrentUserId(userId);
       ref.invalidate(currentUserIdProvider);
       ref.invalidate(currentUserProvider);

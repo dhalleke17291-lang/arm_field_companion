@@ -40,6 +40,18 @@ class SessionRepository {
         .map((rows) => rows.isEmpty ? null : rows.first);
   }
 
+  /// Open sessions owned by [userId] across all trials, most recent first.
+  Future<List<Session>> getOpenSessionsForUser(int userId) {
+    return (_db.select(_db.sessions)
+          ..where((s) =>
+              s.createdByUserId.equals(userId) &
+              s.endedAt.isNull() &
+              s.status.equals(kSessionStatusPlanned).not() &
+              s.isDeleted.equals(false))
+          ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
+        .get();
+  }
+
   /// All non-deleted sessions across all trials, most recent first.
   Future<List<Session>> getAllActiveSessions() {
     return (_db.select(_db.sessions)

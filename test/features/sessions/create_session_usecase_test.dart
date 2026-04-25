@@ -15,6 +15,9 @@ class MockSessionRepository implements SessionRepository {
   }
 
   @override
+  Future<List<Session>> getOpenSessionsForUser(int userId) async => [];
+
+  @override
   Stream<Session?> watchOpenSession(int trialId) {
     return Stream.value(_sessions
         .where((s) => s.trialId == trialId && s.endedAt == null)

@@ -97,6 +97,9 @@ class MockSessionRepository implements SessionRepository {
   Future<Session?> getOpenSession(int trialId) async => null;
 
   @override
+  Future<List<Session>> getOpenSessionsForUser(int userId) async => [];
+
+  @override
   Stream<Session?> watchOpenSession(int trialId) => Stream.value(null);
 
   @override

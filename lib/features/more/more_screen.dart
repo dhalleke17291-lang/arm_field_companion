@@ -16,11 +16,12 @@ import '../users/user_selection_screen.dart';
 import 'more_backup_actions.dart';
 
 void _openUserSelection(BuildContext context) {
-  Navigator.push(
+  Navigator.pushAndRemoveUntil(
     context,
     MaterialPageRoute<void>(
       builder: (_) => const UserSelectionScreen(),
     ),
+    (route) => false,
   );
 }
 
