@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/connectivity/google_drive_backup_provider.dart';
+import '../../core/connectivity/onedrive_backup_provider.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
@@ -41,6 +42,8 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
   bool _hasCachedPassphrase = false;
   bool _isDriveConnected = false;
   String? _driveEmail;
+  bool _isOneDriveConnected = false;
+  String? _oneDriveEmail;
 
   @override
   void initState() {
@@ -48,6 +51,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
     _loadStores();
     _refreshPassphraseState();
     _refreshDriveState();
+    _refreshOneDriveState();
   }
 
   Future<void> _loadStores() async {
@@ -84,12 +88,112 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
     }
   }
 
+  Future<void> _refreshOneDriveState() async {
+    final provider = OneDriveBackupProvider.instance;
+    final connected = await provider.isAuthenticated;
+    if (mounted) {
+      setState(() {
+        _isOneDriveConnected = connected;
+        _oneDriveEmail = provider.connectedEmail;
+      });
+    }
+  }
+
+  Future<void> _onOneDriveTap() async {
+    final provider = OneDriveBackupProvider.instance;
+    if (!_isOneDriveConnected) {
+      final ok = await provider.authenticate();
+      if (!mounted) return;
+      if (ok) {
+        await _refreshOneDriveState();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('OneDrive connected!')),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Sign-in failed: ${provider.lastAuthError ?? "cancelled"}',
+              ),
+            ),
+          );
+        }
+      }
+      return;
+    }
+
+    if (!mounted) return;
+    final action = await showModalBottomSheet<_DriveAction>(
+      context: context,
+      backgroundColor: AppDesignTokens.cardSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.cloud_upload_outlined,
+                  color: AppDesignTokens.primary),
+              title: const Text('Upload backup to OneDrive',
+                  style: TextStyle(color: AppDesignTokens.primaryText)),
+              onTap: () => Navigator.pop(ctx, _DriveAction.upload),
+            ),
+            ListTile(
+              leading: const Icon(Icons.cloud_download_outlined,
+                  color: AppDesignTokens.primary),
+              title: const Text('Restore from OneDrive',
+                  style: TextStyle(color: AppDesignTokens.primaryText)),
+              onTap: () => Navigator.pop(ctx, _DriveAction.restore),
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout,
+                  color: AppDesignTokens.secondaryText),
+              title: const Text('Disconnect OneDrive',
+                  style: TextStyle(color: AppDesignTokens.secondaryText)),
+              onTap: () => Navigator.pop(ctx, _DriveAction.signOut),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted || action == null) return;
+    switch (action) {
+      case _DriveAction.upload:
+        await runOneDriveBackupFlow(context, ref);
+        await _refreshOneDriveState();
+      case _DriveAction.restore:
+        await runOneDriveRestoreFlow(context, ref);
+      case _DriveAction.signOut:
+        await provider.signOut();
+        await _refreshOneDriveState();
+    }
+  }
+
   Future<void> _onDriveTap() async {
     final provider = GoogleDriveBackupProvider.instance;
     if (!_isDriveConnected) {
       final ok = await provider.authenticate();
       if (!mounted) return;
-      if (ok) await _refreshDriveState();
+      if (ok) {
+        await _refreshDriveState();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Sign-in failed: ${provider.lastAuthError ?? "cancelled"}',
+              ),
+            ),
+          );
+        }
+      }
       return;
     }
 
@@ -483,6 +587,21 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                       ),
                     ),
                     onTap: () => _onDriveTap(),
+                  ),
+                  const Divider(height: 1, indent: 70),
+                  _MoreRow(
+                    icon: Icons.cloud_outlined,
+                    title: 'OneDrive',
+                    subtitle: Text(
+                      _isOneDriveConnected
+                          ? 'Connected${_oneDriveEmail != null ? " as $_oneDriveEmail" : ""}'
+                          : 'Back up to Microsoft OneDrive',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                    onTap: () => _onOneDriveTap(),
                   ),
                   if (_auditPrefs != null || _hasCachedPassphrase)
                     const Divider(height: 1, indent: 70),

@@ -75,6 +75,19 @@
 				<string>com.googleusercontent.apps.378868358691-mc68o474i376tbkpckgldn2rtd6ohtrj</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>msauth.com.parminder.agnexis</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>msauthv2</string>
+		<string>msauthv3</string>
 	</array>
 	<key>UIStatusBarHidden</key>
 	<false/>

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -12,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/connectivity/cloud_backup_provider.dart';
 import '../../core/connectivity/google_drive_backup_provider.dart';
+import '../../core/connectivity/onedrive_backup_provider.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../backup/backup_audit_preferences.dart';
@@ -279,7 +281,7 @@ Future<void> _runRestoreFromPath(
   if (!context.mounted) return;
 
   if (cached != null && cached.isNotEmpty) {
-    await showBackupProgressDialog(context, 'Validating backup...');
+    unawaited(showBackupProgressDialog(context, 'Validating backup...'));
     try {
       meta = await ref
           .read(restoreServiceProvider)
@@ -305,7 +307,7 @@ Future<void> _runRestoreFromPath(
     if (result == null || !context.mounted) return;
     pwd = result.passphrase;
 
-    await showBackupProgressDialog(context, 'Validating backup...');
+    unawaited(showBackupProgressDialog(context, 'Validating backup...'));
     try {
       meta = await ref
           .read(restoreServiceProvider)
@@ -387,7 +389,7 @@ Future<void> _runRestoreFromPath(
   );
   if (confirm != true || !context.mounted) return;
 
-  await showBackupProgressDialog(context, 'Restoring data...');
+  unawaited(showBackupProgressDialog(context, 'Restoring data...'));
   try {
     final restored =
         await ref.read(restoreServiceProvider).restore(File(path), pwd);
@@ -637,7 +639,8 @@ Future<void> runCloudRestoreFlow(BuildContext context, WidgetRef ref) async {
   if (!context.mounted) return;
 
   final nav = Navigator.of(context, rootNavigator: true);
-  await showBackupProgressDialog(context, 'Fetching backups from Drive...');
+  unawaited(
+      showBackupProgressDialog(context, 'Fetching backups from Drive...'));
 
   List<CloudBackupFile> backups;
   try {
@@ -749,7 +752,7 @@ Future<void> runCloudRestoreFlow(BuildContext context, WidgetRef ref) async {
 
   if (selected == null || !context.mounted) return;
 
-  await showBackupProgressDialog(context, 'Downloading backup...');
+  unawaited(showBackupProgressDialog(context, 'Downloading backup...'));
   String localPath;
   try {
     final tempDir = await getTemporaryDirectory();
@@ -763,6 +766,285 @@ Future<void> runCloudRestoreFlow(BuildContext context, WidgetRef ref) async {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Download failed: $e')),
       );
+    }
+    return;
+  }
+
+  if (!context.mounted) return;
+  await _runRestoreFromPath(context, ref, localPath);
+}
+
+Future<void> runOneDriveBackupFlow(BuildContext context, WidgetRef ref) async {
+  final provider = OneDriveBackupProvider.instance;
+
+  if (!await provider.isAuthenticated) {
+    final ok = await provider.authenticate();
+    if (!ok) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('OneDrive sign-in cancelled.')),
+        );
+      }
+      return;
+    }
+  }
+
+  if (!context.mounted) return;
+
+  final store = BackupPassphraseStore();
+  String? cached;
+  try {
+    cached = await store.retrieve();
+  } catch (_) {}
+
+  String passphrase;
+  bool saveChoice = false;
+
+  if (cached != null && cached.isNotEmpty) {
+    passphrase = cached;
+  } else {
+    if (!context.mounted) return;
+    final hasOptedIn = await store.hasOptedIn();
+    if (!context.mounted) return;
+    final result = await showBackupPasswordDialog(
+      context,
+      isBackup: true,
+      showSaveCheckbox: !hasOptedIn,
+    );
+    if (result == null || !context.mounted) return;
+    passphrase = result.passphrase;
+    saveChoice = result.savePassphrase;
+  }
+
+  if (!context.mounted) return;
+
+  final status = ValueNotifier<String>('Preparing backup...');
+  final nav = Navigator.of(context, rootNavigator: true);
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => ValueListenableBuilder<String>(
+      valueListenable: status,
+      builder: (ctx, message, __) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          backgroundColor: AppDesignTokens.cardSurface,
+          contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 36,
+                height: 36,
+                child: CircularProgressIndicator(
+                  color: AppDesignTokens.primary,
+                  strokeWidth: 3,
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(message,
+                        style: const TextStyle(
+                            color: AppDesignTokens.primaryText, fontSize: 15)),
+                    const SizedBox(height: 4),
+                    const Text('Do not close the app',
+                        style: TextStyle(
+                            color: AppDesignTokens.secondaryText, fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+  await Future<void>.delayed(const Duration(milliseconds: 50));
+
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final clearAudit =
+        BackupAuditPreferences(prefs).clearAuditLogAfterSuccessfulBackup;
+    final file = await ref.read(backupServiceProvider).createBackup(
+          passphrase,
+          onProgress: (s) => status.value = s,
+          clearAuditLogOnDeviceAfterSuccess: clearAudit,
+        );
+
+    status.value = 'Uploading to OneDrive...';
+    await provider.uploadBackup(file);
+
+    if (context.mounted) nav.pop();
+    if (saveChoice) await store.save(passphrase);
+    await BackupReminderStore(prefs).recordBackupCompleted();
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            clearAudit
+                ? 'Backed up to OneDrive. On-device audit log cleared.'
+                : 'Backed up to OneDrive.',
+          ),
+        ),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) nav.pop();
+    if (context.mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppDesignTokens.cardSurface,
+          title: const Text('OneDrive Backup Failed',
+              style: TextStyle(color: AppDesignTokens.primaryText)),
+          content: Text(e.toString(),
+              style: const TextStyle(color: AppDesignTokens.secondaryText)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK',
+                  style: TextStyle(color: AppDesignTokens.primary)),
+            ),
+          ],
+        ),
+      );
+    }
+  } finally {
+    status.dispose();
+  }
+}
+
+Future<void> runOneDriveRestoreFlow(
+    BuildContext context, WidgetRef ref) async {
+  final provider = OneDriveBackupProvider.instance;
+
+  if (!await provider.isAuthenticated) {
+    final ok = await provider.authenticate();
+    if (!ok) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('OneDrive sign-in cancelled.')),
+        );
+      }
+      return;
+    }
+  }
+
+  if (!context.mounted) return;
+
+  final nav = Navigator.of(context, rootNavigator: true);
+  unawaited(showBackupProgressDialog(
+      context, 'Fetching backups from OneDrive...'));
+
+  List<CloudBackupFile> backups;
+  try {
+    backups = await provider.listBackups();
+    if (context.mounted) nav.pop();
+  } catch (e) {
+    if (context.mounted) nav.pop();
+    if (context.mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppDesignTokens.cardSurface,
+          title: const Text('Could Not List Backups',
+              style: TextStyle(color: AppDesignTokens.primaryText)),
+          content: Text(e.toString(),
+              style: const TextStyle(color: AppDesignTokens.secondaryText)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK',
+                  style: TextStyle(color: AppDesignTokens.primary)),
+            ),
+          ],
+        ),
+      );
+    }
+    return;
+  }
+
+  if (!context.mounted) return;
+
+  if (backups.isEmpty) {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppDesignTokens.cardSurface,
+        title: const Text('No Backups Found',
+            style: TextStyle(color: AppDesignTokens.primaryText)),
+        content: const Text(
+            'No Agnexis backup files found in your OneDrive.',
+            style: TextStyle(color: AppDesignTokens.secondaryText)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK',
+                style: TextStyle(color: AppDesignTokens.primary)),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
+  if (!context.mounted) return;
+
+  final fmt = DateFormat.yMMMd().add_jm();
+  final selected = await showDialog<CloudBackupFile>(
+    context: context,
+    builder: (ctx) => SimpleDialog(
+      backgroundColor: AppDesignTokens.cardSurface,
+      title: const Text('Restore from OneDrive',
+          style: TextStyle(color: AppDesignTokens.primaryText)),
+      children: backups
+          .map(
+            (b) => SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, b),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(b.name,
+                        style: const TextStyle(
+                            color: AppDesignTokens.primaryText,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500)),
+                    Text(
+                      '${fmt.format(b.modifiedAt.toLocal())} · '
+                      '${(b.sizeBytes / 1024).toStringAsFixed(1)} KB',
+                      style: const TextStyle(
+                          color: AppDesignTokens.secondaryText, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    ),
+  );
+
+  if (selected == null || !context.mounted) return;
+
+  unawaited(showBackupProgressDialog(context, 'Downloading backup...'));
+  String localPath;
+  try {
+    final tempDir = await getTemporaryDirectory();
+    final localFile = await provider.downloadBackup(
+        selected.remoteId, '${tempDir.path}/${selected.name}');
+    localPath = localFile.path;
+    if (context.mounted) nav.pop();
+  } catch (e) {
+    if (context.mounted) nav.pop();
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Download failed: $e')));
     }
     return;
   }

@@ -44,6 +44,7 @@ dependencies:
   package_info_plus: ^9.0.0
   device_info_plus: ^12.4.0
   google_sign_in: ^6.2.2
+  msal_auth: ^3.3.0
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +63,7 @@ flutter:
     - assets/icon/
     - assets/Branding/
     - assets/images/trials/
+    - assets/msal_config.json
 
 # Native splash: solid green, no image — seamless transition into Dart splash.
 flutter_native_splash:

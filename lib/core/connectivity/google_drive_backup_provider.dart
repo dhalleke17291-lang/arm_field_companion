@@ -18,7 +18,7 @@ class GoogleDriveBackupProvider extends CloudBackupProvider {
   GoogleDriveBackupProvider._();
 
   final _signIn = GoogleSignIn(
-    clientId: _iosClientId,
+    clientId: Platform.isIOS ? _iosClientId : null,
     scopes: [_scope],
   );
 
@@ -47,12 +47,21 @@ class GoogleDriveBackupProvider extends CloudBackupProvider {
     }
   }
 
+  String? _lastAuthError;
+  String? get lastAuthError => _lastAuthError;
+
   @override
   Future<bool> authenticate() async {
+    _lastAuthError = null;
     try {
       final account = await _signIn.signIn();
+      if (account == null) {
+        _lastAuthError = 'Sign-in returned null (likely SHA-1 mismatch '
+            'or unconfigured OAuth client)';
+      }
       return account != null;
-    } catch (_) {
+    } catch (e) {
+      _lastAuthError = e.toString();
       return false;
     }
   }
