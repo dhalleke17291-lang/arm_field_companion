@@ -57,7 +57,7 @@ void main() {
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
-  Future<int> _plot(String plotId, {int? rep, int? treatmentId}) =>
+  Future<int> plot(String plotId, {int? rep, int? treatmentId}) =>
       db.into(db.plots).insert(PlotsCompanion.insert(
             trialId: trialId,
             plotId: plotId,
@@ -65,20 +65,20 @@ void main() {
             treatmentId: Value(treatmentId),
           ));
 
-  Future<int> _treatment(String code) =>
+  Future<int> treatment(String code) =>
       db.into(db.treatments).insert(TreatmentsCompanion.insert(
             trialId: trialId,
             code: code,
             name: code,
           ));
 
-  Future<int> _assessment(String name) =>
+  Future<int> assessment(String name) =>
       db.into(db.assessments).insert(AssessmentsCompanion.insert(
             trialId: trialId,
             name: name,
           ));
 
-  Future<int> _session(String name, {DateTime? endedAt, int? bbch}) =>
+  Future<int> session(String name, {DateTime? endedAt, int? bbch}) =>
       db.into(db.sessions).insert(SessionsCompanion.insert(
             trialId: trialId,
             name: name,
@@ -87,7 +87,7 @@ void main() {
             cropStageBbch: Value(bbch),
           ));
 
-  Future<void> _rating(
+  Future<void> rating(
     int plotPk,
     int assessId,
     int sessionId, {
@@ -123,12 +123,12 @@ void main() {
     });
 
     test('counts plots, treatments, and unique reps', () async {
-      final t1 = await _treatment('CHK');
-      final t2 = await _treatment('T2');
-      await _plot('101', rep: 1, treatmentId: t1);
-      await _plot('102', rep: 1, treatmentId: t2);
-      await _plot('201', rep: 2, treatmentId: t1);
-      await _plot('202', rep: 2, treatmentId: t2);
+      final t1 = await treatment('CHK');
+      final t2 = await treatment('T2');
+      await plot('101', rep: 1, treatmentId: t1);
+      await plot('102', rep: 1, treatmentId: t2);
+      await plot('201', rep: 2, treatmentId: t1);
+      await plot('202', rep: 2, treatmentId: t2);
 
       final data = await svc.assembleForTrial(trial);
       expect(data.identity.plotCount, 4);
@@ -137,7 +137,7 @@ void main() {
     });
 
     test('repCount is null when no plots have rep set', () async {
-      await _plot('101'); // rep is null
+      await plot('101'); // rep is null
       final data = await svc.assembleForTrial(trial);
       expect(data.identity.repCount, isNull);
     });
@@ -160,8 +160,8 @@ void main() {
     });
 
     test('includes session-opened and session-closed events', () async {
-      await _session('S1');
-      await _session('S2', endedAt: DateTime(2026, 3, 10, 17));
+      await session('S1');
+      await session('S2', endedAt: DateTime(2026, 3, 10, 17));
 
       final data = await svc.assembleForTrial(trial);
       final labels = data.timeline.map((e) => e.label).toList();
@@ -171,8 +171,8 @@ void main() {
     });
 
     test('timeline is sorted ascending by date', () async {
-      await _session('S1');
-      await _session('S2');
+      await session('S1');
+      await session('S2');
 
       final data = await svc.assembleForTrial(trial);
       for (var i = 0; i < data.timeline.length - 1; i++) {
@@ -192,24 +192,24 @@ void main() {
 
   group('sessions', () {
     test('counts distinct plots rated per session', () async {
-      final p1 = await _plot('101', rep: 1);
-      final p2 = await _plot('102', rep: 1);
-      final a = await _assessment('Weed Control');
-      final s = await _session('S1');
-      await _rating(p1, a, s, value: 85);
-      await _rating(p2, a, s, value: 70);
+      final p1 = await plot('101', rep: 1);
+      final p2 = await plot('102', rep: 1);
+      final a = await assessment('Weed Control');
+      final s = await session('S1');
+      await rating(p1, a, s, value: 85);
+      await rating(p2, a, s, value: 70);
 
       final data = await svc.assembleForTrial(trial);
       expect(data.sessions.single.plotsRated, 2);
     });
 
     test('counts unique assessments rated in session', () async {
-      final p = await _plot('101', rep: 1);
-      final a1 = await _assessment('Weed Control');
-      final a2 = await _assessment('Phytotoxicity');
-      final s = await _session('S1');
-      await _rating(p, a1, s, value: 80);
-      await _rating(p, a2, s, value: 5);
+      final p = await plot('101', rep: 1);
+      final a1 = await assessment('Weed Control');
+      final a2 = await assessment('Phytotoxicity');
+      final s = await session('S1');
+      await rating(p, a1, s, value: 80);
+      await rating(p, a2, s, value: 5);
 
       final data = await svc.assembleForTrial(trial);
       expect(data.sessions.single.assessmentCount, 2);
@@ -217,29 +217,29 @@ void main() {
     });
 
     test('counts edited plots (amended ratings)', () async {
-      final p = await _plot('101', rep: 1);
-      final a = await _assessment('A');
-      final s = await _session('S1');
-      await _rating(p, a, s, value: 80, amended: true);
+      final p = await plot('101', rep: 1);
+      final a = await assessment('A');
+      final s = await session('S1');
+      await rating(p, a, s, value: 80, amended: true);
 
       final data = await svc.assembleForTrial(trial);
       expect(data.sessions.single.plotsEdited, 1);
     });
 
     test('status is closed when endedAt is set', () async {
-      await _session('S1', endedAt: DateTime(2026, 3, 1, 17));
+      await session('S1', endedAt: DateTime(2026, 3, 1, 17));
       final data = await svc.assembleForTrial(trial);
       expect(data.sessions.single.status, 'closed');
     });
 
     test('status is open when endedAt is null', () async {
-      await _session('S1');
+      await session('S1');
       final data = await svc.assembleForTrial(trial);
       expect(data.sessions.single.status, 'open');
     });
 
     test('cropStageBbch propagated from session row', () async {
-      await _session('S1', bbch: 65);
+      await session('S1', bbch: 65);
       final data = await svc.assembleForTrial(trial);
       expect(data.sessions.single.cropStageBbch, 65);
     });
@@ -249,30 +249,30 @@ void main() {
 
   group('integrity', () {
     test('counts total ratings across all sessions', () async {
-      final p = await _plot('101', rep: 1);
-      final a = await _assessment('A');
-      final s1 = await _session('S1');
-      final s2 = await _session('S2');
-      await _rating(p, a, s1, value: 80);
-      await _rating(p, a, s2, value: 82);
+      final p = await plot('101', rep: 1);
+      final a = await assessment('A');
+      final s1 = await session('S1');
+      final s2 = await session('S2');
+      await rating(p, a, s1, value: 80);
+      await rating(p, a, s2, value: 82);
 
       final data = await svc.assembleForTrial(trial);
       expect(data.integrity.totalRatings, 2);
     });
 
     test('counts GPS, confidence, and timestamp coverage', () async {
-      final p = await _plot('101', rep: 1);
-      final a = await _assessment('A');
-      final s = await _session('S1');
+      final p = await plot('101', rep: 1);
+      final a = await assessment('A');
+      final s = await session('S1');
       // First rating: full provenance
-      await _rating(p, a, s,
+      await rating(p, a, s,
           value: 80,
           lat: 51.0,
           lng: -1.0,
           confidence: 'certain',
           ratingTime: '09:30');
       // Second rating: no provenance
-      await _rating(p, a, s, value: 75);
+      await rating(p, a, s, value: 75);
 
       final data = await svc.assembleForTrial(trial);
       expect(data.integrity.ratingsWithGps, 1);
@@ -281,12 +281,12 @@ void main() {
     });
 
     test('builds rater summaries with correct rating counts', () async {
-      final p1 = await _plot('101', rep: 1);
-      final p2 = await _plot('102', rep: 1);
-      final a = await _assessment('A');
-      final s = await _session('S1');
-      await _rating(p1, a, s, value: 80, rater: 'Alice');
-      await _rating(p2, a, s, value: 70, rater: 'Alice');
+      final p1 = await plot('101', rep: 1);
+      final p2 = await plot('102', rep: 1);
+      final a = await assessment('A');
+      final s = await session('S1');
+      await rating(p1, a, s, value: 80, rater: 'Alice');
+      await rating(p2, a, s, value: 70, rater: 'Alice');
 
       final data = await svc.assembleForTrial(trial);
       expect(data.integrity.raterSummaries, hasLength(1));
@@ -295,12 +295,12 @@ void main() {
     });
 
     test('multiple raters produce separate summaries', () async {
-      final p1 = await _plot('101', rep: 1);
-      final p2 = await _plot('102', rep: 1);
-      final a = await _assessment('A');
-      final s = await _session('S1');
-      await _rating(p1, a, s, value: 80, rater: 'Alice');
-      await _rating(p2, a, s, value: 70, rater: 'Bob');
+      final p1 = await plot('101', rep: 1);
+      final p2 = await plot('102', rep: 1);
+      final a = await assessment('A');
+      final s = await session('S1');
+      await rating(p1, a, s, value: 80, rater: 'Alice');
+      await rating(p2, a, s, value: 70, rater: 'Bob');
 
       final data = await svc.assembleForTrial(trial);
       final names = data.integrity.raterSummaries.map((r) => r.name).toSet();
@@ -308,10 +308,10 @@ void main() {
     });
 
     test('records amendments in integrity section', () async {
-      final p = await _plot('101', rep: 1);
-      final a = await _assessment('A');
-      final s = await _session('S1');
-      await _rating(p, a, s, value: 85, amended: true);
+      final p = await plot('101', rep: 1);
+      final a = await assessment('A');
+      final s = await session('S1');
+      await rating(p, a, s, value: 85, amended: true);
 
       final data = await svc.assembleForTrial(trial);
       expect(data.integrity.amendments, hasLength(1));
@@ -330,22 +330,22 @@ void main() {
 
   group('outliers', () {
     test('flags value more than 2 SD from treatment mean', () async {
-      final t = await _treatment('T1');
-      final p1 = await _plot('101', rep: 1, treatmentId: t);
-      final p2 = await _plot('102', rep: 2, treatmentId: t);
-      final p3 = await _plot('103', rep: 3, treatmentId: t);
-      final p4 = await _plot('104', rep: 4, treatmentId: t);
-      final p5 = await _plot('105', rep: 5, treatmentId: t);
-      final p6 = await _plot('106', rep: 6, treatmentId: t);
-      final a = await _assessment('A');
-      final s = await _session('S1');
+      final t = await treatment('T1');
+      final p1 = await plot('101', rep: 1, treatmentId: t);
+      final p2 = await plot('102', rep: 2, treatmentId: t);
+      final p3 = await plot('103', rep: 3, treatmentId: t);
+      final p4 = await plot('104', rep: 4, treatmentId: t);
+      final p5 = await plot('105', rep: 5, treatmentId: t);
+      final p6 = await plot('106', rep: 6, treatmentId: t);
+      final a = await assessment('A');
+      final s = await session('S1');
       // 5 clustered + 1 far outlier: mean≈67.5, sd≈30.2 → 0 is ~2.24 SD below
-      await _rating(p1, a, s, value: 80);
-      await _rating(p2, a, s, value: 82);
-      await _rating(p3, a, s, value: 81);
-      await _rating(p4, a, s, value: 80);
-      await _rating(p5, a, s, value: 82);
-      await _rating(p6, a, s, value: 0);
+      await rating(p1, a, s, value: 80);
+      await rating(p2, a, s, value: 82);
+      await rating(p3, a, s, value: 81);
+      await rating(p4, a, s, value: 80);
+      await rating(p5, a, s, value: 82);
+      await rating(p6, a, s, value: 0);
 
       final data = await svc.assembleForTrial(trial);
       expect(data.outliers.any((o) => o.value == 0.0), isTrue);
@@ -354,38 +354,38 @@ void main() {
     });
 
     test('does not flag values within 2 SD', () async {
-      final t = await _treatment('T1');
-      final p1 = await _plot('101', rep: 1, treatmentId: t);
-      final p2 = await _plot('102', rep: 2, treatmentId: t);
-      final p3 = await _plot('103', rep: 3, treatmentId: t);
-      final p4 = await _plot('104', rep: 4, treatmentId: t);
-      final a = await _assessment('A');
-      final s = await _session('S1');
+      final t = await treatment('T1');
+      final p1 = await plot('101', rep: 1, treatmentId: t);
+      final p2 = await plot('102', rep: 2, treatmentId: t);
+      final p3 = await plot('103', rep: 3, treatmentId: t);
+      final p4 = await plot('104', rep: 4, treatmentId: t);
+      final a = await assessment('A');
+      final s = await session('S1');
       // Tight cluster — no outliers
-      await _rating(p1, a, s, value: 80);
-      await _rating(p2, a, s, value: 82);
-      await _rating(p3, a, s, value: 81);
-      await _rating(p4, a, s, value: 79);
+      await rating(p1, a, s, value: 80);
+      await rating(p2, a, s, value: 82);
+      await rating(p3, a, s, value: 81);
+      await rating(p4, a, s, value: 79);
 
       final data = await svc.assembleForTrial(trial);
       expect(data.outliers, isEmpty);
     });
 
     test('skips treatment with fewer than 3 plots', () async {
-      final t = await _treatment('T1');
-      final p1 = await _plot('101', rep: 1, treatmentId: t);
-      final p2 = await _plot('102', rep: 2, treatmentId: t); // only 2
-      final a = await _assessment('A');
-      final s = await _session('S1');
-      await _rating(p1, a, s, value: 80);
-      await _rating(p2, a, s, value: 5); // extreme but < 3 samples
+      final t = await treatment('T1');
+      final p1 = await plot('101', rep: 1, treatmentId: t);
+      final p2 = await plot('102', rep: 2, treatmentId: t); // only 2
+      final a = await assessment('A');
+      final s = await session('S1');
+      await rating(p1, a, s, value: 80);
+      await rating(p2, a, s, value: 5); // extreme but < 3 samples
 
       final data = await svc.assembleForTrial(trial);
       expect(data.outliers, isEmpty);
     });
 
     test('guard rows excluded from outlier analysis', () async {
-      final t = await _treatment('T1');
+      final t = await treatment('T1');
       // Insert one guard row
       final guardPk = await db.into(db.plots).insert(PlotsCompanion.insert(
             trialId: trialId,
@@ -394,15 +394,15 @@ void main() {
             treatmentId: Value(t),
             isGuardRow: const Value(true),
           ));
-      final p1 = await _plot('101', rep: 1, treatmentId: t);
-      final p2 = await _plot('102', rep: 2, treatmentId: t);
-      final p3 = await _plot('103', rep: 3, treatmentId: t);
-      final a = await _assessment('A');
-      final s = await _session('S1');
-      await _rating(guardPk, a, s, value: 5); // extreme guard value
-      await _rating(p1, a, s, value: 80);
-      await _rating(p2, a, s, value: 82);
-      await _rating(p3, a, s, value: 81);
+      final p1 = await plot('101', rep: 1, treatmentId: t);
+      final p2 = await plot('102', rep: 2, treatmentId: t);
+      final p3 = await plot('103', rep: 3, treatmentId: t);
+      final a = await assessment('A');
+      final s = await session('S1');
+      await rating(guardPk, a, s, value: 5); // extreme guard value
+      await rating(p1, a, s, value: 80);
+      await rating(p2, a, s, value: 82);
+      await rating(p3, a, s, value: 81);
 
       final data = await svc.assembleForTrial(trial);
       // Guard row excluded → only 3 data plots, no outlier flagged
@@ -414,10 +414,10 @@ void main() {
 
   group('completeness score', () {
     test('GPS component scores full when all ratings have coordinates', () async {
-      final p = await _plot('101', rep: 1);
-      final a = await _assessment('A');
-      final s = await _session('S1');
-      await _rating(p, a, s, value: 80, lat: 51.0, lng: -1.0);
+      final p = await plot('101', rep: 1);
+      final a = await assessment('A');
+      final s = await session('S1');
+      await rating(p, a, s, value: 80, lat: 51.0, lng: -1.0);
 
       final data = await svc.assembleForTrial(trial);
       final gps = data.completenessScore.components
@@ -426,10 +426,10 @@ void main() {
     });
 
     test('GPS component scores zero when no ratings have coordinates', () async {
-      final p = await _plot('101', rep: 1);
-      final a = await _assessment('A');
-      final s = await _session('S1');
-      await _rating(p, a, s, value: 80); // no GPS
+      final p = await plot('101', rep: 1);
+      final a = await assessment('A');
+      final s = await session('S1');
+      await rating(p, a, s, value: 80); // no GPS
 
       final data = await svc.assembleForTrial(trial);
       final gps = data.completenessScore.components
@@ -438,8 +438,8 @@ void main() {
     });
 
     test('BBCH component scores full when all sessions have BBCH', () async {
-      await _session('S1', bbch: 65);
-      await _session('S2', bbch: 71);
+      await session('S1', bbch: 65);
+      await session('S2', bbch: 71);
 
       final data = await svc.assembleForTrial(trial);
       final bbch = data.completenessScore.components
@@ -448,7 +448,7 @@ void main() {
     });
 
     test('BBCH component scores zero when no sessions have BBCH', () async {
-      await _session('S1'); // no bbch
+      await session('S1'); // no bbch
       final data = await svc.assembleForTrial(trial);
       final bbch = data.completenessScore.components
           .firstWhere((c) => c.name.toLowerCase().contains('bbch'));
@@ -476,8 +476,8 @@ void main() {
 
     test('session-close component partial when only some sessions closed',
         () async {
-      await _session('S1', endedAt: DateTime(2026, 3, 1, 17)); // closed
-      await _session('S2'); // open
+      await session('S1', endedAt: DateTime(2026, 3, 1, 17)); // closed
+      await session('S2'); // open
 
       final data = await svc.assembleForTrial(trial);
       final closeComp = data.completenessScore.components
@@ -487,10 +487,10 @@ void main() {
     });
 
     test('totalScore is bounded by maxScore', () async {
-      await _session('S1', bbch: 65, endedAt: DateTime(2026, 3, 1, 17));
-      final p = await _plot('101', rep: 1);
-      final a = await _assessment('A');
-      await _rating(p, a, 1, value: 80, lat: 51.0, lng: -1.0,
+      await session('S1', bbch: 65, endedAt: DateTime(2026, 3, 1, 17));
+      final p = await plot('101', rep: 1);
+      final a = await assessment('A');
+      await rating(p, a, 1, value: 80, lat: 51.0, lng: -1.0,
           confidence: 'certain', ratingTime: '09:00');
 
       final data = await svc.assembleForTrial(trial);

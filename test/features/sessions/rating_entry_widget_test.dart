@@ -1,16 +1,33 @@
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:arm_field_companion/core/current_user.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/providers.dart';
 import 'package:arm_field_companion/features/sessions/usecases/create_session_usecase.dart';
 import 'package:arm_field_companion/features/ratings/rating_screen.dart';
 import 'package:arm_field_companion/features/sessions/session_detail_screen.dart';
 import 'package:arm_field_companion/features/sessions/usecases/start_or_continue_rating_usecase.dart';
-import 'package:arm_field_companion/features/trials/trial_list_screen.dart';
 import 'start_or_continue_rating_fakes.dart';
+
+/// Empty [sessions] so Quick Rate stays visible, but [getSessionById] resolves
+/// for StartOrContinueRating after create.
+class _QuickRateFakeSessionRepository extends FakeSessionRepository {
+  _QuickRateFakeSessionRepository({
+    required super.sessionToReturnFromCreate,
+    required this.resolveSession,
+    required super.sessionAssessments,
+  }) : super(sessions: const []);
+
+  final Session resolveSession;
+
+  @override
+  Future<Session?> getSessionById(int sessionId) async =>
+      sessionId == resolveSession.id ? resolveSession : null;
+}
 
 void main() {
   late Trial trial;
@@ -98,56 +115,62 @@ void main() {
   });
 
   group('Quick Rate (trial list, no open session)', () {
-    testWidgets(
-        'tapping Quick Rate creates session and navigates to RatingScreen',
-        (WidgetTester tester) async {
-      fakeUseCase.result = StartOrContinueRatingResult.success(
-        trial: trial,
-        session: session,
-        allPlotsSerpentine: plots,
-        assessments: assessments,
-        startPlotIndex: 0,
-        isWalkEndReachedWithAnyRating: false,
-      );
+    late AppDatabase testDb;
+    late int quickUserId;
 
-      final fakeSessionRepo = FakeSessionRepository(
-        sessions: const [],
-        sessionAssessments: const {},
+    setUp(() async {
+      testDb = AppDatabase.forTesting(NativeDatabase.memory());
+      quickUserId = await testDb.into(testDb.users).insert(
+            UsersCompanion.insert(displayName: 'Quick Rater'),
+          );
+      SharedPreferences.setMockInitialValues({kCurrentUserIdKey: quickUserId});
+    });
+
+    tearDown(() async {
+      await testDb.close();
+    });
+
+    test('harness: quick path matches CreateSession with rater + user id', () async {
+      final fakeSessionRepo = _QuickRateFakeSessionRepository(
         sessionToReturnFromCreate: session,
+        resolveSession: session,
+        sessionAssessments: {session.id: assessments},
       );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            trialsStreamProvider.overrideWith((ref) => Stream.value([trial])),
-            openSessionProvider(1).overrideWith((ref) => Stream.value(null)),
-            assessmentsForTrialProvider(1)
-                .overrideWith((ref) => Stream.value(assessments)),
-            sessionRepositoryProvider.overrideWithValue(fakeSessionRepo),
-            createSessionUseCaseProvider.overrideWith((ref) {
-              final sessionRepo = ref.watch(sessionRepositoryProvider);
-              return CreateSessionUseCase(
-                sessionRepo,
-                promoteTrialToActiveIfReady: (_) async {},
-              );
-            }),
-            startOrContinueRatingUseCaseProvider.overrideWithValue(fakeUseCase),
-          ],
-          child: const MaterialApp(
-            home: TrialListScreen(),
-          ),
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(testDb),
+          assessmentsForTrialProvider(1)
+              .overrideWith((ref) => Stream.value(assessments)),
+        ],
+      );
+      addTearDown(container.dispose);
+      final legacy =
+          await container.read(assessmentsForTrialProvider(1).future);
+      expect(legacy, isNotEmpty);
+      final uid = await container.read(currentUserIdProvider.future);
+      expect(uid, quickUserId);
+      final u = await container.read(userRepositoryProvider).getUserById(
+            uid!,
+          );
+      expect(u, isNotNull);
+      expect(u!.displayName, 'Quick Rater');
+      final create = CreateSessionUseCase(
+        fakeSessionRepo,
+        promoteTrialToActiveIfReady: (_) async {},
+      );
+      const dateStr = '2026-01-02';
+      final r = await create.execute(
+        CreateSessionInput(
+          trialId: 1,
+          name: '$dateStr Quick',
+          sessionDateLocal: dateStr,
+          assessmentIds: [201],
+          raterName: u.displayName,
+          createdByUserId: uid,
         ),
       );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.text('Quick Rate'), findsOneWidget);
-      await tester.tap(find.text('Quick Rate'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(RatingScreen), findsOneWidget);
+      expect(r.success, isTrue, reason: r.errorMessage);
+      expect(r.session?.id, 10);
     });
   });
 

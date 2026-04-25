@@ -174,12 +174,30 @@ Future<void> _quickRateFromList(
     }
   }
 
+  final currentUserId = await ref.read(currentUserIdProvider.future);
+  final currentUser = currentUserId != null
+      ? await ref.read(userRepositoryProvider).getUserById(currentUserId)
+      : null;
+  if (currentUserId == null || currentUser == null) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please set up a profile before starting a session'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    return;
+  }
+
   final createUseCase = ref.read(createSessionUseCaseProvider);
   final createResult = await createUseCase.execute(CreateSessionInput(
     trialId: trial.id,
     name: '$dateStr Quick',
     sessionDateLocal: dateStr,
     assessmentIds: assessmentIds,
+    raterName: currentUser.displayName,
+    createdByUserId: currentUserId,
   ));
 
   if (!context.mounted) return;

@@ -147,6 +147,7 @@ class ApplyCorrectionUseCase {
         correctedByUserId: correctedByUserId,
         sessionId: rating.sessionId,
         plotPk: rating.plotPk,
+        sessionRaterName: session.raterName,
       );
       return ApplyCorrectionResult.success(correction);
     } on RatingIntegrityException catch (e) {

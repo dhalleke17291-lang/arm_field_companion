@@ -226,6 +226,7 @@ class MockRatingRepository implements RatingRepository {
     int? correctedByUserId,
     int? sessionId,
     int? plotPk,
+    String? sessionRaterName,
   }) async {
     throw UnimplementedError('applyCorrection not used in save_rating_usecase_test');
   }

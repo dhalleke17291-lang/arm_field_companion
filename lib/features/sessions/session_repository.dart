@@ -192,6 +192,8 @@ class SessionRepository {
           .write(SessionsCompanion(
         status: const Value(kSessionStatusOpen),
         startedAt: Value(now),
+        raterName:
+            raterName != null ? Value(raterName) : const Value.absent(),
         cropStageBbch:
             cropStageBbch != null ? Value(cropStageBbch) : const Value.absent(),
       ));

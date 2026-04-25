@@ -521,6 +521,7 @@ class FakeRatingRepository implements RatingRepository {
     int? correctedByUserId,
     int? sessionId,
     int? plotPk,
+    String? sessionRaterName,
   }) async =>
       throw UnimplementedError();
 

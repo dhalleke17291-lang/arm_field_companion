@@ -139,9 +139,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
   int? _carryForwardConfirmSuppressedAssessmentId;
   double? _carryForwardConfirmSuppressedBaseline;
 
-  static const String _kLastRaterNameKey = 'last_rater_name';
-  String? _raterName;
-  bool _hasDefaultedRaterFromUser = false;
   String _confidence = 'certain';
 
   // Missing condition reasons per spec
@@ -301,18 +298,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     SharedPreferences.getInstance().then((prefs) {
       if (!mounted) return;
       _prefs = prefs;
-      final last = prefs.getString(_kLastRaterNameKey);
-      if (last != null && last.trim().isNotEmpty) {
-        setState(() => _raterName = last.trim());
-      } else {
-        // Fall back to the ARM-specified rater on the session (set by the
-        // importer from the shell's assessedBy field) when no personal
-        // preference has been stored yet.
-        final sessionRater = widget.session.raterName?.trim();
-        if (sessionRater != null && sessionRater.isNotEmpty) {
-          setState(() => _raterName = sessionRater);
-        }
-      }
       final mode = SessionWalkOrderStore(prefs).getMode(widget.session.id);
       if (mounted) setState(() => _walkOrderMode = mode);
     });
@@ -473,22 +458,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         ),
       ),
     );
-    final userAsync = ref.watch(currentUserProvider);
-    final user = userAsync.valueOrNull;
-    // Default rater to user name once when last_rater_name is empty
-    if (user?.displayName != null &&
-        user!.displayName.trim().isNotEmpty &&
-        _raterName == null &&
-        !_hasDefaultedRaterFromUser) {
-      _hasDefaultedRaterFromUser = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        if (!mounted) return;
-        setState(() => _raterName = user.displayName.trim());
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_kLastRaterNameKey, user.displayName.trim());
-      });
-    }
-
     final seedingEvent =
         ref.watch(seedingEventForTrialProvider(widget.trial.id)).valueOrNull;
     final int? dasDays = (seedingEvent != null &&
@@ -2672,9 +2641,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                     sessionId: widget.session.id,
                     reason: r,
                     isSessionClosed: widget.session.endedAt != null,
-                    raterName: _raterName?.trim().isNotEmpty == true
-                        ? _raterName
-                        : widget.session.raterName,
+                    raterName: widget.session.raterName,
                     performedByUserId: userId,
                   );
                   if (!ctx.mounted) return;
@@ -2898,64 +2865,53 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                      const Padding(
+                        padding: EdgeInsets.only(right: 8),
                         child: Text(
                           'Rater',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade500,
+                            color: AppDesignTokens.secondaryText,
                             letterSpacing: 0.3,
                           ),
                         ),
                       ),
                       Expanded(
-                        child: GestureDetector(
-                          onTap: () => _showRaterSheet(context),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border:
-                                  Border.all(color: const Color(0xFFE0DDD6)),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.person_outline,
-                                  size: 12,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    _raterName != null &&
-                                            _raterName!.trim().isNotEmpty
-                                        ? _raterName!
-                                        : (ref
-                                                .watch(currentUserProvider)
-                                                .valueOrNull
-                                                ?.displayName ??
-                                            'Set rater'),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.person_outline,
+                                size: 12,
+                                color: AppDesignTokens.secondaryText,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  (widget.session.raterName != null &&
+                                          widget.session.raterName!
+                                              .trim()
+                                              .isNotEmpty)
+                                      ? widget.session.raterName!.trim()
+                                      : (ref
+                                              .watch(currentUserProvider)
+                                              .valueOrNull
+                                              ?.displayName ??
+                                          '\u2014'),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppDesignTokens.primaryText,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -3405,48 +3361,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Future<void> _showRaterSheet(BuildContext context) async {
-    final controller = TextEditingController(text: _raterName ?? '');
-    await showModalBottomSheet(
-      context: context,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text('Rater name',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                decoration: const InputDecoration.collapsed(
-                  hintText: 'Enter rater name',
-                ),
-                textCapitalization: TextCapitalization.words,
-                autofocus: true,
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: () async {
-                  final name = controller.text.trim();
-                  setState(() => _raterName = name.isEmpty ? null : name);
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setString(
-                      _kLastRaterNameKey, name.isEmpty ? '' : name);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-                child: const Text('Done'),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -4336,9 +4250,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         resultStatus: _selectedStatus,
         numericValue: numericValue,
         textValue: textValue,
-        raterName: _raterName?.trim().isNotEmpty == true
-            ? _raterName
-            : widget.session.raterName,
+        raterName: widget.session.raterName,
         performedByUserId: userId,
         isSessionClosed: widget.session.endedAt != null,
         minValue: scaleBounds.min,
@@ -4362,11 +4274,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     setState(() => _isSaving = false);
 
     if (result.isSuccess) {
-      if (_raterName != null && _raterName!.trim().isNotEmpty) {
-        SharedPreferences.getInstance().then((prefs) {
-          prefs.setString(_kLastRaterNameKey, _raterName!.trim());
-        });
-      }
       ref.invalidate(sessionRatingsProvider(widget.session.id));
       ref.invalidate(ratedPlotPksProvider(widget.session.id));
       // Assessment consistency check (non-blocking, SnackBar only).

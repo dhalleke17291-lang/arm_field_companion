@@ -40,6 +40,14 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
         widget.trial.status != kTrialStatusArchived) {
       _setDefaultSessionName();
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final user = await ref.read(currentUserProvider.future);
+      if (mounted) {
+        setState(() {
+          _raterController.text = user?.displayName ?? '';
+        });
+      }
+    });
   }
 
   Future<void> _setDefaultSessionName() async {
@@ -419,6 +427,16 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
       );
       return;
     }
+    if (_raterController.text.trim().isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Rater name is required'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     // Warn if no plots
     final db = ref.read(databaseProvider);
     final plotCount = await (db.select(db.plots)
@@ -486,10 +504,7 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     setState(() => _isCreating = true);
 
     final userId = await ref.read(currentUserIdProvider.future);
-    final currentUser = await ref.read(currentUserProvider.future);
-    final raterName = _raterController.text.trim().isEmpty
-        ? (currentUser?.displayName)
-        : _raterController.text.trim();
+    final raterName = _raterController.text.trim();
 
     final trialRepo = ref.read(trialAssessmentRepositoryProvider);
     final resolvedTrialIds =

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1079,15 +1078,13 @@ Future<void> _showEditRatingSheet(
   Trial trial,
   Plot plot,
 ) async {
-  String? lastRater = '';
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    lastRater = prefs.getString('last_rater_name');
-  } catch (e, st) {
-    debugPrint(
-        'plot_detail: last_rater_name SharedPreferences read failed: $e');
-    debugPrintStack(stackTrace: st);
-  }
+  final sessionRow =
+      await ref.read(sessionRepositoryProvider).getSessionById(rating.sessionId);
+  final currentUser = ref.read(currentUserProvider).valueOrNull;
+  final raterFromSession = sessionRow?.raterName?.trim();
+  final amendedByInitial = (raterFromSession != null && raterFromSession.isNotEmpty)
+      ? raterFromSession
+      : (currentUser?.displayName ?? '');
 
   if (!context.mounted) return;
   final trialAssessments =
@@ -1106,7 +1103,7 @@ Future<void> _showEditRatingSheet(
   final valueController = TextEditingController(
       text: rating.numericValue?.toString() ?? rating.textValue ?? '');
   final reasonController = TextEditingController();
-  final amendedByController = TextEditingController(text: lastRater ?? '');
+  final amendedByController = TextEditingController(text: amendedByInitial);
 
   await showModalBottomSheet(
     context: context,

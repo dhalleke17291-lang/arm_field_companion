@@ -582,6 +582,7 @@ class RatingRepository {
     int? correctedByUserId,
     int? sessionId,
     int? plotPk,
+    String? sessionRaterName,
   }) async {
     return _db.transaction(() async {
       final id = await _db.into(_db.ratingCorrections).insert(
@@ -625,6 +626,7 @@ class RatingRepository {
                 plotPk: Value(rating.plotPk),
                 eventType: 'RATING_CORRECTED',
                 description: 'Correction: $reason',
+                performedBy: Value(sessionRaterName),
                 performedByUserId: Value(correctedByUserId),
               ),
             );

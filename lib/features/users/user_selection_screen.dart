@@ -107,16 +107,17 @@ class UserSelectionScreen extends ConsumerWidget {
     );
   }
 
-  Future<bool> _checkAndBlockOpenSession(
+  /// Returns `true` if the user may proceed with the profile switch, `false` to stay.
+  Future<bool> _warnOpenSessionsOrAllowProceed(
       BuildContext context, WidgetRef ref) async {
     final currentId = await getCurrentUserId();
-    if (currentId == null) return false;
+    if (currentId == null) return true;
 
     final sessionRepo = ref.read(sessionRepositoryProvider);
     final openSessions = await sessionRepo.getOpenSessionsForUser(currentId);
-    if (openSessions.isEmpty) return false;
+    if (openSessions.isEmpty) return true;
 
-    if (!context.mounted) return true;
+    if (!context.mounted) return false;
 
     final trialRepo = ref.read(trialRepositoryProvider);
     final trialNames = <String>[];
@@ -128,28 +129,32 @@ class UserSelectionScreen extends ConsumerWidget {
         ? trialNames.join(', ')
         : 'an active trial';
 
-    if (!context.mounted) return true;
-    await showDialog<void>(
+    if (!context.mounted) return false;
+    final proceed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Open Session In Progress'),
+        title: const Text('Open Sessions Will Remain Open'),
         content: Text(
-          'Close or suspend your open session in $namesText before switching profiles.',
+          'You have open sessions in $namesText. They will stay open and must be closed before export. Switch profiles anyway?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Switch Anyway'),
           ),
         ],
       ),
     );
-    return true;
+    return proceed ?? false;
   }
 
   Future<void> _selectUser(
       BuildContext context, WidgetRef ref, int userId) async {
-    if (await _checkAndBlockOpenSession(context, ref)) return;
+    if (!await _warnOpenSessionsOrAllowProceed(context, ref)) return;
     await setCurrentUserId(userId);
     ref.invalidate(currentUserIdProvider);
     ref.invalidate(currentUserProvider);
@@ -166,7 +171,7 @@ class UserSelectionScreen extends ConsumerWidget {
       MaterialPageRoute(builder: (_) => const AddUserScreen()),
     );
     if (userId != null && context.mounted) {
-      if (await _checkAndBlockOpenSession(context, ref)) return;
+      if (!await _warnOpenSessionsOrAllowProceed(context, ref)) return;
       await setCurrentUserId(userId);
       ref.invalidate(currentUserIdProvider);
       ref.invalidate(currentUserProvider);
