@@ -651,6 +651,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
             iconTheme: const IconThemeData(color: Colors.white),
           ),
           body: SafeArea(
+            top: false,
             child: Column(
               children: [
                 _buildWalkOrderBar(context),

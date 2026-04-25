@@ -420,6 +420,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
         leading: SizedBox(width: 48),
       ),
       body: SafeArea(
+        top: false,
         child: ListView(
           padding: const EdgeInsets.only(top: 4, bottom: 4),
           children: [
