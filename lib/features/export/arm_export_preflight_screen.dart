@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +7,7 @@ import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/diagnostics/diagnostic_finding.dart';
 import '../../core/providers.dart';
+import '../../data/services/shell_storage_service.dart';
 
 import 'domain/arm_shell_metadata_enrichment.dart';
 import 'usecases/arm_export_preflight_usecase.dart';
@@ -79,14 +78,15 @@ class _ArmExportPreflightScreenState
       final armMeta = await ref
           .read(armTrialMetadataRepositoryProvider)
           .getForTrial(widget.trial.id);
-      // Use internally stored shell if available; fall back to file picker.
-      String? shellPath;
-      final internalPath = armMeta?.shellInternalPath;
-      if (internalPath != null &&
-          internalPath.isNotEmpty &&
-          File(internalPath).existsSync()) {
-        shellPath = internalPath;
-      } else {
+      // Resolve via ShellStorageService: the stored `shellInternalPath` is
+      // an absolute path whose iOS sandbox container UUID can rotate between
+      // app sessions, making it unreliable. resolveShellPath rebuilds the
+      // path from the *current* appDocumentsDirectory and checks the file
+      // exists. Picker fallback remains as the escape hatch when the file
+      // is genuinely absent (stored shell deleted, legacy ARM-CSV trial).
+      String? shellPath =
+          await ShellStorageService.resolveShellPath(widget.trial.id);
+      if (shellPath == null) {
         final pick = await FilePicker.pickFiles(
           type: FileType.custom,
           allowedExtensions: const ['xlsx'],

@@ -10,8 +10,38 @@ import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
 import 'export_arm_rating_shell_usecase_test.dart' show writeArmShellFixture;
+
+/// Stubs path_provider so [ShellStorageService.storeShell] can copy the
+/// fixture shell into `{tempPath}/shells/{trialId}.xlsx` during apply.
+/// Mirrors the _FakePathProvider used in export_arm_rating_shell_usecase_test.dart.
+class _FakePathProvider extends PathProviderPlatform {
+  _FakePathProvider(this.path);
+  final String path;
+  @override
+  Future<String?> getTemporaryPath() async => path;
+  @override
+  Future<String?> getApplicationDocumentsPath() async => path;
+  @override
+  Future<String?> getApplicationSupportPath() async => path;
+  @override
+  Future<String?> getLibraryPath() async => path;
+  @override
+  Future<String?> getApplicationCachePath() async => path;
+}
+
+/// Throws from [getApplicationDocumentsPath] to simulate the platform
+/// plugin failing mid-flight. Used to verify that ArmShellLinkUseCase.apply
+/// surfaces the failure as LinkShellResult.failure rather than silently
+/// writing a half-linked trial.
+class _ThrowingPathProvider extends PathProviderPlatform {
+  @override
+  Future<String?> getApplicationDocumentsPath() async {
+    throw Exception('simulated path_provider failure');
+  }
+}
 
 void main() {
   late AppDatabase db;
@@ -21,6 +51,7 @@ void main() {
   setUpAll(() async {
     final dir = await Directory.systemTemp.createTemp('shell_link_test');
     tempPath = dir.path;
+    PathProviderPlatform.instance = _FakePathProvider(tempPath);
   });
 
   setUp(() {
@@ -174,6 +205,96 @@ void main() {
     expect(audits, hasLength(1));
     expect(audits.single.metadata, contains('shellFileName'));
   });
+
+  test(
+    'apply surfaces failure and rolls back when storeShell throws',
+    () async {
+      final trialId = await db.into(db.trials).insert(
+            TrialsCompanion.insert(
+              name: 'Old Trial Name',
+              status: const Value(kTrialStatusDraft),
+            ),
+          );
+      final trtId = await db.into(db.treatments).insert(
+            TreatmentsCompanion.insert(
+              trialId: trialId,
+              code: '1',
+              name: 'T',
+            ),
+          );
+      await db.into(db.plots).insert(
+            PlotsCompanion.insert(
+              trialId: trialId,
+              plotId: '101',
+              rep: const Value(1),
+              treatmentId: Value(trtId),
+              plotSortIndex: const Value(1),
+              armPlotNumber: const Value(101),
+            ),
+          );
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'CONTRO',
+              name: 'Control',
+              category: 'pest',
+            ),
+          );
+      await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+              sortOrder: const Value(0),
+            ),
+          );
+
+      // Shell fixture is written against the real fake provider (directory
+      // access for the fixture file itself). Apply then runs against a
+      // throwing provider so storeShell fails.
+      final shellPath = await writeArmShellFixture(
+        tempPath,
+        plotNumbers: const [101],
+        armColumnIds: const ['001EID001'],
+        seNames: const ['AVEFA'],
+        seDescriptions: const ['Percent weed control'],
+        ratingDates: const ['1-Jul-26'],
+        ratingTypes: const ['CONTRO'],
+        ratingTimings: const ['1-Jul-26'],
+        ratingUnits: const ['%'],
+      );
+
+      final original = PathProviderPlatform.instance;
+      PathProviderPlatform.instance = _ThrowingPathProvider();
+      addTearDown(() {
+        PathProviderPlatform.instance = original;
+      });
+
+      final result = await uc.apply(trialId, shellPath);
+      expect(result.success, isFalse);
+      expect(
+        result.errorMessage,
+        contains('Unable to link rating sheet'),
+      );
+      expect(
+        result.errorMessage,
+        contains('simulated path_provider failure'),
+      );
+
+      // Transaction should have rolled back: trial name unchanged, no
+      // armTrialMetadata row written, no audit event.
+      final trial =
+          await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+              .getSingle();
+      expect(trial.name, 'Old Trial Name');
+      final arm = await (db.select(db.armTrialMetadata)
+            ..where((m) => m.trialId.equals(trialId)))
+          .getSingleOrNull();
+      expect(arm, isNull);
+      final audits = await (db.select(db.auditEvents)
+            ..where((e) => e.eventType.equals('arm_shell_linked')))
+          .get();
+      expect(audits, isEmpty);
+    },
+  );
 
   test('second apply is idempotent for assessment alignment', () async {
     final trialId = await db.into(db.trials).insert(

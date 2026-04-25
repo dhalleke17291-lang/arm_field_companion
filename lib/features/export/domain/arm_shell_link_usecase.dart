@@ -92,7 +92,8 @@ class ArmShellLinkUseCase {
     var trialFieldWriteCount = 0;
     var assessmentWriteCount = 0;
 
-    await _db.transaction(() async {
+    try {
+      await _db.transaction(() async {
       for (final ch in preview.trialFieldChanges) {
         switch (ch.fieldName) {
           case 'name':
@@ -165,25 +166,24 @@ class ArmShellLinkUseCase {
         if (wroteAam) assessmentWriteCount++;
       }
 
-      // Store shell internally so export doesn't need a file picker.
-      String? internalPath;
-      try {
-        internalPath = await ShellStorageService.storeShell(
-          sourcePath: shellPath,
-          trialId: trialId,
-        );
-      } catch (_) {
-        // Storage unavailable (e.g. test environment) — continue without.
-      }
+      // Store shell internally so export can find it without a picker.
+      // Any failure here (missing path_provider, disk full, unwritable
+      // destination) propagates out of the transaction so Drift rolls back
+      // the trial-field and assessment-field writes above, and the method
+      // boundary catch turns it into LinkShellResult.failure. Silent
+      // success with a null shellInternalPath is the worst outcome (looks
+      // linked, export can't find the file) and is no longer possible.
+      final internalPath = await ShellStorageService.storeShell(
+        sourcePath: shellPath,
+        trialId: trialId,
+      );
 
       await _db.into(_db.armTrialMetadata).insertOnConflictUpdate(
             ArmTrialMetadataCompanion(
               trialId: Value(trialId),
               armLinkedShellPath: Value(shellPath),
               armLinkedShellAt: Value(DateTime.now().toUtc()),
-              shellInternalPath: internalPath != null
-                  ? Value(internalPath)
-                  : const Value.absent(),
+              shellInternalPath: Value(internalPath),
               shellCommentsSheet: Value(preview.shellCommentsSheetText),
             ),
           );
@@ -218,7 +218,13 @@ class ArmShellLinkUseCase {
               metadata: Value(metadata),
             ),
           );
-    });
+      });
+    } catch (e) {
+      return LinkShellResult.failure(
+        'Unable to link rating sheet: $e. '
+        'The trial was not modified.',
+      );
+    }
 
     final warnMsgs = preview.issues
         .where((i) => i.severity == ShellLinkIssueSeverity.warn)
