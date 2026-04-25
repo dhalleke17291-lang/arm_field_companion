@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/connectivity/cloud_backup_provider.dart';
+import '../../core/connectivity/google_drive_backup_provider.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../backup/backup_audit_preferences.dart';
@@ -254,7 +257,12 @@ Future<void> runRestoreFlow(BuildContext context, WidgetRef ref) async {
     );
     return;
   }
+  await _runRestoreFromPath(context, ref, path);
+}
 
+// Shared restore logic used by both local file picker and cloud restore.
+Future<void> _runRestoreFromPath(
+    BuildContext context, WidgetRef ref, String path) async {
   // Resolve passphrase: try cached first, fall back to manual entry with
   // a clear helper message when the cache fails to decrypt.
   final store = BackupPassphraseStore();
@@ -451,4 +459,314 @@ Future<void> runRestoreFlow(BuildContext context, WidgetRef ref) async {
       );
     }
   }
+}
+
+Future<void> runCloudBackupFlow(BuildContext context, WidgetRef ref) async {
+  final provider = GoogleDriveBackupProvider.instance;
+
+  if (!await provider.isAuthenticated) {
+    final ok = await provider.authenticate();
+    if (!ok) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-in cancelled.')),
+        );
+      }
+      return;
+    }
+  }
+
+  if (!context.mounted) return;
+
+  final store = BackupPassphraseStore();
+  String? cached;
+  try {
+    cached = await store.retrieve();
+  } catch (_) {}
+
+  String passphrase;
+  bool saveChoice = false;
+
+  if (cached != null && cached.isNotEmpty) {
+    passphrase = cached;
+  } else {
+    if (!context.mounted) return;
+    final hasOptedIn = await store.hasOptedIn();
+    if (!context.mounted) return;
+    final result = await showBackupPasswordDialog(
+      context,
+      isBackup: true,
+      showSaveCheckbox: !hasOptedIn,
+    );
+    if (result == null || !context.mounted) return;
+    passphrase = result.passphrase;
+    saveChoice = result.savePassphrase;
+  }
+
+  if (!context.mounted) return;
+
+  final status = ValueNotifier<String>('Preparing backup...');
+  final nav = Navigator.of(context, rootNavigator: true);
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => ValueListenableBuilder<String>(
+      valueListenable: status,
+      builder: (ctx, message, __) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          backgroundColor: AppDesignTokens.cardSurface,
+          contentPadding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 36,
+                height: 36,
+                child: CircularProgressIndicator(
+                  color: AppDesignTokens.primary,
+                  strokeWidth: 3,
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        color: AppDesignTokens.primaryText,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Do not close the app',
+                      style: TextStyle(
+                        color: AppDesignTokens.secondaryText,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+  await Future<void>.delayed(const Duration(milliseconds: 50));
+
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final clearAudit =
+        BackupAuditPreferences(prefs).clearAuditLogAfterSuccessfulBackup;
+    final file = await ref.read(backupServiceProvider).createBackup(
+          passphrase,
+          onProgress: (s) => status.value = s,
+          clearAuditLogOnDeviceAfterSuccess: clearAudit,
+        );
+
+    status.value = 'Uploading to Google Drive...';
+    await provider.uploadBackup(file);
+
+    if (context.mounted) nav.pop();
+    if (saveChoice) await store.save(passphrase);
+    await BackupReminderStore(prefs).recordBackupCompleted();
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            clearAudit
+                ? 'Backed up to Google Drive. On-device audit log cleared.'
+                : 'Backed up to Google Drive.',
+          ),
+        ),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) nav.pop();
+    if (context.mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppDesignTokens.cardSurface,
+          title: const Text(
+            'Cloud Backup Failed',
+            style: TextStyle(color: AppDesignTokens.primaryText),
+          ),
+          content: Text(
+            e.toString(),
+            style: const TextStyle(color: AppDesignTokens.secondaryText),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(
+                'OK',
+                style: TextStyle(color: AppDesignTokens.primary),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  } finally {
+    status.dispose();
+  }
+}
+
+Future<void> runCloudRestoreFlow(BuildContext context, WidgetRef ref) async {
+  final provider = GoogleDriveBackupProvider.instance;
+
+  if (!await provider.isAuthenticated) {
+    final ok = await provider.authenticate();
+    if (!ok) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google sign-in cancelled.')),
+        );
+      }
+      return;
+    }
+  }
+
+  if (!context.mounted) return;
+
+  final nav = Navigator.of(context, rootNavigator: true);
+  await showBackupProgressDialog(context, 'Fetching backups from Drive...');
+
+  List<CloudBackupFile> backups;
+  try {
+    backups = await provider.listBackups();
+    if (context.mounted) nav.pop();
+  } catch (e) {
+    if (context.mounted) nav.pop();
+    if (context.mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppDesignTokens.cardSurface,
+          title: const Text(
+            'Could Not List Backups',
+            style: TextStyle(color: AppDesignTokens.primaryText),
+          ),
+          content: Text(
+            e.toString(),
+            style: const TextStyle(color: AppDesignTokens.secondaryText),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text(
+                'OK',
+                style: TextStyle(color: AppDesignTokens.primary),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return;
+  }
+
+  if (!context.mounted) return;
+
+  if (backups.isEmpty) {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppDesignTokens.cardSurface,
+        title: const Text(
+          'No Backups Found',
+          style: TextStyle(color: AppDesignTokens.primaryText),
+        ),
+        content: const Text(
+          'No Agnexis backup files found in your Google Drive.',
+          style: TextStyle(color: AppDesignTokens.secondaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              'OK',
+              style: TextStyle(color: AppDesignTokens.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
+  if (!context.mounted) return;
+
+  final fmt = DateFormat.yMMMd().add_jm();
+  final selected = await showDialog<CloudBackupFile>(
+    context: context,
+    builder: (ctx) => SimpleDialog(
+      backgroundColor: AppDesignTokens.cardSurface,
+      title: const Text(
+        'Restore from Google Drive',
+        style: TextStyle(color: AppDesignTokens.primaryText),
+      ),
+      children: backups
+          .map(
+            (b) => SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, b),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      b.name,
+                      style: const TextStyle(
+                        color: AppDesignTokens.primaryText,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      '${fmt.format(b.modifiedAt.toLocal())} · '
+                      '${(b.sizeBytes / 1024).toStringAsFixed(1)} KB',
+                      style: const TextStyle(
+                        color: AppDesignTokens.secondaryText,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    ),
+  );
+
+  if (selected == null || !context.mounted) return;
+
+  await showBackupProgressDialog(context, 'Downloading backup...');
+  String localPath;
+  try {
+    final tempDir = await getTemporaryDirectory();
+    final localFile =
+        await provider.downloadBackup(selected.remoteId, '${tempDir.path}/${selected.name}');
+    localPath = localFile.path;
+    if (context.mounted) nav.pop();
+  } catch (e) {
+    if (context.mounted) nav.pop();
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Download failed: $e')),
+      );
+    }
+    return;
+  }
+
+  if (!context.mounted) return;
+  await _runRestoreFromPath(context, ref, localPath);
 }

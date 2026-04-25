@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/connectivity/google_drive_backup_provider.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
@@ -38,12 +39,15 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
   BackupAuditPreferences? _auditPrefs;
   final _passphraseStore = BackupPassphraseStore();
   bool _hasCachedPassphrase = false;
+  bool _isDriveConnected = false;
+  String? _driveEmail;
 
   @override
   void initState() {
     super.initState();
     _loadStores();
     _refreshPassphraseState();
+    _refreshDriveState();
   }
 
   Future<void> _loadStores() async {
@@ -63,6 +67,81 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
   Future<void> _refreshAfterBackup() async {
     await _loadStores();
     await _refreshPassphraseState();
+  }
+
+  Future<void> _refreshDriveState() async {
+    final provider = GoogleDriveBackupProvider.instance;
+    final connected = await provider.isAuthenticated;
+    if (!connected) {
+      await provider.signInSilently();
+    }
+    final email = provider.connectedEmail;
+    if (mounted) {
+      setState(() {
+        _isDriveConnected = provider.connectedEmail != null;
+        _driveEmail = email;
+      });
+    }
+  }
+
+  Future<void> _onDriveTap() async {
+    final provider = GoogleDriveBackupProvider.instance;
+    if (!_isDriveConnected) {
+      final ok = await provider.authenticate();
+      if (!mounted) return;
+      if (ok) await _refreshDriveState();
+      return;
+    }
+
+    if (!mounted) return;
+    final action = await showModalBottomSheet<_DriveAction>(
+      context: context,
+      backgroundColor: AppDesignTokens.cardSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.cloud_upload_outlined,
+                  color: AppDesignTokens.primary),
+              title: const Text('Upload backup to Drive',
+                  style: TextStyle(color: AppDesignTokens.primaryText)),
+              onTap: () => Navigator.pop(ctx, _DriveAction.upload),
+            ),
+            ListTile(
+              leading: const Icon(Icons.cloud_download_outlined,
+                  color: AppDesignTokens.primary),
+              title: const Text('Restore from Drive',
+                  style: TextStyle(color: AppDesignTokens.primaryText)),
+              onTap: () => Navigator.pop(ctx, _DriveAction.restore),
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout,
+                  color: AppDesignTokens.secondaryText),
+              title: const Text('Disconnect Google Drive',
+                  style: TextStyle(color: AppDesignTokens.secondaryText)),
+              onTap: () => Navigator.pop(ctx, _DriveAction.signOut),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted || action == null) return;
+    switch (action) {
+      case _DriveAction.upload:
+        await runCloudBackupFlow(context, ref);
+        await _refreshDriveState();
+      case _DriveAction.restore:
+        await runCloudRestoreFlow(context, ref);
+      case _DriveAction.signOut:
+        await provider.signOut();
+        await _refreshDriveState();
+    }
   }
 
   Future<void> _forgetPassphrase() async {
@@ -390,6 +469,21 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                     ),
                     onTap: () => runRestoreFlow(context, ref),
                   ),
+                  const Divider(height: 1, indent: 70),
+                  _MoreRow(
+                    icon: Icons.cloud_outlined,
+                    title: 'Google Drive',
+                    subtitle: Text(
+                      _isDriveConnected
+                          ? 'Connected${_driveEmail != null ? " as $_driveEmail" : ""}'
+                          : 'Back up to Google Drive',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                    onTap: () => _onDriveTap(),
+                  ),
                   if (_auditPrefs != null || _hasCachedPassphrase)
                     const Divider(height: 1, indent: 70),
                   if (_auditPrefs case final audit?) ...[
@@ -543,3 +637,5 @@ class _MoreRow extends StatelessWidget {
     );
   }
 }
+
+enum _DriveAction { upload, restore, signOut }
