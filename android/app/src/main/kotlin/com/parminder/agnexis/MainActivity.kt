@@ -1,4 +1,4 @@
-package com.gdmsolutions.arm_field_companion
+package com.parminder.agnexis
 
 import io.flutter.embedding.android.FlutterActivity
 
