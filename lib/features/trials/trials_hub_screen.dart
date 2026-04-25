@@ -231,32 +231,41 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
               const SizedBox(height: 12),
               GestureDetector(
                 onTap: _openProfileSwitcher,
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.person_outline,
-                      size: 16,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        displayName,
-                        style: AppDesignTokens.bodyCrispStyle(
-                          fontSize: 15,
-                          color: Colors.white.withValues(alpha: 0.95),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.person_outline,
+                        size: 15,
+                        color: Colors.white,
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 16,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 180),
+                        child: Text(
+                          displayName,
+                          style: AppDesignTokens.bodyCrispStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 15,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
