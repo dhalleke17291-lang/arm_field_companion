@@ -229,9 +229,11 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                 ],
               ),
               const SizedBox(height: 12),
-              GestureDetector(
-                onTap: _openProfileSwitcher,
-                child: Container(
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: _openProfileSwitcher,
+                  child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
@@ -267,6 +269,7 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                     ],
                   ),
                 ),
+              ),
               ),
             ],
           ),
