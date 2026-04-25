@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/design/app_design_tokens.dart';
+import '../../core/providers.dart';
 import '../shell/shell_providers.dart';
+import '../users/user_selection_screen.dart';
 import 'trial_list_screen.dart';
 import 'trials_hub_providers.dart';
 import 'trials_portfolio_screen.dart';
@@ -171,6 +173,9 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
   }
 
   Widget _buildHeader() {
+    final userAsync = ref.watch(currentUserProvider);
+    final displayName = userAsync.valueOrNull?.displayName ?? 'Select Profile';
+
     return Container(
       width: double.infinity,
       color: _HubPalette.accentGreen,
@@ -231,17 +236,52 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
-                _timeGreeting(),
-                style: AppDesignTokens.bodyCrispStyle(
-                  fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.88),
-                  fontWeight: FontWeight.w400,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _timeGreeting(),
+                    style: AppDesignTokens.bodyCrispStyle(
+                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.88),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _openProfileSwitcher,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          displayName,
+                          style: AppDesignTokens.bodyCrispStyle(
+                            fontSize: 13,
+                            color: Colors.white.withValues(alpha: 0.75),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.keyboard_arrow_down,
+                          size: 14,
+                          color: Colors.white.withValues(alpha: 0.75),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _openProfileSwitcher() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const UserSelectionScreen(popOnSelect: true),
       ),
     );
   }

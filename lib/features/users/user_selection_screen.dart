@@ -13,7 +13,9 @@ import 'pin_entry_screen.dart';
 
 /// Shown when no current_user_id is set. User taps to select or adds a new user.
 class UserSelectionScreen extends ConsumerWidget {
-  const UserSelectionScreen({super.key});
+  const UserSelectionScreen({super.key, this.popOnSelect = false});
+
+  final bool popOnSelect;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -211,12 +213,16 @@ class UserSelectionScreen extends ConsumerWidget {
     ref.invalidate(currentUserIdProvider);
     ref.invalidate(currentUserProvider);
     if (!context.mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const MainShellScreen(),
-      ),
-    );
+    if (popOnSelect) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const MainShellScreen(),
+        ),
+      );
+    }
   }
 
   Future<void> _openAddUser(BuildContext context, WidgetRef ref) async {
@@ -230,10 +236,14 @@ class UserSelectionScreen extends ConsumerWidget {
       ref.invalidate(currentUserIdProvider);
       ref.invalidate(currentUserProvider);
       if (!context.mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainShellScreen()),
-      );
+      if (popOnSelect) {
+        Navigator.pop(context);
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainShellScreen()),
+        );
+      }
     }
   }
 }
