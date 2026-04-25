@@ -98,8 +98,9 @@ class FieldNotesListScreen extends ConsumerWidget {
                 onDismissed: (_) {
                   unawaited(() async {
                     final byline = await _currentByline(ref);
+                    final userId = await _currentUserId(ref);
                     if (!ctx.mounted) return;
-                    await _deleteNoteAndShowUndo(ctx, ref, n, byline);
+                    await _deleteNoteAndShowUndo(ctx, ref, n, byline, userId);
                   }());
                 },
                 child: ListTile(
@@ -195,8 +196,9 @@ Future<void> _deleteNoteAfterConfirm(
   final ok = await _showDeleteNoteDialog(context);
   if (ok != true || !context.mounted) return;
   final byline = await _currentByline(ref);
+  final userId = await _currentUserId(ref);
   if (!context.mounted) return;
-  await _deleteNoteAndShowUndo(context, ref, note, byline);
+  await _deleteNoteAndShowUndo(context, ref, note, byline, userId);
 }
 
 Future<bool?> _showDeleteNoteDialog(BuildContext context) {
@@ -226,13 +228,19 @@ Future<String> _currentByline(WidgetRef ref) async {
   return user?.displayName ?? 'Unknown';
 }
 
+Future<int?> _currentUserId(WidgetRef ref) async =>
+    (await ref.read(currentUserProvider.future))?.id;
+
 Future<void> _deleteNoteAndShowUndo(
   BuildContext context,
   WidgetRef ref,
   Note note,
   String byline,
+  int? userId,
 ) async {
-  await ref.read(notesRepositoryProvider).deleteNote(note.id, byline);
+  await ref
+      .read(notesRepositoryProvider)
+      .deleteNote(note.id, byline, userId: userId);
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
@@ -240,7 +248,9 @@ Future<void> _deleteNoteAndShowUndo(
       action: SnackBarAction(
         label: 'Undo',
         onPressed: () {
-          ref.read(notesRepositoryProvider).restoreNote(note.id, byline);
+          ref
+              .read(notesRepositoryProvider)
+              .restoreNote(note.id, byline, userId: userId);
         },
       ),
     ),

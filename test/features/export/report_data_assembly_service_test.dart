@@ -623,6 +623,7 @@ class MockAssignmentRepository implements AssignmentRepository {
     required Map<int, int?> plotPkToTreatmentId,
     String? assignmentSource,
     DateTime? assignedAt,
+    int? assignedBy,
   }) async {}
 }
 

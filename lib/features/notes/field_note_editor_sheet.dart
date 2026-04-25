@@ -18,6 +18,7 @@ Future<void> showFieldNoteEditorSheet(
   final sessions = await ref.read(sessionsForTrialProvider(trial.id).future);
   final user = await ref.read(currentUserProvider.future);
   final byline = user?.displayName ?? 'Unknown';
+  final userId = user?.id;
 
   if (!context.mounted) return;
 
@@ -29,6 +30,7 @@ Future<void> showFieldNoteEditorSheet(
       plots: plots,
       sessions: sessions,
       byline: byline,
+      userId: userId,
       existing: existing,
       initialPlotPk: initialPlotPk,
       initialSessionId: initialSessionId,
@@ -49,6 +51,7 @@ class _FieldNoteEditorSheet extends ConsumerStatefulWidget {
     required this.plots,
     required this.sessions,
     required this.byline,
+    this.userId,
     this.existing,
     this.initialPlotPk,
     this.initialSessionId,
@@ -58,6 +61,7 @@ class _FieldNoteEditorSheet extends ConsumerStatefulWidget {
   final List<Plot> plots;
   final List<Session> sessions;
   final String byline;
+  final int? userId;
   final Note? existing;
   final int? initialPlotPk;
   final int? initialSessionId;
@@ -99,12 +103,14 @@ class _FieldNoteEditorSheetState extends ConsumerState<_FieldNoteEditorSheet> {
           sessionId: _sessionId,
           content: text,
           createdBy: widget.byline,
+          userId: widget.userId,
         );
       } else {
         await repo.updateNote(
           widget.existing!.id,
           text,
           widget.byline,
+          userId: widget.userId,
         );
       }
       if (!sheetContext.mounted) return;

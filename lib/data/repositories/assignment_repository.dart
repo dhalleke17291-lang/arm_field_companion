@@ -166,6 +166,7 @@ class AssignmentRepository {
     required Map<int, int?> plotPkToTreatmentId,
     String? assignmentSource,
     DateTime? assignedAt,
+    int? assignedBy,
   }) async {
     await _assertAssignmentsEditable(trialId);
     final at = assignedAt ?? DateTime.now().toUtc();
@@ -176,6 +177,7 @@ class AssignmentRepository {
         treatmentId: entry.value,
         assignmentSource: assignmentSource,
         assignedAt: at,
+        assignedBy: assignedBy,
       );
     }
 
@@ -187,6 +189,7 @@ class AssignmentRepository {
             description:
                 'Bulk assignment: ${plotPkToTreatmentId.length} plots updated',
             performedBy: Value(assignmentSource),
+            performedByUserId: Value(assignedBy),
           ),
         );
   }

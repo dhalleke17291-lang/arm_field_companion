@@ -25,6 +25,7 @@ class NotesRepository {
     int? sessionId,
     required String content,
     required String createdBy,
+    int? userId,
   }) {
     final trimmed = content.trim();
     if (trimmed.isEmpty) {
@@ -53,6 +54,7 @@ class NotesRepository {
               eventType: 'NOTE_CREATED',
               description: _auditDescription(trimmed),
               performedBy: Value(createdBy),
+              performedByUserId: Value(userId),
               metadata: Value(jsonEncode({'note_id': id})),
             ),
           );
@@ -94,7 +96,8 @@ class NotesRepository {
         .get();
   }
 
-  Future<void> updateNote(int id, String content, String editedBy) async {
+  Future<void> updateNote(int id, String content, String editedBy,
+      {int? userId}) async {
     final trimmed = content.trim();
     if (trimmed.isEmpty) {
       throw ArgumentError('content must not be empty');
@@ -125,6 +128,7 @@ class NotesRepository {
               eventType: 'NOTE_UPDATED',
               description: _auditDescription(trimmed),
               performedBy: Value(editedBy),
+              performedByUserId: Value(userId),
               metadata: Value(jsonEncode({
                 'note_id': id,
                 'old_content': existing.content,
@@ -134,7 +138,7 @@ class NotesRepository {
     });
   }
 
-  Future<void> deleteNote(int id, String deletedBy) async {
+  Future<void> deleteNote(int id, String deletedBy, {int? userId}) async {
     final existing = await (_db.select(_db.notes)
           ..where((n) => n.id.equals(id)))
         .getSingleOrNull();
@@ -157,6 +161,7 @@ class NotesRepository {
               eventType: 'NOTE_DELETED',
               description: 'Note $id deleted',
               performedBy: Value(deletedBy),
+              performedByUserId: Value(userId),
               metadata: Value(jsonEncode({
                 'note_id': id,
                 'content_preview':
@@ -168,7 +173,7 @@ class NotesRepository {
   }
 
   /// Clears soft-delete so the note appears again in trial/plot/session lists and export.
-  Future<void> restoreNote(int id, String restoredBy) async {
+  Future<void> restoreNote(int id, String restoredBy, {int? userId}) async {
     final existing = await (_db.select(_db.notes)
           ..where((n) => n.id.equals(id)))
         .getSingleOrNull();
@@ -190,6 +195,7 @@ class NotesRepository {
               eventType: 'NOTE_RESTORED',
               description: 'Note $id restored',
               performedBy: Value(restoredBy),
+              performedByUserId: Value(userId),
               metadata: Value(jsonEncode({'note_id': id})),
             ),
           );

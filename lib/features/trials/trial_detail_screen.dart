@@ -3799,7 +3799,7 @@ class SessionsView extends ConsumerWidget {
       final started =
           await ref.read(sessionRepositoryProvider).startPlannedSession(
                 session.id,
-                raterName: user?.displayName,
+                raterName: session.raterName ?? user?.displayName,
                 startedByUserId: userId,
                 cropStageBbch: cropStageBbch,
               );

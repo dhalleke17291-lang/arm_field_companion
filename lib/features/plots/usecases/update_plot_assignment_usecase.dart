@@ -87,6 +87,7 @@ class UpdatePlotAssignmentUseCase {
   Future<UpdateAssignmentResult> updateBulk({
     required Trial trial,
     required Map<int, int?> plotPkToTreatmentId,
+    int? userId,
   }) async {
     final hasSessionData =
         await _sessionRepository.watchTrialHasSessionData(trial.id).first;
@@ -137,6 +138,7 @@ class UpdatePlotAssignmentUseCase {
         plotPkToTreatmentId: plotPkToTreatmentId,
         assignmentSource: 'manual',
         assignedAt: DateTime.now().toUtc(),
+        assignedBy: userId,
       );
       return UpdateAssignmentResult.success();
     } on RatingIntegrityException catch (e) {
