@@ -123,9 +123,6 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                       icon: Icons.science_outlined,
                       accentColor: _HubPalette.accentGreen,
                       topBadgeLeft: 'CUSTOM',
-                      topBadgeRight: stats.customCropCount == 1
-                          ? '1 Crop'
-                          : '${stats.customCropCount} Crops',
                       footerStats: [
                         _trialTotalLabel(stats.customTrialCount),
                         '${stats.customActiveCount} Active',
@@ -143,9 +140,6 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                       icon: Icons.assignment_outlined,
                       accentColor: _HubPalette.accentAmber,
                       topBadgeLeft: 'PROTOCOL',
-                      topBadgeRight: stats.protocolTrialCount == 1
-                          ? '1 Protocol'
-                          : '${stats.protocolTrialCount} Protocols',
                       footerStats: [
                         _trialTotalLabel(stats.protocolTrialCount),
                         '${stats.protocolActiveCount} Active',
@@ -371,7 +365,6 @@ class _AgTrialCard extends StatefulWidget {
     required this.icon,
     required this.accentColor,
     required this.topBadgeLeft,
-    required this.topBadgeRight,
     required this.footerStats,
     required this.footerDotColor,
     required this.onTap,
@@ -383,7 +376,6 @@ class _AgTrialCard extends StatefulWidget {
   final IconData icon;
   final Color accentColor;
   final String topBadgeLeft;
-  final String topBadgeRight;
   final List<String> footerStats;
   final Color footerDotColor;
   final VoidCallback onTap;
@@ -460,28 +452,6 @@ class _AgTrialCardState extends State<_AgTrialCard>
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
                             letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: 16,
-                      right: 16,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          widget.topBadgeRight,
-                          style: AppDesignTokens.bodyCrispStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withValues(alpha: 0.95),
                           ),
                         ),
                       ),

@@ -166,26 +166,22 @@ class UserSelectionScreen extends ConsumerWidget {
         : 'an active trial';
 
     if (!context.mounted) return false;
-    final proceed = await showDialog<bool>(
+    await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Open Sessions Will Remain Open'),
+        title: const Text('Open Session In Progress'),
         content: Text(
-          'You have open sessions in $namesText. They will stay open and must be closed before export. Switch profiles anyway?',
+          'Close your open session in $namesText before switching profiles.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Switch Anyway'),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
-    return proceed ?? false;
+    return false;
   }
 
   Future<void> _selectUser(
