@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../domain/models/trial_insight.dart';
-import '../../../core/plot_analysis_eligibility.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/plot_display.dart';
 import '../../../core/providers.dart';
@@ -1365,16 +1364,17 @@ class PlotsTab extends ConsumerStatefulWidget {
 }
 
 class _PlotsTabState extends ConsumerState<PlotsTab> {
-  Widget _buildCompactRatedPlotsCard({
-    required int totalPlots,
+  /// Strip above List/Layout: data counts (left) and treatment **assignment** progress (right).
+  Widget _buildCompactPlotStatsStrip({
     required int dataPlotCount,
     required int replicateCount,
     required int treatmentCount,
-    required int ratedPlotsCount,
-    required int analyzablePlotCount,
-    required int excludedFromAnalysisCount,
+    required int assignedDataPlotCount,
   }) {
-    final allAssigned = excludedFromAnalysisCount == 0;
+    final allAssigned =
+        dataPlotCount > 0 && assignedDataPlotCount == dataPlotCount;
+    final noneAssigned =
+        dataPlotCount > 0 && assignedDataPlotCount == 0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
@@ -1390,41 +1390,59 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
               _StatChip(label: '$replicateCount', sub: 'reps'),
             ],
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                allAssigned ? Icons.check_circle : Icons.warning,
-                size: 14,
-                color: allAssigned
-                    ? AppDesignTokens.successFg
-                    : AppDesignTokens.warningFg,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '$ratedPlotsCount/$analyzablePlotCount',
-                style: AppDesignTokens.bodyCrispStyle(
-                  fontSize: 12,
-                  color: AppDesignTokens.primary,
+          Semantics(
+            label: dataPlotCount == 0
+                ? 'No data plots'
+                : allAssigned
+                    ? 'All $dataPlotCount data plots have a treatment assigned'
+                    : '$assignedDataPlotCount of $dataPlotCount data plots have a treatment assigned',
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  allAssigned
+                      ? Icons.check_circle
+                      : noneAssigned
+                          ? Icons.remove_circle_outline
+                          : Icons.warning_amber_rounded,
+                  size: 14,
+                  color: allAssigned
+                      ? AppDesignTokens.successFg
+                      : AppDesignTokens.warningFg,
                 ),
-              ),
-              const SizedBox(width: 6),
-              SizedBox(
-                width: 40,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(
-                    value: analyzablePlotCount > 0
-                        ? ratedPlotsCount / analyzablePlotCount
-                        : 0,
-                    backgroundColor: AppDesignTokens.borderCrisp,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppDesignTokens.primary),
-                    minHeight: 4,
+                const SizedBox(width: 4),
+                Text(
+                  dataPlotCount == 0
+                      ? '—'
+                      : '$assignedDataPlotCount/$dataPlotCount',
+                  style: AppDesignTokens.bodyCrispStyle(
+                    fontSize: 12,
+                    color: allAssigned
+                        ? AppDesignTokens.successFg
+                        : AppDesignTokens.primary,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 40,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: dataPlotCount > 0
+                          ? assignedDataPlotCount / dataPlotCount
+                          : 0,
+                      backgroundColor: AppDesignTokens.borderCrisp,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        allAssigned
+                            ? AppDesignTokens.successFg
+                            : AppDesignTokens.primary,
+                      ),
+                      minHeight: 4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1436,8 +1454,6 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     final trial = widget.trial;
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final treatmentsAsync = ref.watch(treatmentsForTrialProvider(trial.id));
-    final ratedPlotsCount =
-        ref.watch(ratedPlotsCountForTrialProvider(trial.id)).valueOrNull ?? 0;
     return plotsAsync.when(
       loading: () => const AppLoadingView(),
       error: (e, st) => AppErrorView(
@@ -1448,10 +1464,18 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
       data: (plots) {
         final treatments = treatmentsAsync.value ?? [];
         final treatmentCount = treatments.length;
-        final totalPlots = plots.length;
         final dataPlotCount = plots.where((p) => !p.isGuardRow).length;
-        final analyzablePlotCount = plots.where(isAnalyzablePlot).length;
-        final excludedFromAnalysisCount = dataPlotCount - analyzablePlotCount;
+        final assignmentsList =
+            ref.watch(assignmentsForTrialProvider(trial.id)).value ?? [];
+        final assignmentByPlotId = {
+          for (final a in assignmentsList) a.plotId: a,
+        };
+        final dataPlots = plots.where((p) => !p.isGuardRow);
+        final assignedDataPlotCount = dataPlots
+            .where((p) =>
+                (assignmentByPlotId[p.id]?.treatmentId ?? p.treatmentId) !=
+                null)
+            .length;
         var replicateCount = 0;
         if (plots.isNotEmpty) {
           final repNumbers = <int>{};
@@ -1464,19 +1488,16 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
           }
           replicateCount = repNumbers.length;
         }
-        final ratedCard = _buildCompactRatedPlotsCard(
-          totalPlots: totalPlots,
+        final plotStatsStrip = _buildCompactPlotStatsStrip(
           dataPlotCount: dataPlotCount,
           replicateCount: replicateCount,
           treatmentCount: treatmentCount,
-          ratedPlotsCount: ratedPlotsCount,
-          analyzablePlotCount: analyzablePlotCount,
-          excludedFromAnalysisCount: excludedFromAnalysisCount,
+          assignedDataPlotCount: assignedDataPlotCount,
         );
         final surface = _TrialPlotsWorkingSurface(
           trial: trial,
           compactSurroundings: true,
-          statsStrip: ratedCard,
+          statsStrip: plotStatsStrip,
           onTreatmentsShortcut: widget.onSelectStackIndex == null
               ? null
               : () => widget.onSelectStackIndex!(kTrialTreatmentsStackIndex),
