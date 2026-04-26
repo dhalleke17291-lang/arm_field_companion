@@ -100,6 +100,7 @@ class WorkspaceConfig {
 
   bool get isStandalone => type == WorkspaceType.standalone;
   bool get isProtocol => !isStandalone;
+  bool get isGlp => type == WorkspaceType.glp;
 
   TrialMode get mode => type.trialMode;
   StudyType get studyType => type.studyType;

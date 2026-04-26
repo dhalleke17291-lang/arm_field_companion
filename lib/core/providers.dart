@@ -1359,6 +1359,11 @@ final exportTrialPdfReportUseCaseProvider =
     pdfBuilder: ref.watch(reportPdfBuilderServiceProvider),
     armImportPersistenceRepository:
         ref.watch(armImportPersistenceRepositoryProvider),
+    publishExportDiagnostics: (trialId, findings, attemptLabel) {
+      ref
+          .read(trialExportDiagnosticsMapProvider.notifier)
+          .setTrialSnapshot(trialId, findings, attemptLabel);
+    },
   );
 });
 
@@ -1391,6 +1396,9 @@ final exportTrialReportUseCaseProvider =
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
     ratingRepository: ref.watch(ratingRepositoryProvider),
     notesRepository: ref.watch(notesRepositoryProvider),
+    trialAssessmentRepository: ref.watch(trialAssessmentRepositoryProvider),
+    assessmentDefinitionRepository:
+        ref.watch(assessmentDefinitionRepositoryProvider),
   );
 });
 
@@ -2003,6 +2011,39 @@ final trialInsightsProvider = FutureProvider.autoDispose
           trialId: trialId,
           treatments: treatments,
           assessmentNames: assessmentNames);
+});
+
+// ---------------------------------------------------------------------------
+// Trial Data screen providers
+// ---------------------------------------------------------------------------
+
+/// Crop description for a trial. Null when not yet recorded.
+final cropDescriptionForTrialProvider =
+    FutureProvider.autoDispose.family<CropDescription?, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.cropDescriptions)
+        ..where((c) => c.trialId.equals(trialId)))
+      .getSingleOrNull();
+});
+
+/// All current, non-deleted rating records for a trial (across all sessions).
+final allSessionRatingsForTrialProvider =
+    FutureProvider.autoDispose.family<List<RatingRecord>, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.ratingRecords)
+        ..where((r) =>
+            r.trialId.equals(trialId) &
+            r.isCurrent.equals(true) &
+            r.isDeleted.equals(false)))
+      .get();
+});
+
+/// All weather snapshots for a trial, ordered by recordedAt ascending.
+final weatherSnapshotsForTrialProvider =
+    FutureProvider.autoDispose.family<List<WeatherSnapshot>, int>((ref, trialId) {
+  return ref
+      .watch(weatherSnapshotRepositoryProvider)
+      .getWeatherSnapshotsForTrial(trialId);
 });
 
 String _cleanAssessmentName(String raw, int sortOrder) {

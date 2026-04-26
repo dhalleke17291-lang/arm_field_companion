@@ -888,6 +888,15 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         }
       }
     }
+    // Include unlinked assessments so downstream fallbacks fire only for
+    // assessments absent from the data set entirely.
+    final sessionAssessments = assessmentsAsync.valueOrNull ?? <Assessment>[];
+    for (final a in sessionAssessments) {
+      if (!assessmentDisplayNames.containsKey(a.id)) {
+        assessmentDisplayNames[a.id] =
+            AssessmentDisplayHelper.legacyAssessmentDisplayName(a.name);
+      }
+    }
 
     // DAT/DAS timing for header subtitle.
     final timing = ref

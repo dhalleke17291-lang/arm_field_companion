@@ -23,6 +23,7 @@ import '../../core/quick_note_templates.dart';
 import '../../core/plot_sort.dart';
 import '../../core/session_resume_store.dart';
 import '../../core/session_walk_order_store.dart';
+import '../../core/workspace/workspace_config.dart';
 import '../../domain/ratings/assessment_scale_resolver.dart';
 import '../photos/photo_filename_helper.dart';
 import '../photos/photo_view_screen.dart';
@@ -2467,9 +2468,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                   // GLP: always required. GEP/Efficacy: required only
                   // on closed sessions. Standalone: optional (auto-filled
                   // if empty).
-                  final isGlp = widget.trial.workspaceType == 'glp';
-                  final isStandalone =
-                      widget.trial.workspaceType == 'standalone';
+                  final config = safeConfigFromString(widget.trial.workspaceType);
+                  final isGlp = config.isGlp;
+                  final isStandalone = config.isStandalone;
                   final sessionClosed = widget.session.endedAt != null;
                   final reasonRequired =
                       isGlp || (!isStandalone && sessionClosed);

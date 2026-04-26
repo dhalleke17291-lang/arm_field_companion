@@ -2,6 +2,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/core/diagnostics/diagnostic_finding.dart';
+import 'package:arm_field_companion/core/diagnostics/trial_export_diagnostics.dart'
+    show kTrialExportAttemptLabel;
 import 'package:arm_field_companion/features/arm_import/data/arm_import_persistence_repository.dart';
 import 'package:arm_field_companion/features/arm_import/domain/enums/import_confidence.dart';
 import 'package:arm_field_companion/features/arm_import/domain/models/compatibility_profile_payload.dart';
@@ -262,6 +265,31 @@ void main() {
 
       expect(result.warningMessage, isNull);
       expect(mockAssembly.lastAssembled, isNotNull);
+    });
+
+    test('publishExportDiagnostics is called with trialId and attempt label on success', () async {
+      int? capturedTrialId;
+      List<DiagnosticFinding>? capturedFindings;
+      String? capturedLabel;
+
+      final trackedUseCase = ExportTrialPdfReportUseCase(
+        assemblyService: mockAssembly,
+        pdfBuilder: fakePdfBuilder,
+        armImportPersistenceRepository: ArmImportPersistenceRepository(db),
+        shareOverride: (files, {String? text}) async {},
+        publishExportDiagnostics: (trialId, findings, label) {
+          capturedTrialId = trialId;
+          capturedFindings = findings;
+          capturedLabel = label;
+        },
+      );
+
+      final trial = _trial(id: 42, name: 'Diagnostics Trial');
+      await trackedUseCase.execute(trial: trial);
+
+      expect(capturedTrialId, 42);
+      expect(capturedFindings, isEmpty);
+      expect(capturedLabel, kTrialExportAttemptLabel);
     });
   });
 }

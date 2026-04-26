@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/plot_analysis_eligibility.dart';
 import '../../core/providers.dart';
+import '../../core/workspace/workspace_config.dart';
 import 'trial_readiness.dart';
 
 /// Runs trial readiness checks using existing providers and trial-scoped DB reads.
@@ -30,8 +31,7 @@ class TrialReadinessService {
       return TrialReadinessReport(checks: checks);
     }
 
-    final isStandalone =
-        trial.workspaceType.trim().toLowerCase() == 'standalone';
+    final isStandalone = safeConfigFromString(trial.workspaceType).isStandalone;
 
     final plots = await plotRepo.getPlotsForTrial(trialPk);
     final dataPlots = plots.where((p) => !p.isGuardRow).toList();

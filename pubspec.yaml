@@ -71,14 +71,14 @@ flutter_native_splash:
   android: true
   ios: true
 
-# Launcher icon: assets/Branding/app_icon.png (1024×1024).
-# Inset 3 for strong fill in circle; premium balance and optical centering.
+# Launcher icons: 1024×1024 masters built from splash_logo.png (see tool/splash_to_app_icon.dart).
+# Inset 3 for adaptive safe zone.
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/Branding/app_icon.png"
   image_path_ios: "assets/Branding/app_icon_ios.png"
   min_sdk_android: 21
-  adaptive_icon_background: "#0E3D2F"
+  adaptive_icon_background: "#163B28"
   adaptive_icon_foreground: "assets/Branding/app_icon.png"
   adaptive_icon_foreground_inset: 3

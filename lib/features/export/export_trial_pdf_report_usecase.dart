@@ -5,8 +5,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/diagnostics/diagnostic_finding.dart';
+import '../../core/diagnostics/trial_export_diagnostics.dart'
+    show kTrialExportAttemptLabel;
 import '../arm_import/data/arm_import_persistence_repository.dart';
 import 'export_confidence_policy.dart';
+import 'export_trial_usecase.dart' show PublishTrialExportDiagnostics;
 import 'report_data_assembly_service.dart';
 import 'report_pdf_builder_service.dart';
 
@@ -29,15 +33,22 @@ class ExportTrialPdfReportUseCase {
     required ReportPdfBuilderService pdfBuilder,
     required ArmImportPersistenceRepository armImportPersistenceRepository,
     ShareOverride? shareOverride,
+    PublishTrialExportDiagnostics? publishExportDiagnostics,
   })  : _assemblyService = assemblyService,
         _pdfBuilder = pdfBuilder,
         _armImportPersistenceRepository = armImportPersistenceRepository,
-        _shareOverride = shareOverride;
+        _shareOverride = shareOverride,
+        _publishExportDiagnostics = publishExportDiagnostics;
 
   final ReportDataAssemblyService _assemblyService;
   final ReportPdfBuilderService _pdfBuilder;
   final ArmImportPersistenceRepository _armImportPersistenceRepository;
   final ShareOverride? _shareOverride;
+  final PublishTrialExportDiagnostics? _publishExportDiagnostics;
+
+  void _publishDiagnostics(int trialId, List<DiagnosticFinding> findings) {
+    _publishExportDiagnostics?.call(trialId, findings, kTrialExportAttemptLabel);
+  }
 
   /// Assembles report data, builds PDF, writes to temp file, and shares.
   Future<ExportPdfExecutionResult> execute({required Trial trial}) async {
@@ -72,6 +83,7 @@ class ExportTrialPdfReportUseCase {
         text: '${trial.name} – PDF field report',
       );
     }
+    _publishDiagnostics(trial.id, const []);
     return ExportPdfExecutionResult(warningMessage: confidenceWarningMessage);
   }
 }

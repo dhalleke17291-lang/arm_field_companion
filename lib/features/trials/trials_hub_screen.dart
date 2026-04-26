@@ -191,22 +191,27 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
             children: [
               Image.asset(
                 'assets/Branding/splash_logo.png',
-                width: 64,
-                height: 64,
+                width: 88,
+                height: 88,
                 fit: BoxFit.contain,
+                alignment: Alignment.centerLeft,
+                filterQuality: FilterQuality.medium,
               ),
-              const Expanded(
-                child: Text(
+              // Tight mark + word: small gap, slight pull toward logo (asset is wide).
+              Transform.translate(
+                offset: const Offset(-6, 0),
+                child: const Text(
                   'AGNEXIS',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 22,
                     fontWeight: FontWeight.w300,
                     color: Colors.white,
-                    letterSpacing: 6,
+                    letterSpacing: 3,
                     height: 1.1,
                   ),
                 ),
               ),
+              const Spacer(),
               GestureDetector(
                 onTap: _openProfileSwitcher,
                 child: Container(

@@ -75,6 +75,12 @@ Cross-rule: the service never invents a new kind. A new kind requires a spec rev
 
 A verdict that states an established-tier sentence on preliminary evidence is a **spec violation** and must be rejected in review.
 
+### 5.1 Product confidence cap (Agnexis app)
+
+`resolveConfidence` in code **never returns `established`** for user-facing insights. The app caps labels at **moderate** and uses a **conservative ladder** (slight under-confidence is acceptable; over-confidence is not). The `established` enum remains for unit tests of voice helpers and hypothetical tooling. Overview copy states that insights are exploratory and do not replace formal analysis.
+
+**UI chip text** maps tiers to non-statistical words so field staff are not nudged toward inferential closure: **Early** (preliminary), **Developing** (moderate), **Review-ready** (reserved; not emitted in production). The expanded evidence block still states session/rep counts and method.
+
 ## 6. Severity-tier rules
 
 | Severity | Tone |

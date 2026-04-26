@@ -40,6 +40,7 @@ import 'tabs/seeding_tab.dart';
 import 'tabs/plots_tab.dart';
 import 'tabs/photos_tab.dart';
 import 'tabs/timeline_tab.dart';
+import 'trial_data_screen.dart';
 import 'trial_setup_screen.dart';
 import 'widgets/site_details_card.dart';
 import '../diagnostics/completeness_dashboard_screen.dart';
@@ -602,7 +603,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
 
   bool _trialExportPrecheckShowsInfos(
       TrialReadinessReport report, Trial trial) {
-    final standalone = trial.workspaceType.trim().toLowerCase() == 'standalone';
+    final standalone = safeConfigFromString(trial.workspaceType).isStandalone;
     if (!standalone) return false;
     return report.checks.any((c) =>
         (c.code == 'no_seeding' || c.code == 'no_applications') &&
@@ -1001,11 +1002,22 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               builder: (_) => AuditLogScreen(trialId: trial.id),
             ),
           );
+        } else if (value == 'trial_data') {
+          Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => TrialDataScreen(trial: trial),
+            ),
+          );
         } else if (value == 'delete_trial') {
           _confirmAndSoftDeleteTrial(context, trial);
         }
       },
       itemBuilder: (context) => [
+        const PopupMenuItem<String>(
+          value: 'trial_data',
+          child: Text('Trial data'),
+        ),
         const PopupMenuItem<String>(
           value: 'activity',
           child: Text('Activity'),
@@ -2191,6 +2203,9 @@ class _TrialInsightsCard extends ConsumerWidget {
   }
 }
 
+// TODO: replace with InsightRow from
+// lib/features/trials/widgets/insight_row.dart
+// when this screen is next refactored.
 class _InsightRow extends StatefulWidget {
   const _InsightRow({required this.insight});
 
