@@ -7,7 +7,6 @@ import '../../core/connectivity/onedrive_backup_provider.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
-import '../backup/backup_audit_preferences.dart';
 import '../backup/backup_passphrase_store.dart';
 import '../backup/backup_reminder_store.dart';
 import '../diagnostics/diagnostics_screen.dart';
@@ -38,7 +37,6 @@ class MoreScreen extends ConsumerStatefulWidget {
 
 class _MoreScreenState extends ConsumerState<MoreScreen> {
   BackupReminderStore? _backupStore;
-  BackupAuditPreferences? _auditPrefs;
   final _passphraseStore = BackupPassphraseStore();
   bool _hasCachedPassphrase = false;
   bool _isDriveConnected = false;
@@ -60,7 +58,6 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
     if (!mounted) return;
     setState(() {
       _backupStore = BackupReminderStore(prefs);
-      _auditPrefs = BackupAuditPreferences(prefs);
     });
   }
 
@@ -605,42 +602,8 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                     ),
                     onTap: () => _onOneDriveTap(),
                   ),
-                  if (_auditPrefs != null || _hasCachedPassphrase)
+                  if (_hasCachedPassphrase)
                     const Divider(height: 1, indent: 70),
-                  if (_auditPrefs case final audit?) ...[
-                    SwitchListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      title: const Text(
-                        'Clear audit log after backup',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                          color: AppDesignTokens.primaryText,
-                        ),
-                      ),
-                      subtitle: const Text(
-                        'When enabled, a successful encrypted backup removes audit history from this device only. '
-                        'The full history remains inside the .agnexis file. Leave off to keep the log on device.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.35,
-                          color: AppDesignTokens.secondaryText,
-                        ),
-                      ),
-                      value: audit.clearAuditLogAfterSuccessfulBackup,
-                      activeThumbColor: AppDesignTokens.onPrimary,
-                      activeTrackColor: AppDesignTokens.primary,
-                      onChanged: (next) async {
-                        await audit.setClearAuditLogAfterSuccessfulBackup(next);
-                        if (mounted) setState(() {});
-                      },
-                    ),
-                    if (_hasCachedPassphrase)
-                      const Divider(height: 1, indent: 70),
-                  ],
                   if (_hasCachedPassphrase)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),

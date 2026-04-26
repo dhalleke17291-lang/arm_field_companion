@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer' show log;
 
 import 'package:drift/drift.dart';
@@ -375,6 +376,36 @@ class RatingRepository {
         lastEditedAt: Value(nowUtc),
       ),
     );
+
+    try {
+      final updatedFields = <String, dynamic>{};
+      if (hasAmendmentReason) updatedFields['amendmentReason'] = amendmentReason;
+      if (hasAmendedBy) updatedFields['amendedBy'] = amendedBy;
+      if (hasConfidence) updatedFields['confidence'] = confidence;
+      if (hasEditor) updatedFields['lastEditedByUserId'] = lastEditedByUserId;
+      await _db.into(_db.auditEvents).insert(
+        AuditEventsCompanion.insert(
+          trialId: Value(existing.trialId),
+          sessionId: Value(existing.sessionId),
+          plotPk: Value(existing.plotPk),
+          eventType: 'RATING_METADATA_UPDATED',
+          description: 'Metadata updated for rating $ratingId',
+          performedBy:
+              hasAmendedBy ? Value(amendedBy) : const Value.absent(),
+          performedByUserId:
+              hasEditor ? Value(lastEditedByUserId) : const Value.absent(),
+          metadata: Value(jsonEncode({
+            'ratingId': ratingId,
+            'updatedFields': updatedFields,
+          })),
+        ),
+      );
+    } catch (e, st) {
+      log(
+        'RATING_METADATA_UPDATED audit insert failed: $e\n$st',
+        name: 'RatingRepository',
+      );
+    }
 
     return (await getRatingById(ratingId))!;
   }

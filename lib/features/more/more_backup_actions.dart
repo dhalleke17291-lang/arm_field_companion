@@ -16,7 +16,6 @@ import '../../core/connectivity/google_drive_backup_provider.dart';
 import '../../core/connectivity/onedrive_backup_provider.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
-import '../backup/backup_audit_preferences.dart';
 import '../backup/backup_models.dart';
 import '../backup/backup_passphrase_store.dart';
 import '../backup/backup_password_dialog.dart';
@@ -136,12 +135,9 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
   await Future<void>.delayed(const Duration(milliseconds: 50));
   try {
     final prefs = await SharedPreferences.getInstance();
-    final clearAudit =
-        BackupAuditPreferences(prefs).clearAuditLogAfterSuccessfulBackup;
     final file = await ref.read(backupServiceProvider).createBackup(
       passphrase,
       onProgress: (s) => status.value = s,
-      clearAuditLogOnDeviceAfterSuccess: clearAudit,
     );
     if (context.mounted) nav.pop();
     // Cache passphrase only after a successful backup. Opt-in decision
@@ -183,13 +179,7 @@ Future<void> runBackupFlow(BuildContext context, WidgetRef ref) async {
       await BackupReminderStore(prefs).recordBackupCompleted();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              clearAudit
-                  ? 'Backup complete. On-device audit log was cleared — full history is in the backup file.'
-                  : 'Backup complete.',
-            ),
-          ),
+          const SnackBar(content: Text('Backup complete.')),
         );
       }
     }
@@ -563,13 +553,10 @@ Future<void> runCloudBackupFlow(BuildContext context, WidgetRef ref) async {
 
   try {
     final prefs = await SharedPreferences.getInstance();
-    final clearAudit =
-        BackupAuditPreferences(prefs).clearAuditLogAfterSuccessfulBackup;
     final file = await ref.read(backupServiceProvider).createBackup(
-          passphrase,
-          onProgress: (s) => status.value = s,
-          clearAuditLogOnDeviceAfterSuccess: clearAudit,
-        );
+      passphrase,
+      onProgress: (s) => status.value = s,
+    );
 
     status.value = 'Uploading to Google Drive...';
     await provider.uploadBackup(file);
@@ -580,13 +567,7 @@ Future<void> runCloudBackupFlow(BuildContext context, WidgetRef ref) async {
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            clearAudit
-                ? 'Backed up to Google Drive. On-device audit log cleared.'
-                : 'Backed up to Google Drive.',
-          ),
-        ),
+        const SnackBar(content: Text('Backed up to Google Drive.')),
       );
     }
   } catch (e) {
@@ -866,13 +847,10 @@ Future<void> runOneDriveBackupFlow(BuildContext context, WidgetRef ref) async {
 
   try {
     final prefs = await SharedPreferences.getInstance();
-    final clearAudit =
-        BackupAuditPreferences(prefs).clearAuditLogAfterSuccessfulBackup;
     final file = await ref.read(backupServiceProvider).createBackup(
-          passphrase,
-          onProgress: (s) => status.value = s,
-          clearAuditLogOnDeviceAfterSuccess: clearAudit,
-        );
+      passphrase,
+      onProgress: (s) => status.value = s,
+    );
 
     status.value = 'Uploading to OneDrive...';
     await provider.uploadBackup(file);
@@ -883,13 +861,7 @@ Future<void> runOneDriveBackupFlow(BuildContext context, WidgetRef ref) async {
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            clearAudit
-                ? 'Backed up to OneDrive. On-device audit log cleared.'
-                : 'Backed up to OneDrive.',
-          ),
-        ),
+        const SnackBar(content: Text('Backed up to OneDrive.')),
       );
     }
   } catch (e) {
