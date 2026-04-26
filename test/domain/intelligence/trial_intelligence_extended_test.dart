@@ -265,8 +265,6 @@ void main() {
             reason: '${i.title} has empty method');
         expect(i.basis.minimumDataMet, isTrue,
             reason: '${i.title} returned below minimum');
-        expect(i.basis.confidenceLabel, isNotEmpty,
-            reason: '${i.title} missing confidence');
       }
     });
 

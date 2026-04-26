@@ -287,7 +287,6 @@ void main() {
         expect(i.basis.repCount, 4,
             reason: '${i.title} wrong rep count');
         expect(i.basis.minimumDataMet, isTrue);
-        expect(i.basis.confidenceLabel, isNotEmpty);
       }
     });
   });

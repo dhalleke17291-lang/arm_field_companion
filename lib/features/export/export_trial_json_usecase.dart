@@ -347,7 +347,6 @@ class ExportTrialJsonUseCase {
         'severity': i.severity.name,
         'title': i.title,
         'detail': i.detail,
-        'confidence': i.basis.confidenceLabel,
         'method': i.basis.method,
       };
 }

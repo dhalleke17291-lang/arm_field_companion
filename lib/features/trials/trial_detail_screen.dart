@@ -2137,8 +2137,6 @@ class _TrialInsightsCard extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (insights) {
         if (insights.isEmpty) return const SizedBox.shrink();
-        final hasPreliminary = insights.any(
-            (i) => i.basis.confidence == InsightConfidence.preliminary);
         final hasTrends = insights
             .any((i) => i.type == InsightType.treatmentTrend);
         return _OverviewDashboardCard(
@@ -2146,20 +2144,19 @@ class _TrialInsightsCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (hasPreliminary) ...[
-                const Text(
-                  'Preliminary insights — trial is active. '
-                  'Results update as sessions are completed.',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppDesignTokens.secondaryText,
-                  ),
+              const Text(
+                'Early or developing readouts — not proof of treatment '
+                'effects. Not for final trial conclusions, registration, or '
+                'substitute for approved analysis software.',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppDesignTokens.secondaryText,
                 ),
-                const SizedBox(height: 8),
-                const Divider(height: 1, color: AppDesignTokens.borderCrisp),
-              ],
+              ),
+              const SizedBox(height: 8),
+              const Divider(height: 1, color: AppDesignTokens.borderCrisp),
               for (var i = 0; i < insights.length; i++) ...[
-                if (i > 0 || hasPreliminary)
+                if (i > 0)
                   const Divider(height: 1, color: AppDesignTokens.borderCrisp),
                 _InsightRow(insight: insights[i]),
               ],
@@ -2174,6 +2171,18 @@ class _TrialInsightsCard extends ConsumerWidget {
                   ),
                 ),
               ],
+              const SizedBox(height: 8),
+              Text(
+                'All insights here are exploratory. Labels like '
+                '"Developing" describe how much history the row has — not '
+                'that a trend is proven. Formal inference stays outside the app.',
+                style: TextStyle(
+                  fontSize: 10,
+                  height: 1.35,
+                  color:
+                      AppDesignTokens.secondaryText.withValues(alpha: 0.88),
+                ),
+              ),
             ],
           ),
         );
@@ -2197,12 +2206,6 @@ class _InsightRowState extends State<_InsightRow> {
   @override
   Widget build(BuildContext context) {
     final insight = widget.insight;
-    final confidence = insight.basis.confidence;
-    final confidenceColor = switch (confidence) {
-      InsightConfidence.preliminary => AppDesignTokens.secondaryText,
-      InsightConfidence.moderate => AppDesignTokens.warningFg,
-      InsightConfidence.established => AppDesignTokens.successFg,
-    };
     final severityColor = switch (insight.severity) {
       InsightSeverity.info => AppDesignTokens.primary,
       InsightSeverity.notable => AppDesignTokens.warningFg,
@@ -2227,42 +2230,13 @@ class _InsightRowState extends State<_InsightRow> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Verdict strings are computed by InsightVoice and stored on
-              // insight.verdict, but intentionally NOT rendered here. Verdict
-              // calibration can only be validated by extended real-trial use;
-              // until that evidence exists, the UI continues to show raw
-              // title + detail. See docs/INSIGHT_VOICE_SPEC.md.
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      insight.title,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppDesignTokens.primaryText,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: confidenceColor.withValues(alpha: 0.1),
-                      borderRadius:
-                          BorderRadius.circular(AppDesignTokens.radiusChip),
-                    ),
-                    child: Text(
-                      insight.basis.confidenceLabel,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: confidenceColor,
-                      ),
-                    ),
-                  ),
-                ],
+              Text(
+                insight.title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppDesignTokens.primaryText,
+                ),
               ),
               const SizedBox(height: 3),
               if (insight.type == InsightType.treatmentTrend &&
@@ -2276,6 +2250,15 @@ class _InsightRowState extends State<_InsightRow> {
                   ),
                 ),
                 const SizedBox(height: 2),
+                Text(
+                  insight.detail,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
+              ] else if (insight.type == InsightType.sessionFieldCapture) ...[
                 Text(
                   insight.detail,
                   style: const TextStyle(
@@ -2309,7 +2292,9 @@ class _InsightRowState extends State<_InsightRow> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          insight.basis.basisSummary,
+                          '${insight.basis.sessionCount} session${insight.basis.sessionCount == 1 ? '' : 's'} · '
+                          '${insight.basis.repCount} rep${insight.basis.repCount == 1 ? '' : 's'}'
+                          '${insight.basis.assessmentType != null ? ' · ${insight.basis.assessmentType}' : ''}',
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,

@@ -11,7 +11,6 @@ import '../../features/plots/plot_repository.dart';
 import '../../features/ratings/rating_repository.dart';
 import '../../features/sessions/session_repository.dart';
 import '../models/trial_insight.dart';
-import 'insight_voice.dart';
 
 /// Minimum data thresholds — refuse to compute below these.
 const kMinSessionsForHealth = 3;
@@ -60,16 +59,34 @@ class TrialIntelligenceService {
     Map<int, String> assessmentNames = const {},
   }) async {
     final sessions = await _sessionRepo.getSessionsForTrial(trialId);
+    final plots = await _plotRepo.getPlotsForTrial(trialId);
+    final dataPlots = plots.where(isAnalyzablePlot).toList();
+    final repCount = dataPlots
+        .map((p) => p.rep)
+        .whereType<int>()
+        .toSet()
+        .length;
+
+    final openSessions = sessions.where((s) => s.endedAt == null).toList();
+    final insights = <TrialInsight>[];
+
+    final captureInsight = await _computeSessionFieldCaptureInsight(
+      openSessions: openSessions,
+      dataPlots: dataPlots,
+      repCount: repCount,
+    );
+    if (captureInsight != null) insights.add(captureInsight);
+
     final closedSessions =
         sessions.where((s) => s.endedAt != null).toList()
           ..sort((a, b) {
             final cmp = b.startedAt.compareTo(a.startedAt);
             return cmp != 0 ? cmp : b.id.compareTo(a.id);
           });
-    if (closedSessions.isEmpty) return [];
+    if (closedSessions.isEmpty) {
+      return insights;
+    }
 
-    final plots = await _plotRepo.getPlotsForTrial(trialId);
-    final dataPlots = plots.where(isAnalyzablePlot).toList();
     final assignments = await _assignmentRepo.getForTrial(trialId);
 
     final plotToTreatment = <int, int>{};
@@ -109,14 +126,6 @@ class TrialIntelligenceService {
         }
       }
     }
-    final repCount = dataPlots
-        .map((p) => p.rep)
-        .whereType<int>()
-        .toSet()
-        .length;
-
-    final insights = <TrialInsight>[];
-
     // Per-assessment insights
     for (final aid in assessmentIds) {
       final healthInsight = _computeTrialHealth(
@@ -241,6 +250,51 @@ class TrialIntelligenceService {
     return insights;
   }
 
+  /// Open-session plot capture: how many analyzable plots have numeric data so
+  /// far. Factual progress only — never treatment effects or significance.
+  Future<TrialInsight?> _computeSessionFieldCaptureInsight({
+    required List<Session> openSessions,
+    required List<Plot> dataPlots,
+    required int repCount,
+  }) async {
+    if (openSessions.isEmpty || dataPlots.isEmpty) return null;
+    final sorted = List<Session>.from(openSessions)
+      ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
+    final s = sorted.first;
+    final ratings = await _ratingRepo.getCurrentRatingsForSession(s.id);
+    final analyzable = dataPlots.map((p) => p.id).toSet();
+    final plotsWithNumeric = <int>{};
+    for (final r in ratings) {
+      if (r.resultStatus != 'RECORDED') continue;
+      if (r.numericValue == null) continue;
+      if (analyzable.contains(r.plotPk)) plotsWithNumeric.add(r.plotPk);
+    }
+    final n = plotsWithNumeric.length;
+    final total = dataPlots.length;
+    // Empty-state belongs in session UI, not as a zero-count "insight".
+    if (n == 0) return null;
+
+    return TrialInsight(
+      type: InsightType.sessionFieldCapture,
+      title: 'Active session capture',
+      detail: '$n of $total data plots with at least one recorded numeric '
+          'rating in this active session. Field capture only — not treatment '
+          'performance or trial outcome. Data plots exclude guard/layout-only '
+          'plots; voided and non-numeric ratings do not count.',
+      basis: InsightBasis(
+        repCount: repCount,
+        sessionCount: 1,
+        method: 'Count of data plot IDs (analyzable only; guards excluded) '
+            'with ≥1 current rating row marked RECORDED and numeric, in the '
+            'newest open session',
+        minimumDataMet: true,
+        threshold: 'No significance, ranking, or efficacy read',
+      ),
+      severity: InsightSeverity.info,
+      relatedSessionIds: [s.id],
+    );
+  }
+
   /// 5.2: Trial health signal — effect size, CV range, separation trend.
   TrialInsight? _computeTrialHealth({
     required List<Session> sessions,
@@ -335,27 +389,15 @@ class TrialIntelligenceService {
       detailParts.add('Separation: $separationTrend');
     }
 
-    final confidence = resolveConfidence(
-      sessionCount: sessions.length,
-      repCount: repCount,
-      consistentTrend: separationTrend == 'stable' || separationTrend == 'increasing',
-    );
-
     return TrialInsight(
       type: InsightType.trialHealth,
       title: 'Trial health',
       detail: '${detailParts.join('. ')}.',
-      verdict: InsightVoice.separationVerdict(
-        effectSize: effectSize,
-        separationTrend: separationTrend,
-        tier: confidence,
-      ),
       basis: InsightBasis(
         repCount: repCount,
         sessionCount: sessions.length,
         method: '(best treatment mean − check mean) / check mean × 100',
         minimumDataMet: true,
-        confidence: confidence,
         threshold: 'Minimum: $kMinSessionsForHealth sessions, $kMinRepsForHealth reps',
       ),
     );
@@ -382,8 +424,6 @@ class TrialIntelligenceService {
     for (final tid in treatmentIds) {
       final treatment = treatments.where((t) => t.id == tid).firstOrNull;
       if (treatment == null) continue;
-      // tCode used for internal verdict; tName used for display.
-      final tCode = treatment.code.isNotEmpty ? treatment.code : treatment.name;
       final tName = treatment.name.isNotEmpty ? treatment.name : treatment.code;
 
       final sessionMeans = <String>[];
@@ -420,11 +460,6 @@ class TrialIntelligenceService {
           '${firstMean.toStringAsFixed(0)}% → ${lastMean.toStringAsFixed(0)}%'
           ' ($sign${delta.toStringAsFixed(0)} points)';
 
-      final confidence = resolveConfidence(
-        sessionCount: sessionMeans.length,
-        repCount: repCount,
-      );
-
       insights.add(TrialInsight(
         type: InsightType.treatmentTrend,
         title: '$displayAssessmentName · $tName',
@@ -433,17 +468,11 @@ class TrialIntelligenceService {
         treatmentName: tName,
         fromDate: fromDate,
         toDate: toDate,
-        verdict: InsightVoice.trendVerdict(
-          treatmentCode: tCode,
-          delta: delta,
-          tier: confidence,
-        ),
         basis: InsightBasis(
           repCount: repCount,
           sessionCount: sessionMeans.length,
           method: 'Arithmetic mean per treatment per session',
           minimumDataMet: true,
-          confidence: confidence,
           threshold: 'Minimum: $kMinSessionsForTrend sessions',
         ),
       ));
@@ -506,11 +535,6 @@ class TrialIntelligenceService {
     final detail =
         'Untreated check: ${sessionMeans.join(' → ')}. Direction: $direction.';
 
-    final confidence = resolveConfidence(
-      sessionCount: sessionMeans.length,
-      repCount: repCount,
-    );
-
     return TrialInsight(
       type: InsightType.checkTrend,
       title: 'Check plot trend',
@@ -520,7 +544,6 @@ class TrialIntelligenceService {
         sessionCount: sessionMeans.length,
         method: 'Check treatment arithmetic mean per session',
         minimumDataMet: true,
-        confidence: confidence,
         threshold: 'Minimum: $kMinSessionsForCheckTrend sessions',
       ),
     );
@@ -593,25 +616,15 @@ class TrialIntelligenceService {
           ' Outlier rep${outlierReps.length == 1 ? '' : 's'}: ${outlierReps.join(', ')} (>2 SD from grand mean).');
     }
 
-    final confidence = resolveConfidence(
-      sessionCount: sessions.length,
-      repCount: repCount,
-    );
-
     return TrialInsight(
       type: InsightType.repVariability,
       title: 'Rep variability',
       detail: detail.toString(),
-      verdict: InsightVoice.driftVerdict(
-        outlierReps: outlierReps,
-        tier: confidence,
-      ),
       basis: InsightBasis(
         repCount: repCount,
         sessionCount: sessions.length,
         method: 'Overall mean per rep across all treatments and sessions',
         minimumDataMet: true,
-        confidence: confidence,
         threshold: 'Minimum: $kMinRepsForRepVariability reps. Outlier: >2 SD from grand mean',
       ),
     );
@@ -697,8 +710,6 @@ class TrialIntelligenceService {
         sessionCount: gapHistory.length,
         method: 'Mean comparison: test product treatments vs reference treatments',
         minimumDataMet: true,
-        confidence: resolveConfidence(
-            sessionCount: gapHistory.length, repCount: repCount),
       ),
     );
   }
@@ -798,8 +809,6 @@ class TrialIntelligenceService {
           sessionCount: sessions.length,
           method: 'Monotonic rate-efficacy check within shared active ingredient',
           minimumDataMet: true,
-          confidence: resolveConfidence(
-              sessionCount: sessions.length, repCount: repCount),
           threshold: 'Minimum: $kMinDoseResponseTreatments treatments sharing same AI',
         ),
       ));
@@ -894,7 +903,6 @@ class TrialIntelligenceService {
             sessionCount: sessions.length,
             method: 'Per-plot change vs treatment group average change',
             minimumDataMet: true,
-            confidence: InsightConfidence.preliminary,
             threshold: '2× group avg change AND >25 pts absolute',
           ),
         ));
@@ -998,8 +1006,6 @@ class TrialIntelligenceService {
           sessionCount: sessions.length,
           method: 'Weather condition and rating change co-occurrence',
           minimumDataMet: true,
-          confidence: resolveConfidence(
-              sessionCount: sessions.length, repCount: repCount),
           threshold: 'Notable weather: >10°C from trial avg, >32°C, <4°C, or wind >15 mph. Shift: >10 pts',
         ),
       ));
@@ -1055,7 +1061,6 @@ class TrialIntelligenceService {
           sessionCount: chronological.length,
           method: 'Per-field capture rate: first half vs second half of sessions',
           minimumDataMet: true,
-          confidence: InsightConfidence.moderate,
           threshold: 'Flag when rate drops below 50% in second half',
         ),
       ));
@@ -1084,7 +1089,6 @@ class TrialIntelligenceService {
           sessionCount: chronological.length,
           method: 'Per-field capture rate: first half vs second half of sessions',
           minimumDataMet: true,
-          confidence: InsightConfidence.moderate,
           threshold: 'Flag when rate drops below 50% in second half',
         ),
       ));
@@ -1182,7 +1186,6 @@ class TrialIntelligenceService {
         sessionCount: 1,
         method: 'Per-plot rating timestamp interval analysis',
         minimumDataMet: true,
-        confidence: InsightConfidence.preliminary,
         threshold: 'Minimum session: 5 min. Slow: >2× session average AND >1 min absolute. Breaks: gaps >10 min excluded',
       ),
     );

@@ -126,7 +126,7 @@ void main() {
   }
 
   group('TrialIntelligenceService', () {
-    test('returns empty for trial with no closed sessions', () async {
+    test('no closed-session analytics when only open session exists', () async {
       const csv = 'Plot No.,trt,reps,WEED1 1-Jul-26 CONTRO %\n101,1,1,50\n';
       final r = await stressArmImportUseCase(db)
           .execute(csv, sourceFileName: 'empty.csv');
@@ -140,7 +140,13 @@ void main() {
         trialId: trialId,
         treatments: treatments,
       );
-      expect(insights, isEmpty);
+      final closedOnly = insights
+          .where((i) => i.type != InsightType.sessionFieldCapture)
+          .toList();
+      expect(closedOnly, isEmpty);
+      if (insights.isNotEmpty) {
+        expect(insights.first.type, InsightType.sessionFieldCapture);
+      }
     });
 
     test('trial health appears with 3+ sessions and check treatment',
@@ -266,36 +272,7 @@ void main() {
       expect(repInsights, isEmpty);
     });
 
-    test('confidence levels resolve correctly', () {
-      expect(
-        resolveConfidence(sessionCount: 1, repCount: 2),
-        InsightConfidence.preliminary,
-      );
-      expect(
-        resolveConfidence(sessionCount: 2, repCount: 3),
-        InsightConfidence.preliminary,
-      );
-      expect(
-        resolveConfidence(sessionCount: 3, repCount: 4),
-        InsightConfidence.moderate,
-      );
-      expect(
-        resolveConfidence(sessionCount: 4, repCount: 5),
-        InsightConfidence.moderate,
-      );
-      expect(
-        resolveConfidence(
-            sessionCount: 5, repCount: 6, consistentTrend: true),
-        InsightConfidence.established,
-      );
-      expect(
-        resolveConfidence(
-            sessionCount: 5, repCount: 6, consistentTrend: false),
-        InsightConfidence.moderate,
-      );
-    });
-
-    test('every insight has basis with method and confidence', () async {
+    test('every insight has basis with method', () async {
       final seed = await seedTrial(
         treatmentCount: 4,
         repsPerTreatment: 4,
@@ -315,8 +292,6 @@ void main() {
             reason: '${insight.title} has zero sessions');
         expect(insight.basis.minimumDataMet, isTrue,
             reason: '${insight.title} below minimum but was returned');
-        expect(insight.basis.confidenceLabel, isNotEmpty,
-            reason: '${insight.title} missing confidence label');
       }
     });
   });

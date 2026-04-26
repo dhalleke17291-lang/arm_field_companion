@@ -136,12 +136,6 @@ String composeSessionSummary({
     }
   }
 
-  // Top insight (if available).
-  //
-  // Verdict strings are computed on insight.verdict but intentionally NOT
-  // used in shared text. A shared summary lives forever in someone else's
-  // inbox; verdict calibration has not yet been validated against real
-  // field use. Keep the factual title + detail format until it has.
   if (insights != null && insights.isNotEmpty) {
     final top = insights.first;
     buf.writeln();
