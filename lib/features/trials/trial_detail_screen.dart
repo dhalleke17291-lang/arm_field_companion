@@ -929,6 +929,39 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                 ),
               ),
             ),
+            Container(
+              width: 1,
+              height: 28,
+              color: AppDesignTokens.divider,
+            ),
+            Expanded(
+              child: TextButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => TrialDataScreen(trial: trial),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.bar_chart_outlined,
+                  size: 20,
+                  color: AppDesignTokens.primary,
+                ),
+                label: const Text(
+                  'Data',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primary,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppDesignTokens.primary,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                ),
+              ),
+            ),
             if (showExport) ...[
               Container(
                 width: 1,
@@ -1002,22 +1035,11 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               builder: (_) => AuditLogScreen(trialId: trial.id),
             ),
           );
-        } else if (value == 'trial_data') {
-          Navigator.push<void>(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => TrialDataScreen(trial: trial),
-            ),
-          );
         } else if (value == 'delete_trial') {
           _confirmAndSoftDeleteTrial(context, trial);
         }
       },
       itemBuilder: (context) => [
-        const PopupMenuItem<String>(
-          value: 'trial_data',
-          child: Text('Trial data'),
-        ),
         const PopupMenuItem<String>(
           value: 'activity',
           child: Text('Activity'),

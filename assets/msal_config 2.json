@@ -1,0 +1,25 @@
+{
+  "authorities": [
+    {
+      "type": "AAD",
+      "authority_url": "https://login.microsoftonline.com/common",
+      "audience": {
+        "type": "AzureADandPersonalMicrosoftAccount"
+      }
+    }
+  ],
+  "authorization_user_agent": "WEBVIEW",
+  "multiple_clouds_supported": false,
+  "broker_redirect_uri_registered": false,
+  "http": {
+    "connect_timeout": 10000,
+    "read_timeout": 30000
+  },
+  "logging": {
+    "pii_enabled": false,
+    "log_level": "WARNING",
+    "logcat_enabled": false
+  },
+  "shared_device_mode_supported": false,
+  "account_mode": "SINGLE"
+}

@@ -39,97 +39,9 @@ String computeDataQualityRowSuffix({
   required int outlierCount,
 }) {
   if (closedCount == 0) return 'no closed sessions yet';
-  final issues = amendedCount + outlierCount;
+  final issues = openCount + amendedCount + outlierCount;
   if (issues == 0) return 'clean';
   return '$issues issue${issues == 1 ? '' : 's'} found';
-}
-
-/// Returns named issue lines for the data quality summary header.
-///
-/// Session completeness gaps, amendments, and outlier candidates are each
-/// formatted as a single short line. Capped at 4 lines; when more exist the
-/// last line is an overflow summary directing the researcher to Section 3.
-///
-/// Only assessments that appear in [closedRatings] for a given session are
-/// checked — assessments not yet attempted are not counted as gaps.
-List<String> computeDataQualityIssueLines({
-  required List<Session> closedSessions,
-  required List<RatingRecord> closedRatings,
-  required List<Plot> analyzablePlots,
-  required Map<int, String> assessmentDisplayNames,
-  required List<RatingRecord> amendedRatings,
-  required Set<(int, int)> outlierCandidates,
-}) {
-  final lines = <String>[];
-
-  // Build rated set and derive which assessments were attempted per session.
-  final ratedSet = <(int, int, int)>{};
-  final sessionAssessments = <int, Set<int>>{};
-  for (final r in closedRatings) {
-    if (!r.isCurrent || r.isDeleted) continue;
-    if (r.resultStatus != 'RECORDED') continue;
-    if (r.numericValue == null) continue;
-    ratedSet.add((r.sessionId, r.plotPk, r.assessmentId));
-    sessionAssessments.putIfAbsent(r.sessionId, () => {}).add(r.assessmentId);
-  }
-
-  final plotById = {for (final p in analyzablePlots) p.id: p};
-
-  // One line per session with any completeness gap.
-  for (int i = 0; i < closedSessions.length; i++) {
-    final session = closedSessions[i];
-    final assessments = sessionAssessments[session.id] ?? {};
-    if (assessments.isEmpty) continue;
-
-    final gapsByAssessment = <int, Set<int>>{};
-    for (final aId in assessments) {
-      for (final plot in analyzablePlots) {
-        if (!ratedSet.contains((session.id, plot.id, aId))) {
-          gapsByAssessment.putIfAbsent(aId, () => {}).add(plot.id);
-        }
-      }
-    }
-    if (gapsByAssessment.isEmpty) continue;
-
-    final sessionName =
-        session.name.isNotEmpty ? session.name : 'Session ${i + 1}';
-    final allMissing = gapsByAssessment.values.expand((s) => s).toSet();
-
-    String line;
-    if (gapsByAssessment.length == 1 && allMissing.length <= 5) {
-      final aId = gapsByAssessment.keys.first;
-      final assessName = assessmentDisplayNames[aId] ?? 'A$aId';
-      final plotIds = (allMissing.map((pk) => plotById[pk]?.plotId ?? '$pk').toList()
-            ..sort())
-          .join(', ');
-      line = '· $sessionName: plots $plotIds missing $assessName';
-    } else if (allMissing.length > 5) {
-      line = '· $sessionName: ${allMissing.length} plots with gaps';
-    } else {
-      final assessNames = gapsByAssessment.keys
-          .map((aId) => assessmentDisplayNames[aId] ?? 'A$aId')
-          .join(', ');
-      final n = allMissing.length;
-      line = '· $sessionName: $n plot${n == 1 ? '' : 's'} missing $assessNames';
-    }
-    lines.add(line);
-  }
-
-  // Amendments.
-  if (amendedRatings.isNotEmpty) {
-    final n = amendedRatings.length;
-    lines.add('· $n rating${n == 1 ? '' : 's'} amended');
-  }
-
-  // Outlier candidates.
-  if (outlierCandidates.isNotEmpty) {
-    final n = outlierCandidates.length;
-    lines.add('· $n outlier candidate${n == 1 ? '' : 's'} for review');
-  }
-
-  if (lines.length <= 4) return lines;
-  final overflow = lines.length - 3;
-  return [...lines.take(3), '· and $overflow more — see Assessment quality'];
 }
 
 /// Formats the main weather detail line for a session snapshot.
@@ -403,32 +315,9 @@ class TrialDataScreen extends ConsumerStatefulWidget {
 class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
   bool _footerExpanded = false;
   final Set<int> _expandedTreatmentIds = {};
-  late final ScrollController _scrollController;
-  final _section2Key = GlobalKey();
-  final _section3Key = GlobalKey();
-  final _section4Key = GlobalKey();
 
   static const double _kTreatColWidth = 160.0;
   static const double _kAssessColWidth = 86.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _scrollTo(GlobalKey key) {
-    final ctx = key.currentContext;
-    if (ctx != null) {
-      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -459,16 +348,15 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
           _buildSummaryHeader(trial),
           Expanded(
             child: ListView(
-              controller: _scrollController,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               children: [
                 _buildSection1(trial, config),
                 const SizedBox(height: 12),
-                KeyedSubtree(key: _section2Key, child: _buildSection2(trial)),
+                _buildSection2(trial),
                 const SizedBox(height: 12),
-                KeyedSubtree(key: _section3Key, child: _buildSection3(trial)),
+                _buildSection3(trial),
                 const SizedBox(height: 12),
-                KeyedSubtree(key: _section4Key, child: _buildSection4(trial)),
+                _buildSection4(trial),
                 const SizedBox(height: 12),
                 _buildSection5(trial),
                 const SizedBox(height: 12),
@@ -530,36 +418,17 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
         '$treatY treatment${treatY == 1 ? '' : 's'} · '
         '$assessZ assessment${assessZ == 1 ? '' : 's'}';
 
-    final qualityIssueLines = qualitySuffix.endsWith('found')
-        ? computeDataQualityIssueLines(
-            closedSessions: data.closedSessions,
-            closedRatings: data.closedRatings,
-            analyzablePlots: data.analyzablePlots,
-            assessmentDisplayNames: data.assessmentDisplayNames,
-            amendedRatings: data.amendedRatings,
-            outlierCandidates: data.outlierCandidates,
-          )
-        : <String>[];
-
+    // TODO: wire tap-to-scroll when section keys are established in a future refactor.
     return ColoredBox(
       color: AppDesignTokens.sectionHeaderBg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _summaryRow(
-            label: 'Execution',
-            suffix: execSuffix,
-            onTap: execSuffix.endsWith('to review') ? () => _scrollTo(_section2Key) : null,
-          ),
+          _summaryRow(label: 'Execution', suffix: execSuffix),
           const Divider(
               height: 1, thickness: 0.5, color: AppDesignTokens.borderCrisp),
-          _summaryRow(
-            label: 'Data quality',
-            suffix: qualitySuffix,
-            onTap: qualitySuffix.endsWith('found') ? () => _scrollTo(_section3Key) : null,
-            issueLines: qualityIssueLines,
-          ),
+          _summaryRow(label: 'Data quality', suffix: qualitySuffix),
           const Divider(
               height: 1, thickness: 0.5, color: AppDesignTokens.borderCrisp),
           _summaryRow(label: 'Results', suffix: resultsSuffix),
@@ -568,12 +437,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     );
   }
 
-  Widget _summaryRow({
-    required String label,
-    required String suffix,
-    VoidCallback? onTap,
-    List<String>? issueLines,
-  }) {
+  Widget _summaryRow({required String label, required String suffix}) {
     final Color suffixColor;
     if (suffix.endsWith('to review') || suffix.endsWith('found')) {
       suffixColor = AppDesignTokens.warningFg;
@@ -584,7 +448,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
       suffixColor = AppDesignTokens.primaryText;
     }
 
-    final row = Padding(
+    return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDesignTokens.spacing16,
         vertical: AppDesignTokens.spacing12,
@@ -604,49 +468,9 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
               style: TextStyle(fontSize: 13, color: suffixColor),
             ),
           ),
-          if (onTap != null)
-            const Icon(Icons.chevron_right, size: 16, color: AppDesignTokens.secondaryText),
         ],
       ),
     );
-
-    final hasIssueList = issueLines != null && issueLines.isNotEmpty;
-    final content = hasIssueList
-        ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              row,
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: 24,
-                  right: AppDesignTokens.spacing16,
-                  bottom: 10,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (final line in issueLines)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 3),
-                        child: Text(
-                          line,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppDesignTokens.secondaryText,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          )
-        : row;
-
-    if (onTap != null) {
-      return InkWell(onTap: onTap, child: content);
-    }
-    return content;
   }
 
   // -------------------------------------------------------------------------
@@ -1131,9 +955,11 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
             if (cellData.separation != null)
               Text(
                 _fmtSeparation(cellData.separation!),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
-                  color: AppDesignTokens.secondaryText,
+                  color: cellData.separation! >= 0
+                      ? AppDesignTokens.appliedColor
+                      : AppDesignTokens.missedColor,
                 ),
               ),
           ],
@@ -1315,7 +1141,6 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
                   _buildWeatherRow(
                     closed[i],
                     snapshotBySession[closed[i].id],
-                    index: i,
                   ),
                 ],
               ],
@@ -1326,9 +1151,8 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     );
   }
 
-  Widget _buildWeatherRow(Session session, WeatherSnapshot? snapshot, {required int index}) {
-    final sessionName = session.name.isNotEmpty ? session.name : 'Session ${index + 1}';
-    final headerLine = '$sessionName · ${_sessionLabel(session)}';
+  Widget _buildWeatherRow(Session session, WeatherSnapshot? snapshot) {
+    final headerLine = '${session.name} · ${_sessionLabel(session)}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1353,17 +1177,6 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
               padding: const EdgeInsets.only(top: 1),
               child: Text(
                 '${snapshot.humidity!.toStringAsFixed(0)}% humidity',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppDesignTokens.secondaryText,
-                ),
-              ),
-            ),
-          if (snapshot.windSpeed != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 1),
-              child: Text(
-                '${snapshot.windSpeed!.toStringAsFixed(0)} km/h${snapshot.windDirection != null ? ' ${snapshot.windDirection}' : ''}',
                 style: const TextStyle(
                   fontSize: 11,
                   color: AppDesignTokens.secondaryText,

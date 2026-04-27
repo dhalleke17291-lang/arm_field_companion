@@ -692,34 +692,15 @@ void main() {
       );
     });
 
-    test('open sessions do NOT count as issues', () {
-      // Open sessions are not data quality problems — they are simply incomplete.
+    test('one open session → issue count ≥ 1', () {
       final result = computeDataQualityRowSuffix(
-          closedCount: 1, openCount: 3, amendedCount: 0, outlierCount: 0);
-      expect(result, 'clean');
+          closedCount: 1, openCount: 1, amendedCount: 0, outlierCount: 0);
+      expect(result, '1 issue found');
     });
 
     test('mixed issues summed correctly', () {
       final result = computeDataQualityRowSuffix(
           closedCount: 2, openCount: 0, amendedCount: 2, outlierCount: 1);
-      expect(result, '3 issues found');
-    });
-
-    test('open sessions with 1 closed complete → clean despite open sessions', () {
-      final result = computeDataQualityRowSuffix(
-          closedCount: 1, openCount: 3, amendedCount: 0, outlierCount: 0);
-      expect(result, 'clean');
-    });
-
-    test('outlier count drives issue count', () {
-      final result = computeDataQualityRowSuffix(
-          closedCount: 1, openCount: 0, amendedCount: 0, outlierCount: 2);
-      expect(result, '2 issues found');
-    });
-
-    test('amendment count drives issue count', () {
-      final result = computeDataQualityRowSuffix(
-          closedCount: 1, openCount: 2, amendedCount: 3, outlierCount: 0);
       expect(result, '3 issues found');
     });
   });
@@ -793,159 +774,6 @@ void main() {
       );
       final line = formatWeatherMainLine(snapshot);
       expect(line, contains('manual entry'));
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // computeDataQualityIssueLines
-  // ---------------------------------------------------------------------------
-
-  RatingRecord closedRating({
-    required int id,
-    required int plotPk,
-    required int assessmentId,
-    required int sessionId,
-    double value = 5.0,
-  }) =>
-      RatingRecord(
-        id: id,
-        trialId: 1,
-        plotPk: plotPk,
-        assessmentId: assessmentId,
-        sessionId: sessionId,
-        resultStatus: 'RECORDED',
-        numericValue: value,
-        isCurrent: true,
-        amended: false,
-        isDeleted: false,
-        createdAt: _now,
-        raterName: 'Alice',
-      );
-
-  group('computeDataQualityIssueLines', () {
-    test('shows session name and assessment when one plot is missing', () {
-      final sessions = [_session(id: 1)];
-      final plots = [
-        _plot(id: 10, treatmentId: 1),
-        _plot(id: 11, treatmentId: 1),
-      ];
-      // Only plot 10 has a rating; plot 11 is missing assessment 20.
-      final ratings = [
-        closedRating(id: 1, plotPk: 10, assessmentId: 20, sessionId: 1),
-      ];
-      final lines = computeDataQualityIssueLines(
-        closedSessions: sessions,
-        closedRatings: ratings,
-        analyzablePlots: plots,
-        assessmentDisplayNames: {20: 'AGTARSI'},
-        amendedRatings: [],
-        outlierCandidates: {},
-      );
-
-      expect(lines.length, 1);
-      expect(lines.first, contains('Session 1'));
-      expect(lines.first, contains('P11'));
-      expect(lines.first, contains('AGTARSI'));
-    });
-
-    test('shows N plots with gaps when more than 5 plots are missing', () {
-      final sessions = [_session(id: 1)];
-      // 7 plots; only plot 10 has a rating → 6 missing.
-      final plots = [
-        for (int i = 10; i <= 16; i++) _plot(id: i, treatmentId: 1),
-      ];
-      final ratings = [
-        closedRating(id: 1, plotPk: 10, assessmentId: 20, sessionId: 1),
-      ];
-      final lines = computeDataQualityIssueLines(
-        closedSessions: sessions,
-        closedRatings: ratings,
-        analyzablePlots: plots,
-        assessmentDisplayNames: {20: 'AGTARSI'},
-        amendedRatings: [],
-        outlierCandidates: {},
-      );
-
-      expect(lines.length, 1);
-      expect(lines.first, contains('6 plots with gaps'));
-      expect(lines.first, isNot(contains('P11')));
-    });
-
-    test('caps at 4 lines and appends overflow summary', () {
-      // 4 sessions each missing 1 plot, plus amendments → 5 raw lines.
-      final sessions = [
-        _session(id: 1),
-        _session(id: 2),
-        _session(id: 3),
-        _session(id: 4),
-      ];
-      final plots = [
-        _plot(id: 10, treatmentId: 1),
-        _plot(id: 11, treatmentId: 1),
-      ];
-      // Each session: plot 10 rated, plot 11 missing.
-      final ratings = [
-        for (int s = 1; s <= 4; s++)
-          closedRating(id: s, plotPk: 10, assessmentId: 20, sessionId: s),
-      ];
-      final amended = [
-        _rating(id: 99, plotPk: 11, assessmentId: 20, sessionId: 1, value: 1.0, amended: true),
-      ];
-      final lines = computeDataQualityIssueLines(
-        closedSessions: sessions,
-        closedRatings: ratings,
-        analyzablePlots: plots,
-        assessmentDisplayNames: {20: 'ASSESS'},
-        amendedRatings: amended,
-        outlierCandidates: {},
-      );
-
-      expect(lines.length, 4);
-      expect(lines.last, contains('more'));
-      expect(lines.last, contains('Assessment quality'));
-    });
-
-    test('returns empty list when data quality is clean', () {
-      final sessions = [_session(id: 1)];
-      final plots = [_plot(id: 10, treatmentId: 1)];
-      final ratings = [
-        closedRating(id: 1, plotPk: 10, assessmentId: 20, sessionId: 1),
-      ];
-      final lines = computeDataQualityIssueLines(
-        closedSessions: sessions,
-        closedRatings: ratings,
-        analyzablePlots: plots,
-        assessmentDisplayNames: {20: 'AGTARSI'},
-        amendedRatings: [],
-        outlierCandidates: {},
-      );
-
-      expect(lines, isEmpty);
-    });
-
-    test('amendment count shown as N ratings amended, not individual listings', () {
-      final sessions = [_session(id: 1)];
-      final plots = [_plot(id: 10, treatmentId: 1)];
-      // All plots rated (no gaps).
-      final ratings = [
-        closedRating(id: 1, plotPk: 10, assessmentId: 20, sessionId: 1),
-      ];
-      final amended = [
-        _rating(id: 2, plotPk: 10, assessmentId: 20, sessionId: 1, value: 3.0, amended: true),
-        _rating(id: 3, plotPk: 10, assessmentId: 20, sessionId: 1, value: 4.0, amended: true),
-        _rating(id: 4, plotPk: 10, assessmentId: 20, sessionId: 1, value: 5.0, amended: true),
-      ];
-      final lines = computeDataQualityIssueLines(
-        closedSessions: sessions,
-        closedRatings: ratings,
-        analyzablePlots: plots,
-        assessmentDisplayNames: {20: 'ASSESS'},
-        amendedRatings: amended,
-        outlierCandidates: {},
-      );
-
-      expect(lines.length, 1);
-      expect(lines.first, '· 3 ratings amended');
     });
   });
 }
