@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/excel_column_letters.dart';
 import '../../../core/diagnostics/diagnostic_finding.dart';
+import '../../../core/utils/check_treatment_helper.dart';
 import '../../../core/diagnostics/trial_export_diagnostics.dart'
     show kArmRatingShellExportAttemptLabel;
 import '../../../data/arm/arm_application_row_values.dart';
@@ -239,6 +240,11 @@ class ExportArmRatingShellUseCase {
     final aamByTaId = <int, ArmAssessmentMetadataData>{
       for (final r in aamRows) r.trialAssessmentId: r,
     };
+    final untreatedCheckWarning = await _validateUntreatedCheck(
+      treatments: treatments,
+      assessmentMetadata: aamRows,
+    );
+    if (untreatedCheckWarning != null) shellWarnings.add(untreatedCheckWarning);
     int? armImportColumnIndexFor(TrialAssessment a) =>
         aamByTaId[a.id]?.armImportColumnIndex;
     int? armColumnIdIntegerFor(TrialAssessment a) =>
@@ -980,6 +986,28 @@ class ExportArmRatingShellUseCase {
       }
       return null;
     }
+  }
+
+  /// Returns a warning string when the trial has APC/APOC percent-control
+  /// columns but no treatment is identified as the untreated check.
+  /// Returns null when no warning is needed.
+  Future<String?> _validateUntreatedCheck({
+    required List<Treatment> treatments,
+    required List<ArmAssessmentMetadataData> assessmentMetadata,
+  }) async {
+    if (assessmentMetadata.isEmpty) return null;
+    final hasApcOrApoc = assessmentMetadata.any((m) {
+      final actions = m.shellArmActions;
+      if (actions == null) return false;
+      final upper = actions.toUpperCase();
+      return upper.contains('APC') || upper.contains('APOC');
+    });
+    if (!hasApcOrApoc) return null;
+    if (treatments.any(isCheckTreatment)) return null;
+    return 'This trial has percent control columns (APC/APOC) but no untreated '
+        'check treatment is identified. ARM will not be able to calculate percent '
+        'control correctly. Treatments are identified as untreated check when '
+        'their code or treatment type is CHK, UTC, or CONTROL.';
   }
 
 }

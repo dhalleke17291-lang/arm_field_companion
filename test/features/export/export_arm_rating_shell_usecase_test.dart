@@ -2022,4 +2022,139 @@ void main() {
           reason: 'ARM Column ID 16 (col D) should contain 77');
     },
   );
+
+  group('untreated check validation', () {
+    Future<({int trialId, int taId, int plotPk, Trial trialRow})>
+        buildApcTrialBase({required String treatmentCode}) async {
+      final trialRepo = TrialRepository(db);
+      final trialId = await trialRepo.createTrial(
+          name: 'ApcTrial_$treatmentCode', workspaceType: 'efficacy');
+      final trtId = await TreatmentRepository(db).insertTreatment(
+        trialId: trialId,
+        code: treatmentCode,
+        name: 'T',
+      );
+      final plotPk = await PlotRepository(db).insertPlot(
+        trialId: trialId,
+        plotId: '101',
+        rep: 1,
+        treatmentId: trtId,
+        plotSortIndex: 1,
+      );
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'AVEFA',
+              name: 'A',
+              category: 'pest',
+              timingCode: const Value('1-Jul-26'),
+            ),
+          );
+      final legacyAsmId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(
+              trialId: trialId,
+              name: 'Legacy A',
+            ),
+          );
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+              legacyAssessmentId: Value(legacyAsmId),
+              sortOrder: const Value(0),
+            ),
+          );
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-01-01',
+            ),
+          );
+      await db.into(db.ratingRecords).insert(
+            RatingRecordsCompanion.insert(
+              trialId: trialId,
+              plotPk: plotPk,
+              assessmentId: legacyAsmId,
+              sessionId: sessionId,
+              trialAssessmentId: Value(taId),
+              resultStatus: const Value('RECORDED'),
+              numericValue: const Value(42.5),
+              isCurrent: const Value(true),
+            ),
+          );
+      await _pinArmExportAnchors(
+        db,
+        trialId: trialId,
+        plotPk: plotPk,
+        armPlotNumber: 101,
+        trialAssessmentId: taId,
+        sessionId: sessionId,
+        pestCode: 'AVEFA',
+      );
+      // Set shellArmActions on the AAM row created by _pinArmExportAnchors.
+      await (db.update(db.armAssessmentMetadata)
+            ..where((m) => m.trialAssessmentId.equals(taId)))
+          .write(const ArmAssessmentMetadataCompanion(
+        shellArmActions: Value('EC APC'),
+      ));
+      await _insertCompatibilityProfile(
+        db: db,
+        trialId: trialId,
+        exportConfidence: ImportConfidence.high,
+        columnOrderOnExport: const ['AVEFA 1-Jul-26 CONTRO %'],
+      );
+      final trialRow =
+          await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+              .getSingle();
+      return (
+        trialId: trialId,
+        taId: taId,
+        plotPk: plotPk,
+        trialRow: trialRow,
+      );
+    }
+
+    test(
+      'warns when APC column present but no check treatment',
+      () async {
+        final setup = await buildApcTrialBase(treatmentCode: '1');
+        final shellPath = await writeArmShellFixture(
+          tempPath,
+          plotNumbers: const [101],
+          armColumnIds: const ['001EID001'],
+          seNames: const ['AVEFA'],
+          ratingDates: const ['1-Jul-26'],
+        );
+        final r = await makeUc(pickShellPathOverride: () async => shellPath)
+            .execute(trial: setup.trialRow, suppressShare: true);
+
+        expect(r.success, isTrue, reason: r.errorMessage);
+        expect(r.warningMessage, isNotNull);
+        expect(r.warningMessage, contains('APC/APOC'));
+      },
+    );
+
+    test(
+      'no warning when APC column present and check treatment exists',
+      () async {
+        final setup = await buildApcTrialBase(treatmentCode: 'CHK');
+        final shellPath = await writeArmShellFixture(
+          tempPath,
+          plotNumbers: const [101],
+          armColumnIds: const ['001EID001'],
+          seNames: const ['AVEFA'],
+          ratingDates: const ['1-Jul-26'],
+        );
+        final r = await makeUc(pickShellPathOverride: () async => shellPath)
+            .execute(trial: setup.trialRow, suppressShare: true);
+
+        expect(r.success, isTrue, reason: r.errorMessage);
+        expect(
+          r.warningMessage == null || !r.warningMessage!.contains('APC/APOC'),
+          isTrue,
+          reason: 'CHK treatment should suppress the APC/APOC warning',
+        );
+      },
+    );
+  });
 }
