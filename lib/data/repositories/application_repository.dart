@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' show log;
 
 import 'package:drift/drift.dart';
 import '../../core/application_state.dart';
@@ -104,6 +105,112 @@ class ApplicationRepository {
           ..where((e) => e.id.equals(id)))
         .getSingleOrNull();
     if (prior == null) return;
+
+    final bool isConfirmed = prior.appliedAt != null ||
+        prior.status == kAppStatusApplied ||
+        prior.status == 'complete';
+
+    if (isConfirmed) {
+      // ALCOA+ lock: silently ignore execution fields; allow only annotations.
+      final locked = _withLastEditIfUser(
+        TrialApplicationEventsCompanion(
+          operatorName: companion.operatorName,
+          notes: companion.notes,
+          windSpeed: companion.windSpeed,
+          windDirection: companion.windDirection,
+          temperature: companion.temperature,
+          humidity: companion.humidity,
+          cloudCoverPct: companion.cloudCoverPct,
+          soilMoisture: companion.soilMoisture,
+          soilTemperature: companion.soilTemperature,
+          soilTempUnit: companion.soilTempUnit,
+          soilDepth: companion.soilDepth,
+          soilDepthUnit: companion.soilDepthUnit,
+          precipitation: companion.precipitation,
+          precipitationMm: companion.precipitationMm,
+          conditionsRecordedAt: companion.conditionsRecordedAt,
+        ),
+        performedByUserId,
+      );
+      final changedFields = <String, dynamic>{};
+      if (locked.operatorName.present &&
+          locked.operatorName.value != prior.operatorName) {
+        changedFields['operatorName'] = locked.operatorName.value;
+      }
+      if (locked.notes.present && locked.notes.value != prior.notes) {
+        changedFields['notes'] = locked.notes.value;
+      }
+      if (locked.windSpeed.present &&
+          locked.windSpeed.value != prior.windSpeed) {
+        changedFields['windSpeed'] = locked.windSpeed.value;
+      }
+      if (locked.windDirection.present &&
+          locked.windDirection.value != prior.windDirection) {
+        changedFields['windDirection'] = locked.windDirection.value;
+      }
+      if (locked.temperature.present &&
+          locked.temperature.value != prior.temperature) {
+        changedFields['temperature'] = locked.temperature.value;
+      }
+      if (locked.humidity.present && locked.humidity.value != prior.humidity) {
+        changedFields['humidity'] = locked.humidity.value;
+      }
+      if (locked.cloudCoverPct.present &&
+          locked.cloudCoverPct.value != prior.cloudCoverPct) {
+        changedFields['cloudCoverPct'] = locked.cloudCoverPct.value;
+      }
+      if (locked.soilMoisture.present &&
+          locked.soilMoisture.value != prior.soilMoisture) {
+        changedFields['soilMoisture'] = locked.soilMoisture.value;
+      }
+      if (locked.soilTemperature.present &&
+          locked.soilTemperature.value != prior.soilTemperature) {
+        changedFields['soilTemperature'] = locked.soilTemperature.value;
+      }
+      if (locked.precipitation.present &&
+          locked.precipitation.value != prior.precipitation) {
+        changedFields['precipitation'] = locked.precipitation.value;
+      }
+      if (locked.precipitationMm.present &&
+          locked.precipitationMm.value != prior.precipitationMm) {
+        changedFields['precipitationMm'] = locked.precipitationMm.value;
+      }
+      if (locked.conditionsRecordedAt.present &&
+          locked.conditionsRecordedAt.value != prior.conditionsRecordedAt) {
+        changedFields['conditionsRecordedAt'] =
+            locked.conditionsRecordedAt.value?.toIso8601String();
+      }
+      await _db.transaction(() async {
+        await (_db.update(_db.trialApplicationEvents)
+              ..where((e) => e.id.equals(id)))
+            .write(locked);
+        if (changedFields.isNotEmpty) {
+          try {
+            await _db.into(_db.auditEvents).insert(
+                  AuditEventsCompanion.insert(
+                    trialId: Value(prior.trialId),
+                    eventType: 'APPLICATION_EVENT_UPDATED',
+                    description: 'Application annotation updated',
+                    performedBy: Value(performedBy),
+                    performedByUserId: Value(performedByUserId),
+                    metadata: Value(jsonEncode({
+                      'trial_application_event_id': id,
+                      'trial_id': prior.trialId,
+                      'changed_fields': changedFields,
+                    })),
+                  ),
+                );
+          } catch (e, st) {
+            log(
+              'APPLICATION_EVENT_UPDATED audit insert failed: $e\n$st',
+              name: 'ApplicationRepository',
+            );
+          }
+        }
+      });
+      return;
+    }
+
     final effectiveDate = companion.applicationDate.present
         ? companion.applicationDate.value
         : prior.applicationDate;

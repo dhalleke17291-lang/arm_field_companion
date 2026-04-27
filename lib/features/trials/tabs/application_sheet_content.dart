@@ -121,6 +121,20 @@ class _ApplicationSheetContentState
     return t.isEmpty ? null : double.tryParse(t);
   }
 
+  bool get _isConfirmed {
+    final e = widget.existing;
+    if (e == null) return false;
+    return e.appliedAt != null ||
+        e.status == 'applied' ||
+        e.status == 'complete';
+  }
+
+  String _confirmedDateLabel() {
+    final e = widget.existing!;
+    final d = e.appliedAt?.toLocal() ?? e.applicationDate.toLocal();
+    return 'Applied ${DateFormat('MMM d').format(d)} — execution details locked';
+  }
+
 
   @override
   void initState() {
@@ -839,6 +853,17 @@ class _ApplicationSheetContentState
           FormStyles.formSheetSectionSpacing,
         ),
         children: [
+          if (_isConfirmed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                _confirmedDateLabel(),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ),
           // "Same as last" — copies equipment + tank mix from most recent app.
           if (widget.existing == null && !_sameAsLastApplied)
             Padding(
@@ -858,7 +883,7 @@ class _ApplicationSheetContentState
             child: Text('CORE', style: FormStyles.sectionLabelStyle),
           ),
           OutlinedButton.icon(
-            onPressed: _pickDate,
+            onPressed: _isConfirmed ? null : _pickDate,
             icon: const Icon(Icons.calendar_today, size: 18),
             label: Text('Date: $dateLabel'),
           ),
@@ -874,7 +899,7 @@ class _ApplicationSheetContentState
           ],
           const SizedBox(height: FormStyles.formSheetFieldSpacing),
           OutlinedButton.icon(
-            onPressed: _pickTime,
+            onPressed: _isConfirmed ? null : _pickTime,
             icon: const Icon(Icons.access_time, size: 18),
             label: Text('Time: ${_timeStr ?? '—'}'),
           ),
@@ -888,7 +913,7 @@ class _ApplicationSheetContentState
               ...treatments.map((t) =>
                   DropdownMenuItem<int?>(value: t.id, child: Text(t.code))),
             ],
-            onChanged: (v) async {
+            onChanged: _isConfirmed ? null : (v) async {
               final prev = _treatmentId;
               setState(() => _treatmentId = v);
               if (prev != null && v == null) {
@@ -1006,7 +1031,7 @@ class _ApplicationSheetContentState
                   style: FormStyles.sectionLabelStyle,
                 ),
               ),
-              if (showManualAddProduct)
+              if (showManualAddProduct && !_isConfirmed)
                 TextButton.icon(
                   icon: const Icon(Icons.add, size: 16),
                   label: const Text('Add Product'),
@@ -1100,7 +1125,7 @@ class _ApplicationSheetContentState
                 ],
                 TextField(
                   controller: _productControllers[i],
-                  readOnly: _isProtocolLockedRow(i),
+                  readOnly: _isConfirmed || _isProtocolLockedRow(i),
                   decoration: FormStyles.inputDecoration(
                     hintText: 'Product name',
                     labelText:
@@ -1142,6 +1167,7 @@ class _ApplicationSheetContentState
                 const SizedBox(height: FormStyles.formSheetFieldSpacing),
                 TextField(
                   controller: _rateControllers[i],
+                  readOnly: _isConfirmed,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: FormStyles.inputDecoration(
@@ -1163,18 +1189,20 @@ class _ApplicationSheetContentState
                                       style: const TextStyle(fontSize: 13)),
                                 ))
                             .toList(),
-                        onChanged: (v) {
-                          if (v == null) return;
-                          while (_rateUnits.length <= i) {
-                            _rateUnits.add(widget.rateUnits.first);
-                          }
-                          switchUnit(
-                            controller: _rateControllers[i],
-                            currentUnit: _rateUnits[i],
-                            newUnit: v,
-                            applyUnit: (u) => _rateUnits[i] = u ?? v,
-                          );
-                        },
+                        onChanged: _isConfirmed
+                            ? null
+                            : (v) {
+                                if (v == null) return;
+                                while (_rateUnits.length <= i) {
+                                  _rateUnits.add(widget.rateUnits.first);
+                                }
+                                switchUnit(
+                                  controller: _rateControllers[i],
+                                  currentUnit: _rateUnits[i],
+                                  newUnit: v,
+                                  applyUnit: (u) => _rateUnits[i] = u ?? v,
+                                );
+                              },
                       ),
                     ),
                   ),
@@ -1194,7 +1222,9 @@ class _ApplicationSheetContentState
               ...widget.applicationMethods.map(
                   (s) => DropdownMenuItem<String?>(value: s, child: Text(s))),
             ],
-            onChanged: (v) => setState(() => _applicationMethod = v),
+            onChanged: _isConfirmed
+                ? null
+                : (v) => setState(() => _applicationMethod = v),
           ),
           const SizedBox(height: FormStyles.formSheetSectionSpacing),
           // Section 2 — Equipment
@@ -1229,13 +1259,17 @@ class _ApplicationSheetContentState
                   ...widget.nozzleTypes.map((s) =>
                       DropdownMenuItem<String?>(value: s, child: Text(s))),
                 ],
-                onChanged: (v) => setState(() => _nozzleType = v),
+                onChanged: _isConfirmed
+                    ? null
+                    : (v) => setState(() => _nozzleType = v),
               ),
               const SizedBox(height: 12),
-              _field('Nozzle spacing cm', _nozzleSpacingController),
+              _field('Nozzle spacing cm', _nozzleSpacingController,
+                  readOnly: _isConfirmed),
               const SizedBox(height: 12),
               TextField(
                 controller: _operatingPressureController,
+                readOnly: _isConfirmed,
                 decoration: FormStyles.inputDecoration(
                   labelText: 'Operating pressure',
                   suffixIcon: DropdownButtonHideUnderline(
@@ -1253,12 +1287,14 @@ class _ApplicationSheetContentState
                                 child: Text(s,
                                     style: const TextStyle(fontSize: 13)))),
                       ],
-                      onChanged: (v) => switchUnit(
-                        controller: _operatingPressureController,
-                        currentUnit: _pressureUnit,
-                        newUnit: v,
-                        applyUnit: (u) => _pressureUnit = u,
-                      ),
+                      onChanged: _isConfirmed
+                          ? null
+                          : (v) => switchUnit(
+                                controller: _operatingPressureController,
+                                currentUnit: _pressureUnit,
+                                newUnit: v,
+                                applyUnit: (u) => _pressureUnit = u,
+                              ),
                     ),
                   ),
                 ),
@@ -1269,6 +1305,7 @@ class _ApplicationSheetContentState
               const SizedBox(height: 12),
               TextField(
                 controller: _groundSpeedController,
+                readOnly: _isConfirmed,
                 decoration: FormStyles.inputDecoration(
                   labelText: 'Ground speed',
                   suffixIcon: DropdownButtonHideUnderline(
@@ -1286,12 +1323,14 @@ class _ApplicationSheetContentState
                                 child: Text(s,
                                     style: const TextStyle(fontSize: 13)))),
                       ],
-                      onChanged: (v) => switchUnit(
-                        controller: _groundSpeedController,
-                        currentUnit: _speedUnit,
-                        newUnit: v,
-                        applyUnit: (u) => _speedUnit = u,
-                      ),
+                      onChanged: _isConfirmed
+                          ? null
+                          : (v) => switchUnit(
+                                controller: _groundSpeedController,
+                                currentUnit: _speedUnit,
+                                newUnit: v,
+                                applyUnit: (u) => _speedUnit = u,
+                              ),
                     ),
                   ),
                 ),
@@ -1302,6 +1341,7 @@ class _ApplicationSheetContentState
               const SizedBox(height: 12),
               TextField(
                 controller: _equipmentController,
+                readOnly: _isConfirmed,
                 decoration:
                     FormStyles.inputDecoration(labelText: 'Equipment used'),
                 onChanged: (_) => setState(() {}),
@@ -1337,6 +1377,7 @@ class _ApplicationSheetContentState
             children: [
               TextField(
                 controller: _waterVolumeController,
+                readOnly: _isConfirmed,
                 decoration: FormStyles.inputDecoration(
                   labelText: 'Water volume',
                   suffixIcon: DropdownButtonHideUnderline(
@@ -1354,12 +1395,14 @@ class _ApplicationSheetContentState
                                 child: Text(s,
                                     style: const TextStyle(fontSize: 13)))),
                       ],
-                      onChanged: (v) => switchUnit(
-                        controller: _waterVolumeController,
-                        currentUnit: _waterVolumeUnit,
-                        newUnit: v,
-                        applyUnit: (u) => _waterVolumeUnit = u,
-                      ),
+                      onChanged: _isConfirmed
+                          ? null
+                          : (v) => switchUnit(
+                                controller: _waterVolumeController,
+                                currentUnit: _waterVolumeUnit,
+                                newUnit: v,
+                                applyUnit: (u) => _waterVolumeUnit = u,
+                              ),
                     ),
                   ),
                 ),
@@ -1370,6 +1413,7 @@ class _ApplicationSheetContentState
               const SizedBox(height: 12),
               TextField(
                 controller: _adjuvantNameController,
+                readOnly: _isConfirmed,
                 decoration: FormStyles.inputDecoration(
                   labelText: 'Adjuvant name',
                   hintText: 'e.g. Agral 90, Merge',
@@ -1379,6 +1423,7 @@ class _ApplicationSheetContentState
               const SizedBox(height: 12),
               TextField(
                 controller: _adjuvantRateController,
+                readOnly: _isConfirmed,
                 decoration: FormStyles.inputDecoration(
                   labelText: 'Adjuvant rate',
                   suffixIcon: DropdownButtonHideUnderline(
@@ -1396,12 +1441,14 @@ class _ApplicationSheetContentState
                                 child: Text(s,
                                     style: const TextStyle(fontSize: 13)))),
                       ],
-                      onChanged: (v) => switchUnit(
-                        controller: _adjuvantRateController,
-                        currentUnit: _adjuvantRateUnit,
-                        newUnit: v,
-                        applyUnit: (u) => _adjuvantRateUnit = u,
-                      ),
+                      onChanged: _isConfirmed
+                          ? null
+                          : (v) => switchUnit(
+                                controller: _adjuvantRateController,
+                                currentUnit: _adjuvantRateUnit,
+                                newUnit: v,
+                                applyUnit: (u) => _adjuvantRateUnit = u,
+                              ),
                     ),
                   ),
                 ),
@@ -1412,6 +1459,7 @@ class _ApplicationSheetContentState
               const SizedBox(height: 12),
               TextField(
                 controller: _spraySolutionPhController,
+                readOnly: _isConfirmed,
                 decoration: FormStyles.inputDecoration(
                   labelText: 'Spray solution pH',
                   hintText: 'pH of mixed solution',
@@ -1423,6 +1471,7 @@ class _ApplicationSheetContentState
               const SizedBox(height: 12),
               TextField(
                 controller: _treatedAreaController,
+                readOnly: _isConfirmed,
                 decoration: FormStyles.inputDecoration(
                   labelText: 'Treated area',
                   suffixIcon: DropdownButtonHideUnderline(
@@ -1440,12 +1489,14 @@ class _ApplicationSheetContentState
                                 child: Text(s,
                                     style: const TextStyle(fontSize: 13)))),
                       ],
-                      onChanged: (v) => switchUnit(
-                        controller: _treatedAreaController,
-                        currentUnit: _treatedAreaUnit,
-                        newUnit: v,
-                        applyUnit: (u) => _treatedAreaUnit = u,
-                      ),
+                      onChanged: _isConfirmed
+                          ? null
+                          : (v) => switchUnit(
+                                controller: _treatedAreaController,
+                                currentUnit: _treatedAreaUnit,
+                                newUnit: v,
+                                applyUnit: (u) => _treatedAreaUnit = u,
+                              ),
                     ),
                   ),
                 ),
@@ -1748,6 +1799,7 @@ class _ApplicationSheetContentState
             children: [
               TextFormField(
                 controller: _growthStageController,
+                readOnly: _isConfirmed,
                 decoration:
                     FormStyles.inputDecoration(hintText: 'Growth stage / BBCH'),
                 keyboardType: TextInputType.text,
@@ -1767,15 +1819,17 @@ class _ApplicationSheetContentState
                     ),
                   ),
                   TextButton(
-                    onPressed: () => setState(() {
-                      final allLabels =
-                          plots.map((p) => getDisplayPlotLabel(p, plots));
-                      if (_selectedPlotLabels.length == plots.length) {
-                        _selectedPlotLabels.clear();
-                      } else {
-                        _selectedPlotLabels.addAll(allLabels);
-                      }
-                    }),
+                    onPressed: _isConfirmed
+                        ? null
+                        : () => setState(() {
+                              final allLabels =
+                                  plots.map((p) => getDisplayPlotLabel(p, plots));
+                              if (_selectedPlotLabels.length == plots.length) {
+                                _selectedPlotLabels.clear();
+                              } else {
+                                _selectedPlotLabels.addAll(allLabels);
+                              }
+                            }),
                     child: Text(
                       _selectedPlotLabels.length == plots.length
                           ? 'Deselect all'
@@ -1840,16 +1894,21 @@ class _ApplicationSheetContentState
                                     _selectedPlotLabels.contains(plot.plotId);
                                 return IntrinsicWidth(
                                   child: GestureDetector(
-                                    onTap: () => setState(() {
-                                      if (isSelected) {
-                                        _selectedPlotLabels
-                                            .remove(displayLabel);
-                                        _selectedPlotLabels.remove(plot.plotId);
-                                      } else {
-                                        _selectedPlotLabels.remove(plot.plotId);
-                                        _selectedPlotLabels.add(displayLabel);
-                                      }
-                                    }),
+                                    onTap: _isConfirmed
+                                        ? null
+                                        : () => setState(() {
+                                              if (isSelected) {
+                                                _selectedPlotLabels
+                                                    .remove(displayLabel);
+                                                _selectedPlotLabels
+                                                    .remove(plot.plotId);
+                                              } else {
+                                                _selectedPlotLabels
+                                                    .remove(plot.plotId);
+                                                _selectedPlotLabels
+                                                    .add(displayLabel);
+                                              }
+                                            }),
                                     child: Container(
                                       height: 32,
                                       padding: const EdgeInsets.symmetric(
@@ -1975,12 +2034,14 @@ class _ApplicationSheetContentState
     );
   }
 
-  Widget _field(String label, TextEditingController controller) {
+  Widget _field(String label, TextEditingController controller,
+      {bool readOnly = false}) {
     return TextField(
       controller: controller,
+      readOnly: readOnly,
       decoration: FormStyles.inputDecoration(labelText: label),
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      onChanged: (_) => setState(() {}),
+      onChanged: readOnly ? null : (_) => setState(() {}),
     );
   }
 }

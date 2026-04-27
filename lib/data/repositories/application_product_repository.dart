@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../../core/application_state.dart';
 import '../../core/database/app_database.dart';
 
 /// One row to persist for an application event's tank-mix / product list.
@@ -65,6 +66,16 @@ class ApplicationProductRepository {
     String trialApplicationEventId,
     List<ApplicationProductSaveRow> rows,
   ) async {
+    // Block product updates when the parent application is confirmed.
+    final parent = await (_db.select(_db.trialApplicationEvents)
+          ..where((e) => e.id.equals(trialApplicationEventId)))
+        .getSingleOrNull();
+    if (parent != null &&
+        (parent.appliedAt != null ||
+            parent.status == kAppStatusApplied ||
+            parent.status == 'complete')) {
+      return;
+    }
     await _db.transaction(() async {
       await (_db.delete(_db.trialApplicationProducts)
             ..where((t) =>

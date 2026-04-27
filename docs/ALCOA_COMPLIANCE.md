@@ -200,6 +200,7 @@ The following gaps have been identified against full ALCOA+ compliance. Each is 
 | 7 | Enduring / Attributable | ~~Audit-clear code path allowed bulk deletion of `audit_events` after backup~~ | ~~Prior audit history could be removed from the device~~ | — | **Closed** — code path removed 2026-04-26 |
 | 8 | Available | No built-in read-only inspector view for `.agnexis` files; requires app restore or manual SQLite tooling | Inspector access requires technical setup | Low | Open |
 | 9 | Consistent | No cross-table clock-consistency validation (e.g., `session.closedAt` < `rating.createdAt` edge cases from clock jumps go undetected) | Subtle timestamp inconsistencies would not be flagged | Low | Open |
+| 10 | Original | ~~`updateApplication` allowed in-place mutation of execution fields (applicationDate, rate, productName, plotsTreated, equipment) on confirmed applications after `appliedAt` was set~~ | ~~Original execution truth could be overwritten without trace~~ | — | **Closed** — repository lock + UI read-only + product row lock implemented 2026-04-26 |
 
 ---
 
@@ -212,6 +213,13 @@ The following `eventType` values are written to `audit_events` by the applicatio
 | `RATING_SAVED` | `saveRating` — new rating or new version in chain | `trialId`, `sessionId`, `plotPk`, `performedBy` |
 | `RATING_CORRECTED` | `applyCorrection` — post-close amendment | `trialId`, `sessionId`, `plotPk`, `correctedBy` |
 | `RATING_METADATA_UPDATED` | `updateRating` — metadata-only edit (reason, confidence, editor) | `trialId`, `sessionId`, `plotPk`, metadata JSON of updated fields |
+| `TRIAL_APPLICATION_EVENT_CREATED` | `createApplication` — new application record | `trialId`, `performedBy`, metadata with event id and date |
+| `TRIAL_APPLICATION_EVENT_UPDATED` | `updateApplication` — edit on unconfirmed application | `trialId`, `performedBy`, metadata with status and date |
+| `APPLICATION_EVENT_UPDATED` | `updateApplication` on confirmed application — editable fields only | `trialId`, `performedBy`, metadata JSON of changed fields and new values |
+| `TRIAL_APPLICATION_EVENT_APPLIED` | `markApplicationApplied` — confirmation timestamp set | `trialId`, `performedBy`, `appliedAt` |
+| `TRIAL_APPLICATION_COMPLETED` | `completeApplication` | `trialId`, `performedBy` |
+| `TRIAL_APPLICATION_CLOSED` | `closeApplication` | `trialId`, `performedBy` |
+| `TRIAL_APPLICATION_CANCELLED` | `cancelApplication` | `trialId`, `performedBy`, previous status |
 
 ---
 

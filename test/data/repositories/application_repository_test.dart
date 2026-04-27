@@ -110,6 +110,141 @@ void main() {
     });
   });
 
+  group('updateApplication — confirmed lock', () {
+    Future<String> createAppliedApp(int trialId) async {
+      final id = await repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+          applicationMethod: const Value('spray'),
+          operatorName: const Value('original operator'),
+          notes: const Value('original notes'),
+        ),
+      );
+      await repo.markApplicationApplied(id: id, appliedAt: DateTime.now());
+      return id;
+    }
+
+    test('does not update execution fields on confirmed application', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      // Attempt to change execution fields after confirmation.
+      final yesterday =
+          DateTime.now().subtract(const Duration(days: 1));
+      await repo.updateApplication(
+        id,
+        TrialApplicationEventsCompanion(
+          applicationDate: Value(yesterday),
+          applicationMethod: const Value('drench'),
+          rate: const Value(999.0),
+          productName: const Value('ShouldNotChange'),
+        ),
+      );
+
+      final events = await repo.getApplicationsForTrial(trialId);
+      expect(events[0].applicationMethod, 'spray',
+          reason: 'applicationMethod must not change after confirmation');
+      expect(events[0].rate, isNull,
+          reason: 'rate must not change after confirmation');
+      expect(events[0].productName, isNull,
+          reason: 'productName must not change after confirmation');
+      // applicationDate was today() at creation; it must remain unchanged.
+      expect(
+        events[0].applicationDate.day,
+        today().day,
+        reason: 'applicationDate must not change after confirmation',
+      );
+    });
+
+    test('does update editable fields on confirmed application', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.updateApplication(
+        id,
+        const TrialApplicationEventsCompanion(
+          operatorName: Value('new operator'),
+          notes: Value('updated notes'),
+          windSpeed: Value(4.5),
+        ),
+      );
+
+      final events = await repo.getApplicationsForTrial(trialId);
+      expect(events[0].operatorName, 'new operator');
+      expect(events[0].notes, 'updated notes');
+      expect(events[0].windSpeed, closeTo(4.5, 0.001));
+    });
+
+    test('unconfirmed application updates all fields normally', () async {
+      final trialId = await createTrial();
+      final id = await repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+          status: const Value('planned'),
+          applicationMethod: const Value('spray'),
+        ),
+      );
+
+      await repo.updateApplication(
+        id,
+        const TrialApplicationEventsCompanion(
+          applicationMethod: Value('drench'),
+          rate: Value(100.0),
+          productName: Value('Herbicide X'),
+          operatorName: Value('tester'),
+        ),
+      );
+
+      final events = await repo.getApplicationsForTrial(trialId);
+      expect(events[0].applicationMethod, 'drench');
+      expect(events[0].rate, closeTo(100.0, 0.001));
+      expect(events[0].productName, 'Herbicide X');
+      expect(events[0].operatorName, 'tester');
+    });
+
+    test('writes APPLICATION_EVENT_UPDATED audit when editable field changes',
+        () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.updateApplication(
+        id,
+        const TrialApplicationEventsCompanion(
+          operatorName: Value('audited operator'),
+        ),
+        performedBy: 'tester',
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where(
+                (a) => a.eventType.equals('APPLICATION_EVENT_UPDATED')))
+          .get();
+      expect(audits.length, 1);
+      expect(audits[0].performedBy, 'tester');
+    });
+
+    test('no audit event written when no editable field changes', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      // Call with only execution fields (all silently ignored) — no changes.
+      await repo.updateApplication(
+        id,
+        const TrialApplicationEventsCompanion(
+          applicationMethod: Value('drench'),
+        ),
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where(
+                (a) => a.eventType.equals('APPLICATION_EVENT_UPDATED')))
+          .get();
+      expect(audits, isEmpty);
+    });
+  });
+
   group('markApplicationApplied', () {
     test('sets status to applied from pending', () async {
       final trialId = await createTrial();
