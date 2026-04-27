@@ -66,6 +66,7 @@ class _ApplicationSheetContentState
   late List<TextEditingController> _rateControllers;
   late List<String> _rateUnits;
   bool _junctionLoadScheduled = false;
+  bool _weatherRetryAttempted = false;
   /// Parallel to product rows when a treatment is selected: the treatment
   /// component for protocol-bound rows, or null for extra rows (legacy / not on protocol).
   List<TreatmentComponent?> _protocolRowSources = [];
@@ -242,6 +243,28 @@ class _ApplicationSheetContentState
     _initialExpandedCoverage = _trim(e?.growthStageCode) != null ||
         _selectedPlotLabels.isNotEmpty ||
         _trim(e?.notes) != null;
+
+    if (_isConfirmed &&
+        e != null &&
+        e.capturedLatitude != null &&
+        e.temperature == null &&
+        !_weatherRetryAttempted) {
+      _weatherRetryAttempted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(
+          ref
+              .read(applicationWeatherBackfillServiceProvider)
+              .queueApplicationWeatherBackfill(
+                applicationId: e.id,
+                trialId: widget.trial.id,
+                latitude: e.capturedLatitude!,
+                longitude: e.capturedLongitude!,
+                appliedAt: e.appliedAt ?? e.applicationDate,
+              ),
+        );
+      });
+    }
   }
 
   void _disposeProductRows() {

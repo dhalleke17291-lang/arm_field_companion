@@ -9,6 +9,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/field_operation_date_rules.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
+import '../../../core/connectivity/gps_service.dart';
 import '../../../core/providers.dart';
 
 import '../../../core/widgets/loading_error_widgets.dart';
@@ -23,6 +24,36 @@ Future<void> _invalidateSessionTimingForTrialSessions(
   final sessions = await ref.read(sessionsForTrialProvider(trialId).future);
   for (final s in sessions) {
     ref.invalidate(sessionTimingContextProvider(s.id));
+  }
+}
+
+Future<void> _captureSeedingWeatherAndGps(
+  String seedingEventId,
+  int trialId,
+  DateTime completedAt,
+  WidgetRef ref,
+) async {
+  try {
+    final position = await GpsService.getCurrentPosition(
+      timeout: const Duration(seconds: 3),
+    );
+    if (position == null) return;
+    await ref.read(seedingRepositoryProvider).updateSeedingGps(
+          seedingEventId: seedingEventId,
+          latitude: position.latitude,
+          longitude: position.longitude,
+        );
+    await ref
+        .read(seedingWeatherBackfillServiceProvider)
+        .queueSeedingWeatherBackfill(
+          seedingEventId: seedingEventId,
+          trialId: trialId,
+          latitude: position.latitude,
+          longitude: position.longitude,
+          completedAt: completedAt,
+        );
+  } catch (_) {
+    // Never propagate — GPS/weather must not affect the seeding completion.
   }
 }
 
@@ -157,14 +188,17 @@ class SeedingTab extends ConsumerWidget {
                               await ref.read(currentUserIdProvider.future);
                           final user =
                               await ref.read(currentUserProvider.future);
+                          final completedAt = DateTime.now();
                           await ref
                               .read(seedingRepositoryProvider)
                               .markSeedingCompleted(
                                 id: event.id,
-                                completedAt: DateTime.now(),
+                                completedAt: completedAt,
                                 performedBy: user?.displayName,
                                 performedByUserId: userId,
                               );
+                          unawaited(_captureSeedingWeatherAndGps(
+                              event.id, trial.id, completedAt, ref));
                           ref.invalidate(seedingEventForTrialProvider(trial.id));
                           await _invalidateSessionTimingForTrialSessions(
                               ref, trial.id);
@@ -841,6 +875,9 @@ class _SeedingEventFormSheetState
   String? _plantingMethod;
   DateTime? _emergenceDate;
   bool _saving = false;
+  bool _weatherRetryAttempted = false;
+
+  bool get _isCompleted => widget.existing?.completedAt != null;
 
   @override
   void initState() {
@@ -867,6 +904,28 @@ class _SeedingEventFormSheetState
         text: e?.germinationPct != null ? e!.germinationPct.toString() : '');
     _emergencePctController = TextEditingController(
         text: e?.emergencePct != null ? e!.emergencePct.toString() : '');
+
+    if (_isCompleted &&
+        e != null &&
+        e.capturedLatitude != null &&
+        e.temperatureC == null &&
+        !_weatherRetryAttempted) {
+      _weatherRetryAttempted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(
+          ref
+              .read(seedingWeatherBackfillServiceProvider)
+              .queueSeedingWeatherBackfill(
+                seedingEventId: e.id,
+                trialId: widget.trial.id,
+                latitude: e.capturedLatitude!,
+                longitude: e.capturedLongitude!,
+                completedAt: e.completedAt ?? e.seedingDate,
+              ),
+        );
+      });
+    }
   }
 
   @override
@@ -1053,6 +1112,17 @@ class _SeedingEventFormSheetState
           FormStyles.formSheetSectionSpacing,
         ),
         children: [
+                if (_isCompleted)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      'Seeding completed ${widget.existing!.completedAt!.toLocal().toString().split(' ')[0]} — execution details locked',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                  ),
                 _sectionHeader('Seed details'),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -1068,7 +1138,7 @@ class _SeedingEventFormSheetState
                   ),
                   trailing: const Icon(Icons.calendar_today_outlined,
                       color: AppDesignTokens.primary, size: 20),
-                  onTap: _pickDate,
+                  onTap: _isCompleted ? null : _pickDate,
                 ),
                 const SizedBox(height: FormStyles.formSheetFieldSpacing),
                 DropdownButtonFormField<String?>(
@@ -1083,11 +1153,12 @@ class _SeedingEventFormSheetState
                       (s) => DropdownMenuItem<String?>(value: s, child: Text(s)),
                     ),
                   ],
-                  onChanged: (v) => setState(() => _plantingMethod = v),
+                  onChanged: _isCompleted ? null : (v) => setState(() => _plantingMethod = v),
                 ),
                 const SizedBox(height: FormStyles.formSheetFieldSpacing),
                 TextField(
                   controller: _varietyController,
+                  readOnly: _isCompleted,
                   decoration: FormStyles.inputDecoration(
                     labelText: 'Variety / cultivar (optional)',
                     hintText: 'e.g. AAC Brandon, Pioneer P9623',
@@ -1097,6 +1168,7 @@ class _SeedingEventFormSheetState
                 const SizedBox(height: FormStyles.formSheetFieldSpacing),
                 TextField(
                   controller: _seedLotController,
+                  readOnly: _isCompleted,
                   decoration: FormStyles.inputDecoration(
                       labelText: 'Seed lot number (optional)'),
                 ),
@@ -1116,6 +1188,7 @@ class _SeedingEventFormSheetState
                         children: [
                           TextField(
                             controller: _seedTreatmentController,
+                            readOnly: _isCompleted,
                             decoration: FormStyles.inputDecoration(
                               labelText: 'Seed treatment (optional)',
                               hintText: 'e.g. Vibrance 500 FS',
@@ -1125,6 +1198,7 @@ class _SeedingEventFormSheetState
                           const SizedBox(height: FormStyles.formSheetFieldSpacing),
                           TextField(
                             controller: _germinationPctController,
+                            readOnly: _isCompleted,
                             decoration: FormStyles.inputDecoration(
                               labelText: 'Germination % (optional)',
                             ).copyWith(suffixText: '%'),
@@ -1152,6 +1226,7 @@ class _SeedingEventFormSheetState
                         children: [
                           TextField(
                             controller: _rateController,
+                            readOnly: _isCompleted,
                             decoration: FormStyles.inputDecoration(
                               labelText: 'Seeding rate (optional)',
                               suffixIcon: DropdownButtonHideUnderline(
@@ -1172,7 +1247,7 @@ class _SeedingEventFormSheetState
                                                   fontSize: 13))),
                                     ),
                                   ],
-                                  onChanged: (v) =>
+                                  onChanged: _isCompleted ? null : (v) =>
                                       setState(() => _rateUnit = v),
                                 ),
                               ),
@@ -1183,6 +1258,7 @@ class _SeedingEventFormSheetState
                           const SizedBox(height: FormStyles.formSheetFieldSpacing),
                           TextField(
                             controller: _depthController,
+                            readOnly: _isCompleted,
                             decoration: FormStyles.inputDecoration(
                                 labelText: 'Seeding depth cm (optional)'),
                             keyboardType: const TextInputType
@@ -1191,6 +1267,7 @@ class _SeedingEventFormSheetState
                           const SizedBox(height: FormStyles.formSheetFieldSpacing),
                           TextField(
                             controller: _rowSpacingController,
+                            readOnly: _isCompleted,
                             decoration: FormStyles.inputDecoration(
                                 labelText: 'Row spacing cm (optional)'),
                             keyboardType: const TextInputType

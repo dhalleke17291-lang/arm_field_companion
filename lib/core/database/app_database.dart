@@ -670,6 +670,22 @@ class SeedingEvents extends Table {
       integer().nullable().references(Users, #id)();
   DateTimeColumn get lastEditedAt => dateTime().nullable()();
 
+  // Weather conditions recorded at seeding time
+  RealColumn get temperatureC => real().nullable()();
+  RealColumn get humidityPct => real().nullable()();
+  RealColumn get windSpeedKmh => real().nullable()();
+  TextColumn get windDirection => text().nullable()();
+  RealColumn get cloudCoverPct => real().nullable()();
+  TextColumn get precipitation => text().nullable()();
+  RealColumn get precipitationMm => real().nullable()();
+  TextColumn get soilMoisture => text().nullable()();
+  RealColumn get soilTemperature => real().nullable()();
+  DateTimeColumn get conditionsRecordedAt => dateTime().nullable()();
+  // GPS captured at time of seeding operation (immutable after completion)
+  RealColumn get capturedLatitude => real().nullable()();
+  RealColumn get capturedLongitude => real().nullable()();
+  DateTimeColumn get locationCapturedAt => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -737,6 +753,10 @@ class TrialApplicationEvents extends Table {
   RealColumn get totalProductMixed => real().nullable()();
   /// Total area actually sprayed (hectares).
   RealColumn get totalAreaSprayedHa => real().nullable()();
+
+  RealColumn get capturedLatitude => real().nullable()();
+  RealColumn get capturedLongitude => real().nullable()();
+  DateTimeColumn get locationCapturedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -1309,7 +1329,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 68;
+  int get schemaVersion => 70;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -2665,6 +2685,49 @@ WHERE pest_code IS NULL
             }
             if (!userCols.contains('pin_enabled')) {
               await m.addColumn(users, users.pinEnabled);
+            }
+          }
+          if (from < 69) {
+            final seCols = await customSelect(
+              "SELECT name FROM pragma_table_info('seeding_events')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            for (final entry in {
+              'temperature_c': 'REAL',
+              'humidity_pct': 'REAL',
+              'wind_speed_kmh': 'REAL',
+              'wind_direction': 'TEXT',
+              'cloud_cover_pct': 'REAL',
+              'precipitation': 'TEXT',
+              'precipitation_mm': 'REAL',
+              'soil_moisture': 'TEXT',
+              'soil_temperature': 'REAL',
+              'conditions_recorded_at': 'INTEGER',
+              'captured_latitude': 'REAL',
+              'captured_longitude': 'REAL',
+              'location_captured_at': 'INTEGER',
+            }.entries) {
+              if (!seCols.contains(entry.key)) {
+                await customStatement(
+                  'ALTER TABLE seeding_events ADD COLUMN ${entry.key} ${entry.value}',
+                );
+              }
+            }
+          }
+
+          if (from < 70) {
+            final taeCols = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_application_events')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            for (final entry in {
+              'captured_latitude': 'REAL',
+              'captured_longitude': 'REAL',
+              'location_captured_at': 'INTEGER',
+            }.entries) {
+              if (!taeCols.contains(entry.key)) {
+                await customStatement(
+                  'ALTER TABLE trial_application_events ADD COLUMN ${entry.key} ${entry.value}',
+                );
+              }
             }
           }
 

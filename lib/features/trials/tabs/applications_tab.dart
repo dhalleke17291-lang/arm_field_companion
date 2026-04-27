@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/field_operation_date_rules.dart';
+import '../../../core/connectivity/gps_service.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../domain/application_deviation.dart';
@@ -654,6 +655,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
         }
         return;
       }
+      unawaited(_captureApplicationWeatherAndGps(e.id, widget.trial.id, appliedAt));
       ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
       await _invalidateSessionTimingForTrialSessions(ref, widget.trial.id);
       if (context.mounted) {
@@ -664,6 +666,35 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _captureApplicationWeatherAndGps(
+    String applicationId,
+    int trialId,
+    DateTime appliedAt,
+  ) async {
+    try {
+      final gps = await GpsService.getCurrentPosition(
+        timeout: const Duration(seconds: 3),
+      );
+      if (gps == null) return;
+      await ref.read(applicationRepositoryProvider).updateApplicationGps(
+            applicationId: applicationId,
+            latitude: gps.latitude,
+            longitude: gps.longitude,
+          );
+      await ref
+          .read(applicationWeatherBackfillServiceProvider)
+          .queueApplicationWeatherBackfill(
+            applicationId: applicationId,
+            trialId: trialId,
+            latitude: gps.latitude,
+            longitude: gps.longitude,
+            appliedAt: appliedAt,
+          );
+    } catch (_) {
+      // Never propagate — GPS/weather must not affect the apply action.
     }
   }
 

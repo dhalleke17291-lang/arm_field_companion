@@ -20029,6 +20029,84 @@ class $SeedingEventsTable extends SeedingEvents
   late final GeneratedColumn<DateTime> lastEditedAt = GeneratedColumn<DateTime>(
       'last_edited_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _temperatureCMeta =
+      const VerificationMeta('temperatureC');
+  @override
+  late final GeneratedColumn<double> temperatureC = GeneratedColumn<double>(
+      'temperature_c', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _humidityPctMeta =
+      const VerificationMeta('humidityPct');
+  @override
+  late final GeneratedColumn<double> humidityPct = GeneratedColumn<double>(
+      'humidity_pct', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _windSpeedKmhMeta =
+      const VerificationMeta('windSpeedKmh');
+  @override
+  late final GeneratedColumn<double> windSpeedKmh = GeneratedColumn<double>(
+      'wind_speed_kmh', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _windDirectionMeta =
+      const VerificationMeta('windDirection');
+  @override
+  late final GeneratedColumn<String> windDirection = GeneratedColumn<String>(
+      'wind_direction', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cloudCoverPctMeta =
+      const VerificationMeta('cloudCoverPct');
+  @override
+  late final GeneratedColumn<double> cloudCoverPct = GeneratedColumn<double>(
+      'cloud_cover_pct', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _precipitationMeta =
+      const VerificationMeta('precipitation');
+  @override
+  late final GeneratedColumn<String> precipitation = GeneratedColumn<String>(
+      'precipitation', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _precipitationMmMeta =
+      const VerificationMeta('precipitationMm');
+  @override
+  late final GeneratedColumn<double> precipitationMm = GeneratedColumn<double>(
+      'precipitation_mm', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _soilMoistureMeta =
+      const VerificationMeta('soilMoisture');
+  @override
+  late final GeneratedColumn<String> soilMoisture = GeneratedColumn<String>(
+      'soil_moisture', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _soilTemperatureMeta =
+      const VerificationMeta('soilTemperature');
+  @override
+  late final GeneratedColumn<double> soilTemperature = GeneratedColumn<double>(
+      'soil_temperature', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _conditionsRecordedAtMeta =
+      const VerificationMeta('conditionsRecordedAt');
+  @override
+  late final GeneratedColumn<DateTime> conditionsRecordedAt =
+      GeneratedColumn<DateTime>('conditions_recorded_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _capturedLatitudeMeta =
+      const VerificationMeta('capturedLatitude');
+  @override
+  late final GeneratedColumn<double> capturedLatitude = GeneratedColumn<double>(
+      'captured_latitude', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _capturedLongitudeMeta =
+      const VerificationMeta('capturedLongitude');
+  @override
+  late final GeneratedColumn<double> capturedLongitude =
+      GeneratedColumn<double>('captured_longitude', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _locationCapturedAtMeta =
+      const VerificationMeta('locationCapturedAt');
+  @override
+  late final GeneratedColumn<DateTime> locationCapturedAt =
+      GeneratedColumn<DateTime>('location_captured_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -20052,7 +20130,20 @@ class $SeedingEventsTable extends SeedingEvents
         completedAt,
         createdAt,
         lastEditedByUserId,
-        lastEditedAt
+        lastEditedAt,
+        temperatureC,
+        humidityPct,
+        windSpeedKmh,
+        windDirection,
+        cloudCoverPct,
+        precipitation,
+        precipitationMm,
+        soilMoisture,
+        soilTemperature,
+        conditionsRecordedAt,
+        capturedLatitude,
+        capturedLongitude,
+        locationCapturedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -20187,6 +20278,84 @@ class $SeedingEventsTable extends SeedingEvents
           lastEditedAt.isAcceptableOrUnknown(
               data['last_edited_at']!, _lastEditedAtMeta));
     }
+    if (data.containsKey('temperature_c')) {
+      context.handle(
+          _temperatureCMeta,
+          temperatureC.isAcceptableOrUnknown(
+              data['temperature_c']!, _temperatureCMeta));
+    }
+    if (data.containsKey('humidity_pct')) {
+      context.handle(
+          _humidityPctMeta,
+          humidityPct.isAcceptableOrUnknown(
+              data['humidity_pct']!, _humidityPctMeta));
+    }
+    if (data.containsKey('wind_speed_kmh')) {
+      context.handle(
+          _windSpeedKmhMeta,
+          windSpeedKmh.isAcceptableOrUnknown(
+              data['wind_speed_kmh']!, _windSpeedKmhMeta));
+    }
+    if (data.containsKey('wind_direction')) {
+      context.handle(
+          _windDirectionMeta,
+          windDirection.isAcceptableOrUnknown(
+              data['wind_direction']!, _windDirectionMeta));
+    }
+    if (data.containsKey('cloud_cover_pct')) {
+      context.handle(
+          _cloudCoverPctMeta,
+          cloudCoverPct.isAcceptableOrUnknown(
+              data['cloud_cover_pct']!, _cloudCoverPctMeta));
+    }
+    if (data.containsKey('precipitation')) {
+      context.handle(
+          _precipitationMeta,
+          precipitation.isAcceptableOrUnknown(
+              data['precipitation']!, _precipitationMeta));
+    }
+    if (data.containsKey('precipitation_mm')) {
+      context.handle(
+          _precipitationMmMeta,
+          precipitationMm.isAcceptableOrUnknown(
+              data['precipitation_mm']!, _precipitationMmMeta));
+    }
+    if (data.containsKey('soil_moisture')) {
+      context.handle(
+          _soilMoistureMeta,
+          soilMoisture.isAcceptableOrUnknown(
+              data['soil_moisture']!, _soilMoistureMeta));
+    }
+    if (data.containsKey('soil_temperature')) {
+      context.handle(
+          _soilTemperatureMeta,
+          soilTemperature.isAcceptableOrUnknown(
+              data['soil_temperature']!, _soilTemperatureMeta));
+    }
+    if (data.containsKey('conditions_recorded_at')) {
+      context.handle(
+          _conditionsRecordedAtMeta,
+          conditionsRecordedAt.isAcceptableOrUnknown(
+              data['conditions_recorded_at']!, _conditionsRecordedAtMeta));
+    }
+    if (data.containsKey('captured_latitude')) {
+      context.handle(
+          _capturedLatitudeMeta,
+          capturedLatitude.isAcceptableOrUnknown(
+              data['captured_latitude']!, _capturedLatitudeMeta));
+    }
+    if (data.containsKey('captured_longitude')) {
+      context.handle(
+          _capturedLongitudeMeta,
+          capturedLongitude.isAcceptableOrUnknown(
+              data['captured_longitude']!, _capturedLongitudeMeta));
+    }
+    if (data.containsKey('location_captured_at')) {
+      context.handle(
+          _locationCapturedAtMeta,
+          locationCapturedAt.isAcceptableOrUnknown(
+              data['location_captured_at']!, _locationCapturedAtMeta));
+    }
     return context;
   }
 
@@ -20240,6 +20409,34 @@ class $SeedingEventsTable extends SeedingEvents
           DriftSqlType.int, data['${effectivePrefix}last_edited_by_user_id']),
       lastEditedAt: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime, data['${effectivePrefix}last_edited_at']),
+      temperatureC: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}temperature_c']),
+      humidityPct: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}humidity_pct']),
+      windSpeedKmh: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}wind_speed_kmh']),
+      windDirection: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}wind_direction']),
+      cloudCoverPct: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}cloud_cover_pct']),
+      precipitation: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}precipitation']),
+      precipitationMm: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}precipitation_mm']),
+      soilMoisture: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}soil_moisture']),
+      soilTemperature: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}soil_temperature']),
+      conditionsRecordedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}conditions_recorded_at']),
+      capturedLatitude: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}captured_latitude']),
+      capturedLongitude: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}captured_longitude']),
+      locationCapturedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}location_captured_at']),
     );
   }
 
@@ -20272,6 +20469,19 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
   final DateTime createdAt;
   final int? lastEditedByUserId;
   final DateTime? lastEditedAt;
+  final double? temperatureC;
+  final double? humidityPct;
+  final double? windSpeedKmh;
+  final String? windDirection;
+  final double? cloudCoverPct;
+  final String? precipitation;
+  final double? precipitationMm;
+  final String? soilMoisture;
+  final double? soilTemperature;
+  final DateTime? conditionsRecordedAt;
+  final double? capturedLatitude;
+  final double? capturedLongitude;
+  final DateTime? locationCapturedAt;
   const SeedingEvent(
       {required this.id,
       required this.trialId,
@@ -20294,7 +20504,20 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       this.completedAt,
       required this.createdAt,
       this.lastEditedByUserId,
-      this.lastEditedAt});
+      this.lastEditedAt,
+      this.temperatureC,
+      this.humidityPct,
+      this.windSpeedKmh,
+      this.windDirection,
+      this.cloudCoverPct,
+      this.precipitation,
+      this.precipitationMm,
+      this.soilMoisture,
+      this.soilTemperature,
+      this.conditionsRecordedAt,
+      this.capturedLatitude,
+      this.capturedLongitude,
+      this.locationCapturedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -20353,6 +20576,45 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
     }
     if (!nullToAbsent || lastEditedAt != null) {
       map['last_edited_at'] = Variable<DateTime>(lastEditedAt);
+    }
+    if (!nullToAbsent || temperatureC != null) {
+      map['temperature_c'] = Variable<double>(temperatureC);
+    }
+    if (!nullToAbsent || humidityPct != null) {
+      map['humidity_pct'] = Variable<double>(humidityPct);
+    }
+    if (!nullToAbsent || windSpeedKmh != null) {
+      map['wind_speed_kmh'] = Variable<double>(windSpeedKmh);
+    }
+    if (!nullToAbsent || windDirection != null) {
+      map['wind_direction'] = Variable<String>(windDirection);
+    }
+    if (!nullToAbsent || cloudCoverPct != null) {
+      map['cloud_cover_pct'] = Variable<double>(cloudCoverPct);
+    }
+    if (!nullToAbsent || precipitation != null) {
+      map['precipitation'] = Variable<String>(precipitation);
+    }
+    if (!nullToAbsent || precipitationMm != null) {
+      map['precipitation_mm'] = Variable<double>(precipitationMm);
+    }
+    if (!nullToAbsent || soilMoisture != null) {
+      map['soil_moisture'] = Variable<String>(soilMoisture);
+    }
+    if (!nullToAbsent || soilTemperature != null) {
+      map['soil_temperature'] = Variable<double>(soilTemperature);
+    }
+    if (!nullToAbsent || conditionsRecordedAt != null) {
+      map['conditions_recorded_at'] = Variable<DateTime>(conditionsRecordedAt);
+    }
+    if (!nullToAbsent || capturedLatitude != null) {
+      map['captured_latitude'] = Variable<double>(capturedLatitude);
+    }
+    if (!nullToAbsent || capturedLongitude != null) {
+      map['captured_longitude'] = Variable<double>(capturedLongitude);
+    }
+    if (!nullToAbsent || locationCapturedAt != null) {
+      map['location_captured_at'] = Variable<DateTime>(locationCapturedAt);
     }
     return map;
   }
@@ -20414,6 +20676,45 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       lastEditedAt: lastEditedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastEditedAt),
+      temperatureC: temperatureC == null && nullToAbsent
+          ? const Value.absent()
+          : Value(temperatureC),
+      humidityPct: humidityPct == null && nullToAbsent
+          ? const Value.absent()
+          : Value(humidityPct),
+      windSpeedKmh: windSpeedKmh == null && nullToAbsent
+          ? const Value.absent()
+          : Value(windSpeedKmh),
+      windDirection: windDirection == null && nullToAbsent
+          ? const Value.absent()
+          : Value(windDirection),
+      cloudCoverPct: cloudCoverPct == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cloudCoverPct),
+      precipitation: precipitation == null && nullToAbsent
+          ? const Value.absent()
+          : Value(precipitation),
+      precipitationMm: precipitationMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(precipitationMm),
+      soilMoisture: soilMoisture == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilMoisture),
+      soilTemperature: soilTemperature == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soilTemperature),
+      conditionsRecordedAt: conditionsRecordedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(conditionsRecordedAt),
+      capturedLatitude: capturedLatitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(capturedLatitude),
+      capturedLongitude: capturedLongitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(capturedLongitude),
+      locationCapturedAt: locationCapturedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationCapturedAt),
     );
   }
 
@@ -20443,6 +20744,22 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       lastEditedByUserId: serializer.fromJson<int?>(json['lastEditedByUserId']),
       lastEditedAt: serializer.fromJson<DateTime?>(json['lastEditedAt']),
+      temperatureC: serializer.fromJson<double?>(json['temperatureC']),
+      humidityPct: serializer.fromJson<double?>(json['humidityPct']),
+      windSpeedKmh: serializer.fromJson<double?>(json['windSpeedKmh']),
+      windDirection: serializer.fromJson<String?>(json['windDirection']),
+      cloudCoverPct: serializer.fromJson<double?>(json['cloudCoverPct']),
+      precipitation: serializer.fromJson<String?>(json['precipitation']),
+      precipitationMm: serializer.fromJson<double?>(json['precipitationMm']),
+      soilMoisture: serializer.fromJson<String?>(json['soilMoisture']),
+      soilTemperature: serializer.fromJson<double?>(json['soilTemperature']),
+      conditionsRecordedAt:
+          serializer.fromJson<DateTime?>(json['conditionsRecordedAt']),
+      capturedLatitude: serializer.fromJson<double?>(json['capturedLatitude']),
+      capturedLongitude:
+          serializer.fromJson<double?>(json['capturedLongitude']),
+      locationCapturedAt:
+          serializer.fromJson<DateTime?>(json['locationCapturedAt']),
     );
   }
   @override
@@ -20471,6 +20788,20 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'lastEditedByUserId': serializer.toJson<int?>(lastEditedByUserId),
       'lastEditedAt': serializer.toJson<DateTime?>(lastEditedAt),
+      'temperatureC': serializer.toJson<double?>(temperatureC),
+      'humidityPct': serializer.toJson<double?>(humidityPct),
+      'windSpeedKmh': serializer.toJson<double?>(windSpeedKmh),
+      'windDirection': serializer.toJson<String?>(windDirection),
+      'cloudCoverPct': serializer.toJson<double?>(cloudCoverPct),
+      'precipitation': serializer.toJson<String?>(precipitation),
+      'precipitationMm': serializer.toJson<double?>(precipitationMm),
+      'soilMoisture': serializer.toJson<String?>(soilMoisture),
+      'soilTemperature': serializer.toJson<double?>(soilTemperature),
+      'conditionsRecordedAt':
+          serializer.toJson<DateTime?>(conditionsRecordedAt),
+      'capturedLatitude': serializer.toJson<double?>(capturedLatitude),
+      'capturedLongitude': serializer.toJson<double?>(capturedLongitude),
+      'locationCapturedAt': serializer.toJson<DateTime?>(locationCapturedAt),
     };
   }
 
@@ -20496,7 +20827,20 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           Value<DateTime?> completedAt = const Value.absent(),
           DateTime? createdAt,
           Value<int?> lastEditedByUserId = const Value.absent(),
-          Value<DateTime?> lastEditedAt = const Value.absent()}) =>
+          Value<DateTime?> lastEditedAt = const Value.absent(),
+          Value<double?> temperatureC = const Value.absent(),
+          Value<double?> humidityPct = const Value.absent(),
+          Value<double?> windSpeedKmh = const Value.absent(),
+          Value<String?> windDirection = const Value.absent(),
+          Value<double?> cloudCoverPct = const Value.absent(),
+          Value<String?> precipitation = const Value.absent(),
+          Value<double?> precipitationMm = const Value.absent(),
+          Value<String?> soilMoisture = const Value.absent(),
+          Value<double?> soilTemperature = const Value.absent(),
+          Value<DateTime?> conditionsRecordedAt = const Value.absent(),
+          Value<double?> capturedLatitude = const Value.absent(),
+          Value<double?> capturedLongitude = const Value.absent(),
+          Value<DateTime?> locationCapturedAt = const Value.absent()}) =>
       SeedingEvent(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -20534,6 +20878,37 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
             : this.lastEditedByUserId,
         lastEditedAt:
             lastEditedAt.present ? lastEditedAt.value : this.lastEditedAt,
+        temperatureC:
+            temperatureC.present ? temperatureC.value : this.temperatureC,
+        humidityPct: humidityPct.present ? humidityPct.value : this.humidityPct,
+        windSpeedKmh:
+            windSpeedKmh.present ? windSpeedKmh.value : this.windSpeedKmh,
+        windDirection:
+            windDirection.present ? windDirection.value : this.windDirection,
+        cloudCoverPct:
+            cloudCoverPct.present ? cloudCoverPct.value : this.cloudCoverPct,
+        precipitation:
+            precipitation.present ? precipitation.value : this.precipitation,
+        precipitationMm: precipitationMm.present
+            ? precipitationMm.value
+            : this.precipitationMm,
+        soilMoisture:
+            soilMoisture.present ? soilMoisture.value : this.soilMoisture,
+        soilTemperature: soilTemperature.present
+            ? soilTemperature.value
+            : this.soilTemperature,
+        conditionsRecordedAt: conditionsRecordedAt.present
+            ? conditionsRecordedAt.value
+            : this.conditionsRecordedAt,
+        capturedLatitude: capturedLatitude.present
+            ? capturedLatitude.value
+            : this.capturedLatitude,
+        capturedLongitude: capturedLongitude.present
+            ? capturedLongitude.value
+            : this.capturedLongitude,
+        locationCapturedAt: locationCapturedAt.present
+            ? locationCapturedAt.value
+            : this.locationCapturedAt,
       );
   SeedingEvent copyWithCompanion(SeedingEventsCompanion data) {
     return SeedingEvent(
@@ -20587,6 +20962,44 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
       lastEditedAt: data.lastEditedAt.present
           ? data.lastEditedAt.value
           : this.lastEditedAt,
+      temperatureC: data.temperatureC.present
+          ? data.temperatureC.value
+          : this.temperatureC,
+      humidityPct:
+          data.humidityPct.present ? data.humidityPct.value : this.humidityPct,
+      windSpeedKmh: data.windSpeedKmh.present
+          ? data.windSpeedKmh.value
+          : this.windSpeedKmh,
+      windDirection: data.windDirection.present
+          ? data.windDirection.value
+          : this.windDirection,
+      cloudCoverPct: data.cloudCoverPct.present
+          ? data.cloudCoverPct.value
+          : this.cloudCoverPct,
+      precipitation: data.precipitation.present
+          ? data.precipitation.value
+          : this.precipitation,
+      precipitationMm: data.precipitationMm.present
+          ? data.precipitationMm.value
+          : this.precipitationMm,
+      soilMoisture: data.soilMoisture.present
+          ? data.soilMoisture.value
+          : this.soilMoisture,
+      soilTemperature: data.soilTemperature.present
+          ? data.soilTemperature.value
+          : this.soilTemperature,
+      conditionsRecordedAt: data.conditionsRecordedAt.present
+          ? data.conditionsRecordedAt.value
+          : this.conditionsRecordedAt,
+      capturedLatitude: data.capturedLatitude.present
+          ? data.capturedLatitude.value
+          : this.capturedLatitude,
+      capturedLongitude: data.capturedLongitude.present
+          ? data.capturedLongitude.value
+          : this.capturedLongitude,
+      locationCapturedAt: data.locationCapturedAt.present
+          ? data.locationCapturedAt.value
+          : this.locationCapturedAt,
     );
   }
 
@@ -20614,7 +21027,20 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           ..write('completedAt: $completedAt, ')
           ..write('createdAt: $createdAt, ')
           ..write('lastEditedByUserId: $lastEditedByUserId, ')
-          ..write('lastEditedAt: $lastEditedAt')
+          ..write('lastEditedAt: $lastEditedAt, ')
+          ..write('temperatureC: $temperatureC, ')
+          ..write('humidityPct: $humidityPct, ')
+          ..write('windSpeedKmh: $windSpeedKmh, ')
+          ..write('windDirection: $windDirection, ')
+          ..write('cloudCoverPct: $cloudCoverPct, ')
+          ..write('precipitation: $precipitation, ')
+          ..write('precipitationMm: $precipitationMm, ')
+          ..write('soilMoisture: $soilMoisture, ')
+          ..write('soilTemperature: $soilTemperature, ')
+          ..write('conditionsRecordedAt: $conditionsRecordedAt, ')
+          ..write('capturedLatitude: $capturedLatitude, ')
+          ..write('capturedLongitude: $capturedLongitude, ')
+          ..write('locationCapturedAt: $locationCapturedAt')
           ..write(')'))
         .toString();
   }
@@ -20642,7 +21068,20 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
         completedAt,
         createdAt,
         lastEditedByUserId,
-        lastEditedAt
+        lastEditedAt,
+        temperatureC,
+        humidityPct,
+        windSpeedKmh,
+        windDirection,
+        cloudCoverPct,
+        precipitation,
+        precipitationMm,
+        soilMoisture,
+        soilTemperature,
+        conditionsRecordedAt,
+        capturedLatitude,
+        capturedLongitude,
+        locationCapturedAt
       ]);
   @override
   bool operator ==(Object other) =>
@@ -20669,7 +21108,20 @@ class SeedingEvent extends DataClass implements Insertable<SeedingEvent> {
           other.completedAt == this.completedAt &&
           other.createdAt == this.createdAt &&
           other.lastEditedByUserId == this.lastEditedByUserId &&
-          other.lastEditedAt == this.lastEditedAt);
+          other.lastEditedAt == this.lastEditedAt &&
+          other.temperatureC == this.temperatureC &&
+          other.humidityPct == this.humidityPct &&
+          other.windSpeedKmh == this.windSpeedKmh &&
+          other.windDirection == this.windDirection &&
+          other.cloudCoverPct == this.cloudCoverPct &&
+          other.precipitation == this.precipitation &&
+          other.precipitationMm == this.precipitationMm &&
+          other.soilMoisture == this.soilMoisture &&
+          other.soilTemperature == this.soilTemperature &&
+          other.conditionsRecordedAt == this.conditionsRecordedAt &&
+          other.capturedLatitude == this.capturedLatitude &&
+          other.capturedLongitude == this.capturedLongitude &&
+          other.locationCapturedAt == this.locationCapturedAt);
 }
 
 class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
@@ -20695,6 +21147,19 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
   final Value<DateTime> createdAt;
   final Value<int?> lastEditedByUserId;
   final Value<DateTime?> lastEditedAt;
+  final Value<double?> temperatureC;
+  final Value<double?> humidityPct;
+  final Value<double?> windSpeedKmh;
+  final Value<String?> windDirection;
+  final Value<double?> cloudCoverPct;
+  final Value<String?> precipitation;
+  final Value<double?> precipitationMm;
+  final Value<String?> soilMoisture;
+  final Value<double?> soilTemperature;
+  final Value<DateTime?> conditionsRecordedAt;
+  final Value<double?> capturedLatitude;
+  final Value<double?> capturedLongitude;
+  final Value<DateTime?> locationCapturedAt;
   final Value<int> rowid;
   const SeedingEventsCompanion({
     this.id = const Value.absent(),
@@ -20719,6 +21184,19 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     this.createdAt = const Value.absent(),
     this.lastEditedByUserId = const Value.absent(),
     this.lastEditedAt = const Value.absent(),
+    this.temperatureC = const Value.absent(),
+    this.humidityPct = const Value.absent(),
+    this.windSpeedKmh = const Value.absent(),
+    this.windDirection = const Value.absent(),
+    this.cloudCoverPct = const Value.absent(),
+    this.precipitation = const Value.absent(),
+    this.precipitationMm = const Value.absent(),
+    this.soilMoisture = const Value.absent(),
+    this.soilTemperature = const Value.absent(),
+    this.conditionsRecordedAt = const Value.absent(),
+    this.capturedLatitude = const Value.absent(),
+    this.capturedLongitude = const Value.absent(),
+    this.locationCapturedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SeedingEventsCompanion.insert({
@@ -20744,6 +21222,19 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     this.createdAt = const Value.absent(),
     this.lastEditedByUserId = const Value.absent(),
     this.lastEditedAt = const Value.absent(),
+    this.temperatureC = const Value.absent(),
+    this.humidityPct = const Value.absent(),
+    this.windSpeedKmh = const Value.absent(),
+    this.windDirection = const Value.absent(),
+    this.cloudCoverPct = const Value.absent(),
+    this.precipitation = const Value.absent(),
+    this.precipitationMm = const Value.absent(),
+    this.soilMoisture = const Value.absent(),
+    this.soilTemperature = const Value.absent(),
+    this.conditionsRecordedAt = const Value.absent(),
+    this.capturedLatitude = const Value.absent(),
+    this.capturedLongitude = const Value.absent(),
+    this.locationCapturedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : trialId = Value(trialId),
         seedingDate = Value(seedingDate);
@@ -20770,6 +21261,19 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     Expression<DateTime>? createdAt,
     Expression<int>? lastEditedByUserId,
     Expression<DateTime>? lastEditedAt,
+    Expression<double>? temperatureC,
+    Expression<double>? humidityPct,
+    Expression<double>? windSpeedKmh,
+    Expression<String>? windDirection,
+    Expression<double>? cloudCoverPct,
+    Expression<String>? precipitation,
+    Expression<double>? precipitationMm,
+    Expression<String>? soilMoisture,
+    Expression<double>? soilTemperature,
+    Expression<DateTime>? conditionsRecordedAt,
+    Expression<double>? capturedLatitude,
+    Expression<double>? capturedLongitude,
+    Expression<DateTime>? locationCapturedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -20796,6 +21300,21 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
       if (lastEditedByUserId != null)
         'last_edited_by_user_id': lastEditedByUserId,
       if (lastEditedAt != null) 'last_edited_at': lastEditedAt,
+      if (temperatureC != null) 'temperature_c': temperatureC,
+      if (humidityPct != null) 'humidity_pct': humidityPct,
+      if (windSpeedKmh != null) 'wind_speed_kmh': windSpeedKmh,
+      if (windDirection != null) 'wind_direction': windDirection,
+      if (cloudCoverPct != null) 'cloud_cover_pct': cloudCoverPct,
+      if (precipitation != null) 'precipitation': precipitation,
+      if (precipitationMm != null) 'precipitation_mm': precipitationMm,
+      if (soilMoisture != null) 'soil_moisture': soilMoisture,
+      if (soilTemperature != null) 'soil_temperature': soilTemperature,
+      if (conditionsRecordedAt != null)
+        'conditions_recorded_at': conditionsRecordedAt,
+      if (capturedLatitude != null) 'captured_latitude': capturedLatitude,
+      if (capturedLongitude != null) 'captured_longitude': capturedLongitude,
+      if (locationCapturedAt != null)
+        'location_captured_at': locationCapturedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -20823,6 +21342,19 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
       Value<DateTime>? createdAt,
       Value<int?>? lastEditedByUserId,
       Value<DateTime?>? lastEditedAt,
+      Value<double?>? temperatureC,
+      Value<double?>? humidityPct,
+      Value<double?>? windSpeedKmh,
+      Value<String?>? windDirection,
+      Value<double?>? cloudCoverPct,
+      Value<String?>? precipitation,
+      Value<double?>? precipitationMm,
+      Value<String?>? soilMoisture,
+      Value<double?>? soilTemperature,
+      Value<DateTime?>? conditionsRecordedAt,
+      Value<double?>? capturedLatitude,
+      Value<double?>? capturedLongitude,
+      Value<DateTime?>? locationCapturedAt,
       Value<int>? rowid}) {
     return SeedingEventsCompanion(
       id: id ?? this.id,
@@ -20847,6 +21379,19 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
       createdAt: createdAt ?? this.createdAt,
       lastEditedByUserId: lastEditedByUserId ?? this.lastEditedByUserId,
       lastEditedAt: lastEditedAt ?? this.lastEditedAt,
+      temperatureC: temperatureC ?? this.temperatureC,
+      humidityPct: humidityPct ?? this.humidityPct,
+      windSpeedKmh: windSpeedKmh ?? this.windSpeedKmh,
+      windDirection: windDirection ?? this.windDirection,
+      cloudCoverPct: cloudCoverPct ?? this.cloudCoverPct,
+      precipitation: precipitation ?? this.precipitation,
+      precipitationMm: precipitationMm ?? this.precipitationMm,
+      soilMoisture: soilMoisture ?? this.soilMoisture,
+      soilTemperature: soilTemperature ?? this.soilTemperature,
+      conditionsRecordedAt: conditionsRecordedAt ?? this.conditionsRecordedAt,
+      capturedLatitude: capturedLatitude ?? this.capturedLatitude,
+      capturedLongitude: capturedLongitude ?? this.capturedLongitude,
+      locationCapturedAt: locationCapturedAt ?? this.locationCapturedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -20920,6 +21465,47 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
     if (lastEditedAt.present) {
       map['last_edited_at'] = Variable<DateTime>(lastEditedAt.value);
     }
+    if (temperatureC.present) {
+      map['temperature_c'] = Variable<double>(temperatureC.value);
+    }
+    if (humidityPct.present) {
+      map['humidity_pct'] = Variable<double>(humidityPct.value);
+    }
+    if (windSpeedKmh.present) {
+      map['wind_speed_kmh'] = Variable<double>(windSpeedKmh.value);
+    }
+    if (windDirection.present) {
+      map['wind_direction'] = Variable<String>(windDirection.value);
+    }
+    if (cloudCoverPct.present) {
+      map['cloud_cover_pct'] = Variable<double>(cloudCoverPct.value);
+    }
+    if (precipitation.present) {
+      map['precipitation'] = Variable<String>(precipitation.value);
+    }
+    if (precipitationMm.present) {
+      map['precipitation_mm'] = Variable<double>(precipitationMm.value);
+    }
+    if (soilMoisture.present) {
+      map['soil_moisture'] = Variable<String>(soilMoisture.value);
+    }
+    if (soilTemperature.present) {
+      map['soil_temperature'] = Variable<double>(soilTemperature.value);
+    }
+    if (conditionsRecordedAt.present) {
+      map['conditions_recorded_at'] =
+          Variable<DateTime>(conditionsRecordedAt.value);
+    }
+    if (capturedLatitude.present) {
+      map['captured_latitude'] = Variable<double>(capturedLatitude.value);
+    }
+    if (capturedLongitude.present) {
+      map['captured_longitude'] = Variable<double>(capturedLongitude.value);
+    }
+    if (locationCapturedAt.present) {
+      map['location_captured_at'] =
+          Variable<DateTime>(locationCapturedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -20951,6 +21537,19 @@ class SeedingEventsCompanion extends UpdateCompanion<SeedingEvent> {
           ..write('createdAt: $createdAt, ')
           ..write('lastEditedByUserId: $lastEditedByUserId, ')
           ..write('lastEditedAt: $lastEditedAt, ')
+          ..write('temperatureC: $temperatureC, ')
+          ..write('humidityPct: $humidityPct, ')
+          ..write('windSpeedKmh: $windSpeedKmh, ')
+          ..write('windDirection: $windDirection, ')
+          ..write('cloudCoverPct: $cloudCoverPct, ')
+          ..write('precipitation: $precipitation, ')
+          ..write('precipitationMm: $precipitationMm, ')
+          ..write('soilMoisture: $soilMoisture, ')
+          ..write('soilTemperature: $soilTemperature, ')
+          ..write('conditionsRecordedAt: $conditionsRecordedAt, ')
+          ..write('capturedLatitude: $capturedLatitude, ')
+          ..write('capturedLongitude: $capturedLongitude, ')
+          ..write('locationCapturedAt: $locationCapturedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -21292,6 +21891,24 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
   late final GeneratedColumn<double> totalAreaSprayedHa =
       GeneratedColumn<double>('total_area_sprayed_ha', aliasedName, true,
           type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _capturedLatitudeMeta =
+      const VerificationMeta('capturedLatitude');
+  @override
+  late final GeneratedColumn<double> capturedLatitude = GeneratedColumn<double>(
+      'captured_latitude', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _capturedLongitudeMeta =
+      const VerificationMeta('capturedLongitude');
+  @override
+  late final GeneratedColumn<double> capturedLongitude =
+      GeneratedColumn<double>('captured_longitude', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _locationCapturedAtMeta =
+      const VerificationMeta('locationCapturedAt');
+  @override
+  late final GeneratedColumn<DateTime> locationCapturedAt =
+      GeneratedColumn<DateTime>('location_captured_at', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -21346,7 +21963,10 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
         completedAt,
         closedAt,
         totalProductMixed,
-        totalAreaSprayedHa
+        totalAreaSprayedHa,
+        capturedLatitude,
+        capturedLongitude,
+        locationCapturedAt
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -21652,6 +22272,24 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
           totalAreaSprayedHa.isAcceptableOrUnknown(
               data['total_area_sprayed_ha']!, _totalAreaSprayedHaMeta));
     }
+    if (data.containsKey('captured_latitude')) {
+      context.handle(
+          _capturedLatitudeMeta,
+          capturedLatitude.isAcceptableOrUnknown(
+              data['captured_latitude']!, _capturedLatitudeMeta));
+    }
+    if (data.containsKey('captured_longitude')) {
+      context.handle(
+          _capturedLongitudeMeta,
+          capturedLongitude.isAcceptableOrUnknown(
+              data['captured_longitude']!, _capturedLongitudeMeta));
+    }
+    if (data.containsKey('location_captured_at')) {
+      context.handle(
+          _locationCapturedAtMeta,
+          locationCapturedAt.isAcceptableOrUnknown(
+              data['location_captured_at']!, _locationCapturedAtMeta));
+    }
     return context;
   }
 
@@ -21768,6 +22406,13 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
           DriftSqlType.double, data['${effectivePrefix}total_product_mixed']),
       totalAreaSprayedHa: attachedDatabase.typeMapping.read(
           DriftSqlType.double, data['${effectivePrefix}total_area_sprayed_ha']),
+      capturedLatitude: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}captured_latitude']),
+      capturedLongitude: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}captured_longitude']),
+      locationCapturedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}location_captured_at']),
     );
   }
 
@@ -21836,6 +22481,9 @@ class TrialApplicationEvent extends DataClass
 
   /// Total area actually sprayed (hectares).
   final double? totalAreaSprayedHa;
+  final double? capturedLatitude;
+  final double? capturedLongitude;
+  final DateTime? locationCapturedAt;
   const TrialApplicationEvent(
       {required this.id,
       required this.trialId,
@@ -21889,7 +22537,10 @@ class TrialApplicationEvent extends DataClass
       this.completedAt,
       this.closedAt,
       this.totalProductMixed,
-      this.totalAreaSprayedHa});
+      this.totalAreaSprayedHa,
+      this.capturedLatitude,
+      this.capturedLongitude,
+      this.locationCapturedAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -22042,6 +22693,15 @@ class TrialApplicationEvent extends DataClass
     if (!nullToAbsent || totalAreaSprayedHa != null) {
       map['total_area_sprayed_ha'] = Variable<double>(totalAreaSprayedHa);
     }
+    if (!nullToAbsent || capturedLatitude != null) {
+      map['captured_latitude'] = Variable<double>(capturedLatitude);
+    }
+    if (!nullToAbsent || capturedLongitude != null) {
+      map['captured_longitude'] = Variable<double>(capturedLongitude);
+    }
+    if (!nullToAbsent || locationCapturedAt != null) {
+      map['location_captured_at'] = Variable<DateTime>(locationCapturedAt);
+    }
     return map;
   }
 
@@ -22193,6 +22853,15 @@ class TrialApplicationEvent extends DataClass
       totalAreaSprayedHa: totalAreaSprayedHa == null && nullToAbsent
           ? const Value.absent()
           : Value(totalAreaSprayedHa),
+      capturedLatitude: capturedLatitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(capturedLatitude),
+      capturedLongitude: capturedLongitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(capturedLongitude),
+      locationCapturedAt: locationCapturedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(locationCapturedAt),
     );
   }
 
@@ -22258,6 +22927,11 @@ class TrialApplicationEvent extends DataClass
           serializer.fromJson<double?>(json['totalProductMixed']),
       totalAreaSprayedHa:
           serializer.fromJson<double?>(json['totalAreaSprayedHa']),
+      capturedLatitude: serializer.fromJson<double?>(json['capturedLatitude']),
+      capturedLongitude:
+          serializer.fromJson<double?>(json['capturedLongitude']),
+      locationCapturedAt:
+          serializer.fromJson<DateTime?>(json['locationCapturedAt']),
     );
   }
   @override
@@ -22318,6 +22992,9 @@ class TrialApplicationEvent extends DataClass
       'closedAt': serializer.toJson<DateTime?>(closedAt),
       'totalProductMixed': serializer.toJson<double?>(totalProductMixed),
       'totalAreaSprayedHa': serializer.toJson<double?>(totalAreaSprayedHa),
+      'capturedLatitude': serializer.toJson<double?>(capturedLatitude),
+      'capturedLongitude': serializer.toJson<double?>(capturedLongitude),
+      'locationCapturedAt': serializer.toJson<DateTime?>(locationCapturedAt),
     };
   }
 
@@ -22374,7 +23051,10 @@ class TrialApplicationEvent extends DataClass
           Value<DateTime?> completedAt = const Value.absent(),
           Value<DateTime?> closedAt = const Value.absent(),
           Value<double?> totalProductMixed = const Value.absent(),
-          Value<double?> totalAreaSprayedHa = const Value.absent()}) =>
+          Value<double?> totalAreaSprayedHa = const Value.absent(),
+          Value<double?> capturedLatitude = const Value.absent(),
+          Value<double?> capturedLongitude = const Value.absent(),
+          Value<DateTime?> locationCapturedAt = const Value.absent()}) =>
       TrialApplicationEvent(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -22473,6 +23153,15 @@ class TrialApplicationEvent extends DataClass
         totalAreaSprayedHa: totalAreaSprayedHa.present
             ? totalAreaSprayedHa.value
             : this.totalAreaSprayedHa,
+        capturedLatitude: capturedLatitude.present
+            ? capturedLatitude.value
+            : this.capturedLatitude,
+        capturedLongitude: capturedLongitude.present
+            ? capturedLongitude.value
+            : this.capturedLongitude,
+        locationCapturedAt: locationCapturedAt.present
+            ? locationCapturedAt.value
+            : this.locationCapturedAt,
       );
   TrialApplicationEvent copyWithCompanion(
       TrialApplicationEventsCompanion data) {
@@ -22599,6 +23288,15 @@ class TrialApplicationEvent extends DataClass
       totalAreaSprayedHa: data.totalAreaSprayedHa.present
           ? data.totalAreaSprayedHa.value
           : this.totalAreaSprayedHa,
+      capturedLatitude: data.capturedLatitude.present
+          ? data.capturedLatitude.value
+          : this.capturedLatitude,
+      capturedLongitude: data.capturedLongitude.present
+          ? data.capturedLongitude.value
+          : this.capturedLongitude,
+      locationCapturedAt: data.locationCapturedAt.present
+          ? data.locationCapturedAt.value
+          : this.locationCapturedAt,
     );
   }
 
@@ -22657,7 +23355,10 @@ class TrialApplicationEvent extends DataClass
           ..write('completedAt: $completedAt, ')
           ..write('closedAt: $closedAt, ')
           ..write('totalProductMixed: $totalProductMixed, ')
-          ..write('totalAreaSprayedHa: $totalAreaSprayedHa')
+          ..write('totalAreaSprayedHa: $totalAreaSprayedHa, ')
+          ..write('capturedLatitude: $capturedLatitude, ')
+          ..write('capturedLongitude: $capturedLongitude, ')
+          ..write('locationCapturedAt: $locationCapturedAt')
           ..write(')'))
         .toString();
   }
@@ -22716,7 +23417,10 @@ class TrialApplicationEvent extends DataClass
         completedAt,
         closedAt,
         totalProductMixed,
-        totalAreaSprayedHa
+        totalAreaSprayedHa,
+        capturedLatitude,
+        capturedLongitude,
+        locationCapturedAt
       ]);
   @override
   bool operator ==(Object other) =>
@@ -22774,7 +23478,10 @@ class TrialApplicationEvent extends DataClass
           other.completedAt == this.completedAt &&
           other.closedAt == this.closedAt &&
           other.totalProductMixed == this.totalProductMixed &&
-          other.totalAreaSprayedHa == this.totalAreaSprayedHa);
+          other.totalAreaSprayedHa == this.totalAreaSprayedHa &&
+          other.capturedLatitude == this.capturedLatitude &&
+          other.capturedLongitude == this.capturedLongitude &&
+          other.locationCapturedAt == this.locationCapturedAt);
 }
 
 class TrialApplicationEventsCompanion
@@ -22832,6 +23539,9 @@ class TrialApplicationEventsCompanion
   final Value<DateTime?> closedAt;
   final Value<double?> totalProductMixed;
   final Value<double?> totalAreaSprayedHa;
+  final Value<double?> capturedLatitude;
+  final Value<double?> capturedLongitude;
+  final Value<DateTime?> locationCapturedAt;
   final Value<int> rowid;
   const TrialApplicationEventsCompanion({
     this.id = const Value.absent(),
@@ -22887,6 +23597,9 @@ class TrialApplicationEventsCompanion
     this.closedAt = const Value.absent(),
     this.totalProductMixed = const Value.absent(),
     this.totalAreaSprayedHa = const Value.absent(),
+    this.capturedLatitude = const Value.absent(),
+    this.capturedLongitude = const Value.absent(),
+    this.locationCapturedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TrialApplicationEventsCompanion.insert({
@@ -22943,6 +23656,9 @@ class TrialApplicationEventsCompanion
     this.closedAt = const Value.absent(),
     this.totalProductMixed = const Value.absent(),
     this.totalAreaSprayedHa = const Value.absent(),
+    this.capturedLatitude = const Value.absent(),
+    this.capturedLongitude = const Value.absent(),
+    this.locationCapturedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : trialId = Value(trialId),
         applicationDate = Value(applicationDate);
@@ -23000,6 +23716,9 @@ class TrialApplicationEventsCompanion
     Expression<DateTime>? closedAt,
     Expression<double>? totalProductMixed,
     Expression<double>? totalAreaSprayedHa,
+    Expression<double>? capturedLatitude,
+    Expression<double>? capturedLongitude,
+    Expression<DateTime>? locationCapturedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -23059,6 +23778,10 @@ class TrialApplicationEventsCompanion
       if (totalProductMixed != null) 'total_product_mixed': totalProductMixed,
       if (totalAreaSprayedHa != null)
         'total_area_sprayed_ha': totalAreaSprayedHa,
+      if (capturedLatitude != null) 'captured_latitude': capturedLatitude,
+      if (capturedLongitude != null) 'captured_longitude': capturedLongitude,
+      if (locationCapturedAt != null)
+        'location_captured_at': locationCapturedAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -23117,6 +23840,9 @@ class TrialApplicationEventsCompanion
       Value<DateTime?>? closedAt,
       Value<double?>? totalProductMixed,
       Value<double?>? totalAreaSprayedHa,
+      Value<double?>? capturedLatitude,
+      Value<double?>? capturedLongitude,
+      Value<DateTime?>? locationCapturedAt,
       Value<int>? rowid}) {
     return TrialApplicationEventsCompanion(
       id: id ?? this.id,
@@ -23172,6 +23898,9 @@ class TrialApplicationEventsCompanion
       closedAt: closedAt ?? this.closedAt,
       totalProductMixed: totalProductMixed ?? this.totalProductMixed,
       totalAreaSprayedHa: totalAreaSprayedHa ?? this.totalAreaSprayedHa,
+      capturedLatitude: capturedLatitude ?? this.capturedLatitude,
+      capturedLongitude: capturedLongitude ?? this.capturedLongitude,
+      locationCapturedAt: locationCapturedAt ?? this.locationCapturedAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -23339,6 +24068,16 @@ class TrialApplicationEventsCompanion
     if (totalAreaSprayedHa.present) {
       map['total_area_sprayed_ha'] = Variable<double>(totalAreaSprayedHa.value);
     }
+    if (capturedLatitude.present) {
+      map['captured_latitude'] = Variable<double>(capturedLatitude.value);
+    }
+    if (capturedLongitude.present) {
+      map['captured_longitude'] = Variable<double>(capturedLongitude.value);
+    }
+    if (locationCapturedAt.present) {
+      map['location_captured_at'] =
+          Variable<DateTime>(locationCapturedAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -23401,6 +24140,9 @@ class TrialApplicationEventsCompanion
           ..write('closedAt: $closedAt, ')
           ..write('totalProductMixed: $totalProductMixed, ')
           ..write('totalAreaSprayedHa: $totalAreaSprayedHa, ')
+          ..write('capturedLatitude: $capturedLatitude, ')
+          ..write('capturedLongitude: $capturedLongitude, ')
+          ..write('locationCapturedAt: $locationCapturedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -47008,6 +47750,19 @@ typedef $$SeedingEventsTableCreateCompanionBuilder = SeedingEventsCompanion
   Value<DateTime> createdAt,
   Value<int?> lastEditedByUserId,
   Value<DateTime?> lastEditedAt,
+  Value<double?> temperatureC,
+  Value<double?> humidityPct,
+  Value<double?> windSpeedKmh,
+  Value<String?> windDirection,
+  Value<double?> cloudCoverPct,
+  Value<String?> precipitation,
+  Value<double?> precipitationMm,
+  Value<String?> soilMoisture,
+  Value<double?> soilTemperature,
+  Value<DateTime?> conditionsRecordedAt,
+  Value<double?> capturedLatitude,
+  Value<double?> capturedLongitude,
+  Value<DateTime?> locationCapturedAt,
   Value<int> rowid,
 });
 typedef $$SeedingEventsTableUpdateCompanionBuilder = SeedingEventsCompanion
@@ -47034,6 +47789,19 @@ typedef $$SeedingEventsTableUpdateCompanionBuilder = SeedingEventsCompanion
   Value<DateTime> createdAt,
   Value<int?> lastEditedByUserId,
   Value<DateTime?> lastEditedAt,
+  Value<double?> temperatureC,
+  Value<double?> humidityPct,
+  Value<double?> windSpeedKmh,
+  Value<String?> windDirection,
+  Value<double?> cloudCoverPct,
+  Value<String?> precipitation,
+  Value<double?> precipitationMm,
+  Value<String?> soilMoisture,
+  Value<double?> soilTemperature,
+  Value<DateTime?> conditionsRecordedAt,
+  Value<double?> capturedLatitude,
+  Value<double?> capturedLongitude,
+  Value<DateTime?> locationCapturedAt,
   Value<int> rowid,
 });
 
@@ -47076,6 +47844,19 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             Value<DateTime> createdAt = const Value.absent(),
             Value<int?> lastEditedByUserId = const Value.absent(),
             Value<DateTime?> lastEditedAt = const Value.absent(),
+            Value<double?> temperatureC = const Value.absent(),
+            Value<double?> humidityPct = const Value.absent(),
+            Value<double?> windSpeedKmh = const Value.absent(),
+            Value<String?> windDirection = const Value.absent(),
+            Value<double?> cloudCoverPct = const Value.absent(),
+            Value<String?> precipitation = const Value.absent(),
+            Value<double?> precipitationMm = const Value.absent(),
+            Value<String?> soilMoisture = const Value.absent(),
+            Value<double?> soilTemperature = const Value.absent(),
+            Value<DateTime?> conditionsRecordedAt = const Value.absent(),
+            Value<double?> capturedLatitude = const Value.absent(),
+            Value<double?> capturedLongitude = const Value.absent(),
+            Value<DateTime?> locationCapturedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               SeedingEventsCompanion(
@@ -47101,6 +47882,19 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             createdAt: createdAt,
             lastEditedByUserId: lastEditedByUserId,
             lastEditedAt: lastEditedAt,
+            temperatureC: temperatureC,
+            humidityPct: humidityPct,
+            windSpeedKmh: windSpeedKmh,
+            windDirection: windDirection,
+            cloudCoverPct: cloudCoverPct,
+            precipitation: precipitation,
+            precipitationMm: precipitationMm,
+            soilMoisture: soilMoisture,
+            soilTemperature: soilTemperature,
+            conditionsRecordedAt: conditionsRecordedAt,
+            capturedLatitude: capturedLatitude,
+            capturedLongitude: capturedLongitude,
+            locationCapturedAt: locationCapturedAt,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -47126,6 +47920,19 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             Value<DateTime> createdAt = const Value.absent(),
             Value<int?> lastEditedByUserId = const Value.absent(),
             Value<DateTime?> lastEditedAt = const Value.absent(),
+            Value<double?> temperatureC = const Value.absent(),
+            Value<double?> humidityPct = const Value.absent(),
+            Value<double?> windSpeedKmh = const Value.absent(),
+            Value<String?> windDirection = const Value.absent(),
+            Value<double?> cloudCoverPct = const Value.absent(),
+            Value<String?> precipitation = const Value.absent(),
+            Value<double?> precipitationMm = const Value.absent(),
+            Value<String?> soilMoisture = const Value.absent(),
+            Value<double?> soilTemperature = const Value.absent(),
+            Value<DateTime?> conditionsRecordedAt = const Value.absent(),
+            Value<double?> capturedLatitude = const Value.absent(),
+            Value<double?> capturedLongitude = const Value.absent(),
+            Value<DateTime?> locationCapturedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               SeedingEventsCompanion.insert(
@@ -47151,6 +47958,19 @@ class $$SeedingEventsTableTableManager extends RootTableManager<
             createdAt: createdAt,
             lastEditedByUserId: lastEditedByUserId,
             lastEditedAt: lastEditedAt,
+            temperatureC: temperatureC,
+            humidityPct: humidityPct,
+            windSpeedKmh: windSpeedKmh,
+            windDirection: windDirection,
+            cloudCoverPct: cloudCoverPct,
+            precipitation: precipitation,
+            precipitationMm: precipitationMm,
+            soilMoisture: soilMoisture,
+            soilTemperature: soilTemperature,
+            conditionsRecordedAt: conditionsRecordedAt,
+            capturedLatitude: capturedLatitude,
+            capturedLongitude: capturedLongitude,
+            locationCapturedAt: locationCapturedAt,
             rowid: rowid,
           ),
         ));
@@ -47256,6 +48076,71 @@ class $$SeedingEventsTableFilterComposer
 
   ColumnFilters<DateTime> get lastEditedAt => $state.composableBuilder(
       column: $state.table.lastEditedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get temperatureC => $state.composableBuilder(
+      column: $state.table.temperatureC,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get humidityPct => $state.composableBuilder(
+      column: $state.table.humidityPct,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get windSpeedKmh => $state.composableBuilder(
+      column: $state.table.windSpeedKmh,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get windDirection => $state.composableBuilder(
+      column: $state.table.windDirection,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get cloudCoverPct => $state.composableBuilder(
+      column: $state.table.cloudCoverPct,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get precipitation => $state.composableBuilder(
+      column: $state.table.precipitation,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get precipitationMm => $state.composableBuilder(
+      column: $state.table.precipitationMm,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get soilMoisture => $state.composableBuilder(
+      column: $state.table.soilMoisture,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get soilTemperature => $state.composableBuilder(
+      column: $state.table.soilTemperature,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get conditionsRecordedAt => $state.composableBuilder(
+      column: $state.table.conditionsRecordedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get capturedLatitude => $state.composableBuilder(
+      column: $state.table.capturedLatitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get capturedLongitude => $state.composableBuilder(
+      column: $state.table.capturedLongitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get locationCapturedAt => $state.composableBuilder(
+      column: $state.table.locationCapturedAt,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -47387,6 +48272,72 @@ class $$SeedingEventsTableOrderingComposer
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
+  ColumnOrderings<double> get temperatureC => $state.composableBuilder(
+      column: $state.table.temperatureC,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get humidityPct => $state.composableBuilder(
+      column: $state.table.humidityPct,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get windSpeedKmh => $state.composableBuilder(
+      column: $state.table.windSpeedKmh,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get windDirection => $state.composableBuilder(
+      column: $state.table.windDirection,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get cloudCoverPct => $state.composableBuilder(
+      column: $state.table.cloudCoverPct,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get precipitation => $state.composableBuilder(
+      column: $state.table.precipitation,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get precipitationMm => $state.composableBuilder(
+      column: $state.table.precipitationMm,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get soilMoisture => $state.composableBuilder(
+      column: $state.table.soilMoisture,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get soilTemperature => $state.composableBuilder(
+      column: $state.table.soilTemperature,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get conditionsRecordedAt =>
+      $state.composableBuilder(
+          column: $state.table.conditionsRecordedAt,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get capturedLatitude => $state.composableBuilder(
+      column: $state.table.capturedLatitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get capturedLongitude => $state.composableBuilder(
+      column: $state.table.capturedLongitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get locationCapturedAt => $state.composableBuilder(
+      column: $state.table.locationCapturedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
   $$TrialsTableOrderingComposer get trialId {
     final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
         composer: this,
@@ -47467,6 +48418,9 @@ typedef $$TrialApplicationEventsTableCreateCompanionBuilder
   Value<DateTime?> closedAt,
   Value<double?> totalProductMixed,
   Value<double?> totalAreaSprayedHa,
+  Value<double?> capturedLatitude,
+  Value<double?> capturedLongitude,
+  Value<DateTime?> locationCapturedAt,
   Value<int> rowid,
 });
 typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
@@ -47524,6 +48478,9 @@ typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
   Value<DateTime?> closedAt,
   Value<double?> totalProductMixed,
   Value<double?> totalAreaSprayedHa,
+  Value<double?> capturedLatitude,
+  Value<double?> capturedLongitude,
+  Value<DateTime?> locationCapturedAt,
   Value<int> rowid,
 });
 
@@ -47598,6 +48555,9 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<DateTime?> closedAt = const Value.absent(),
             Value<double?> totalProductMixed = const Value.absent(),
             Value<double?> totalAreaSprayedHa = const Value.absent(),
+            Value<double?> capturedLatitude = const Value.absent(),
+            Value<double?> capturedLongitude = const Value.absent(),
+            Value<DateTime?> locationCapturedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TrialApplicationEventsCompanion(
@@ -47654,6 +48614,9 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             closedAt: closedAt,
             totalProductMixed: totalProductMixed,
             totalAreaSprayedHa: totalAreaSprayedHa,
+            capturedLatitude: capturedLatitude,
+            capturedLongitude: capturedLongitude,
+            locationCapturedAt: locationCapturedAt,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -47710,6 +48673,9 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<DateTime?> closedAt = const Value.absent(),
             Value<double?> totalProductMixed = const Value.absent(),
             Value<double?> totalAreaSprayedHa = const Value.absent(),
+            Value<double?> capturedLatitude = const Value.absent(),
+            Value<double?> capturedLongitude = const Value.absent(),
+            Value<DateTime?> locationCapturedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TrialApplicationEventsCompanion.insert(
@@ -47766,6 +48732,9 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             closedAt: closedAt,
             totalProductMixed: totalProductMixed,
             totalAreaSprayedHa: totalAreaSprayedHa,
+            capturedLatitude: capturedLatitude,
+            capturedLongitude: capturedLongitude,
+            locationCapturedAt: locationCapturedAt,
             rowid: rowid,
           ),
         ));
@@ -48021,6 +48990,21 @@ class $$TrialApplicationEventsTableFilterComposer
 
   ColumnFilters<double> get totalAreaSprayedHa => $state.composableBuilder(
       column: $state.table.totalAreaSprayedHa,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get capturedLatitude => $state.composableBuilder(
+      column: $state.table.capturedLatitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get capturedLongitude => $state.composableBuilder(
+      column: $state.table.capturedLongitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get locationCapturedAt => $state.composableBuilder(
+      column: $state.table.locationCapturedAt,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -48363,6 +49347,21 @@ class $$TrialApplicationEventsTableOrderingComposer
 
   ColumnOrderings<double> get totalAreaSprayedHa => $state.composableBuilder(
       column: $state.table.totalAreaSprayedHa,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get capturedLatitude => $state.composableBuilder(
+      column: $state.table.capturedLatitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get capturedLongitude => $state.composableBuilder(
+      column: $state.table.capturedLongitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get locationCapturedAt => $state.composableBuilder(
+      column: $state.table.locationCapturedAt,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

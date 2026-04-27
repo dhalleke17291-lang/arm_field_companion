@@ -494,6 +494,108 @@ class ApplicationRepository {
         .go();
   }
 
+  /// Writes weather to a confirmed application exactly once (null-check lock).
+  /// Silent no-op if any of the 7 primary fields are already populated.
+  Future<void> updateApplicationWeather({
+    required String applicationId,
+    required double? temperatureC,
+    required double? humidityPct,
+    required double? windSpeedKmh,
+    required String? windDirection,
+    required double? cloudCoverPct,
+    required String? precipitation,
+    required double? precipitationMm,
+    String? soilMoisture,
+    double? soilTemperature,
+  }) async {
+    final row = await (_db.select(_db.trialApplicationEvents)
+          ..where((e) => e.id.equals(applicationId)))
+        .getSingleOrNull();
+    if (row == null) return;
+    if (row.temperature != null ||
+        row.humidity != null ||
+        row.windSpeed != null ||
+        row.cloudCoverPct != null ||
+        row.precipitation != null ||
+        row.precipitationMm != null ||
+        row.conditionsRecordedAt != null) {
+      return;
+    }
+    await _db.transaction(() async {
+      await (_db.update(_db.trialApplicationEvents)
+            ..where((e) => e.id.equals(applicationId)))
+          .write(TrialApplicationEventsCompanion(
+        temperature: Value(temperatureC),
+        humidity: Value(humidityPct),
+        windSpeed: Value(windSpeedKmh),
+        windDirection: Value(windDirection),
+        cloudCoverPct: Value(cloudCoverPct),
+        precipitation: Value(precipitation),
+        precipitationMm: Value(precipitationMm),
+        soilMoisture: Value(soilMoisture),
+        soilTemperature: Value(soilTemperature),
+        conditionsRecordedAt: Value(DateTime.now().toUtc()),
+      ));
+      try {
+        await _db.into(_db.auditEvents).insert(
+              AuditEventsCompanion.insert(
+                trialId: Value(row.trialId),
+                eventType: 'APPLICATION_WEATHER_CAPTURED',
+                description: 'Weather captured for confirmed application',
+                metadata: Value(jsonEncode({
+                  'trial_application_event_id': applicationId,
+                  'trial_id': row.trialId,
+                })),
+              ),
+            );
+      } catch (e, st) {
+        log('APPLICATION_WEATHER_CAPTURED audit insert failed: $e\n$st',
+            name: 'ApplicationRepository');
+      }
+    });
+  }
+
+  /// Writes GPS to a confirmed application exactly once (null-check lock).
+  /// Silent no-op if `capturedLatitude` is already set.
+  Future<void> updateApplicationGps({
+    required String applicationId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    final row = await (_db.select(_db.trialApplicationEvents)
+          ..where((e) => e.id.equals(applicationId)))
+        .getSingleOrNull();
+    if (row == null) return;
+    if (row.capturedLatitude != null) return;
+    await _db.transaction(() async {
+      await (_db.update(_db.trialApplicationEvents)
+            ..where((e) => e.id.equals(applicationId)))
+          .write(TrialApplicationEventsCompanion(
+        capturedLatitude: Value(latitude),
+        capturedLongitude: Value(longitude),
+        locationCapturedAt: Value(DateTime.now().toUtc()),
+      ));
+      try {
+        await _db.into(_db.auditEvents).insert(
+              AuditEventsCompanion.insert(
+                trialId: Value(row.trialId),
+                eventType: 'APPLICATION_GPS_CAPTURED',
+                description: 'GPS captured for confirmed application',
+                metadata: Value(jsonEncode({
+                  'trial_application_event_id': applicationId,
+                  'trial_id': row.trialId,
+                  'latitude': latitude,
+                  'longitude': longitude,
+                })),
+              ),
+            );
+      } catch (e, st) {
+        log('APPLICATION_GPS_CAPTURED audit insert failed: $e\n$st',
+            name: 'ApplicationRepository');
+      }
+    });
+  }
+
   // ── Slot-based application events (application_events table) ─────────────
 
   Stream<List<ApplicationEvent>> watchEventsForTrial(int trialId) {

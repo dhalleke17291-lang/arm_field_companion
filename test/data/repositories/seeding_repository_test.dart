@@ -245,4 +245,391 @@ void main() {
       expect(event, isNull);
     });
   });
+
+  group('upsertSeedingEvent — completed lock', () {
+    Future<SeedingEvent> createCompletedEvent(int trialId) async {
+      await repo.upsertSeedingEvent(
+        SeedingEventsCompanion.insert(
+          trialId: trialId,
+          seedingDate: today(),
+          variety: const Value('Barley Prime'),
+          seedLotNumber: const Value('LOT-001'),
+          operatorName: const Value('original operator'),
+          notes: const Value('original notes'),
+        ),
+      );
+      final event = await repo.getSeedingEventForTrial(trialId);
+      await repo.markSeedingCompleted(
+        id: event!.id,
+        completedAt: DateTime.now(),
+      );
+      return (await repo.getSeedingEventForTrial(trialId))!;
+    }
+
+    test('execution fields not updated after seeding completed', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedEvent(trialId);
+
+      await repo.upsertSeedingEvent(
+        SeedingEventsCompanion(
+          id: Value(completed.id),
+          trialId: Value(trialId),
+          seedingDate: Value(today()),
+          variety: const Value('Should not change'),
+          seedLotNumber: const Value('LOT-CHANGED'),
+          seedingRate: const Value(999.0),
+          seedingDepth: const Value(99.0),
+          rowSpacing: const Value(88.0),
+          plantingMethod: const Value('Broadcast'),
+          seedTreatment: const Value('Changed treatment'),
+          germinationPct: const Value(99.0),
+        ),
+      );
+
+      final after = await repo.getSeedingEventForTrial(trialId);
+      expect(after!.variety, 'Barley Prime');
+      expect(after.seedLotNumber, 'LOT-001');
+      expect(after.seedingRate, isNull);
+      expect(after.seedingDepth, isNull);
+      expect(after.rowSpacing, isNull);
+      expect(after.plantingMethod, isNull);
+      expect(after.seedTreatment, isNull);
+      expect(after.germinationPct, isNull);
+    });
+
+    test('editable fields ARE updated after seeding completed', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedEvent(trialId);
+
+      await repo.upsertSeedingEvent(
+        SeedingEventsCompanion(
+          id: Value(completed.id),
+          trialId: Value(trialId),
+          seedingDate: Value(today()),
+          operatorName: const Value('updated operator'),
+          notes: const Value('updated notes'),
+          equipmentUsed: const Value('Updated Planter'),
+          temperatureC: const Value(22.5),
+          humidityPct: const Value(65.0),
+          windSpeedKmh: const Value(12.0),
+          windDirection: const Value('NW'),
+        ),
+      );
+
+      final after = await repo.getSeedingEventForTrial(trialId);
+      expect(after!.operatorName, 'updated operator');
+      expect(after.notes, 'updated notes');
+      expect(after.equipmentUsed, 'Updated Planter');
+      expect(after.temperatureC, 22.5);
+      expect(after.humidityPct, 65.0);
+      expect(after.windSpeedKmh, 12.0);
+      expect(after.windDirection, 'NW');
+    });
+
+    test('emergenceDate and emergencePct are updatable after completion', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedEvent(trialId);
+
+      await repo.upsertSeedingEvent(
+        SeedingEventsCompanion(
+          id: Value(completed.id),
+          trialId: Value(trialId),
+          seedingDate: Value(today()),
+          emergenceDate: Value(today()),
+          emergencePct: const Value(78.0),
+        ),
+      );
+
+      final after = await repo.getSeedingEventForTrial(trialId);
+      expect(after!.emergenceDate, isNotNull);
+      expect(after.emergencePct, 78.0);
+    });
+
+    test('unconfirmed event updates all fields', () async {
+      final trialId = await createTrial();
+      await repo.upsertSeedingEvent(
+        SeedingEventsCompanion.insert(
+          trialId: trialId,
+          seedingDate: today(),
+          variety: const Value('Original'),
+        ),
+      );
+
+      await repo.upsertSeedingEvent(
+        SeedingEventsCompanion.insert(
+          trialId: trialId,
+          seedingDate: today(),
+          variety: const Value('Updated'),
+          seedLotNumber: const Value('NEW-LOT'),
+          seedingDepth: const Value(3.5),
+        ),
+      );
+
+      final after = await repo.getSeedingEventForTrial(trialId);
+      expect(after!.variety, 'Updated');
+      expect(after.seedLotNumber, 'NEW-LOT');
+      expect(after.seedingDepth, 3.5);
+    });
+
+    test('audit event SEEDING_EVENT_UPDATED written when editable field changes', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedEvent(trialId);
+
+      await repo.upsertSeedingEvent(
+        SeedingEventsCompanion(
+          id: Value(completed.id),
+          trialId: Value(trialId),
+          seedingDate: Value(today()),
+          operatorName: const Value('new operator'),
+        ),
+        performedBy: 'tester',
+        performedByUserId: 1,
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where((a) =>
+                a.trialId.equals(trialId) &
+                a.eventType.equals('SEEDING_EVENT_UPDATED')))
+          .get();
+      expect(audits.length, 1);
+    });
+
+    test('no audit event written when no editable fields change', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedEvent(trialId);
+
+      await repo.upsertSeedingEvent(
+        SeedingEventsCompanion(
+          id: Value(completed.id),
+          trialId: Value(trialId),
+          seedingDate: Value(today()),
+          variety: const Value('Should not trigger audit — execution field'),
+        ),
+        performedBy: 'tester',
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where((a) =>
+                a.trialId.equals(trialId) &
+                a.eventType.equals('SEEDING_EVENT_UPDATED')))
+          .get();
+      expect(audits.isEmpty, isTrue);
+    });
+
+    test('invalid emergence date rejected even on completed event', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedEvent(trialId);
+
+      final pastBeforeSeeding = completed.seedingDate.subtract(const Duration(days: 1));
+
+      expect(
+        () => repo.upsertSeedingEvent(
+          SeedingEventsCompanion(
+            id: Value(completed.id),
+            trialId: Value(trialId),
+            seedingDate: Value(today()),
+            emergenceDate: Value(pastBeforeSeeding),
+          ),
+        ),
+        throwsA(isA<OperationalDateRuleException>()),
+      );
+    });
+
+    test('GPS fields not updated on completed event', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedEvent(trialId);
+
+      await repo.upsertSeedingEvent(
+        SeedingEventsCompanion(
+          id: Value(completed.id),
+          trialId: Value(trialId),
+          seedingDate: Value(today()),
+          capturedLatitude: const Value(51.5),
+          capturedLongitude: const Value(-0.12),
+        ),
+      );
+
+      final after = await repo.getSeedingEventForTrial(trialId);
+      expect(after!.capturedLatitude, isNull);
+      expect(after.capturedLongitude, isNull);
+    });
+  });
+
+  group('updateSeedingWeather', () {
+    Future<SeedingEvent> createCompletedSeedingEvent(int trialId) async {
+      await repo.upsertSeedingEvent(
+        SeedingEventsCompanion.insert(
+          trialId: trialId,
+          seedingDate: today(),
+        ),
+      );
+      final event = await repo.getSeedingEventForTrial(trialId);
+      await repo.markSeedingCompleted(
+        id: event!.id,
+        completedAt: DateTime.now(),
+      );
+      return (await repo.getSeedingEventForTrial(trialId))!;
+    }
+
+    test('writes all weather fields when temperatureC is null', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedSeedingEvent(trialId);
+
+      await repo.updateSeedingWeather(
+        seedingEventId: completed.id,
+        temperatureC: 18.5,
+        humidityPct: 65.0,
+        windSpeedKmh: 12.0,
+        windDirection: 'NW',
+        cloudCoverPct: 40.0,
+        precipitation: 'Light rain',
+        precipitationMm: 1.5,
+        soilMoisture: 'Moist',
+        soilTemperature: 15.0,
+      );
+
+      final after = await repo.getSeedingEventForTrial(trialId);
+      expect(after!.temperatureC, 18.5);
+      expect(after.humidityPct, 65.0);
+      expect(after.windSpeedKmh, 12.0);
+      expect(after.windDirection, 'NW');
+      expect(after.cloudCoverPct, 40.0);
+      expect(after.precipitation, 'Light rain');
+      expect(after.precipitationMm, 1.5);
+      expect(after.soilMoisture, 'Moist');
+      expect(after.soilTemperature, 15.0);
+      expect(after.conditionsRecordedAt, isNotNull);
+    });
+
+    test('does NOT overwrite when temperatureC already set (lock)', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedSeedingEvent(trialId);
+
+      await repo.updateSeedingWeather(
+        seedingEventId: completed.id,
+        temperatureC: 20.0,
+        humidityPct: null,
+        windSpeedKmh: null,
+        windDirection: null,
+        cloudCoverPct: null,
+        precipitation: null,
+        precipitationMm: null,
+        soilMoisture: null,
+        soilTemperature: null,
+      );
+
+      await repo.updateSeedingWeather(
+        seedingEventId: completed.id,
+        temperatureC: 99.9,
+        humidityPct: 99.9,
+        windSpeedKmh: 99.9,
+        windDirection: 'S',
+        cloudCoverPct: 99.9,
+        precipitation: 'Heavy rain',
+        precipitationMm: 99.9,
+        soilMoisture: 'Wet',
+        soilTemperature: 99.9,
+      );
+
+      final after = await repo.getSeedingEventForTrial(trialId);
+      expect(after!.temperatureC, 20.0);
+      expect(after.humidityPct, isNull);
+    });
+
+    test('writes SEEDING_WEATHER_CAPTURED audit event', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedSeedingEvent(trialId);
+
+      await repo.updateSeedingWeather(
+        seedingEventId: completed.id,
+        temperatureC: 22.0,
+        humidityPct: 55.0,
+        windSpeedKmh: 8.0,
+        windDirection: null,
+        cloudCoverPct: null,
+        precipitation: null,
+        precipitationMm: null,
+        soilMoisture: null,
+        soilTemperature: null,
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where((a) =>
+                a.trialId.equals(trialId) &
+                a.eventType.equals('SEEDING_WEATHER_CAPTURED')))
+          .get();
+      expect(audits.length, 1);
+    });
+  });
+
+  group('updateSeedingGps', () {
+    Future<SeedingEvent> createCompletedSeedingEvent(int trialId) async {
+      await repo.upsertSeedingEvent(
+        SeedingEventsCompanion.insert(
+          trialId: trialId,
+          seedingDate: today(),
+        ),
+      );
+      final event = await repo.getSeedingEventForTrial(trialId);
+      await repo.markSeedingCompleted(
+        id: event!.id,
+        completedAt: DateTime.now(),
+      );
+      return (await repo.getSeedingEventForTrial(trialId))!;
+    }
+
+    test('writes GPS fields when capturedLatitude is null', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedSeedingEvent(trialId);
+
+      await repo.updateSeedingGps(
+        seedingEventId: completed.id,
+        latitude: 51.5074,
+        longitude: -0.1278,
+      );
+
+      final after = await repo.getSeedingEventForTrial(trialId);
+      expect(after!.capturedLatitude, closeTo(51.5074, 0.0001));
+      expect(after.capturedLongitude, closeTo(-0.1278, 0.0001));
+      expect(after.locationCapturedAt, isNotNull);
+    });
+
+    test('does NOT overwrite when capturedLatitude already set (lock)', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedSeedingEvent(trialId);
+
+      await repo.updateSeedingGps(
+        seedingEventId: completed.id,
+        latitude: 51.5074,
+        longitude: -0.1278,
+      );
+
+      await repo.updateSeedingGps(
+        seedingEventId: completed.id,
+        latitude: 0.0,
+        longitude: 0.0,
+      );
+
+      final after = await repo.getSeedingEventForTrial(trialId);
+      expect(after!.capturedLatitude, closeTo(51.5074, 0.0001));
+    });
+
+    test('writes SEEDING_GPS_CAPTURED audit event', () async {
+      final trialId = await createTrial();
+      final completed = await createCompletedSeedingEvent(trialId);
+
+      await repo.updateSeedingGps(
+        seedingEventId: completed.id,
+        latitude: 40.7128,
+        longitude: -74.0060,
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where((a) =>
+                a.trialId.equals(trialId) &
+                a.eventType.equals('SEEDING_GPS_CAPTURED')))
+          .get();
+      expect(audits.length, 1);
+    });
+  });
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' show log;
 
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
@@ -40,6 +41,117 @@ class SeedingRepository {
       throw OperationalDateRuleException('Trial not found');
     }
     final existing = await getSeedingEventForTrial(trialPk);
+
+    // ALCOA+ lock: after seeding is marked completed, only allow editable fields.
+    if (existing != null && existing.completedAt != null) {
+      // Validate emergence fields if they are being changed.
+      if (companion.emergenceDate.present && companion.emergenceDate.value != null) {
+        final emErr = validateEmergenceDate(
+          seedingDate: existing.seedingDate,
+          emergenceDate: companion.emergenceDate.value!,
+        );
+        if (emErr != null) throw OperationalDateRuleException(emErr);
+      }
+      final effectiveEmergencePct = companion.emergencePct.present
+          ? companion.emergencePct.value
+          : existing.emergencePct;
+      final pctErr = validateEmergencePercent(effectiveEmergencePct);
+      if (pctErr != null) throw OperationalDateRuleException(pctErr);
+
+      final locked = _withLastEditIfUser(
+        SeedingEventsCompanion(
+          operatorName: companion.operatorName,
+          notes: companion.notes,
+          equipmentUsed: companion.equipmentUsed,
+          emergenceDate: companion.emergenceDate,
+          emergencePct: companion.emergencePct,
+          temperatureC: companion.temperatureC,
+          humidityPct: companion.humidityPct,
+          windSpeedKmh: companion.windSpeedKmh,
+          windDirection: companion.windDirection,
+          cloudCoverPct: companion.cloudCoverPct,
+          precipitation: companion.precipitation,
+          precipitationMm: companion.precipitationMm,
+          soilMoisture: companion.soilMoisture,
+          soilTemperature: companion.soilTemperature,
+          conditionsRecordedAt: companion.conditionsRecordedAt,
+        ),
+        performedByUserId,
+      );
+
+      final changedFields = <String, dynamic>{};
+      if (companion.operatorName.present && companion.operatorName.value != existing.operatorName) {
+        changedFields['operatorName'] = companion.operatorName.value;
+      }
+      if (companion.notes.present && companion.notes.value != existing.notes) {
+        changedFields['notes'] = companion.notes.value;
+      }
+      if (companion.equipmentUsed.present && companion.equipmentUsed.value != existing.equipmentUsed) {
+        changedFields['equipmentUsed'] = companion.equipmentUsed.value;
+      }
+      if (companion.emergenceDate.present && companion.emergenceDate.value != existing.emergenceDate) {
+        changedFields['emergenceDate'] = companion.emergenceDate.value?.toIso8601String();
+      }
+      if (companion.emergencePct.present && companion.emergencePct.value != existing.emergencePct) {
+        changedFields['emergencePct'] = companion.emergencePct.value;
+      }
+      if (companion.temperatureC.present && companion.temperatureC.value != existing.temperatureC) {
+        changedFields['temperatureC'] = companion.temperatureC.value;
+      }
+      if (companion.humidityPct.present && companion.humidityPct.value != existing.humidityPct) {
+        changedFields['humidityPct'] = companion.humidityPct.value;
+      }
+      if (companion.windSpeedKmh.present && companion.windSpeedKmh.value != existing.windSpeedKmh) {
+        changedFields['windSpeedKmh'] = companion.windSpeedKmh.value;
+      }
+      if (companion.windDirection.present && companion.windDirection.value != existing.windDirection) {
+        changedFields['windDirection'] = companion.windDirection.value;
+      }
+      if (companion.cloudCoverPct.present && companion.cloudCoverPct.value != existing.cloudCoverPct) {
+        changedFields['cloudCoverPct'] = companion.cloudCoverPct.value;
+      }
+      if (companion.precipitation.present && companion.precipitation.value != existing.precipitation) {
+        changedFields['precipitation'] = companion.precipitation.value;
+      }
+      if (companion.precipitationMm.present && companion.precipitationMm.value != existing.precipitationMm) {
+        changedFields['precipitationMm'] = companion.precipitationMm.value;
+      }
+      if (companion.soilMoisture.present && companion.soilMoisture.value != existing.soilMoisture) {
+        changedFields['soilMoisture'] = companion.soilMoisture.value;
+      }
+      if (companion.soilTemperature.present && companion.soilTemperature.value != existing.soilTemperature) {
+        changedFields['soilTemperature'] = companion.soilTemperature.value;
+      }
+
+      await _db.transaction(() async {
+        await (_db.update(_db.seedingEvents)
+              ..where((e) => e.id.equals(existing.id)))
+            .write(locked);
+        if (changedFields.isNotEmpty) {
+          try {
+            await _db.into(_db.auditEvents).insert(
+                  AuditEventsCompanion.insert(
+                    trialId: Value(existing.trialId),
+                    eventType: 'SEEDING_EVENT_UPDATED',
+                    description: 'Completed seeding event updated',
+                    performedBy: Value(performedBy),
+                    performedByUserId: Value(performedByUserId),
+                    metadata: Value(jsonEncode({
+                      'seeding_event_id': existing.id,
+                      'trial_id': existing.trialId,
+                      'changedFields': changedFields,
+                    })),
+                  ),
+                );
+          } catch (e, st) {
+            log('SEEDING_EVENT_UPDATED audit insert failed: $e\n$st',
+                name: 'SeedingRepository');
+          }
+        }
+      });
+      return;
+    }
+
     final DateTime effectiveSeeding;
     if (companion.seedingDate.present) {
       effectiveSeeding = companion.seedingDate.value;
@@ -185,5 +297,103 @@ class SeedingRepository {
     return (_db.select(_db.seedingEvents)
           ..where((e) => e.trialId.equals(trialId)))
         .getSingleOrNull();
+  }
+
+  /// Writes weather to a completed seeding event exactly once (null-check lock).
+  /// Silent no-op if temperatureC is already set.
+  Future<void> updateSeedingWeather({
+    required String seedingEventId,
+    required double? temperatureC,
+    required double? humidityPct,
+    required double? windSpeedKmh,
+    required String? windDirection,
+    required double? cloudCoverPct,
+    required String? precipitation,
+    required double? precipitationMm,
+    required String? soilMoisture,
+    required double? soilTemperature,
+  }) async {
+    final existing = await (_db.select(_db.seedingEvents)
+          ..where((e) => e.id.equals(seedingEventId)))
+        .getSingleOrNull();
+    if (existing == null) return;
+    if (existing.temperatureC != null) return;
+    await _db.transaction(() async {
+      await (_db.update(_db.seedingEvents)
+            ..where((e) => e.id.equals(seedingEventId)))
+          .write(SeedingEventsCompanion(
+        temperatureC: Value(temperatureC),
+        humidityPct: Value(humidityPct),
+        windSpeedKmh: Value(windSpeedKmh),
+        windDirection: Value(windDirection),
+        cloudCoverPct: Value(cloudCoverPct),
+        precipitation: Value(precipitation),
+        precipitationMm: Value(precipitationMm),
+        soilMoisture: Value(soilMoisture),
+        soilTemperature: Value(soilTemperature),
+        conditionsRecordedAt: Value(DateTime.now().toUtc()),
+      ));
+      try {
+        await _db.into(_db.auditEvents).insert(
+              AuditEventsCompanion.insert(
+                trialId: Value(existing.trialId),
+                eventType: 'SEEDING_WEATHER_CAPTURED',
+                description: 'Weather captured for completed seeding event',
+                metadata: Value(jsonEncode({
+                  'seeding_event_id': seedingEventId,
+                  'trial_id': existing.trialId,
+                  'source': 'api',
+                  'temperatureC': temperatureC,
+                  'precipitationMm': precipitationMm,
+                  'completedAt': existing.completedAt?.toIso8601String(),
+                })),
+              ),
+            );
+      } catch (e, st) {
+        log('SEEDING_WEATHER_CAPTURED audit insert failed: $e\n$st',
+            name: 'SeedingRepository');
+      }
+    });
+  }
+
+  /// Writes GPS to a completed seeding event exactly once (null-check lock).
+  /// Silent no-op if capturedLatitude is already set.
+  Future<void> updateSeedingGps({
+    required String seedingEventId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    final existing = await (_db.select(_db.seedingEvents)
+          ..where((e) => e.id.equals(seedingEventId)))
+        .getSingleOrNull();
+    if (existing == null) return;
+    if (existing.capturedLatitude != null) return;
+    await _db.transaction(() async {
+      await (_db.update(_db.seedingEvents)
+            ..where((e) => e.id.equals(seedingEventId)))
+          .write(SeedingEventsCompanion(
+        capturedLatitude: Value(latitude),
+        capturedLongitude: Value(longitude),
+        locationCapturedAt: Value(DateTime.now().toUtc()),
+      ));
+      try {
+        await _db.into(_db.auditEvents).insert(
+              AuditEventsCompanion.insert(
+                trialId: Value(existing.trialId),
+                eventType: 'SEEDING_GPS_CAPTURED',
+                description: 'GPS captured for completed seeding event',
+                metadata: Value(jsonEncode({
+                  'seeding_event_id': seedingEventId,
+                  'trial_id': existing.trialId,
+                  'latitude': latitude,
+                  'longitude': longitude,
+                })),
+              ),
+            );
+      } catch (e, st) {
+        log('SEEDING_GPS_CAPTURED audit insert failed: $e\n$st',
+            name: 'SeedingRepository');
+      }
+    });
   }
 }

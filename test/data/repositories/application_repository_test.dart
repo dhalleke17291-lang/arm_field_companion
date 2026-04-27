@@ -636,4 +636,171 @@ void main() {
       expect(products[0].deviationFlag, isFalse);
     });
   });
+
+  group('updateApplicationWeather', () {
+    Future<String> createAppliedApp(int trialId) async {
+      final id = await repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+        ),
+      );
+      await repo.markApplicationApplied(id: id, appliedAt: today());
+      return id;
+    }
+
+    test('writes all weather fields when all null', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.updateApplicationWeather(
+        applicationId: id,
+        temperatureC: 21.5,
+        humidityPct: 60.0,
+        windSpeedKmh: 15.0,
+        windDirection: 'NW',
+        cloudCoverPct: 30.0,
+        precipitation: 'Light rain',
+        precipitationMm: 1.2,
+        soilMoisture: 'Moist',
+        soilTemperature: 18.0,
+      );
+
+      final row = (await repo.getApplicationsForTrial(trialId)).first;
+      expect(row.temperature, 21.5);
+      expect(row.humidity, 60.0);
+      expect(row.windSpeed, 15.0);
+      expect(row.windDirection, 'NW');
+      expect(row.cloudCoverPct, 30.0);
+      expect(row.precipitation, 'Light rain');
+      expect(row.precipitationMm, 1.2);
+      expect(row.soilMoisture, 'Moist');
+      expect(row.soilTemperature, 18.0);
+      expect(row.conditionsRecordedAt, isNotNull);
+    });
+
+    test('does NOT overwrite when any weather field already populated', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      // Write once
+      await repo.updateApplicationWeather(
+        applicationId: id,
+        temperatureC: 20.0,
+        humidityPct: null,
+        windSpeedKmh: null,
+        windDirection: null,
+        cloudCoverPct: null,
+        precipitation: null,
+        precipitationMm: null,
+      );
+
+      // Attempt overwrite — should be a no-op
+      await repo.updateApplicationWeather(
+        applicationId: id,
+        temperatureC: 99.9,
+        humidityPct: 99.9,
+        windSpeedKmh: 99.9,
+        windDirection: 'S',
+        cloudCoverPct: 99.9,
+        precipitation: 'Heavy rain',
+        precipitationMm: 99.9,
+      );
+
+      final row = (await repo.getApplicationsForTrial(trialId)).first;
+      expect(row.temperature, 20.0);
+      expect(row.humidity, isNull);
+    });
+
+    test('writes APPLICATION_WEATHER_CAPTURED audit event', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.updateApplicationWeather(
+        applicationId: id,
+        temperatureC: 18.0,
+        humidityPct: 55.0,
+        windSpeedKmh: 10.0,
+        windDirection: null,
+        cloudCoverPct: null,
+        precipitation: null,
+        precipitationMm: null,
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where((a) =>
+                a.trialId.equals(trialId) &
+                a.eventType.equals('APPLICATION_WEATHER_CAPTURED')))
+          .get();
+      expect(audits.length, 1);
+    });
+  });
+
+  group('updateApplicationGps', () {
+    Future<String> createAppliedApp(int trialId) async {
+      final id = await repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+        ),
+      );
+      await repo.markApplicationApplied(id: id, appliedAt: today());
+      return id;
+    }
+
+    test('writes GPS fields when capturedLatitude is null', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.updateApplicationGps(
+        applicationId: id,
+        latitude: 51.5074,
+        longitude: -0.1278,
+      );
+
+      final row = (await repo.getApplicationsForTrial(trialId)).first;
+      expect(row.capturedLatitude, closeTo(51.5074, 0.0001));
+      expect(row.capturedLongitude, closeTo(-0.1278, 0.0001));
+      expect(row.locationCapturedAt, isNotNull);
+    });
+
+    test('does NOT overwrite when capturedLatitude already set', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.updateApplicationGps(
+        applicationId: id,
+        latitude: 51.5074,
+        longitude: -0.1278,
+      );
+
+      // Attempt overwrite — should be no-op
+      await repo.updateApplicationGps(
+        applicationId: id,
+        latitude: 0.0,
+        longitude: 0.0,
+      );
+
+      final row = (await repo.getApplicationsForTrial(trialId)).first;
+      expect(row.capturedLatitude, closeTo(51.5074, 0.0001));
+    });
+
+    test('writes APPLICATION_GPS_CAPTURED audit event', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.updateApplicationGps(
+        applicationId: id,
+        latitude: 40.7128,
+        longitude: -74.0060,
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where((a) =>
+                a.trialId.equals(trialId) &
+                a.eventType.equals('APPLICATION_GPS_CAPTURED')))
+          .get();
+      expect(audits.length, 1);
+    });
+  });
 }

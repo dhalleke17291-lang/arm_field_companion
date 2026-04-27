@@ -18,7 +18,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import 'database/app_database.dart';
 import '../features/backup/auto_backup_service.dart';
+import 'connectivity/application_weather_backfill_service.dart';
 import 'connectivity/connectivity_service.dart';
+import 'connectivity/seeding_weather_backfill_service.dart';
 import 'connectivity/weather_backfill_service.dart';
 import '../features/derived/domain/trajectory_analysis.dart';
 import '../features/backup/backup_passphrase_store.dart';
@@ -1885,6 +1887,22 @@ final weatherBackfillServiceProvider =
     connectivityService: ref.watch(connectivityServiceProvider),
     weatherRepo: ref.watch(weatherSnapshotRepositoryProvider),
     diagnosticsStore: ref.watch(diagnosticsStoreProvider),
+  );
+});
+
+final applicationWeatherBackfillServiceProvider =
+    Provider<ApplicationWeatherBackfillService>((ref) {
+  return ApplicationWeatherBackfillService(
+    connectivityService: ref.watch(connectivityServiceProvider),
+    applicationRepository: ref.watch(applicationRepositoryProvider),
+  );
+});
+
+final seedingWeatherBackfillServiceProvider =
+    Provider<SeedingWeatherBackfillService>((ref) {
+  return SeedingWeatherBackfillService(
+    connectivityService: ref.watch(connectivityServiceProvider),
+    seedingRepository: ref.watch(seedingRepositoryProvider),
   );
 });
 

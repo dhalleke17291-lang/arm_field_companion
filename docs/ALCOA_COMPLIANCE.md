@@ -193,8 +193,8 @@ The following gaps have been identified against full ALCOA+ compliance. Each is 
 |---|-----------|-----|--------|----------|--------|
 | 1 | Contemporaneous | Device clock is not verified against NTP; a manipulated clock produces misleading `createdAt` | Ratings could appear to precede the actual observation | Medium | Open |
 | 2 | Attributable | Device-sharing risk: user-selection screen is not authenticated; a user can rate under a different identity without re-login | Attribution may be incorrect on shared tablets | Medium | Open |
-| 3 | Complete / Contemporaneous | `TrialApplicationEvents` has inline weather fields (manual entry only); no GPS columns; no automatic weather capture at application time | Environmental context for spray applications is incomplete | Low | Open |
-| 4 | Complete / Contemporaneous | `SeedingEvents` has no GPS, no weather columns, no automatic capture | Seeding environmental context is absent | Low | Open |
+| 3 | Complete / Contemporaneous | ~~`TrialApplicationEvents` had inline weather fields (manual entry only); no GPS columns; no automatic weather capture at application time~~ | ~~Environmental context for spray applications was incomplete~~ | — | **Closed** — GPS columns added to `trial_application_events` v69→v70; weather+GPS captured non-blocking at `markApplicationApplied`; archive-API backfill via `ApplicationWeatherBackfillService`; null-check lock prevents overwrite 2026-04-26 |
+| 4 | Complete / Contemporaneous | ~~`SeedingEvents` had no GPS, no weather columns, no automatic capture~~ | ~~Seeding environmental context was absent~~ | — | **Closed** — 13 weather+GPS columns added to `seeding_events` 2026-04-26; repository lock prevents post-completion mutation of execution fields |
 | 5 | Accurate | Numeric rating range (e.g., 1–9 scale) is validated in the UI only; no DB-level constraint | A direct-DB write could insert an out-of-range value | Low | Open |
 | 6 | Complete | Application event `appliedAt` and seeding event `completedAt` are optional; records can be saved with no activity timestamp | Temporal completeness of execution events is unenforceable | Low | Open |
 | 7 | Enduring / Attributable | ~~Audit-clear code path allowed bulk deletion of `audit_events` after backup~~ | ~~Prior audit history could be removed from the device~~ | — | **Closed** — code path removed 2026-04-26 |
@@ -220,6 +220,13 @@ The following `eventType` values are written to `audit_events` by the applicatio
 | `TRIAL_APPLICATION_COMPLETED` | `completeApplication` | `trialId`, `performedBy` |
 | `TRIAL_APPLICATION_CLOSED` | `closeApplication` | `trialId`, `performedBy` |
 | `TRIAL_APPLICATION_CANCELLED` | `cancelApplication` | `trialId`, `performedBy`, previous status |
+| `SEEDING_EVENT_UPSERTED` | `upsertSeedingEvent` — insert or update on pending event | `trialId`, `performedBy`, `seeding_event_id`, `status`, `seeding_date` |
+| `SEEDING_EVENT_UPDATED` | `upsertSeedingEvent` on completed event — editable fields only | `trialId`, `performedBy`, `seeding_event_id`, `changedFields` map |
+| `SEEDING_EVENT_COMPLETED` | `markSeedingCompleted` — completion timestamp set | `trialId`, `performedBy`, `completed_at` |
+| `APPLICATION_GPS_CAPTURED` | `updateApplicationGps` — GPS written once at confirmation | `trialId`, `trial_application_event_id`, `latitude`, `longitude` |
+| `APPLICATION_WEATHER_CAPTURED` | `updateApplicationWeather` — archive weather written once | `trialId`, `trial_application_event_id` |
+| `SEEDING_GPS_CAPTURED` | `updateSeedingGps` — GPS written once at seeding completion | `trialId`, `seeding_event_id`, `latitude`, `longitude` |
+| `SEEDING_WEATHER_CAPTURED` | `updateSeedingWeather` — archive weather written once | `trialId`, `seeding_event_id`, `source`, `temperatureC`, `precipitationMm`, `completedAt` |
 
 ---
 

@@ -448,6 +448,29 @@ class MockApplicationRepository implements ApplicationRepository {
   @override
   Future<void> cancelApplication(String id,
       {String? performedBy, int? performedByUserId}) async {}
+
+  @override
+  Future<void> updateApplicationWeather({
+    required String applicationId,
+    required double? temperatureC,
+    required double? humidityPct,
+    required double? windSpeedKmh,
+    required String? windDirection,
+    required double? cloudCoverPct,
+    required String? precipitation,
+    required double? precipitationMm,
+    String? soilMoisture,
+    double? soilTemperature,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> updateApplicationGps({
+    required String applicationId,
+    required double latitude,
+    required double longitude,
+  }) async =>
+      throw UnimplementedError();
 }
 
 class MockSeedingRepository implements SeedingRepository {
@@ -471,6 +494,29 @@ class MockSeedingRepository implements SeedingRepository {
     SeedingEventsCompanion companion, {
     String? performedBy,
     int? performedByUserId,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> updateSeedingWeather({
+    required String seedingEventId,
+    required double? temperatureC,
+    required double? humidityPct,
+    required double? windSpeedKmh,
+    required String? windDirection,
+    required double? cloudCoverPct,
+    required String? precipitation,
+    required double? precipitationMm,
+    required String? soilMoisture,
+    required double? soilTemperature,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> updateSeedingGps({
+    required String seedingEventId,
+    required double latitude,
+    required double longitude,
   }) async =>
       throw UnimplementedError();
 }
