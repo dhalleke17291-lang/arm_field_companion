@@ -76,6 +76,7 @@ ALCOA+ is the data-integrity framework required by GLP, GEP, and ICH E6(R2). Eve
 
 **Implementation:**
 - `saveRating` always INSERTs a new row; it never UPDATEs `numericValue`, `textValue`, or `resultStatus` in place. The version chain is maintained via `isCurrent` flag.
+- When a researcher changes an existing current rating, the rating screen collects `amendmentReason` (required for GLP workspace trials, optional otherwise) and persists it on the new INSERT row together with `amended = true` and `previousId` — satisfying **Accurate** / traceable “why” for value or status changes.
 - `updateRating` is restricted to metadata-only fields (`amendmentReason`, `amendedBy`, `confidence`, `lastEditedByUserId`). Any attempt to change value fields via `updateRating` is rejected by compile-time field absence.
 - Hard deletes are prohibited; soft-delete (`isDeleted = true`) preserves the original record.
 - `applyCorrection` inserts a new `rating_corrections` row and marks the original rating as `amended = true`; the original numeric value is never overwritten.
@@ -201,6 +202,7 @@ The following gaps have been identified against full ALCOA+ compliance. Each is 
 | 8 | Available | No built-in read-only inspector view for `.agnexis` files; requires app restore or manual SQLite tooling | Inspector access requires technical setup | Low | Open |
 | 9 | Consistent | No cross-table clock-consistency validation (e.g., `session.closedAt` < `rating.createdAt` edge cases from clock jumps go undetected) | Subtle timestamp inconsistencies would not be flagged | Low | Open |
 | 10 | Original | ~~`updateApplication` allowed in-place mutation of execution fields (applicationDate, rate, productName, plotsTreated, equipment) on confirmed applications after `appliedAt` was set~~ | ~~Original execution truth could be overwritten without trace~~ | — | **Closed** — repository lock + UI read-only + product row lock implemented 2026-04-26 |
+| 11 | Accurate / Original | ~~Value/status amendments created new version rows but did not capture `amendmentReason` from the field workflow (`SaveRatingInput` / rating screen)~~ | ~~Inspectors could not see why a rating was changed~~ | — | **Closed** — reason prompt on amendment + persistence on new row; Trial Data §3 lists reason or “not recorded” |
 
 ---
 

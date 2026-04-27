@@ -453,6 +453,7 @@ class FakeRatingRepository implements RatingRepository {
     String? ratingTime,
     String? ratingMethod,
     String? confidence,
+    String? amendmentReason,
   }) async =>
       throw UnimplementedError();
 

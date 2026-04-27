@@ -4092,6 +4092,147 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     return null;
   }
 
+  /// Same key as [currentRatingProvider] / the reactive [existingRatingAsync] in [build].
+  CurrentRatingParams _currentRatingParams() {
+    final trialAssessmentsEarly = ref
+            .read(trialAssessmentsForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        <TrialAssessment>[];
+    final taByLegacyEarly = <int, TrialAssessment>{
+      for (final ta in trialAssessmentsEarly)
+        if (ta.legacyAssessmentId != null) ta.legacyAssessmentId!: ta,
+    };
+    final currentTaEarly = taByLegacyEarly[_currentAssessment.id];
+    final aamData = ref
+            .read(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        const <int, ArmAssessmentMetadataData>{};
+    final activeNumSubsamples = currentTaEarly != null
+        ? (aamData[currentTaEarly.id]?.numSubsamples ?? 1)
+        : 1;
+    return CurrentRatingParams(
+      trialId: widget.trial.id,
+      plotPk: widget.plot.id,
+      assessmentId: _currentAssessment.id,
+      sessionId: widget.session.id,
+      subUnitId: activeNumSubsamples > 1 ? _currentSubUnit : null,
+    );
+  }
+
+  bool _pendingMatchesExistingRating(
+    RatingRecord existing,
+    String newStatus,
+    double? newNumeric,
+    String? newText,
+  ) {
+    if (existing.resultStatus != newStatus) return false;
+    if (newStatus == 'RECORDED') {
+      if (_isTextAssessment) {
+        return (existing.textValue ?? '') == (newText ?? '');
+      }
+      if (existing.numericValue == null && newNumeric == null) return true;
+      if (existing.numericValue == null || newNumeric == null) return false;
+      return _doublesMatchCarryForward(existing.numericValue!, newNumeric);
+    }
+    if (newStatus == 'MISSING_CONDITION') {
+      return (existing.textValue ?? '') == (newText ?? '');
+    }
+    return true;
+  }
+
+  String _snapshotLabelForRatingRow(
+    String resultStatus,
+    double? numericValue,
+    String? textValue,
+  ) {
+    if (resultStatus == 'RECORDED') {
+      if (_isTextAssessment) {
+        final t = textValue;
+        if (t != null && t.isNotEmpty) return t;
+        return '—';
+      }
+      if (numericValue != null) return numericValue.toString();
+      return '—';
+    }
+    if (resultStatus == 'MISSING_CONDITION') {
+      final t = textValue;
+      if (t != null && t.isNotEmpty) return t;
+    }
+    return _statusDisplayLabel(resultStatus);
+  }
+
+  Future<String?> _showAmendmentReasonDialog(
+    BuildContext context, {
+    required String plotLabel,
+    required String assessmentName,
+    required String previousLabel,
+    required String newLabel,
+    required bool reasonRequired,
+  }) async {
+    final controller = TextEditingController();
+    final choice = await showDialog<String?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final trimmed = controller.text.trim();
+            final canSave = !reasonRequired || trimmed.length >= 3;
+            return AlertDialog(
+              title: const Text('Reason for change'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Plot $plotLabel · $assessmentName\n'
+                      'Previous value: $previousLabel\n'
+                      'New value: $newLabel',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: controller,
+                      decoration: InputDecoration(
+                        hintText: reasonRequired
+                            ? 'Required for GLP trials'
+                            : 'Optional — describe why value changed',
+                        hintStyle: const TextStyle(
+                          color: AppDesignTokens.secondaryText,
+                        ),
+                      ),
+                      style: const TextStyle(
+                        color: AppDesignTokens.primaryText,
+                      ),
+                      onChanged: (_) => setDialogState(() {}),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, null),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed:
+                      canSave ? () => Navigator.pop(ctx, controller.text.trim()) : null,
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    controller.dispose();
+    return choice;
+  }
+
   Future<bool> _saveRating(BuildContext context,
       {bool navigateAfterSave = true,
       bool skipCarryForwardConfirm = false}) async {
@@ -4225,6 +4366,43 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
           : _selectedMissingReasons.join(', ');
     }
 
+    final existingForSave =
+        await ref.read(currentRatingProvider(_currentRatingParams()).future);
+    String? amendmentReason;
+    if (existingForSave != null &&
+        !_pendingMatchesExistingRating(
+          existingForSave,
+          _selectedStatus,
+          numericValue,
+          textValue,
+        )) {
+      if (!context.mounted) return false;
+      final config = safeConfigFromString(widget.trial.workspaceType);
+      final plotLabel = widget.plot.plotId;
+      final assessmentName = _currentAssessment.name;
+      final prevLabel = _snapshotLabelForRatingRow(
+        existingForSave.resultStatus,
+        existingForSave.numericValue,
+        existingForSave.textValue,
+      );
+      final nextLabel = _snapshotLabelForRatingRow(
+        _selectedStatus,
+        numericValue,
+        textValue,
+      );
+      final reasonText = await _showAmendmentReasonDialog(
+        context,
+        plotLabel: plotLabel,
+        assessmentName: assessmentName,
+        previousLabel: prevLabel,
+        newLabel: nextLabel,
+        reasonRequired: config.isGlp,
+      );
+      if (reasonText == null) return false;
+      if (!context.mounted) return false;
+      amendmentReason = reasonText.isEmpty ? null : reasonText;
+    }
+
     setState(() => _isSaving = true);
 
     if (_gpsCaptureOnEachSave) {
@@ -4261,6 +4439,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         confidence: _confidence,
         capturedLatitude: _gpsLatitude,
         capturedLongitude: _gpsLongitude,
+        amendmentReason: amendmentReason,
         assessmentConstraints: RatingAssessmentConstraints(
           dataType: _currentAssessment.dataType,
           minValue: scaleBounds.min,

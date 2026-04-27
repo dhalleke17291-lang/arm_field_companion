@@ -62,10 +62,21 @@ class MockRatingRepository implements RatingRepository {
     String? ratingTime,
     String? ratingMethod,
     String? confidence,
+    String? amendmentReason,
   }) async {
     if (shouldThrow) {
       throw RatingIntegrityException(throwMessage ?? 'Mock error');
     }
+
+    final existing = await getCurrentRating(
+      trialId: trialId,
+      plotPk: plotPk,
+      assessmentId: assessmentId,
+      sessionId: sessionId,
+      subUnitId: subUnitId,
+    );
+    final isAmendment = existing != null;
+    final reasonForRow = isAmendment ? amendmentReason : null;
 
     for (int i = 0; i < _records.length; i++) {
       final r = _records[i];
@@ -80,8 +91,12 @@ class MockRatingRepository implements RatingRepository {
       }
     }
 
+    final nextId = _records.isEmpty
+        ? 1
+        : _records.map((r) => r.id).reduce((a, b) => a > b ? a : b) + 1;
+
     final record = RatingRecord(
-      id: _records.length + 1,
+      id: nextId,
       trialId: trialId,
       plotPk: plotPk,
       assessmentId: assessmentId,
@@ -91,10 +106,11 @@ class MockRatingRepository implements RatingRepository {
       numericValue: numericValue,
       textValue: textValue,
       isCurrent: true,
-      previousId: null,
+      previousId: existing?.id,
       createdAt: DateTime.now(),
       raterName: raterName,
-      amended: false,
+      amended: isAmendment,
+      amendmentReason: reasonForRow,
       isDeleted: false,
     );
 
@@ -513,6 +529,76 @@ void main() {
       expect(updated.amendmentReason, 'Corrected entry');
       expect(updated.lastEditedByUserId, 42);
       expect(firstId, isNot(newId));
+    });
+  });
+
+  group('SaveRatingUseCase — amendmentReason (repository contract)', () {
+    test(
+        'existing current rating + reason: new row amended with reason; prior not current',
+        () async {
+      final first = await mockRepo.saveRating(
+        trialId: 1,
+        plotPk: 1,
+        assessmentId: 1,
+        sessionId: 1,
+        resultStatus: 'RECORDED',
+        numericValue: 1.0,
+        isSessionClosed: false,
+      );
+      final second = await useCase.execute(const SaveRatingInput(
+        trialId: 1,
+        plotPk: 1,
+        assessmentId: 1,
+        sessionId: 1,
+        resultStatus: 'RECORDED',
+        numericValue: 2.0,
+        amendmentReason: 'Typo correction',
+      ));
+      expect(second.isSuccess, true);
+      final row = second.rating!;
+      expect(row.amended, true);
+      expect(row.amendmentReason, 'Typo correction');
+      expect(row.previousId, first.id);
+      final prior = await mockRepo.getRatingById(first.id);
+      expect(prior!.isCurrent, false);
+    });
+
+    test('no existing rating: amendmentReason ignored on first save', () async {
+      final result = await useCase.execute(const SaveRatingInput(
+        trialId: 1,
+        plotPk: 1,
+        assessmentId: 1,
+        sessionId: 1,
+        resultStatus: 'RECORDED',
+        numericValue: 5.0,
+        amendmentReason: 'Should not persist',
+      ));
+      expect(result.isSuccess, true);
+      expect(result.rating!.amended, false);
+      expect(result.rating!.amendmentReason, isNull);
+    });
+
+    test('existing rating + null reason: amended true, reason null', () async {
+      await mockRepo.saveRating(
+        trialId: 1,
+        plotPk: 1,
+        assessmentId: 1,
+        sessionId: 1,
+        resultStatus: 'RECORDED',
+        numericValue: 1.0,
+        isSessionClosed: false,
+      );
+      final second = await useCase.execute(const SaveRatingInput(
+        trialId: 1,
+        plotPk: 1,
+        assessmentId: 1,
+        sessionId: 1,
+        resultStatus: 'RECORDED',
+        numericValue: 3.0,
+      ));
+      expect(second.isSuccess, true);
+      expect(second.rating!.amended, true);
+      expect(second.rating!.amendmentReason, isNull);
     });
   });
 }

@@ -118,6 +118,7 @@ class RatingRepository {
     String? ratingTime,
     String? ratingMethod,
     String? confidence,
+    String? amendmentReason,
   }) async {
     if (isSessionClosed) throw SessionClosedException();
 
@@ -143,6 +144,7 @@ class RatingRepository {
           ratingTime: ratingTime,
           ratingMethod: ratingMethod,
           confidence: confidence,
+          amendmentReason: amendmentReason,
         ));
   }
 
@@ -165,6 +167,7 @@ class RatingRepository {
     String? ratingTime,
     String? ratingMethod,
     String? confidence,
+    String? amendmentReason,
   }) async {
     final existing = await getCurrentRating(
       trialId: trialId,
@@ -179,6 +182,10 @@ class RatingRepository {
             ..where((r) => r.id.equals(existing.id)))
           .write(const RatingRecordsCompanion(isCurrent: Value(false)));
     }
+
+    final isAmendment = existing != null;
+    final reasonForRow =
+        isAmendment ? amendmentReason : null;
 
     final nowUtc = DateTime.now().toUtc();
     final newId = await _db.into(_db.ratingRecords).insert(
@@ -201,6 +208,8 @@ class RatingRepository {
             ratingTime: Value(ratingTime),
             ratingMethod: Value(ratingMethod),
             confidence: Value(confidence),
+            amended: Value(isAmendment),
+            amendmentReason: Value(reasonForRow),
             lastEditedAt: existing != null ? Value(nowUtc) : const Value.absent(),
             lastEditedByUserId: existing != null && performedByUserId != null
                 ? Value(performedByUserId)
@@ -306,6 +315,7 @@ class RatingRepository {
         ratingTime: null,
         ratingMethod: null,
         confidence: null,
+        amendmentReason: reason,
       );
 
       await _db.into(_db.deviationFlags).insert(

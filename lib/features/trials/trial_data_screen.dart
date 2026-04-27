@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -402,6 +403,7 @@ class TrialDataScreen extends ConsumerStatefulWidget {
 
 class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
   bool _footerExpanded = false;
+  bool _section3AmendmentsExpanded = false;
   final Set<int> _expandedTreatmentIds = {};
   late final ScrollController _scrollController;
   final _section2Key = GlobalKey();
@@ -858,6 +860,155 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     );
   }
 
+  String _amendmentRowValueSummary(RatingRecord r) {
+    if (r.resultStatus == 'RECORDED') {
+      if (r.numericValue != null) return r.numericValue.toString();
+      final t = r.textValue;
+      if (t != null && t.trim().isNotEmpty) return t;
+      return '—';
+    }
+    if (r.resultStatus == 'MISSING_CONDITION') {
+      final t = r.textValue;
+      if (t != null && t.trim().isNotEmpty) return t;
+    }
+    switch (r.resultStatus) {
+      case 'NOT_OBSERVED':
+        return 'Not observed';
+      case 'NOT_APPLICABLE':
+        return 'N/A';
+      case 'MISSING_CONDITION':
+        return 'Missing';
+      case 'TECHNICAL_ISSUE':
+        return 'Tech issue';
+      case 'VOID':
+        return 'Void';
+      default:
+        return r.resultStatus.replaceAll('_', ' ');
+    }
+  }
+
+  Widget _buildAmendmentsQualityRows(_AnalysisData data) {
+    if (data.amendedRatings.isEmpty) {
+      return const _FieldRow(label: 'Amended', value: 'None');
+    }
+    final byId = {for (final r in data.allRatings) r.id: r};
+    final sessionById = {for (final s in data.allSessions) s.id: s};
+    final sorted = List<RatingRecord>.of(data.amendedRatings)
+      ..sort((a, b) {
+        final c = a.sessionId.compareTo(b.sessionId);
+        if (c != 0) return c;
+        final p = a.plotPk.compareTo(b.plotPk);
+        if (p != 0) return p;
+        return a.assessmentId.compareTo(b.assessmentId);
+      });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => setState(
+            () => _section3AmendmentsExpanded = !_section3AmendmentsExpanded,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _FieldRow(
+                  label: 'Amended',
+                  value:
+                      '${data.amendedRatings.length} rating${data.amendedRatings.length == 1 ? '' : 's'}',
+                ),
+              ),
+              const SizedBox(width: 4),
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Icon(
+                  _section3AmendmentsExpanded
+                      ? Icons.expand_less
+                      : Icons.expand_more,
+                  size: 20,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_section3AmendmentsExpanded)
+          Padding(
+            padding: const EdgeInsets.only(left: 8, top: 6, bottom: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final r in sorted)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _amendmentExpandedTile(
+                      r,
+                      data: data,
+                      byId: byId,
+                      sessionById: sessionById,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _amendmentExpandedTile(
+    RatingRecord r, {
+    required _AnalysisData data,
+    required Map<int, RatingRecord> byId,
+    required Map<int, Session> sessionById,
+  }) {
+    final plotRow =
+        data.allPlots.where((p) => p.id == r.plotPk).firstOrNull;
+    final plotLabel = plotRow?.plotId ?? '${r.plotPk}';
+    final sess = sessionById[r.sessionId];
+    final sessionName = (sess?.name ?? '').trim().isNotEmpty
+        ? sess!.name.trim()
+        : 'Session ${sess?.id ?? r.sessionId}';
+    final assessName =
+        data.assessmentDisplayNames[r.assessmentId] ?? 'A${r.assessmentId}';
+    final prev = r.previousId != null ? byId[r.previousId!] : null;
+    final oldStr =
+        prev != null ? _amendmentRowValueSummary(prev) : '—';
+    final newStr = _amendmentRowValueSummary(r);
+    final reasonLine = r.amendmentReason != null
+        ? 'Reason: ${r.amendmentReason}'
+        : 'Reason: not recorded';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Plot $plotLabel · Session $sessionName · $assessName',
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          '$oldStr → $newStr',
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          reasonLine,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppDesignTokens.secondaryText,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildQualityContent(_AnalysisData data) {
     final totalSessions = data.allSessions.length;
     final closedCount = data.closedSessions.length;
@@ -873,12 +1024,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
           _FieldRow(label: 'Open', value: '$openCount'),
         const _SectionDivider(),
         _GroupHeader(label: 'AMENDMENTS'),
-        _FieldRow(
-          label: 'Amended',
-          value: data.amendedRatings.isEmpty
-              ? 'None'
-              : '${data.amendedRatings.length} rating${data.amendedRatings.length == 1 ? '' : 's'}',
-        ),
+        _buildAmendmentsQualityRows(data),
         const _SectionDivider(),
         _GroupHeader(label: 'EXCLUDED PLOTS'),
         if (data.excludedPlots.isEmpty)

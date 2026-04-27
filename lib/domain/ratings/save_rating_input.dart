@@ -39,6 +39,10 @@ class SaveRatingInput {
   final double? capturedLatitude;
   final double? capturedLongitude;
 
+  /// When saving a new version over an existing current rating, documents why
+  /// the value or status changed (GLP-required in UI; ignored on first save).
+  final String? amendmentReason;
+
   /// Optional resolved assessment metadata for validation (min/max, data type, unit).
   /// When null, validation stays conservative (status/null + ids only, plus min/max from [minValue]/[maxValue]).
   final RatingAssessmentConstraints? assessmentConstraints;
@@ -62,6 +66,7 @@ class SaveRatingInput {
     this.confidence,
     this.capturedLatitude,
     this.capturedLongitude,
+    this.amendmentReason,
     this.assessmentConstraints,
   });
 }
