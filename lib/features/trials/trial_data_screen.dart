@@ -65,6 +65,20 @@ String formatWeatherMainLine(WeatherSnapshot w) {
 // Screen-local data classes
 // ---------------------------------------------------------------------------
 
+/// Minimal weather display model for application bundles.
+/// Constructed from inline event columns (primary) or a proximity
+/// WeatherSnapshot (fallback) — both produce the same fields.
+class _AppWeather {
+  const _AppWeather({
+    required this.temperature,
+    required this.temperatureUnit,
+    required this.precipitation,
+  });
+  final double? temperature;
+  final String temperatureUnit;
+  final String? precipitation;
+}
+
 class _AppBundle {
   const _AppBundle({
     required this.event,
@@ -75,7 +89,7 @@ class _AppBundle {
   final TrialApplicationEvent event;
   final List<TrialApplicationProduct> products;
   final int plotCount;
-  final WeatherSnapshot? weather;
+  final _AppWeather? weather;
 }
 
 class _AnalysisData {
@@ -140,11 +154,27 @@ final _trialAppBundlesProvider =
     final assignmentsFuture = assignmentRepo.getForEvent(event.id);
     final products = await productsFuture;
     final assignments = await assignmentsFuture;
-    final weather = TrialDataComputer.findApplicationWeather(
-      applicationDate: event.applicationDate,
-      sessions: sessions,
-      snapshots: snapshots,
-    );
+    _AppWeather? weather;
+    if (event.temperature != null) {
+      weather = _AppWeather(
+        temperature: event.temperature,
+        temperatureUnit: 'C',
+        precipitation: event.precipitation,
+      );
+    } else {
+      final snapshot = TrialDataComputer.findApplicationWeather(
+        applicationDate: event.applicationDate,
+        sessions: sessions,
+        snapshots: snapshots,
+      );
+      if (snapshot != null) {
+        weather = _AppWeather(
+          temperature: snapshot.temperature,
+          temperatureUnit: snapshot.temperatureUnit,
+          precipitation: snapshot.precipitation,
+        );
+      }
+    }
     bundles.add(_AppBundle(
       event: event,
       products: products,
@@ -1351,7 +1381,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     return v >= 0 ? '+$s' : '-$s';
   }
 
-  static String _weatherSummary(WeatherSnapshot w) {
+  static String _weatherSummary(_AppWeather w) {
     final parts = <String>[];
     if (w.temperature != null) {
       parts.add('${w.temperature!.toStringAsFixed(1)} °${w.temperatureUnit}');
