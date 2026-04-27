@@ -212,6 +212,7 @@ class ExportTrialUseCase {
     'product_name',
     'rate',
     'rate_unit',
+    'lot_code',
     'water_volume_lha',
     'growth_stage',
     'operator_name',
@@ -1486,6 +1487,7 @@ class ExportTrialUseCase {
           _cell(a.productName),
           _cell(a.rate),
           _cell(a.rateUnit),
+          '',
           ...tail,
         ]);
       } else {
@@ -1495,6 +1497,7 @@ class ExportTrialUseCase {
             _cell(p.productName),
             _cell(p.rate),
             _cell(p.rateUnit),
+            _cell(p.lotCode),
             ...tail,
           ]);
         }

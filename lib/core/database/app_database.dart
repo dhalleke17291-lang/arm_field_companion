@@ -780,6 +780,7 @@ class TrialApplicationProducts extends Table {
   BoolColumn get deviationFlag =>
       boolean().withDefault(const Constant(false))();
   TextColumn get deviationNotes => text().nullable()();
+  TextColumn get lotCode => text().nullable().named('lot_code')();
 }
 
 /// Junction table linking application events to individual plots.
@@ -1329,7 +1330,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 70;
+  int get schemaVersion => 71;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -2728,6 +2729,17 @@ WHERE pest_code IS NULL
                   'ALTER TABLE trial_application_events ADD COLUMN ${entry.key} ${entry.value}',
                 );
               }
+            }
+          }
+
+          if (from < 71) {
+            final tapCols = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_application_products')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!tapCols.contains('lot_code')) {
+              await customStatement(
+                'ALTER TABLE trial_application_products ADD COLUMN lot_code TEXT',
+              );
             }
           }
 

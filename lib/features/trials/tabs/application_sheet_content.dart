@@ -65,6 +65,7 @@ class _ApplicationSheetContentState
   late List<TextEditingController> _productControllers;
   late List<TextEditingController> _rateControllers;
   late List<String> _rateUnits;
+  late List<TextEditingController> _lotCodeControllers;
   bool _junctionLoadScheduled = false;
   bool _weatherRetryAttempted = false;
   /// Parallel to product rows when a treatment is selected: the treatment
@@ -151,6 +152,7 @@ class _ApplicationSheetContentState
       _productControllers = [];
       _rateControllers = [];
       _rateUnits = [];
+      _lotCodeControllers = [];
     } else {
       _productControllers = [
         TextEditingController(text: e.productName ?? ''),
@@ -159,6 +161,7 @@ class _ApplicationSheetContentState
         TextEditingController(text: e.rate != null ? e.rate.toString() : ''),
       ];
       _rateUnits = [e.rateUnit ?? widget.rateUnits.first];
+      _lotCodeControllers = [TextEditingController()];
     }
     _applicationMethod = e?.applicationMethod;
 
@@ -274,9 +277,13 @@ class _ApplicationSheetContentState
     for (final c in _rateControllers) {
       c.dispose();
     }
+    for (final c in _lotCodeControllers) {
+      c.dispose();
+    }
     _productControllers = [];
     _rateControllers = [];
     _rateUnits = [];
+    _lotCodeControllers = [];
     _protocolRowSources = [];
   }
 
@@ -300,6 +307,9 @@ class _ApplicationSheetContentState
             .map((p) => (p.rateUnit != null && p.rateUnit!.trim().isNotEmpty)
                 ? p.rateUnit!.trim()
                 : widget.rateUnits.first)
+            .toList();
+        _lotCodeControllers = list
+            .map((p) => TextEditingController(text: p.lotCode ?? ''))
             .toList();
       });
     }
@@ -351,6 +361,7 @@ class _ApplicationSheetContentState
                   ? c.rateUnit!.trim()
                   : widget.rateUnits.first),
         );
+        _lotCodeControllers.add(TextEditingController());
       }
 
       for (final e in savedByName.entries) {
@@ -359,6 +370,7 @@ class _ApplicationSheetContentState
         _productControllers.add(TextEditingController(text: e.key));
         _rateControllers.add(TextEditingController(text: e.value.rateText));
         _rateUnits.add(e.value.unit);
+        _lotCodeControllers.add(TextEditingController());
       }
     });
   }
@@ -398,6 +410,7 @@ class _ApplicationSheetContentState
             _productControllers = [TextEditingController()];
             _rateControllers = [TextEditingController()];
             _rateUnits = [widget.rateUnits.first];
+            _lotCodeControllers = [TextEditingController()];
           });
         }
       }
@@ -720,6 +733,9 @@ class _ApplicationSheetContentState
           productName: name,
           rate: _parseDouble(_rateControllers[i].text),
           rateUnit: i < _rateUnits.length ? _rateUnits[i] : null,
+          lotCode: i < _lotCodeControllers.length
+              ? _trim(_lotCodeControllers[i].text)
+              : null,
           plannedProduct: c?.productName,
           plannedRate: c?.rate,
           plannedRateUnit: c?.rateUnit,
@@ -1065,6 +1081,7 @@ class _ApplicationSheetContentState
                     _productControllers.add(TextEditingController());
                     _rateControllers.add(TextEditingController());
                     _rateUnits.add(widget.rateUnits.first);
+                    _lotCodeControllers.add(TextEditingController());
                   }),
                 ),
             ],
@@ -1131,6 +1148,10 @@ class _ApplicationSheetContentState
                               _productControllers.removeAt(i);
                               _rateControllers.removeAt(i);
                               _rateUnits.removeAt(i);
+                              if (i < _lotCodeControllers.length) {
+                                _lotCodeControllers[i].dispose();
+                                _lotCodeControllers.removeAt(i);
+                              }
                               if (i < _protocolRowSources.length) {
                                 _protocolRowSources.removeAt(i);
                               }
@@ -1228,6 +1249,17 @@ class _ApplicationSheetContentState
                               },
                       ),
                     ),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: FormStyles.formSheetFieldSpacing),
+                TextField(
+                  controller: i < _lotCodeControllers.length
+                      ? _lotCodeControllers[i]
+                      : TextEditingController(),
+                  readOnly: _isConfirmed,
+                  decoration: FormStyles.inputDecoration(
+                    labelText: 'Lot / batch code (optional)',
                   ),
                   onChanged: (_) => setState(() {}),
                 ),

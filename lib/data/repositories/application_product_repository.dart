@@ -14,6 +14,7 @@ class ApplicationProductSaveRow {
     required this.productName,
     this.rate,
     this.rateUnit,
+    this.lotCode,
     this.plannedProduct,
     this.plannedRate,
     this.plannedRateUnit,
@@ -22,6 +23,7 @@ class ApplicationProductSaveRow {
   final String productName;
   final double? rate;
   final String? rateUnit;
+  final String? lotCode;
   final String? plannedProduct;
   final double? plannedRate;
   final String? plannedRateUnit;
@@ -91,6 +93,9 @@ class ApplicationProductRepository {
                 rate: r.rate != null ? Value(r.rate) : const Value.absent(),
                 rateUnit:
                     r.rateUnit != null ? Value(r.rateUnit) : const Value.absent(),
+                lotCode: r.lotCode != null
+                    ? Value(r.lotCode)
+                    : const Value.absent(),
                 sortOrder: Value(i),
                 plannedProduct: r.plannedProduct != null
                     ? Value(r.plannedProduct)

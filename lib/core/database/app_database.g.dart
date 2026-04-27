@@ -24232,6 +24232,12 @@ class $TrialApplicationProductsTable extends TrialApplicationProducts
   late final GeneratedColumn<String> deviationNotes = GeneratedColumn<String>(
       'deviation_notes', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _lotCodeMeta =
+      const VerificationMeta('lotCode');
+  @override
+  late final GeneratedColumn<String> lotCode = GeneratedColumn<String>(
+      'lot_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -24244,7 +24250,8 @@ class $TrialApplicationProductsTable extends TrialApplicationProducts
         plannedRate,
         plannedRateUnit,
         deviationFlag,
-        deviationNotes
+        deviationNotes,
+        lotCode
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -24319,6 +24326,10 @@ class $TrialApplicationProductsTable extends TrialApplicationProducts
           deviationNotes.isAcceptableOrUnknown(
               data['deviation_notes']!, _deviationNotesMeta));
     }
+    if (data.containsKey('lot_code')) {
+      context.handle(_lotCodeMeta,
+          lotCode.isAcceptableOrUnknown(data['lot_code']!, _lotCodeMeta));
+    }
     return context;
   }
 
@@ -24352,6 +24363,8 @@ class $TrialApplicationProductsTable extends TrialApplicationProducts
           .read(DriftSqlType.bool, data['${effectivePrefix}deviation_flag'])!,
       deviationNotes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}deviation_notes']),
+      lotCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}lot_code']),
     );
   }
 
@@ -24374,6 +24387,7 @@ class TrialApplicationProduct extends DataClass
   final String? plannedRateUnit;
   final bool deviationFlag;
   final String? deviationNotes;
+  final String? lotCode;
   const TrialApplicationProduct(
       {required this.id,
       required this.trialApplicationEventId,
@@ -24385,7 +24399,8 @@ class TrialApplicationProduct extends DataClass
       this.plannedRate,
       this.plannedRateUnit,
       required this.deviationFlag,
-      this.deviationNotes});
+      this.deviationNotes,
+      this.lotCode});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -24413,6 +24428,9 @@ class TrialApplicationProduct extends DataClass
     if (!nullToAbsent || deviationNotes != null) {
       map['deviation_notes'] = Variable<String>(deviationNotes);
     }
+    if (!nullToAbsent || lotCode != null) {
+      map['lot_code'] = Variable<String>(lotCode);
+    }
     return map;
   }
 
@@ -24439,6 +24457,9 @@ class TrialApplicationProduct extends DataClass
       deviationNotes: deviationNotes == null && nullToAbsent
           ? const Value.absent()
           : Value(deviationNotes),
+      lotCode: lotCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lotCode),
     );
   }
 
@@ -24458,6 +24479,7 @@ class TrialApplicationProduct extends DataClass
       plannedRateUnit: serializer.fromJson<String?>(json['plannedRateUnit']),
       deviationFlag: serializer.fromJson<bool>(json['deviationFlag']),
       deviationNotes: serializer.fromJson<String?>(json['deviationNotes']),
+      lotCode: serializer.fromJson<String?>(json['lotCode']),
     );
   }
   @override
@@ -24476,6 +24498,7 @@ class TrialApplicationProduct extends DataClass
       'plannedRateUnit': serializer.toJson<String?>(plannedRateUnit),
       'deviationFlag': serializer.toJson<bool>(deviationFlag),
       'deviationNotes': serializer.toJson<String?>(deviationNotes),
+      'lotCode': serializer.toJson<String?>(lotCode),
     };
   }
 
@@ -24490,7 +24513,8 @@ class TrialApplicationProduct extends DataClass
           Value<double?> plannedRate = const Value.absent(),
           Value<String?> plannedRateUnit = const Value.absent(),
           bool? deviationFlag,
-          Value<String?> deviationNotes = const Value.absent()}) =>
+          Value<String?> deviationNotes = const Value.absent(),
+          Value<String?> lotCode = const Value.absent()}) =>
       TrialApplicationProduct(
         id: id ?? this.id,
         trialApplicationEventId:
@@ -24508,6 +24532,7 @@ class TrialApplicationProduct extends DataClass
         deviationFlag: deviationFlag ?? this.deviationFlag,
         deviationNotes:
             deviationNotes.present ? deviationNotes.value : this.deviationNotes,
+        lotCode: lotCode.present ? lotCode.value : this.lotCode,
       );
   TrialApplicationProduct copyWithCompanion(
       TrialApplicationProductsCompanion data) {
@@ -24535,6 +24560,7 @@ class TrialApplicationProduct extends DataClass
       deviationNotes: data.deviationNotes.present
           ? data.deviationNotes.value
           : this.deviationNotes,
+      lotCode: data.lotCode.present ? data.lotCode.value : this.lotCode,
     );
   }
 
@@ -24551,7 +24577,8 @@ class TrialApplicationProduct extends DataClass
           ..write('plannedRate: $plannedRate, ')
           ..write('plannedRateUnit: $plannedRateUnit, ')
           ..write('deviationFlag: $deviationFlag, ')
-          ..write('deviationNotes: $deviationNotes')
+          ..write('deviationNotes: $deviationNotes, ')
+          ..write('lotCode: $lotCode')
           ..write(')'))
         .toString();
   }
@@ -24568,7 +24595,8 @@ class TrialApplicationProduct extends DataClass
       plannedRate,
       plannedRateUnit,
       deviationFlag,
-      deviationNotes);
+      deviationNotes,
+      lotCode);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -24583,7 +24611,8 @@ class TrialApplicationProduct extends DataClass
           other.plannedRate == this.plannedRate &&
           other.plannedRateUnit == this.plannedRateUnit &&
           other.deviationFlag == this.deviationFlag &&
-          other.deviationNotes == this.deviationNotes);
+          other.deviationNotes == this.deviationNotes &&
+          other.lotCode == this.lotCode);
 }
 
 class TrialApplicationProductsCompanion
@@ -24599,6 +24628,7 @@ class TrialApplicationProductsCompanion
   final Value<String?> plannedRateUnit;
   final Value<bool> deviationFlag;
   final Value<String?> deviationNotes;
+  final Value<String?> lotCode;
   const TrialApplicationProductsCompanion({
     this.id = const Value.absent(),
     this.trialApplicationEventId = const Value.absent(),
@@ -24611,6 +24641,7 @@ class TrialApplicationProductsCompanion
     this.plannedRateUnit = const Value.absent(),
     this.deviationFlag = const Value.absent(),
     this.deviationNotes = const Value.absent(),
+    this.lotCode = const Value.absent(),
   });
   TrialApplicationProductsCompanion.insert({
     this.id = const Value.absent(),
@@ -24624,6 +24655,7 @@ class TrialApplicationProductsCompanion
     this.plannedRateUnit = const Value.absent(),
     this.deviationFlag = const Value.absent(),
     this.deviationNotes = const Value.absent(),
+    this.lotCode = const Value.absent(),
   })  : trialApplicationEventId = Value(trialApplicationEventId),
         productName = Value(productName);
   static Insertable<TrialApplicationProduct> custom({
@@ -24638,6 +24670,7 @@ class TrialApplicationProductsCompanion
     Expression<String>? plannedRateUnit,
     Expression<bool>? deviationFlag,
     Expression<String>? deviationNotes,
+    Expression<String>? lotCode,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -24652,6 +24685,7 @@ class TrialApplicationProductsCompanion
       if (plannedRateUnit != null) 'planned_rate_unit': plannedRateUnit,
       if (deviationFlag != null) 'deviation_flag': deviationFlag,
       if (deviationNotes != null) 'deviation_notes': deviationNotes,
+      if (lotCode != null) 'lot_code': lotCode,
     });
   }
 
@@ -24666,7 +24700,8 @@ class TrialApplicationProductsCompanion
       Value<double?>? plannedRate,
       Value<String?>? plannedRateUnit,
       Value<bool>? deviationFlag,
-      Value<String?>? deviationNotes}) {
+      Value<String?>? deviationNotes,
+      Value<String?>? lotCode}) {
     return TrialApplicationProductsCompanion(
       id: id ?? this.id,
       trialApplicationEventId:
@@ -24680,6 +24715,7 @@ class TrialApplicationProductsCompanion
       plannedRateUnit: plannedRateUnit ?? this.plannedRateUnit,
       deviationFlag: deviationFlag ?? this.deviationFlag,
       deviationNotes: deviationNotes ?? this.deviationNotes,
+      lotCode: lotCode ?? this.lotCode,
     );
   }
 
@@ -24720,6 +24756,9 @@ class TrialApplicationProductsCompanion
     if (deviationNotes.present) {
       map['deviation_notes'] = Variable<String>(deviationNotes.value);
     }
+    if (lotCode.present) {
+      map['lot_code'] = Variable<String>(lotCode.value);
+    }
     return map;
   }
 
@@ -24736,7 +24775,8 @@ class TrialApplicationProductsCompanion
           ..write('plannedRate: $plannedRate, ')
           ..write('plannedRateUnit: $plannedRateUnit, ')
           ..write('deviationFlag: $deviationFlag, ')
-          ..write('deviationNotes: $deviationNotes')
+          ..write('deviationNotes: $deviationNotes, ')
+          ..write('lotCode: $lotCode')
           ..write(')'))
         .toString();
   }
@@ -49415,6 +49455,7 @@ typedef $$TrialApplicationProductsTableCreateCompanionBuilder
   Value<String?> plannedRateUnit,
   Value<bool> deviationFlag,
   Value<String?> deviationNotes,
+  Value<String?> lotCode,
 });
 typedef $$TrialApplicationProductsTableUpdateCompanionBuilder
     = TrialApplicationProductsCompanion Function({
@@ -49429,6 +49470,7 @@ typedef $$TrialApplicationProductsTableUpdateCompanionBuilder
   Value<String?> plannedRateUnit,
   Value<bool> deviationFlag,
   Value<String?> deviationNotes,
+  Value<String?> lotCode,
 });
 
 class $$TrialApplicationProductsTableTableManager extends RootTableManager<
@@ -49460,6 +49502,7 @@ class $$TrialApplicationProductsTableTableManager extends RootTableManager<
             Value<String?> plannedRateUnit = const Value.absent(),
             Value<bool> deviationFlag = const Value.absent(),
             Value<String?> deviationNotes = const Value.absent(),
+            Value<String?> lotCode = const Value.absent(),
           }) =>
               TrialApplicationProductsCompanion(
             id: id,
@@ -49473,6 +49516,7 @@ class $$TrialApplicationProductsTableTableManager extends RootTableManager<
             plannedRateUnit: plannedRateUnit,
             deviationFlag: deviationFlag,
             deviationNotes: deviationNotes,
+            lotCode: lotCode,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -49486,6 +49530,7 @@ class $$TrialApplicationProductsTableTableManager extends RootTableManager<
             Value<String?> plannedRateUnit = const Value.absent(),
             Value<bool> deviationFlag = const Value.absent(),
             Value<String?> deviationNotes = const Value.absent(),
+            Value<String?> lotCode = const Value.absent(),
           }) =>
               TrialApplicationProductsCompanion.insert(
             id: id,
@@ -49499,6 +49544,7 @@ class $$TrialApplicationProductsTableTableManager extends RootTableManager<
             plannedRateUnit: plannedRateUnit,
             deviationFlag: deviationFlag,
             deviationNotes: deviationNotes,
+            lotCode: lotCode,
           ),
         ));
 }
@@ -49553,6 +49599,11 @@ class $$TrialApplicationProductsTableFilterComposer
 
   ColumnFilters<String> get deviationNotes => $state.composableBuilder(
       column: $state.table.deviationNotes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get lotCode => $state.composableBuilder(
+      column: $state.table.lotCode,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -49623,6 +49674,11 @@ class $$TrialApplicationProductsTableOrderingComposer
 
   ColumnOrderings<String> get deviationNotes => $state.composableBuilder(
       column: $state.table.deviationNotes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get lotCode => $state.composableBuilder(
+      column: $state.table.lotCode,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
