@@ -1276,6 +1276,54 @@ class ArmApplications extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// Reference lookup table for SE type biological profiles.
+/// One row per ratingType prefix (e.g. 'CONTRO', 'PHYGEN').
+/// This is seeded reference data — not per-trial, not computed.
+/// The authoritative grounding for all relationship-layer biological-window
+/// and variance computations. See docs/architecture/TRIAL_MODEL.md.
+class SeTypeProfiles extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// ARM ratingType prefix used as the natural key (e.g. 'CONTRO', 'PHYGEN').
+  TextColumn get ratingTypePrefix =>
+      text().unique().withLength(min: 1, max: 20)();
+
+  /// Human-readable name (e.g. 'Weed Control', 'Crop Injury - Chlorosis').
+  TextColumn get displayName => text()();
+
+  /// Broad measurement category: 'percent', 'count', 'continuous', 'ordinal'.
+  TextColumn get measurementCategory => text()();
+
+  /// Rating direction: 'higher_better', 'lower_better', 'neutral'.
+  TextColumn get responseDirection => text()();
+
+  /// Earliest DAT at which ratings are biologically meaningful (null = unbounded).
+  IntColumn get validObservationWindowMinDat => integer().nullable()();
+
+  /// Latest DAT at which ratings are biologically meaningful (null = unbounded).
+  IntColumn get validObservationWindowMaxDat => integer().nullable()();
+
+  /// Lower bound of expected coefficient-of-variation range (null = unknown).
+  RealColumn get expectedCvMin => real().nullable()();
+
+  /// Upper bound of expected coefficient-of-variation range (null = unknown).
+  RealColumn get expectedCvMax => real().nullable()();
+
+  /// Minimum valid rating value for this SE type (null = no constraint).
+  RealColumn get scaleMin => real().nullable()();
+
+  /// Maximum valid rating value for this SE type (null = no constraint).
+  RealColumn get scaleMax => real().nullable()();
+
+  /// Reference authority: 'EPPO_PP1', 'ARM_CONVENTION', 'TRAJECTORY_ANALYSIS_TODO'.
+  TextColumn get source => text()();
+
+  /// Caveats or limitations on this profile (null = none).
+  TextColumn get notes => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 @DriftDatabase(tables: [
   Users,
   Trials,
@@ -1321,6 +1369,8 @@ class ArmApplications extends Table {
   ArmTrialMetadata,
   ArmTreatmentMetadata,
   ArmApplications,
+  // Reference / lookup tables (seeded at install; not per-trial, not computed).
+  SeTypeProfiles,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -1329,7 +1379,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 70;
+  int get schemaVersion => 71;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1337,6 +1387,7 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
           await _createIndexes();
           await _seedAssessmentDefinitions();
+          await _seedSeTypeProfiles();
         },
         onUpgrade: (Migrator m, int from, int to) async {
           if (from < 2) {
@@ -2731,6 +2782,16 @@ WHERE pest_code IS NULL
             }
           }
 
+          if (from < 71) {
+            final existingTables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!existingTables.contains('se_type_profiles')) {
+              await m.createTable(seTypeProfiles);
+            }
+            await _seedSeTypeProfiles();
+          }
+
           await _createIndexes();
         },
       );
@@ -2786,6 +2847,26 @@ WHERE pest_code IS NULL
         [r[0], r[1], r[2], r[3], r[4], r[5], r[6]],
       );
     }
+  }
+
+  Future<void> _seedSeTypeProfiles() async {
+    // MVP seed rows — conservative defaults pending calibration from EPPO PP1
+    // and ARM field data post-pilot. INSERT OR IGNORE: idempotent; ratingTypePrefix is UNIQUE.
+    const sql = 'INSERT OR IGNORE INTO se_type_profiles '
+        '(rating_type_prefix, display_name, measurement_category, response_direction, '
+        'valid_observation_window_min_dat, valid_observation_window_max_dat, '
+        'expected_cv_min, expected_cv_max, scale_min, scale_max, source, notes, created_at) '
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%s','now'))";
+    await customStatement(sql, [
+      'CONTRO', 'Weed Control', 'percent', 'higher_better',
+      7, null, null, null, 0.0, 100.0, 'ARM_CONVENTION',
+      'MVP default — min DAT conservative; CV range pending calibration',
+    ]);
+    await customStatement(sql, [
+      'PHYGEN', 'Crop Injury — Phytotoxicity', 'percent', 'lower_better',
+      3, null, null, null, 0.0, 100.0, 'EPPO_PP1',
+      'MVP default — min DAT conservative; CV range pending calibration from PP1/135',
+    ]);
   }
 
   Future<void> _createIndexes() async {

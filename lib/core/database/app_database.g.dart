@@ -37857,6 +37857,762 @@ class ArmApplicationsCompanion extends UpdateCompanion<ArmApplication> {
   }
 }
 
+class $SeTypeProfilesTable extends SeTypeProfiles
+    with TableInfo<$SeTypeProfilesTable, SeTypeProfile> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SeTypeProfilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _ratingTypePrefixMeta =
+      const VerificationMeta('ratingTypePrefix');
+  @override
+  late final GeneratedColumn<String> ratingTypePrefix = GeneratedColumn<String>(
+      'rating_type_prefix', aliasedName, false,
+      additionalChecks:
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 20),
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+  static const VerificationMeta _displayNameMeta =
+      const VerificationMeta('displayName');
+  @override
+  late final GeneratedColumn<String> displayName = GeneratedColumn<String>(
+      'display_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _measurementCategoryMeta =
+      const VerificationMeta('measurementCategory');
+  @override
+  late final GeneratedColumn<String> measurementCategory =
+      GeneratedColumn<String>('measurement_category', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _responseDirectionMeta =
+      const VerificationMeta('responseDirection');
+  @override
+  late final GeneratedColumn<String> responseDirection =
+      GeneratedColumn<String>('response_direction', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _validObservationWindowMinDatMeta =
+      const VerificationMeta('validObservationWindowMinDat');
+  @override
+  late final GeneratedColumn<int> validObservationWindowMinDat =
+      GeneratedColumn<int>(
+          'valid_observation_window_min_dat', aliasedName, true,
+          type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _validObservationWindowMaxDatMeta =
+      const VerificationMeta('validObservationWindowMaxDat');
+  @override
+  late final GeneratedColumn<int> validObservationWindowMaxDat =
+      GeneratedColumn<int>(
+          'valid_observation_window_max_dat', aliasedName, true,
+          type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _expectedCvMinMeta =
+      const VerificationMeta('expectedCvMin');
+  @override
+  late final GeneratedColumn<double> expectedCvMin = GeneratedColumn<double>(
+      'expected_cv_min', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _expectedCvMaxMeta =
+      const VerificationMeta('expectedCvMax');
+  @override
+  late final GeneratedColumn<double> expectedCvMax = GeneratedColumn<double>(
+      'expected_cv_max', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _scaleMinMeta =
+      const VerificationMeta('scaleMin');
+  @override
+  late final GeneratedColumn<double> scaleMin = GeneratedColumn<double>(
+      'scale_min', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _scaleMaxMeta =
+      const VerificationMeta('scaleMax');
+  @override
+  late final GeneratedColumn<double> scaleMax = GeneratedColumn<double>(
+      'scale_max', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        ratingTypePrefix,
+        displayName,
+        measurementCategory,
+        responseDirection,
+        validObservationWindowMinDat,
+        validObservationWindowMaxDat,
+        expectedCvMin,
+        expectedCvMax,
+        scaleMin,
+        scaleMax,
+        source,
+        notes,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'se_type_profiles';
+  @override
+  VerificationContext validateIntegrity(Insertable<SeTypeProfile> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('rating_type_prefix')) {
+      context.handle(
+          _ratingTypePrefixMeta,
+          ratingTypePrefix.isAcceptableOrUnknown(
+              data['rating_type_prefix']!, _ratingTypePrefixMeta));
+    } else if (isInserting) {
+      context.missing(_ratingTypePrefixMeta);
+    }
+    if (data.containsKey('display_name')) {
+      context.handle(
+          _displayNameMeta,
+          displayName.isAcceptableOrUnknown(
+              data['display_name']!, _displayNameMeta));
+    } else if (isInserting) {
+      context.missing(_displayNameMeta);
+    }
+    if (data.containsKey('measurement_category')) {
+      context.handle(
+          _measurementCategoryMeta,
+          measurementCategory.isAcceptableOrUnknown(
+              data['measurement_category']!, _measurementCategoryMeta));
+    } else if (isInserting) {
+      context.missing(_measurementCategoryMeta);
+    }
+    if (data.containsKey('response_direction')) {
+      context.handle(
+          _responseDirectionMeta,
+          responseDirection.isAcceptableOrUnknown(
+              data['response_direction']!, _responseDirectionMeta));
+    } else if (isInserting) {
+      context.missing(_responseDirectionMeta);
+    }
+    if (data.containsKey('valid_observation_window_min_dat')) {
+      context.handle(
+          _validObservationWindowMinDatMeta,
+          validObservationWindowMinDat.isAcceptableOrUnknown(
+              data['valid_observation_window_min_dat']!,
+              _validObservationWindowMinDatMeta));
+    }
+    if (data.containsKey('valid_observation_window_max_dat')) {
+      context.handle(
+          _validObservationWindowMaxDatMeta,
+          validObservationWindowMaxDat.isAcceptableOrUnknown(
+              data['valid_observation_window_max_dat']!,
+              _validObservationWindowMaxDatMeta));
+    }
+    if (data.containsKey('expected_cv_min')) {
+      context.handle(
+          _expectedCvMinMeta,
+          expectedCvMin.isAcceptableOrUnknown(
+              data['expected_cv_min']!, _expectedCvMinMeta));
+    }
+    if (data.containsKey('expected_cv_max')) {
+      context.handle(
+          _expectedCvMaxMeta,
+          expectedCvMax.isAcceptableOrUnknown(
+              data['expected_cv_max']!, _expectedCvMaxMeta));
+    }
+    if (data.containsKey('scale_min')) {
+      context.handle(_scaleMinMeta,
+          scaleMin.isAcceptableOrUnknown(data['scale_min']!, _scaleMinMeta));
+    }
+    if (data.containsKey('scale_max')) {
+      context.handle(_scaleMaxMeta,
+          scaleMax.isAcceptableOrUnknown(data['scale_max']!, _scaleMaxMeta));
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SeTypeProfile map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SeTypeProfile(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      ratingTypePrefix: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}rating_type_prefix'])!,
+      displayName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}display_name'])!,
+      measurementCategory: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}measurement_category'])!,
+      responseDirection: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}response_direction'])!,
+      validObservationWindowMinDat: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}valid_observation_window_min_dat']),
+      validObservationWindowMaxDat: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}valid_observation_window_max_dat']),
+      expectedCvMin: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}expected_cv_min']),
+      expectedCvMax: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}expected_cv_max']),
+      scaleMin: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}scale_min']),
+      scaleMax: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}scale_max']),
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $SeTypeProfilesTable createAlias(String alias) {
+    return $SeTypeProfilesTable(attachedDatabase, alias);
+  }
+}
+
+class SeTypeProfile extends DataClass implements Insertable<SeTypeProfile> {
+  final int id;
+
+  /// ARM ratingType prefix used as the natural key (e.g. 'CONTRO', 'PHYGEN').
+  final String ratingTypePrefix;
+
+  /// Human-readable name (e.g. 'Weed Control', 'Crop Injury - Chlorosis').
+  final String displayName;
+
+  /// Broad measurement category: 'percent', 'count', 'continuous', 'ordinal'.
+  final String measurementCategory;
+
+  /// Rating direction: 'higher_better', 'lower_better', 'neutral'.
+  final String responseDirection;
+
+  /// Earliest DAT at which ratings are biologically meaningful (null = unbounded).
+  final int? validObservationWindowMinDat;
+
+  /// Latest DAT at which ratings are biologically meaningful (null = unbounded).
+  final int? validObservationWindowMaxDat;
+
+  /// Lower bound of expected coefficient-of-variation range (null = unknown).
+  final double? expectedCvMin;
+
+  /// Upper bound of expected coefficient-of-variation range (null = unknown).
+  final double? expectedCvMax;
+
+  /// Minimum valid rating value for this SE type (null = no constraint).
+  final double? scaleMin;
+
+  /// Maximum valid rating value for this SE type (null = no constraint).
+  final double? scaleMax;
+
+  /// Reference authority: 'EPPO_PP1', 'ARM_CONVENTION', 'TRAJECTORY_ANALYSIS_TODO'.
+  final String source;
+
+  /// Caveats or limitations on this profile (null = none).
+  final String? notes;
+  final DateTime createdAt;
+  const SeTypeProfile(
+      {required this.id,
+      required this.ratingTypePrefix,
+      required this.displayName,
+      required this.measurementCategory,
+      required this.responseDirection,
+      this.validObservationWindowMinDat,
+      this.validObservationWindowMaxDat,
+      this.expectedCvMin,
+      this.expectedCvMax,
+      this.scaleMin,
+      this.scaleMax,
+      required this.source,
+      this.notes,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['rating_type_prefix'] = Variable<String>(ratingTypePrefix);
+    map['display_name'] = Variable<String>(displayName);
+    map['measurement_category'] = Variable<String>(measurementCategory);
+    map['response_direction'] = Variable<String>(responseDirection);
+    if (!nullToAbsent || validObservationWindowMinDat != null) {
+      map['valid_observation_window_min_dat'] =
+          Variable<int>(validObservationWindowMinDat);
+    }
+    if (!nullToAbsent || validObservationWindowMaxDat != null) {
+      map['valid_observation_window_max_dat'] =
+          Variable<int>(validObservationWindowMaxDat);
+    }
+    if (!nullToAbsent || expectedCvMin != null) {
+      map['expected_cv_min'] = Variable<double>(expectedCvMin);
+    }
+    if (!nullToAbsent || expectedCvMax != null) {
+      map['expected_cv_max'] = Variable<double>(expectedCvMax);
+    }
+    if (!nullToAbsent || scaleMin != null) {
+      map['scale_min'] = Variable<double>(scaleMin);
+    }
+    if (!nullToAbsent || scaleMax != null) {
+      map['scale_max'] = Variable<double>(scaleMax);
+    }
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  SeTypeProfilesCompanion toCompanion(bool nullToAbsent) {
+    return SeTypeProfilesCompanion(
+      id: Value(id),
+      ratingTypePrefix: Value(ratingTypePrefix),
+      displayName: Value(displayName),
+      measurementCategory: Value(measurementCategory),
+      responseDirection: Value(responseDirection),
+      validObservationWindowMinDat:
+          validObservationWindowMinDat == null && nullToAbsent
+              ? const Value.absent()
+              : Value(validObservationWindowMinDat),
+      validObservationWindowMaxDat:
+          validObservationWindowMaxDat == null && nullToAbsent
+              ? const Value.absent()
+              : Value(validObservationWindowMaxDat),
+      expectedCvMin: expectedCvMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expectedCvMin),
+      expectedCvMax: expectedCvMax == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expectedCvMax),
+      scaleMin: scaleMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scaleMin),
+      scaleMax: scaleMax == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scaleMax),
+      source: Value(source),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SeTypeProfile.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SeTypeProfile(
+      id: serializer.fromJson<int>(json['id']),
+      ratingTypePrefix: serializer.fromJson<String>(json['ratingTypePrefix']),
+      displayName: serializer.fromJson<String>(json['displayName']),
+      measurementCategory:
+          serializer.fromJson<String>(json['measurementCategory']),
+      responseDirection: serializer.fromJson<String>(json['responseDirection']),
+      validObservationWindowMinDat:
+          serializer.fromJson<int?>(json['validObservationWindowMinDat']),
+      validObservationWindowMaxDat:
+          serializer.fromJson<int?>(json['validObservationWindowMaxDat']),
+      expectedCvMin: serializer.fromJson<double?>(json['expectedCvMin']),
+      expectedCvMax: serializer.fromJson<double?>(json['expectedCvMax']),
+      scaleMin: serializer.fromJson<double?>(json['scaleMin']),
+      scaleMax: serializer.fromJson<double?>(json['scaleMax']),
+      source: serializer.fromJson<String>(json['source']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'ratingTypePrefix': serializer.toJson<String>(ratingTypePrefix),
+      'displayName': serializer.toJson<String>(displayName),
+      'measurementCategory': serializer.toJson<String>(measurementCategory),
+      'responseDirection': serializer.toJson<String>(responseDirection),
+      'validObservationWindowMinDat':
+          serializer.toJson<int?>(validObservationWindowMinDat),
+      'validObservationWindowMaxDat':
+          serializer.toJson<int?>(validObservationWindowMaxDat),
+      'expectedCvMin': serializer.toJson<double?>(expectedCvMin),
+      'expectedCvMax': serializer.toJson<double?>(expectedCvMax),
+      'scaleMin': serializer.toJson<double?>(scaleMin),
+      'scaleMax': serializer.toJson<double?>(scaleMax),
+      'source': serializer.toJson<String>(source),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  SeTypeProfile copyWith(
+          {int? id,
+          String? ratingTypePrefix,
+          String? displayName,
+          String? measurementCategory,
+          String? responseDirection,
+          Value<int?> validObservationWindowMinDat = const Value.absent(),
+          Value<int?> validObservationWindowMaxDat = const Value.absent(),
+          Value<double?> expectedCvMin = const Value.absent(),
+          Value<double?> expectedCvMax = const Value.absent(),
+          Value<double?> scaleMin = const Value.absent(),
+          Value<double?> scaleMax = const Value.absent(),
+          String? source,
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt}) =>
+      SeTypeProfile(
+        id: id ?? this.id,
+        ratingTypePrefix: ratingTypePrefix ?? this.ratingTypePrefix,
+        displayName: displayName ?? this.displayName,
+        measurementCategory: measurementCategory ?? this.measurementCategory,
+        responseDirection: responseDirection ?? this.responseDirection,
+        validObservationWindowMinDat: validObservationWindowMinDat.present
+            ? validObservationWindowMinDat.value
+            : this.validObservationWindowMinDat,
+        validObservationWindowMaxDat: validObservationWindowMaxDat.present
+            ? validObservationWindowMaxDat.value
+            : this.validObservationWindowMaxDat,
+        expectedCvMin:
+            expectedCvMin.present ? expectedCvMin.value : this.expectedCvMin,
+        expectedCvMax:
+            expectedCvMax.present ? expectedCvMax.value : this.expectedCvMax,
+        scaleMin: scaleMin.present ? scaleMin.value : this.scaleMin,
+        scaleMax: scaleMax.present ? scaleMax.value : this.scaleMax,
+        source: source ?? this.source,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  SeTypeProfile copyWithCompanion(SeTypeProfilesCompanion data) {
+    return SeTypeProfile(
+      id: data.id.present ? data.id.value : this.id,
+      ratingTypePrefix: data.ratingTypePrefix.present
+          ? data.ratingTypePrefix.value
+          : this.ratingTypePrefix,
+      displayName:
+          data.displayName.present ? data.displayName.value : this.displayName,
+      measurementCategory: data.measurementCategory.present
+          ? data.measurementCategory.value
+          : this.measurementCategory,
+      responseDirection: data.responseDirection.present
+          ? data.responseDirection.value
+          : this.responseDirection,
+      validObservationWindowMinDat: data.validObservationWindowMinDat.present
+          ? data.validObservationWindowMinDat.value
+          : this.validObservationWindowMinDat,
+      validObservationWindowMaxDat: data.validObservationWindowMaxDat.present
+          ? data.validObservationWindowMaxDat.value
+          : this.validObservationWindowMaxDat,
+      expectedCvMin: data.expectedCvMin.present
+          ? data.expectedCvMin.value
+          : this.expectedCvMin,
+      expectedCvMax: data.expectedCvMax.present
+          ? data.expectedCvMax.value
+          : this.expectedCvMax,
+      scaleMin: data.scaleMin.present ? data.scaleMin.value : this.scaleMin,
+      scaleMax: data.scaleMax.present ? data.scaleMax.value : this.scaleMax,
+      source: data.source.present ? data.source.value : this.source,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeTypeProfile(')
+          ..write('id: $id, ')
+          ..write('ratingTypePrefix: $ratingTypePrefix, ')
+          ..write('displayName: $displayName, ')
+          ..write('measurementCategory: $measurementCategory, ')
+          ..write('responseDirection: $responseDirection, ')
+          ..write(
+              'validObservationWindowMinDat: $validObservationWindowMinDat, ')
+          ..write(
+              'validObservationWindowMaxDat: $validObservationWindowMaxDat, ')
+          ..write('expectedCvMin: $expectedCvMin, ')
+          ..write('expectedCvMax: $expectedCvMax, ')
+          ..write('scaleMin: $scaleMin, ')
+          ..write('scaleMax: $scaleMax, ')
+          ..write('source: $source, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      ratingTypePrefix,
+      displayName,
+      measurementCategory,
+      responseDirection,
+      validObservationWindowMinDat,
+      validObservationWindowMaxDat,
+      expectedCvMin,
+      expectedCvMax,
+      scaleMin,
+      scaleMax,
+      source,
+      notes,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SeTypeProfile &&
+          other.id == this.id &&
+          other.ratingTypePrefix == this.ratingTypePrefix &&
+          other.displayName == this.displayName &&
+          other.measurementCategory == this.measurementCategory &&
+          other.responseDirection == this.responseDirection &&
+          other.validObservationWindowMinDat ==
+              this.validObservationWindowMinDat &&
+          other.validObservationWindowMaxDat ==
+              this.validObservationWindowMaxDat &&
+          other.expectedCvMin == this.expectedCvMin &&
+          other.expectedCvMax == this.expectedCvMax &&
+          other.scaleMin == this.scaleMin &&
+          other.scaleMax == this.scaleMax &&
+          other.source == this.source &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt);
+}
+
+class SeTypeProfilesCompanion extends UpdateCompanion<SeTypeProfile> {
+  final Value<int> id;
+  final Value<String> ratingTypePrefix;
+  final Value<String> displayName;
+  final Value<String> measurementCategory;
+  final Value<String> responseDirection;
+  final Value<int?> validObservationWindowMinDat;
+  final Value<int?> validObservationWindowMaxDat;
+  final Value<double?> expectedCvMin;
+  final Value<double?> expectedCvMax;
+  final Value<double?> scaleMin;
+  final Value<double?> scaleMax;
+  final Value<String> source;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  const SeTypeProfilesCompanion({
+    this.id = const Value.absent(),
+    this.ratingTypePrefix = const Value.absent(),
+    this.displayName = const Value.absent(),
+    this.measurementCategory = const Value.absent(),
+    this.responseDirection = const Value.absent(),
+    this.validObservationWindowMinDat = const Value.absent(),
+    this.validObservationWindowMaxDat = const Value.absent(),
+    this.expectedCvMin = const Value.absent(),
+    this.expectedCvMax = const Value.absent(),
+    this.scaleMin = const Value.absent(),
+    this.scaleMax = const Value.absent(),
+    this.source = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  SeTypeProfilesCompanion.insert({
+    this.id = const Value.absent(),
+    required String ratingTypePrefix,
+    required String displayName,
+    required String measurementCategory,
+    required String responseDirection,
+    this.validObservationWindowMinDat = const Value.absent(),
+    this.validObservationWindowMaxDat = const Value.absent(),
+    this.expectedCvMin = const Value.absent(),
+    this.expectedCvMax = const Value.absent(),
+    this.scaleMin = const Value.absent(),
+    this.scaleMax = const Value.absent(),
+    required String source,
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  })  : ratingTypePrefix = Value(ratingTypePrefix),
+        displayName = Value(displayName),
+        measurementCategory = Value(measurementCategory),
+        responseDirection = Value(responseDirection),
+        source = Value(source);
+  static Insertable<SeTypeProfile> custom({
+    Expression<int>? id,
+    Expression<String>? ratingTypePrefix,
+    Expression<String>? displayName,
+    Expression<String>? measurementCategory,
+    Expression<String>? responseDirection,
+    Expression<int>? validObservationWindowMinDat,
+    Expression<int>? validObservationWindowMaxDat,
+    Expression<double>? expectedCvMin,
+    Expression<double>? expectedCvMax,
+    Expression<double>? scaleMin,
+    Expression<double>? scaleMax,
+    Expression<String>? source,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (ratingTypePrefix != null) 'rating_type_prefix': ratingTypePrefix,
+      if (displayName != null) 'display_name': displayName,
+      if (measurementCategory != null)
+        'measurement_category': measurementCategory,
+      if (responseDirection != null) 'response_direction': responseDirection,
+      if (validObservationWindowMinDat != null)
+        'valid_observation_window_min_dat': validObservationWindowMinDat,
+      if (validObservationWindowMaxDat != null)
+        'valid_observation_window_max_dat': validObservationWindowMaxDat,
+      if (expectedCvMin != null) 'expected_cv_min': expectedCvMin,
+      if (expectedCvMax != null) 'expected_cv_max': expectedCvMax,
+      if (scaleMin != null) 'scale_min': scaleMin,
+      if (scaleMax != null) 'scale_max': scaleMax,
+      if (source != null) 'source': source,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  SeTypeProfilesCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? ratingTypePrefix,
+      Value<String>? displayName,
+      Value<String>? measurementCategory,
+      Value<String>? responseDirection,
+      Value<int?>? validObservationWindowMinDat,
+      Value<int?>? validObservationWindowMaxDat,
+      Value<double?>? expectedCvMin,
+      Value<double?>? expectedCvMax,
+      Value<double?>? scaleMin,
+      Value<double?>? scaleMax,
+      Value<String>? source,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt}) {
+    return SeTypeProfilesCompanion(
+      id: id ?? this.id,
+      ratingTypePrefix: ratingTypePrefix ?? this.ratingTypePrefix,
+      displayName: displayName ?? this.displayName,
+      measurementCategory: measurementCategory ?? this.measurementCategory,
+      responseDirection: responseDirection ?? this.responseDirection,
+      validObservationWindowMinDat:
+          validObservationWindowMinDat ?? this.validObservationWindowMinDat,
+      validObservationWindowMaxDat:
+          validObservationWindowMaxDat ?? this.validObservationWindowMaxDat,
+      expectedCvMin: expectedCvMin ?? this.expectedCvMin,
+      expectedCvMax: expectedCvMax ?? this.expectedCvMax,
+      scaleMin: scaleMin ?? this.scaleMin,
+      scaleMax: scaleMax ?? this.scaleMax,
+      source: source ?? this.source,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (ratingTypePrefix.present) {
+      map['rating_type_prefix'] = Variable<String>(ratingTypePrefix.value);
+    }
+    if (displayName.present) {
+      map['display_name'] = Variable<String>(displayName.value);
+    }
+    if (measurementCategory.present) {
+      map['measurement_category'] = Variable<String>(measurementCategory.value);
+    }
+    if (responseDirection.present) {
+      map['response_direction'] = Variable<String>(responseDirection.value);
+    }
+    if (validObservationWindowMinDat.present) {
+      map['valid_observation_window_min_dat'] =
+          Variable<int>(validObservationWindowMinDat.value);
+    }
+    if (validObservationWindowMaxDat.present) {
+      map['valid_observation_window_max_dat'] =
+          Variable<int>(validObservationWindowMaxDat.value);
+    }
+    if (expectedCvMin.present) {
+      map['expected_cv_min'] = Variable<double>(expectedCvMin.value);
+    }
+    if (expectedCvMax.present) {
+      map['expected_cv_max'] = Variable<double>(expectedCvMax.value);
+    }
+    if (scaleMin.present) {
+      map['scale_min'] = Variable<double>(scaleMin.value);
+    }
+    if (scaleMax.present) {
+      map['scale_max'] = Variable<double>(scaleMax.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeTypeProfilesCompanion(')
+          ..write('id: $id, ')
+          ..write('ratingTypePrefix: $ratingTypePrefix, ')
+          ..write('displayName: $displayName, ')
+          ..write('measurementCategory: $measurementCategory, ')
+          ..write('responseDirection: $responseDirection, ')
+          ..write(
+              'validObservationWindowMinDat: $validObservationWindowMinDat, ')
+          ..write(
+              'validObservationWindowMaxDat: $validObservationWindowMaxDat, ')
+          ..write('expectedCvMin: $expectedCvMin, ')
+          ..write('expectedCvMax: $expectedCvMax, ')
+          ..write('scaleMin: $scaleMin, ')
+          ..write('scaleMax: $scaleMax, ')
+          ..write('source: $source, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -37927,6 +38683,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ArmTreatmentMetadataTable(this);
   late final $ArmApplicationsTable armApplications =
       $ArmApplicationsTable(this);
+  late final $SeTypeProfilesTable seTypeProfiles = $SeTypeProfilesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -37974,7 +38731,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         armSessionMetadata,
         armTrialMetadata,
         armTreatmentMetadata,
-        armApplications
+        armApplications,
+        seTypeProfiles
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -54938,6 +55696,277 @@ class $$ArmApplicationsTableOrderingComposer
   }
 }
 
+typedef $$SeTypeProfilesTableCreateCompanionBuilder = SeTypeProfilesCompanion
+    Function({
+  Value<int> id,
+  required String ratingTypePrefix,
+  required String displayName,
+  required String measurementCategory,
+  required String responseDirection,
+  Value<int?> validObservationWindowMinDat,
+  Value<int?> validObservationWindowMaxDat,
+  Value<double?> expectedCvMin,
+  Value<double?> expectedCvMax,
+  Value<double?> scaleMin,
+  Value<double?> scaleMax,
+  required String source,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+});
+typedef $$SeTypeProfilesTableUpdateCompanionBuilder = SeTypeProfilesCompanion
+    Function({
+  Value<int> id,
+  Value<String> ratingTypePrefix,
+  Value<String> displayName,
+  Value<String> measurementCategory,
+  Value<String> responseDirection,
+  Value<int?> validObservationWindowMinDat,
+  Value<int?> validObservationWindowMaxDat,
+  Value<double?> expectedCvMin,
+  Value<double?> expectedCvMax,
+  Value<double?> scaleMin,
+  Value<double?> scaleMax,
+  Value<String> source,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+});
+
+class $$SeTypeProfilesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SeTypeProfilesTable,
+    SeTypeProfile,
+    $$SeTypeProfilesTableFilterComposer,
+    $$SeTypeProfilesTableOrderingComposer,
+    $$SeTypeProfilesTableCreateCompanionBuilder,
+    $$SeTypeProfilesTableUpdateCompanionBuilder> {
+  $$SeTypeProfilesTableTableManager(
+      _$AppDatabase db, $SeTypeProfilesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$SeTypeProfilesTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$SeTypeProfilesTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> ratingTypePrefix = const Value.absent(),
+            Value<String> displayName = const Value.absent(),
+            Value<String> measurementCategory = const Value.absent(),
+            Value<String> responseDirection = const Value.absent(),
+            Value<int?> validObservationWindowMinDat = const Value.absent(),
+            Value<int?> validObservationWindowMaxDat = const Value.absent(),
+            Value<double?> expectedCvMin = const Value.absent(),
+            Value<double?> expectedCvMax = const Value.absent(),
+            Value<double?> scaleMin = const Value.absent(),
+            Value<double?> scaleMax = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              SeTypeProfilesCompanion(
+            id: id,
+            ratingTypePrefix: ratingTypePrefix,
+            displayName: displayName,
+            measurementCategory: measurementCategory,
+            responseDirection: responseDirection,
+            validObservationWindowMinDat: validObservationWindowMinDat,
+            validObservationWindowMaxDat: validObservationWindowMaxDat,
+            expectedCvMin: expectedCvMin,
+            expectedCvMax: expectedCvMax,
+            scaleMin: scaleMin,
+            scaleMax: scaleMax,
+            source: source,
+            notes: notes,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String ratingTypePrefix,
+            required String displayName,
+            required String measurementCategory,
+            required String responseDirection,
+            Value<int?> validObservationWindowMinDat = const Value.absent(),
+            Value<int?> validObservationWindowMaxDat = const Value.absent(),
+            Value<double?> expectedCvMin = const Value.absent(),
+            Value<double?> expectedCvMax = const Value.absent(),
+            Value<double?> scaleMin = const Value.absent(),
+            Value<double?> scaleMax = const Value.absent(),
+            required String source,
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              SeTypeProfilesCompanion.insert(
+            id: id,
+            ratingTypePrefix: ratingTypePrefix,
+            displayName: displayName,
+            measurementCategory: measurementCategory,
+            responseDirection: responseDirection,
+            validObservationWindowMinDat: validObservationWindowMinDat,
+            validObservationWindowMaxDat: validObservationWindowMaxDat,
+            expectedCvMin: expectedCvMin,
+            expectedCvMax: expectedCvMax,
+            scaleMin: scaleMin,
+            scaleMax: scaleMax,
+            source: source,
+            notes: notes,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$SeTypeProfilesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $SeTypeProfilesTable> {
+  $$SeTypeProfilesTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get ratingTypePrefix => $state.composableBuilder(
+      column: $state.table.ratingTypePrefix,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get displayName => $state.composableBuilder(
+      column: $state.table.displayName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get measurementCategory => $state.composableBuilder(
+      column: $state.table.measurementCategory,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get responseDirection => $state.composableBuilder(
+      column: $state.table.responseDirection,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get validObservationWindowMinDat =>
+      $state.composableBuilder(
+          column: $state.table.validObservationWindowMinDat,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get validObservationWindowMaxDat =>
+      $state.composableBuilder(
+          column: $state.table.validObservationWindowMaxDat,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get expectedCvMin => $state.composableBuilder(
+      column: $state.table.expectedCvMin,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get expectedCvMax => $state.composableBuilder(
+      column: $state.table.expectedCvMax,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get scaleMin => $state.composableBuilder(
+      column: $state.table.scaleMin,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get scaleMax => $state.composableBuilder(
+      column: $state.table.scaleMax,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$SeTypeProfilesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $SeTypeProfilesTable> {
+  $$SeTypeProfilesTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get ratingTypePrefix => $state.composableBuilder(
+      column: $state.table.ratingTypePrefix,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get displayName => $state.composableBuilder(
+      column: $state.table.displayName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get measurementCategory => $state.composableBuilder(
+      column: $state.table.measurementCategory,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get responseDirection => $state.composableBuilder(
+      column: $state.table.responseDirection,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get validObservationWindowMinDat => $state
+      .composableBuilder(
+          column: $state.table.validObservationWindowMinDat,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get validObservationWindowMaxDat => $state
+      .composableBuilder(
+          column: $state.table.validObservationWindowMaxDat,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get expectedCvMin => $state.composableBuilder(
+      column: $state.table.expectedCvMin,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get expectedCvMax => $state.composableBuilder(
+      column: $state.table.expectedCvMax,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get scaleMin => $state.composableBuilder(
+      column: $state.table.scaleMin,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get scaleMax => $state.composableBuilder(
+      column: $state.table.scaleMax,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -55033,4 +56062,6 @@ class $AppDatabaseManager {
       $$ArmTreatmentMetadataTableTableManager(_db, _db.armTreatmentMetadata);
   $$ArmApplicationsTableTableManager get armApplications =>
       $$ArmApplicationsTableTableManager(_db, _db.armApplications);
+  $$SeTypeProfilesTableTableManager get seTypeProfiles =>
+      $$SeTypeProfilesTableTableManager(_db, _db.seTypeProfiles);
 }

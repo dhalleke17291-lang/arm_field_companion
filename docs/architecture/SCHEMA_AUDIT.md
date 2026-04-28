@@ -10,11 +10,16 @@ Read-only inventory of every Drift column against the four-layer rule: persisten
 
 ## Architecture Rule Summary
 
-- **Layer 1 — Fact:** What happened or what was observed/entered/imported at a point in time.
+- **Layer 1 — Fact:** What happened or what was observed/entered/imported at a point in time, across three stored categories: RAW FACT, FACT SNAPSHOT, ROUND-TRIP STORAGE.
 - **Layers 2–4:** Computed values, composed relationships, and labels belong in providers/UI unless they are explicit **round-trip** artifacts for external systems.
-- **Labels in this document:** RAW FACT; DERIVED STATE; ROUND-TRIP STORAGE; UNCLEAR (needs product decision).
+- **Labels in this document:**
+  - **RAW FACT** — real-world event or attribute captured directly
+  - **FACT SNAPSHOT** — time-bound evaluation recorded at a specific event, never recomputed after (e.g., exportConfidence, findingsJson, hasSparseData)
+  - **DERIVED STATE** — computable from other stored facts; must not be stored except under explicit exception in TRIAL_MODEL.md
+  - **ROUND-TRIP STORAGE** — verbatim external data preserved for compatibility, not used as internal truth
+  - **UNCLEAR** — needs product decision before classification can be confirmed
 
-**Source:** All Drift tables are defined in `lib/core/database/app_database.dart` only. **Counts:** 43 tables, 779 columns.
+**Source:** All Drift tables are defined in `lib/core/database/app_database.dart` only. **Counts at last audit:** 43 tables, 779 columns. These counts may become stale after future schema additions; re-run the audit after SETypeProfiles is activated and after any subsequent table additions.
 
 ## Full Column Inventory
 
@@ -306,7 +311,7 @@ Read-only inventory of every Drift column against the four-layer rule: persisten
 | resultStatus | Text | `RatingRecords` column `resultStatus` (Text); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 | numericValue | Real | `RatingRecords` column `numericValue` (Real); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 | textValue | Text | `RatingRecords` column `textValue` (Text); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
-| isCurrent | Bool | `RatingRecords` column `isCurrent` (Bool); no adjacent `///` doc in schema file. | DERIVED STATE | Denormalized “current revision” flag in a version chain; derivable from previousId / latest amendment. | High | Rating flow, history views, export |
+| isCurrent | Bool | `RatingRecords` column `isCurrent` (Bool); no adjacent `///` doc in schema file. | DERIVED STATE | Denormalized “current revision” flag; derivable from the amendment chain. Accepted maintained-index exception — written atomically by a single write path. See Known Exceptions in TRIAL_MODEL.md. | High | Rating flow, history views, export |
 | previousId | Int | `RatingRecords` column `previousId` (Int); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 | createdAt | DateTime | `RatingRecords` column `createdAt` (DateTime); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 | raterName | Text | `RatingRecords` column `raterName` (Text); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
@@ -611,7 +616,7 @@ Read-only inventory of every Drift column against the four-layer rule: persisten
 | soilDepthUnit | Text | `TrialApplicationEvents` column `soilDepthUnit` (Text); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 | treatedArea | Real | `TrialApplicationEvents` column `treatedArea` (Real); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 | treatedAreaUnit | Text | `TrialApplicationEvents` column `treatedAreaUnit` (Text); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
-| plotsTreated | Text | `TrialApplicationEvents` column `plotsTreated` (Text); no adjacent `///` doc in schema file. | DERIVED STATE | Schema describes denormalized cache parallel to ApplicationPlotAssignments. | High | Applications tab, plot overlays, export |
+| plotsTreated | Text | `TrialApplicationEvents` column `plotsTreated` (Text); no adjacent `///` doc in schema file. | DERIVED STATE | Transitional TEXT cache; ApplicationPlotAssignments is the canonical structured replacement. Dual-write in place since v55. Migration target — switch reads, remove writes, drop column. | High | Applications tab, plot overlays, export |
 | status | Text | `TrialApplicationEvents` column `status` (Text); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 | appliedAt | DateTime | `TrialApplicationEvents` column `appliedAt` (DateTime); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 | createdAt | DateTime | `TrialApplicationEvents` column `createdAt` (DateTime); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
@@ -678,7 +683,7 @@ Read-only inventory of every Drift column against the four-layer rule: persisten
 | unknownPatterns | Text | `ImportSnapshots` column `unknownPatterns` (Text); no adjacent `///` doc in schema file. | DERIVED STATE | Parser classification of unrecognized patterns. | Low | Import diagnostics |
 | hasSubsamples | Bool | `ImportSnapshots` column `hasSubsamples` (Bool); no adjacent `///` doc in schema file. | DERIVED STATE | Inferred boolean from file structure. | Low | Import routing |
 | hasMultiApplication | Bool | `ImportSnapshots` column `hasMultiApplication` (Bool); no adjacent `///` doc in schema file. | DERIVED STATE | Inferred boolean from file structure. | Low | Import routing |
-| hasSparseData | Bool | `ImportSnapshots` column `hasSparseData` (Bool); no adjacent `///` doc in schema file. | DERIVED STATE | Inferred boolean from file structure. | Low | Import routing |
+| hasSparseData | Bool | `ImportSnapshots` column `hasSparseData` (Bool); no adjacent `///` doc in schema file. | FACT SNAPSHOT | Written once at import from CSV cell data discarded after parsing. Cannot be recomputed without original CSV. Currently write-only from DB — active read path is the in-memory ParsedArmCsv during import. Forward-looking provenance. | Low | Import routing |
 | hasRepeatedCodes | Bool | `ImportSnapshots` column `hasRepeatedCodes` (Bool); no adjacent `///` doc in schema file. | DERIVED STATE | Inferred boolean from file structure. | Low | Import routing |
 | rawFileChecksum | Text | `ImportSnapshots` column `rawFileChecksum` (Text); no adjacent `///` doc in schema file. | ROUND-TRIP STORAGE | Captured file tokens/checksum for reproducible import and export routing. | Medium | ARM import, compatibility builder |
 | capturedAt | DateTime | `ImportSnapshots` column `capturedAt` (DateTime); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
@@ -700,7 +705,7 @@ Read-only inventory of every Drift column against the four-layer rule: persisten
 | columnOrderOnExport | Text | `CompatibilityProfiles` column `columnOrderOnExport` (Text); no adjacent `///` doc in schema file. | UNCLEAR | Compatibility/export mapping artifact; schema does not state per-field provenance (captured vs computed). | Medium | ARM export, compatibility builder |
 | identityFieldOrder | Text | `CompatibilityProfiles` column `identityFieldOrder` (Text); no adjacent `///` doc in schema file. | UNCLEAR | Compatibility/export mapping artifact; schema does not state per-field provenance (captured vs computed). | Medium | ARM export, compatibility builder |
 | knownUnsupported | Text | `CompatibilityProfiles` column `knownUnsupported` (Text); no adjacent `///` doc in schema file. | UNCLEAR | Compatibility/export mapping artifact; schema does not state per-field provenance (captured vs computed). | Medium | ARM export, compatibility builder |
-| exportConfidence | Text | `CompatibilityProfiles` column `exportConfidence` (Text); no adjacent `///` doc in schema file. | DERIVED STATE | Label from compatibility/export logic, not a direct field measurement. | Medium | Export gating, ARM workflows |
+| exportConfidence | Text | `CompatibilityProfiles` column `exportConfidence` (Text); no adjacent `///` doc in schema file. | FACT SNAPSHOT | Quality score evaluated at CSV parse time against data discarded after import. ArmColumnClassification list is not stored; raw CSV is discarded. Active hard gate on all four export paths. | Medium | Export gating, ARM workflows |
 | exportBlockReason | Text | `CompatibilityProfiles` column `exportBlockReason` (Text); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 | roundTripValidated | Bool | `CompatibilityProfiles` column `roundTripValidated` (Bool); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 | roundTripValidatedAt | DateTime | `CompatibilityProfiles` column `roundTripValidatedAt` (DateTime); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
@@ -763,7 +768,7 @@ Read-only inventory of every Drift column against the four-layer rule: persisten
 | trialId | Int | `TrialExportDiagnostics` column `trialId` (Int); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 | publishedAt | DateTime | `TrialExportDiagnostics` column `publishedAt` (DateTime); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 | attemptLabel | Text | `TrialExportDiagnostics` column `attemptLabel` (Text); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
-| findingsJson | Text | `TrialExportDiagnostics` column `findingsJson` (Text); no adjacent `///` doc in schema file. | DERIVED STATE | Serialized export diagnostics snapshot; recomputable at publish time. | Medium | Export preflight, readiness UX |
+| findingsJson | Text | `TrialExportDiagnostics` column `findingsJson` (Text); no adjacent `///` doc in schema file. | FACT SNAPSHOT | Record of findings from one specific past export attempt. Not current trial state; UI must label as "from last export attempt". | Medium | Export preflight, readiness UX |
 | payloadVersion | Int | `TrialExportDiagnostics` column `payloadVersion` (Int); no adjacent `///` doc in schema file. | RAW FACT | Treated as captured or user/import/session-attributed data unless noted; schema alone does not prove it is only a computation cache. | Low | Features referencing this entity (see domain code) |
 
 ### `WeatherSnapshots`
@@ -1028,32 +1033,31 @@ Read-only inventory of every Drift column against the four-layer rule: persisten
 
 ## Section B — Dangerous derived fields
 
+_Note: `exportConfidence`, `findingsJson`, and `hasSparseData` were previously listed here. They are reclassified as FACT SNAPSHOT (see Architecture Rule Summary) and removed from this section. They are not migration targets._
+
 | Column | Table | Why dangerous | Dependent areas |
 | --- | --- | --- | --- |
-| `isCurrent` | `RatingRecords` | Authoritative “current” flag can disagree with amendment chain if not maintained perfectly. | Rating UI, history, exports. |
-| `plotsTreated` | `TrialApplicationEvents` | Parallel representation to `ApplicationPlotAssignments`; risk of drift. | Applications UI, export. |
+| `isCurrent` | `RatingRecords` | Authoritative “current” flag can disagree with amendment chain if not maintained perfectly. Accepted exception — see TRIAL_MODEL.md. | Rating UI, history, exports. |
+| `plotsTreated` | `TrialApplicationEvents` | Parallel representation to `ApplicationPlotAssignments`; risk of drift. Active migration target. | Applications UI, export. |
 | `rowsImported` / `rowsSkipped` | `ImportEvents` | Aggregate-only view of import without per-row truth. | Import history, support. |
-| `findingsJson` | `TrialExportDiagnostics` | Stale diagnostics can misrepresent current export readiness. | Export preflight. |
 | `plotCount` / `treatmentCount` / `assessmentCount` / pattern flags | `ImportSnapshots` | Summaries of a parse; re-running importer may change meaning. | ARM import, profiles. |
-| `exportConfidence` | `CompatibilityProfiles` | Single derived label may over-trust mapping quality. | Export gating. |
 
-## Section C — Top 10 highest-risk columns to migrate first
+## Section C — Highest-risk derived columns to migrate
+
+_Note: `findingsJson` (former rank 3), `exportConfidence` (former rank 7), and `hasSparseData` (former rank 10) are reclassified as FACT SNAPSHOT and removed from this list. They are not migration targets._
 
 | Rank | Table | Column | Reason |
 | --- | --- | --- | --- |
-| 1 | `RatingRecords` | `isCurrent` | Broad dependence; corruption affects every plot/assessment “current” view. |
-| 2 | `TrialApplicationEvents` | `plotsTreated` | Explicit denormalized cache; duplicates structured facts. |
-| 3 | `TrialExportDiagnostics` | `findingsJson` | Large JSON blob of derived checks; staleness risk. |
-| 4 | `ImportSnapshots` | `plotCount` | Structural summary feeding downstream import/export decisions. |
-| 5 | `ImportSnapshots` | `assessmentCount` | Same class of structural summary. |
-| 6 | `ImportSnapshots` | `treatmentCount` | Same class of structural summary. |
-| 7 | `CompatibilityProfiles` | `exportConfidence` | Behavioral gating from computed label. |
-| 8 | `ImportEvents` | `rowsImported` | Shown as import success metric. |
-| 9 | `ImportEvents` | `rowsSkipped` | Paired metric; completeness narrative. |
-| 10 | `ImportSnapshots` | `hasSparseData` | Binary routing flag from inference. |
+| 1 | `RatingRecords` | `isCurrent` | Broad dependence; corruption affects every plot/assessment “current” view. Accepted exception — not a migration target, but highest maintenance risk. |
+| 2 | `TrialApplicationEvents` | `plotsTreated` | Explicit denormalized cache; duplicates structured facts in ApplicationPlotAssignments. Active migration target. |
+| 3 | `ImportSnapshots` | `plotCount` | Structural summary feeding downstream import/export decisions. |
+| 4 | `ImportSnapshots` | `assessmentCount` | Same class of structural summary. |
+| 5 | `ImportSnapshots` | `treatmentCount` | Same class of structural summary. |
+| 6 | `ImportEvents` | `rowsImported` | Shown as import success metric. |
+| 7 | `ImportEvents` | `rowsSkipped` | Paired metric; completeness narrative. |
 
 ## Section D — Architectural red flags
 
 Tables with **>50%** of columns classified **DERIVED STATE**.
 
-No table exceeds the 50% DERIVED STATE threshold. Close watch: `ImportSnapshots` (~36% derived under this pass), `TrialExportDiagnostics` (20% derived but single large JSON payload). `CompatibilityProfiles` now includes multiple **UNCLEAR** mapping columns pending provenance review.
+No table exceeds the 50% DERIVED STATE threshold. After FACT SNAPSHOT reclassification: `TrialExportDiagnostics` has no remaining DERIVED STATE columns (findingsJson reclassified). `ImportSnapshots` DERIVED STATE percentage reduced (hasSparseData reclassified). `CompatibilityProfiles` still includes multiple **UNCLEAR** mapping columns pending provenance review; exportConfidence is reclassified as FACT SNAPSHOT.

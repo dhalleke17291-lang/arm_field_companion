@@ -150,9 +150,9 @@ There is no safe, complete alternative.
 
 ---
 
-### g. Assessment: **DEFENSIBLE STORED FACT — should stay**
+### g. Assessment: **FACT SNAPSHOT — should stay**
 
-`exportConfidence` captures the quality assessment made at import time against a CSV that is subsequently discarded. It is written once (at import) and read many times (on every export attempt). It cannot be re-derived without loss of fidelity. This is an event-sourced property, not redundant derived state.
+`exportConfidence` captures the quality assessment made at import time against a CSV that is subsequently discarded. It is written once (at import) and read many times (on every export attempt). It cannot be re-derived without loss of fidelity. Under the four-layer doctrine, this is a FACT SNAPSHOT: a time-bound evaluation recorded as part of an import event, not redundant derived state.
 
 **Recommendation:** Keep. Add a code comment on the column explaining it is the confidence score evaluated at CSV parse time and not recomputable after import. No migration needed.
 
@@ -385,9 +385,9 @@ Unlike `exportConfidence`, where the scoring inputs (`unknownPatterns`) are part
 
 ---
 
-### g. Assessment: **DEFENSIBLE STORED FACT — should stay, but currently write-only from the DB**
+### g. Assessment: **FACT SNAPSHOT — should stay, but currently write-only from the DB**
 
-`hasSparseData` is a valid import-time provenance property, consistent in pattern with its three sibling boolean flags on `ImportSnapshots` (`hasSubsamples`, `hasMultiApplication`, `hasRepeatedCodes`). It correctly records a structural property of the source CSV that cannot be re-derived after import. It is not derived state in any sense — it is a captured fact about data that no longer exists.
+`hasSparseData` is a valid import-time provenance property, consistent in pattern with its three sibling boolean flags on `ImportSnapshots` (`hasSubsamples`, `hasMultiApplication`, `hasRepeatedCodes`). It correctly records a structural property of the source CSV that cannot be re-derived after import. Under the four-layer doctrine, this is a FACT SNAPSHOT: a structural observation about source data that no longer exists, recorded at the moment of the import event.
 
 However, the DB copy is currently **write-only**: no production code reads it back from the database. The active read path uses the in-memory `ParsedArmCsv.hasSparseData` during the import flow before the DB row is created.
 
@@ -424,13 +424,13 @@ No data loss risk: the junction table already contains all data written since v5
 
 ### Stay with Documentation
 
-**`exportConfidence` on `compatibility_profiles` — keep, add column comment**
+**`exportConfidence` on `compatibility_profiles` — FACT SNAPSHOT, keep**
 
-Active, load-bearing, and irreplaceable. Written once at import time from a CSV that is subsequently discarded. Read on every export attempt across all four export paths. Not safely recomputable from stored metadata. No migration needed. Recommended addition: a single-line doc comment on the column explaining it captures the CSV quality score at parse time and is not updated after import.
+Active, load-bearing, and irreplaceable. Written once at import time from a CSV that is subsequently discarded. Read on every export attempt across all four export paths. Not safely recomputable from stored metadata. Classification under the four-layer doctrine: FACT SNAPSHOT. No migration needed. Recommended addition: a single-line doc comment on the column explaining it captures the CSV quality score at parse time and is not updated after import.
 
-**`hasSparseData` on `import_snapshots` — keep, note write-only status**
+**`hasSparseData` on `import_snapshots` — FACT SNAPSHOT, keep**
 
-Correct import-time provenance fact. Cannot be recomputed without the original CSV cell data. Consistent with three sibling columns that follow the same write-once pattern. Currently write-only from the DB perspective (in-memory path serves the live read during import). No migration needed. Recommended addition: a code comment noting the active read path is `ParsedArmCsv.hasSparseData` and the DB copy is reserved for future post-import reporting.
+Correct import-time provenance fact. Cannot be recomputed without the original CSV cell data. Consistent with three sibling columns that follow the same write-once pattern. Currently write-only from the DB perspective (in-memory path serves the live read during import). Classification under the four-layer doctrine: FACT SNAPSHOT. No migration needed. Recommended addition: a code comment noting the active read path is `ParsedArmCsv.hasSparseData` and the DB copy is reserved for future post-import reporting.
 
 ---
 
@@ -438,6 +438,6 @@ Correct import-time provenance fact. Cannot be recomputed without the original C
 
 | Column | Table | Classification | Action |
 |---|---|---|---|
-| `exportConfidence` | `compatibility_profiles` | Defensible event snapshot | **Stay** — add doc comment |
-| `plotsTreated` | `trial_application_events` | Transitional TEXT cache | **Migrate** — read from junction table, then drop |
-| `hasSparseData` | `import_snapshots` | Defensible event snapshot (write-only from DB) | **Stay** — add doc comment noting write-only status |
+| `exportConfidence` | `compatibility_profiles` | FACT SNAPSHOT | **Stay** — correct Layer 1 stored fact |
+| `plotsTreated` | `trial_application_events` | DERIVED STATE — transitional cache | **Migrate** — read from junction table, then drop |
+| `hasSparseData` | `import_snapshots` | FACT SNAPSHOT (write-only from DB) | **Stay** — correct Layer 1 stored fact; note write-only status |

@@ -1,10 +1,14 @@
-// Defensive v49 migration tests. Temp dir + file-backed NativeDatabase matches
-// `backup_service_test.dart` (disk DB under a temp `docs` folder).
+// Migration tests covering v49 defensive recreation and v71 SeTypeProfiles activation.
+// Temp dir + file-backed NativeDatabase matches `backup_service_test.dart` pattern.
 //
-// A brand-new SQLite file with only `PRAGMA user_version = 36` cannot run 36→49
-// because intermediate migrations expect tables from earlier versions. The
-// "missing application_* tables" scenario is exercised at user_version 48
-// (only `if (from < 49)` runs) after dropping those three tables.
+// v49: A brand-new SQLite file at user_version 36 cannot run 36→49 because
+// intermediate migrations expect tables from earlier versions. The "missing
+// application_* tables" scenario is exercised at user_version 48 (only
+// `if (from < 49)` runs) after dropping those three tables.
+//
+// v71: se_type_profiles is a new reference table (seeded at install and on upgrade).
+// The defensive guard checks existingTables before calling createTable; INSERT OR IGNORE
+// keeps seeds idempotent against re-runs.
 
 import 'dart:io';
 
@@ -52,16 +56,21 @@ void main() {
     }
   });
 
-  test('onCreate: all legacy application tables exist on fresh install', () async {
+  test('onCreate: all tables including se_type_profiles exist on fresh install', () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 70);
+    expect(db.schemaVersion, 71);
 
     final names = await _tableNames(db);
     expect(names, contains(_kApplicationSlots));
     expect(names, contains(_kApplicationEvents));
     expect(names, contains(_kApplicationPlotRecords));
+    expect(names, contains('se_type_profiles'));
+
+    final profiles = await db.select(db.seTypeProfiles).get();
+    final prefixes = profiles.map((p) => p.ratingTypePrefix).toSet();
+    expect(prefixes, containsAll({'CONTRO', 'PHYGEN'}));
   });
 
   test(
@@ -113,5 +122,60 @@ void main() {
       expect(names, contains(_kApplicationSlots));
       expect(names, contains(_kApplicationEvents));
       expect(names, contains(_kApplicationPlotRecords));
+    });
+
+  test(
+    'onUpgrade v70 → v71: se_type_profiles is created and seeded when absent',
+    () async {
+      final dbFile = File(p.join(docsPath, 'upgrade_v70_to_v71.db'));
+      if (await dbFile.exists()) await dbFile.delete();
+
+      // Fresh install at v71: onCreate creates all tables including se_type_profiles.
+      var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+      await _tableNames(db); // warm up — ensures onCreate completes
+
+      // Simulate v70 state: drop se_type_profiles, then wind user_version back.
+      await db.customStatement('DROP TABLE IF EXISTS se_type_profiles');
+      await db.close();
+      _setUserVersion(dbFile.path, 70);
+
+      // Reopen: Drift sees user_version 70, runs onUpgrade(m, 70, 71).
+      db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+      addTearDown(db.close);
+
+      final names = await _tableNames(db);
+      expect(names, contains('se_type_profiles'));
+
+      final profiles = await db.select(db.seTypeProfiles).get();
+      final prefixes = profiles.map((p) => p.ratingTypePrefix).toSet();
+      expect(prefixes, containsAll({'CONTRO', 'PHYGEN'}));
+    });
+
+  test(
+    'onUpgrade v70 → v71 idempotent: se_type_profiles already exists, no error, no duplicate rows',
+    () async {
+      final dbFile = File(p.join(docsPath, 'idempotent_v71.db'));
+      if (await dbFile.exists()) await dbFile.delete();
+
+      // Fresh install at v71.
+      var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+      await _tableNames(db); // warm up
+      await db.close();
+
+      // Wind user_version back to 70 WITHOUT dropping the table —
+      // tests that existingTables guard prevents double-createTable
+      // and INSERT OR IGNORE prevents duplicate seed rows.
+      _setUserVersion(dbFile.path, 70);
+
+      db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+      addTearDown(db.close);
+
+      final names = await _tableNames(db);
+      expect(names, contains('se_type_profiles'));
+
+      final profiles = await db.select(db.seTypeProfiles).get();
+      final prefixes = profiles.map((p) => p.ratingTypePrefix).toSet();
+      expect(prefixes, containsAll({'CONTRO', 'PHYGEN'}));
+      expect(profiles.length, 2, reason: 'INSERT OR IGNORE must not produce duplicate seed rows');
     });
 }

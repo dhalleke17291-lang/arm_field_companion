@@ -13,13 +13,21 @@ When the data model mirrors causal reality, the trial reveals itself. Intelligen
 ### Layer 1 — Fact Layer (database)
 Contains only real-world captured facts: events that happened, attributes recorded at the moment they occurred.
 
-**Allowed in this layer:**
+**Allowed in this layer — three stored categories:**
+
+**RAW FACT** — real-world event or attribute captured directly at the time it occurred:
 - Events: seeding, emergence, applications, ratings, session open/close, photo capture, audit entries
-- Attributes recorded at capture time: GPS coordinates, timestamps, weather conditions, confidence level, rater identity, lot/batch codes
+- Attributes recorded at capture time: GPS coordinates, timestamps, weather conditions, rater identity, lot/batch codes
 - Protocol definitions imported from ARM shell: treatment structure, plot layout, SE column definitions
-- ARM round-trip storage: values held verbatim for ARM export compatibility (marked explicitly, not used as internal truth)
-- Maintained indexes: isCurrent on rating_records (written atomically by a single write path, functions as a database-level index over the version chain)
-- Event snapshots: findingsJson on trial_export_diagnostics (records the output of a past export event, not current trial state)
+
+**FACT SNAPSHOT** — time-bound evaluation recorded as part of a specific event, never recomputed after, even if derivable in principle:
+- A quality or provenance score evaluated against source data that is discarded after the event (e.g., `exportConfidence`: CSV quality score at parse time, against a CSV that is then discarded)
+- A diagnostic record of what a specific past system event produced, always labeled as time-bound (e.g., `findingsJson`: findings from one specific export attempt)
+- A structural property of source data that cannot be reconstructed once the source is discarded (e.g., `hasSparseData`: whether any assessment cell in the imported CSV was null)
+
+**ROUND-TRIP STORAGE** — verbatim external data preserved for compatibility, never used as internal truth:
+- Values held verbatim for ARM export compatibility (marked explicitly)
+- Import tokens and column signatures needed to reproduce export column order
 
 **Never allowed in this layer:**
 - Status fields computed from other facts
@@ -106,21 +114,30 @@ SETypeProfile is load-bearing infrastructure, not configuration. Every biologica
 ## The Non-Negotiable Rule
 **Derived state is never stored. Everything above the Fact Layer is computed.**
 
+A stored value is allowed in Layer 1 only if it records what happened, what was observed/imported, or what was evaluated at a specific event. A value that changes meaning when underlying facts change without being updated is derived state and must move above the fact layer.
+
 If you find yourself adding a column that summarizes, counts, classifies, flags, or caches — stop. That belongs in a provider.
 
 If you find yourself reading a stored field to avoid a query — stop. Write the provider instead.
 
 If Cursor generates a status column or completeness flag — reject it. Redirect to the relationship layer.
 
-## Known Exceptions (documented, not precedents)
-These columns violate the pure principle but are accepted with explicit documentation:
+## Known FACT SNAPSHOT Instances
+These columns are correct applications of the FACT SNAPSHOT category. They are not exceptions — they satisfy the Layer 1 rule. Listed here because they were previously treated as anomalies before the FACT SNAPSHOT doctrine was formalised.
 
-| Column | Table | Why Accepted | Constraint |
-|--------|-------|--------------|------------|
-| isCurrent | rating_records | Maintained index, written atomically by single write path | Must only be written by rating_repository.dart |
-| findingsJson | trial_export_diagnostics | Event snapshot of past export attempt | UI must always label as "from last export attempt" |
-| exportConfidence | compatibility_profiles | Written once at import from discarded CSV | Must never be recomputed or updated after import |
-| plotsTreated | trial_application_events | PENDING MIGRATION — dual-write in place, remove after junction table confirmed stable | Do not add new reads. Migrate using ApplicationPlotAssignments |
+| Column | Table | What Event They Record | Why Not Recomputable |
+|--------|-------|------------------------|----------------------|
+| exportConfidence | compatibility_profiles | CSV quality score evaluated at parse time against data discarded after import | ArmColumnClassification list is not stored; raw CSV is discarded; re-running the scorer on partial metadata produces wrong results for old snapshots |
+| findingsJson | trial_export_diagnostics | Findings produced by one specific past export attempt | Not current state — records what a past export event found; UI must always label as "from last export attempt" |
+| hasSparseData | import_snapshots | Whether any assessment cell in the imported CSV was null | Cell-level data is not stored after import; no reconstruction path without the original CSV |
+
+## Known Exceptions (documented, not precedents)
+These columns do not fit the three stored categories. They are accepted with explicit constraints. Neither is a precedent for future columns.
+
+| Column | Table | Classification | Why Accepted | Constraint |
+|--------|-------|----------------|--------------|------------|
+| isCurrent | rating_records | Maintained index | Written atomically by a single write path; functions as a database-level index over the version chain. Not a precedent for other maintained flags. | Must only be written by rating_repository.dart |
+| plotsTreated | trial_application_events | DERIVED STATE — transitional cache | PENDING MIGRATION — dual-write in place alongside ApplicationPlotAssignments junction table, which is the canonical source | Do not add new reads. Switch reads to ApplicationPlotAssignments, remove writes, drop column after stability. |
 
 ## PR Checklist
 Before merging any pull request, verify:
