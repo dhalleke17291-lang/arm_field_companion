@@ -12,6 +12,7 @@ import "../data/repositories/seeding_repository.dart";
 import '../data/repositories/weather_snapshot_repository.dart';
 import "../domain/models/plot_context.dart";
 import "../domain/ratings/rating_integrity_guard.dart";
+import "../domain/se_type_profiles/se_type_profile_repository.dart";
 import "../domain/usecases/resolve_plot_treatment.dart";
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -2071,3 +2072,27 @@ String _cleanAssessmentName(String raw, int sortOrder) {
       .trim();
   return cleaned.isNotEmpty ? cleaned : 'Assessment ${sortOrder + 1}';
 }
+
+// ---------------------------------------------------------------------------
+// SE type profile providers
+// ---------------------------------------------------------------------------
+
+final seTypeProfileRepositoryProvider =
+    Provider<SeTypeProfileRepository>((ref) {
+  return SeTypeProfileRepository(ref.watch(databaseProvider));
+});
+
+/// All seeded SE type profiles, ordered by prefix ascending.
+final seTypeProfilesProvider = FutureProvider<List<SeTypeProfile>>((ref) {
+  return ref.watch(seTypeProfileRepositoryProvider).getAll();
+});
+
+/// SE type profile for a single [ratingTypePrefix], or null if not seeded.
+final seTypeProfileByPrefixProvider =
+    FutureProvider.autoDispose.family<SeTypeProfile?, String>(
+  (ref, ratingTypePrefix) {
+    return ref
+        .watch(seTypeProfileRepositoryProvider)
+        .getByPrefix(ratingTypePrefix);
+  },
+);
