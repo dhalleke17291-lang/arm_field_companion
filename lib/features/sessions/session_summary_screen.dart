@@ -32,7 +32,9 @@ import 'session_grid_pdf_export.dart';
 import 'session_summary_assessment_coverage.dart';
 import '../../core/connectivity/gps_service.dart';
 import '../../domain/models/trial_insight.dart';
+import '../../domain/interpretation/behavioral_signature_interpreter.dart';
 import '../../domain/interpretation/protocol_divergence_interpreter.dart';
+import '../../domain/relationships/behavioral_signature_provider.dart';
 import '../../domain/relationships/evidence_anchors_provider.dart';
 import '../../domain/relationships/protocol_divergence_provider.dart';
 import 'session_summary_share.dart';
@@ -1621,6 +1623,8 @@ class _SessionDetailsBody extends ConsumerWidget {
     final correctionsAsync =
         ref.watch(plotPksWithCorrectionsForSessionProvider(session.id));
     final assessmentsAsync = ref.watch(sessionAssessmentsProvider(session.id));
+    final behaviourAsync =
+        ref.watch(behavioralSignatureProvider(session.id));
 
     return plotsAsync.when(
           loading: () => const AppLoadingView(),
@@ -2197,53 +2201,36 @@ class _SessionDetailsBody extends ConsumerWidget {
                                 ),
                               ),
                             ),
-                            Text(
-                              'Open related screens',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            const _CaptionHint(
-                              'Plot Queue opens the full list (same as card areas above).',
-                            ),
-                            const SizedBox(height: 10),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton(
-                                onPressed: () => _navigateSessionCompleteness(
-                                    context, trial, session),
-                                child: const Text('Open Session Completeness'),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton(
-                                onPressed: () =>
-                                    _navigatePlotQueue(context, trial, session),
-                                child: const Text('Open Plot Queue'),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton(
-                                onPressed: () {
-                                  Navigator.push<void>(
-                                    context,
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => const EditedItemsScreen(),
-                                    ),
-                                  );
-                                },
-                                child: const Text(
-                                  'Edited Items (all sessions)',
+                            if (behaviourAsync.valueOrNull?.isNotEmpty ==
+                                true) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: AppCard(
+                                  padding: const EdgeInsets.all(
+                                      AppDesignTokens.spacing16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const _SectionTitle('Session Behaviour'),
+                                      const SizedBox(height: 4),
+                                      const _CaptionHint(
+                                        'How ratings were recorded over the course of this session.',
+                                      ),
+                                      const SizedBox(height: 10),
+                                      for (final signal
+                                          in behaviourAsync.value!) ...[
+                                        _BehaviouralSignalRow(
+                                            interpretBehavioralSignal(signal)),
+                                        const SizedBox(
+                                            height:
+                                                AppDesignTokens.spacing12),
+                                      ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                             if (divergencesAsync.valueOrNull?.isNotEmpty ==
                                 true) ...[
                               Padding(
@@ -2297,6 +2284,53 @@ class _SessionDetailsBody extends ConsumerWidget {
                                 ),
                               ),
                             ],
+                            Text(
+                              'Open related screens',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            const _CaptionHint(
+                              'Plot Queue opens the full list (same as card areas above).',
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: () => _navigateSessionCompleteness(
+                                    context, trial, session),
+                                child: const Text('Open Session Completeness'),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: () =>
+                                    _navigatePlotQueue(context, trial, session),
+                                child: const Text('Open Plot Queue'),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  Navigator.push<void>(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => const EditedItemsScreen(),
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  'Edited Items (all sessions)',
+                                ),
+                              ),
+                            ),
                             const SizedBox(height: 24),
                           ],
                         );
@@ -2319,6 +2353,38 @@ class _ProtocolDifferenceRow extends StatelessWidget {
   const _ProtocolDifferenceRow(this.message);
 
   final DivergenceMessage message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          message.title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          message.description,
+          style: TextStyle(
+            fontSize: 13,
+            height: 1.35,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BehaviouralSignalRow extends StatelessWidget {
+  const _BehaviouralSignalRow(this.message);
+
+  final BehavioralMessage message;
 
   @override
   Widget build(BuildContext context) {
