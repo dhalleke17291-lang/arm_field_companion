@@ -6,6 +6,7 @@
 
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/providers.dart';
+import 'package:arm_field_companion/domain/relationships/protocol_divergence.dart';
 import 'package:arm_field_companion/domain/relationships/protocol_divergence_provider.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
