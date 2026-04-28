@@ -91,7 +91,7 @@ void main() {
       expect(result.first.type, ChronologyEventType.seeding);
       expect(result.first.label, 'Seeding');
       expect(result.first.date!.isAtSameMomentAs(date), isTrue);
-      expect(result.first.entityId, isNull); // UUID PK
+      expect(result.first.entityId, isNotNull);
     });
 
     test('application event is mapped correctly', () async {
@@ -104,7 +104,7 @@ void main() {
       expect(result.first.type, ChronologyEventType.application);
       expect(result.first.label, 'Application');
       expect(result.first.date!.isAtSameMomentAs(date), isTrue);
-      expect(result.first.entityId, isNull); // UUID PK
+      expect(result.first.entityId, isNotNull);
     });
 
     test('session event is mapped correctly', () async {
@@ -116,7 +116,7 @@ void main() {
       expect(result.first.type, ChronologyEventType.session);
       expect(result.first.label, 'Rating Session');
       expect(result.first.date, isNotNull);
-      expect(result.first.entityId, sessionId);
+      expect(result.first.entityId, sessionId.toString());
     });
   });
 

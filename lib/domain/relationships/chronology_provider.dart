@@ -15,9 +15,9 @@ class ChronologyEvent {
   final DateTime? date;
   final ChronologyEventType type;
 
-  /// Integer PK of the source row, or null when the source table uses a UUID
-  /// primary key (seeding_events, trial_application_events).
-  final int? entityId;
+  /// String ID of the source row. UUID string for seeding and application
+  /// events; session.id.toString() for sessions.
+  final String? entityId;
 
   final String label;
 
@@ -64,7 +64,7 @@ final chronologyProvider =
     events.add(ChronologyEvent(
       date: seeding.seedingDate,
       type: ChronologyEventType.seeding,
-      entityId: null, // UUID PK — not representable as int
+      entityId: seeding.id,
       label: 'Seeding',
     ));
   }
@@ -73,7 +73,7 @@ final chronologyProvider =
     events.add(ChronologyEvent(
       date: app.applicationDate,
       type: ChronologyEventType.application,
-      entityId: null, // UUID PK — not representable as int
+      entityId: app.id,
       label: 'Application',
     ));
   }
@@ -82,7 +82,7 @@ final chronologyProvider =
     events.add(ChronologyEvent(
       date: DateTime.tryParse(session.sessionDateLocal),
       type: ChronologyEventType.session,
-      entityId: session.id,
+      entityId: session.id.toString(),
       label: 'Rating Session',
     ));
   }
