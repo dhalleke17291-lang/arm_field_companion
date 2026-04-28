@@ -32,7 +32,8 @@ import 'session_grid_pdf_export.dart';
 import 'session_summary_assessment_coverage.dart';
 import '../../core/connectivity/gps_service.dart';
 import '../../domain/models/trial_insight.dart';
-import '../../domain/relationships/protocol_divergence_interpreter.dart';
+import '../../domain/interpretation/protocol_divergence_interpreter.dart';
+import '../../domain/relationships/evidence_anchors_provider.dart';
 import '../../domain/relationships/protocol_divergence_provider.dart';
 import 'session_summary_share.dart';
 import 'session_treatment_summary.dart';
@@ -1612,6 +1613,7 @@ class _SessionDetailsBody extends ConsumerWidget {
         ref.watch(sessionCompletenessReportProvider(session.id));
     final divergencesAsync =
         ref.watch(protocolDivergenceProvider(trial.id));
+    final anchorsAsync = ref.watch(evidenceAnchorsProvider(trial.id));
     final ratingsAsync = ref.watch(sessionRatingsProvider(session.id));
     final ratedPksAsync = ref.watch(ratedPlotPksProvider(session.id));
     final flaggedAsync =
@@ -1729,6 +1731,12 @@ class _SessionDetailsBody extends ConsumerWidget {
                           sessionAssessments: assessments,
                           currentSessionRatings: ratings,
                         );
+
+                        final sessionAnchor = anchorsAsync.valueOrNull
+                            ?.where((a) =>
+                                a.eventId == session.id.toString() &&
+                                a.eventType == EvidenceEventType.session)
+                            .firstOrNull;
 
                         return ListView(
                           padding:
@@ -2263,6 +2271,32 @@ class _SessionDetailsBody extends ConsumerWidget {
                                 ),
                               ),
                             ],
+                            if (sessionAnchor != null) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: AppCard(
+                                  padding: const EdgeInsets.all(
+                                      AppDesignTokens.spacing16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const _SectionTitle(
+                                          'Evidence captured'),
+                                      const SizedBox(height: 10),
+                                      _EvidenceRow('Photos',
+                                          sessionAnchor.photoIds.isNotEmpty),
+                                      _EvidenceRow(
+                                          'GPS', sessionAnchor.hasGps),
+                                      _EvidenceRow('Weather',
+                                          sessionAnchor.hasWeather),
+                                      _EvidenceRow('Timestamp',
+                                          sessionAnchor.hasTimestamp),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 24),
                           ],
                         );
@@ -2456,6 +2490,41 @@ class _CropInjuryResult {
   const _CropInjuryResult({required this.status, this.notes});
   final String status;
   final String? notes;
+}
+
+class _EvidenceRow extends StatelessWidget {
+  const _EvidenceRow(this.label, this.present);
+
+  final String label;
+  final bool present;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Text(
+            present ? 'Yes' : 'No',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _CropInjuryOption extends StatelessWidget {
