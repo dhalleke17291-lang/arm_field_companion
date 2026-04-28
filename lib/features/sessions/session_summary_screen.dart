@@ -32,6 +32,8 @@ import 'session_grid_pdf_export.dart';
 import 'session_summary_assessment_coverage.dart';
 import '../../core/connectivity/gps_service.dart';
 import '../../domain/models/trial_insight.dart';
+import '../../domain/relationships/protocol_divergence_interpreter.dart';
+import '../../domain/relationships/protocol_divergence_provider.dart';
 import 'session_summary_share.dart';
 import 'session_treatment_summary.dart';
 
@@ -1608,6 +1610,8 @@ class _SessionDetailsBody extends ConsumerWidget {
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final reportAsync =
         ref.watch(sessionCompletenessReportProvider(session.id));
+    final divergencesAsync =
+        ref.watch(protocolDivergenceProvider(trial.id));
     final ratingsAsync = ref.watch(sessionRatingsProvider(session.id));
     final ratedPksAsync = ref.watch(ratedPlotPksProvider(session.id));
     final flaggedAsync =
@@ -2232,6 +2236,33 @@ class _SessionDetailsBody extends ConsumerWidget {
                                 ),
                               ),
                             ),
+                            if (divergencesAsync.valueOrNull?.isNotEmpty ==
+                                true) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: AppCard(
+                                  padding: const EdgeInsets.all(
+                                      AppDesignTokens.spacing16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const _CardHeaderRow(
+                                          title: 'Protocol Differences'),
+                                      const SizedBox(height: 10),
+                                      for (final d
+                                          in divergencesAsync.value!) ...[
+                                        _ProtocolDifferenceRow(
+                                            interpretProtocolDivergence(d)),
+                                        const SizedBox(
+                                            height:
+                                                AppDesignTokens.spacing12),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 24),
                           ],
                         );
@@ -2249,6 +2280,38 @@ class _SessionDetailsBody extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 // Below: helper widgets used by _SessionDetailsBody
 // ---------------------------------------------------------------------------
+
+class _ProtocolDifferenceRow extends StatelessWidget {
+  const _ProtocolDifferenceRow(this.message);
+
+  final DivergenceMessage message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          message.title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          message.description,
+          style: TextStyle(
+            fontSize: 13,
+            height: 1.35,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _CaptionHint extends StatelessWidget {
   const _CaptionHint(this.text);

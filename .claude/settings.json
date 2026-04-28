@@ -40,7 +40,15 @@
       "Bash(awk '/^class MockApplicationRepository/{found=1} found{print NR\": \"$0} /^}/{if\\(found\\){print NR\": \"$0; exit}}' test/features/export/report_data_assembly_service_test.dart)",
       "Bash(grep -n \"completeness_dashboard\\\\|CompletenesDashboard\\\\|Completeness\" /Users/parminder/Desktop/arm_field_companion/lib/features/**/*.dart)",
       "Read(//Users/parminder/Library/Logs/DiagnosticReports/**)",
-      "Bash(find lib *)"
+      "Bash(find lib *)",
+      "Bash(git -C /Users/parminder/Desktop/arm_field_companion diff docs/architecture/TRIAL_MODEL.md docs/architecture/SCHEMA_AUDIT.md docs/architecture/DERIVED_STATE_INVESTIGATION.md)",
+      "Bash(git -C /Users/parminder/Desktop/arm_field_companion diff --stat docs/architecture/TRIAL_MODEL.md docs/architecture/SCHEMA_AUDIT.md docs/architecture/DERIVED_STATE_INVESTIGATION.md)",
+      "Bash(grep -n '$SeTypeProfilesTable\\\\|SeTypeProfilesCompanion\\\\|seTypeProfiles' /Users/parminder/Desktop/arm_field_companion/lib/core/database/app_database.g.dart)",
+      "Bash(grep -n 'class $SeTypeProfilesTable' /Users/parminder/Desktop/arm_field_companion/lib/core/database/app_database.g.dart)",
+      "Bash(git -C /Users/parminder/Desktop/arm_field_companion diff --stat lib/core/database/)",
+      "Bash(git -C /Users/parminder/Desktop/arm_field_companion diff lib/core/database/app_database.dart)",
+      "Bash(git -C /Users/parminder/Desktop/arm_field_companion stash list)",
+      "Bash(git -C /Users/parminder/Desktop/arm_field_companion show HEAD:lib/core/database/app_database.dart)"
     ],
     "additionalDirectories": [
       "/Users/parminder/Desktop/arm_field_companion/lib/features/arm_import/usecases"
