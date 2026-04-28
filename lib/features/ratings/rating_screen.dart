@@ -592,6 +592,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                             _currentAssessment, taByLegacy, taById),
                         plotLabel:
                             getDisplayPlotLabel(widget.plot, widget.allPlots),
+                        ratingId: ex.id,
                       );
                     }
                   }

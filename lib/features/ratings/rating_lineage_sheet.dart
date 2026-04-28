@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
+import '../../domain/interpretation/causal_context_interpreter.dart';
+import '../../domain/relationships/causal_context_provider.dart';
 import 'usecases/rating_lineage_usecase.dart';
 
 String _lineageStatusLabel(String value) {
@@ -99,6 +101,7 @@ void showRatingLineageBottomSheet({
   required int sessionId,
   required String assessmentName,
   required String plotLabel,
+  int? ratingId,
 }) {
   final future = ref.read(ratingLineageUseCaseProvider).execute(
         trialId: trialId,
@@ -106,6 +109,10 @@ void showRatingLineageBottomSheet({
         assessmentId: assessmentId,
         sessionId: sessionId,
       );
+
+  final causalContextFuture = ratingId != null
+      ? ref.read(causalContextProvider(ratingId).future)
+      : null;
 
   showModalBottomSheet<void>(
     context: context,
@@ -120,6 +127,7 @@ void showRatingLineageBottomSheet({
       future: future,
       assessmentName: assessmentName,
       plotLabel: plotLabel,
+      causalContextFuture: causalContextFuture,
     ),
   );
 }
@@ -129,11 +137,13 @@ class _RatingLineageSheetBody extends StatelessWidget {
     required this.future,
     required this.assessmentName,
     required this.plotLabel,
+    this.causalContextFuture,
   });
 
   final Future<RatingLineage> future;
   final String assessmentName;
   final String plotLabel;
+  final Future<CausalContext>? causalContextFuture;
 
   @override
   Widget build(BuildContext context) {
@@ -211,22 +221,32 @@ class _RatingLineageSheetBody extends StatelessWidget {
 
                   final newestFirst = lineage.entries.reversed.toList();
 
-                  return ListView.separated(
-                    itemCount: newestFirst.length,
-                    separatorBuilder: (_, __) => const Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: AppDesignTokens.divider,
-                    ),
-                    itemBuilder: (context, index) {
-                      final e = newestFirst[index];
-                      final isCurrent = index == 0;
-                      return _LineageEntryTile(
-                        entry: e,
-                        timeFmt: timeFmt,
-                        highlight: isCurrent,
-                      );
-                    },
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: ListView.separated(
+                          itemCount: newestFirst.length,
+                          separatorBuilder: (_, __) => const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: AppDesignTokens.divider,
+                          ),
+                          itemBuilder: (context, index) {
+                            final e = newestFirst[index];
+                            final isCurrent = index == 0;
+                            return _LineageEntryTile(
+                              entry: e,
+                              timeFmt: timeFmt,
+                              highlight: isCurrent,
+                            );
+                          },
+                        ),
+                      ),
+                      if (causalContextFuture != null)
+                        _CausalContextSection(
+                            future: causalContextFuture!),
+                    ],
                   );
                 },
               ),
@@ -447,6 +467,72 @@ class _CorrectionBlock extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CausalContextSection extends StatelessWidget {
+  const _CausalContextSection({required this.future});
+
+  final Future<CausalContext> future;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<CausalContext>(
+      future: future,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+
+        final appEvents = snapshot.data!.priorEvents
+            .where((e) => e.type == CausalEventType.application)
+            .toList()
+          ..sort((a, b) {
+            final dA = a.daysBefore;
+            final dB = b.daysBefore;
+            if (dA == null && dB == null) return 0;
+            if (dA == null) return 1;
+            if (dB == null) return -1;
+            return dA.compareTo(dB);
+          });
+
+        if (appEvents.isEmpty) return const SizedBox.shrink();
+
+        final visible = appEvents.take(3).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Divider(
+              height: 1,
+              thickness: 1,
+              color: AppDesignTokens.divider,
+            ),
+            const SizedBox(height: AppDesignTokens.spacing12),
+            Text(
+              'Context',
+              style: AppDesignTokens.bodyStyle(
+                fontSize: 11,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing8),
+            for (final event in visible)
+              Padding(
+                padding:
+                    const EdgeInsets.only(bottom: AppDesignTokens.spacing4),
+                child: Text(
+                  interpretCausalEvent(event).description,
+                  style: AppDesignTokens.bodyStyle(
+                    fontSize: 13,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+              ),
+            const SizedBox(height: AppDesignTokens.spacing12),
+          ],
+        );
+      },
     );
   }
 }

@@ -212,6 +212,7 @@ class _EditedItemsScreenState extends ConsumerState<EditedItemsScreen> {
                                 assessmentName:
                                     item.assessmentLabel ?? 'Assessment',
                                 plotLabel: item.plotLabel,
+                                ratingId: r.id,
                               ),
                               child: Text(
                                 row.diffLine!,

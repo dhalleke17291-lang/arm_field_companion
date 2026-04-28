@@ -1044,6 +1044,7 @@ class PlotDetailScreen extends ConsumerWidget {
                             sessionId: rating.sessionId,
                             assessmentName: lineageName,
                             plotLabel: getDisplayPlotLabel(plotToShow, plots),
+                            ratingId: rating.id,
                           );
                         },
                       ),
