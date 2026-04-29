@@ -3,7 +3,8 @@
 // Uses ProviderContainer with databaseProvider overridden to an in-memory DB.
 // applicationRepositoryProvider resolves automatically through databaseProvider.
 
-import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/core/database/app_database.dart'
+    hide EvidenceAnchor;
 import 'package:arm_field_companion/core/providers.dart';
 import 'package:arm_field_companion/domain/relationships/evidence_anchors_provider.dart';
 import 'package:drift/drift.dart' show Value;
