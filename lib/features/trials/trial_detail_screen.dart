@@ -53,6 +53,8 @@ import '../derived/trial_attention_service.dart';
 import '../../domain/models/trial_insight.dart';
 import '../backup/backup_reminder_store.dart';
 import '../notes/field_notes_list_screen.dart';
+import '../../domain/relationships/protocol_divergence_provider.dart';
+import '../../domain/relationships/evidence_anchors_provider.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -2390,6 +2392,8 @@ class _OverviewTabBody extends ConsumerWidget {
             trial: trial,
             onAttentionTap: onAttentionTap,
           ),
+          // 2b — Read-only execution summary (divergences + evidence coverage).
+          _ExecutionSummaryCard(trial: trial),
           // 3 — Physical structure & progress (incl. whole-trial %).
           _OverviewPlotSummary(trial: trial),
           // 4 — Location / metadata.
@@ -2400,6 +2404,92 @@ class _OverviewTabBody extends ConsumerWidget {
           _AutoBackupStatusLine(),
         ],
       ),
+    );
+  }
+}
+
+class _ExecutionSummaryCard extends ConsumerWidget {
+  const _ExecutionSummaryCard({required this.trial});
+
+  final Trial trial;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final divergencesAsync = ref.watch(protocolDivergenceProvider(trial.id));
+    final anchorsAsync = ref.watch(evidenceAnchorsProvider(trial.id));
+
+    return divergencesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (divergences) => anchorsAsync.when(
+        loading: () => const SizedBox.shrink(),
+        error: (_, __) => const SizedBox.shrink(),
+        data: (anchors) {
+          final sessionAnchors = anchors
+              .where((a) => a.eventType == EvidenceEventType.session)
+              .toList();
+          if (divergences.isEmpty && sessionAnchors.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          final withEvidence = sessionAnchors
+              .where((a) =>
+                  a.hasGps ||
+                  a.hasWeather ||
+                  a.photoIds.isNotEmpty ||
+                  a.hasTimestamp)
+              .length;
+          return _OverviewDashboardCard(
+            title: 'Execution Summary',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ExecutionSummaryRow(
+                  label: 'Protocol differences',
+                  value: '${divergences.length}',
+                ),
+                const SizedBox(height: 4),
+                _ExecutionSummaryRow(
+                  label: 'Sessions with evidence',
+                  value: '$withEvidence/${sessionAnchors.length}',
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ExecutionSummaryRow extends StatelessWidget {
+  const _ExecutionSummaryRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppDesignTokens.secondaryText,
+          ),
+        ),
+      ],
     );
   }
 }
