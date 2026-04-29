@@ -1,6 +1,8 @@
 import '../../sessions/session_repository.dart';
 import '../rating_repository.dart';
 import 'save_rating_usecase.dart';
+import '../../../domain/signals/signal_repository.dart';
+import '../../../domain/signals/signal_writers/scale_violation_writer.dart';
 
 /// Payload for amending a plot rating from the plot-detail edit sheet.
 ///
@@ -30,6 +32,7 @@ class AmendPlotRatingInput {
     this.subUnitId,
     this.existingNumericValue,
     this.existingTextValue,
+    this.seType,
   });
 
   final int trialId;
@@ -57,6 +60,10 @@ class AmendPlotRatingInput {
   final int? subUnitId;
   final double? existingNumericValue;
   final String? existingTextValue;
+
+  /// ARM rating-type prefix for scale violation signals (e.g. 'CONTRO').
+  /// Resolved by the caller from ARM metadata; defaults to 'LOCAL' when absent.
+  final String? seType;
 }
 
 class AmendPlotRatingResult {
@@ -98,11 +105,13 @@ class AmendPlotRatingUseCase {
     this._sessionRepository,
     this._saveRatingUseCase,
     this._ratingRepository,
+    this._signalRepository,
   );
 
   final SessionRepository _sessionRepository;
   final SaveRatingUseCase _saveRatingUseCase;
   final RatingRepository _ratingRepository;
+  final SignalRepository _signalRepository;
 
   Future<AmendPlotRatingResult> execute(AmendPlotRatingInput input) async {
     final session = await _sessionRepository.getSessionById(input.sessionId);
@@ -123,6 +132,18 @@ class AmendPlotRatingUseCase {
       final minB = input.minValue ?? 0.0;
       final maxB = input.maxValue ?? 999.0;
       if (parsed != null) {
+        // Fire-and-forget: signal outcome does not block the amendment.
+        ScaleViolationWriter(_signalRepository).checkAndRaise(
+          trialId: input.trialId,
+          sessionId: input.sessionId,
+          plotId: input.plotPk,
+          enteredValue: parsed,
+          scaleMin: minB,
+          scaleMax: maxB,
+          seType: input.seType ?? 'LOCAL',
+          consequenceText:
+              'Numeric rating outside declared scale; value clamped before save.',
+        ).ignore();
         numericValue = parsed.clamp(minB, maxB);
       } else {
         numericValue = input.existingNumericValue;

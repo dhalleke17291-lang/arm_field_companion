@@ -13,6 +13,7 @@ import '../data/repositories/weather_snapshot_repository.dart';
 import "../domain/models/plot_context.dart";
 import "../domain/ratings/rating_integrity_guard.dart";
 import "../domain/se_type_profiles/se_type_profile_repository.dart";
+import '../domain/signals/signal_providers.dart';
 import "../domain/usecases/resolve_plot_treatment.dart";
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -899,6 +900,7 @@ final amendPlotRatingUseCaseProvider = Provider<AmendPlotRatingUseCase>((ref) {
     ref.watch(sessionRepositoryProvider),
     ref.watch(saveRatingUseCaseProvider),
     ref.watch(ratingRepositoryProvider),
+    ref.watch(signalRepositoryProvider),
   );
 });
 
