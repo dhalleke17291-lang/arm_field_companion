@@ -1,44 +1,60 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'core/design/app_design_tokens.dart';
 import 'core/diagnostics/diagnostics_store.dart';
 import 'core/providers.dart';
 import 'splash_screen.dart';
 
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  final diagnosticsStore = DiagnosticsStore(maxErrors: 50);
-  // Deferred — don't block startup or crash on cold launch.
-  Future.delayed(const Duration(seconds: 2), () {
-    diagnosticsStore.loadFromDisk();
-  });
+// TODO: paste DSN from sentry.io → Project Settings → Client Keys.
+// Leave empty to keep Sentry disabled (safe to ship without it).
+const String _kSentryDsn = 'https://ba7e27130f8ff476e2698e6c473b3a34@o4511301313101824.ingest.us.sentry.io/4511301322735616';
 
-  FlutterError.onError = (FlutterErrorDetails details) {
-    diagnosticsStore.recordError(
-      details.exceptionAsString(),
-      stackTrace: details.stack?.toString(),
-      code: 'flutter_error',
-    );
-    FlutterError.presentError(details);
-  };
+Future<void> main() async {
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = _kSentryDsn;
+      options.environment = kDebugMode ? 'debug' : 'production';
+      options.debug = kDebugMode;
+    },
+    appRunner: () {
+      WidgetsFlutterBinding.ensureInitialized();
+      final diagnosticsStore = DiagnosticsStore(maxErrors: 50);
+      // Deferred — don't block startup or crash on cold launch.
+      Future.delayed(const Duration(seconds: 2), () {
+        diagnosticsStore.loadFromDisk();
+      });
 
-  PlatformDispatcher.instance.onError = (Object error, StackTrace stackTrace) {
-    diagnosticsStore.recordError(
-      error.toString(),
-      stackTrace: stackTrace.toString(),
-      code: 'zone_error',
-    );
-    return true;
-  };
+      // Chain DiagnosticsStore recording with Sentry's handler.
+      final sentryOnError = FlutterError.onError;
+      FlutterError.onError = (FlutterErrorDetails details) {
+        diagnosticsStore.recordError(
+          details.exceptionAsString(),
+          stackTrace: details.stack?.toString(),
+          code: 'flutter_error',
+        );
+        (sentryOnError ?? FlutterError.presentError)(details);
+      };
 
-  runApp(
-    ProviderScope(
-      overrides: [
-        diagnosticsStoreProvider.overrideWithValue(diagnosticsStore),
-      ],
-      child: const ArmFieldCompanionApp(),
-    ),
+      PlatformDispatcher.instance.onError = (Object error, StackTrace stackTrace) {
+        diagnosticsStore.recordError(
+          error.toString(),
+          stackTrace: stackTrace.toString(),
+          code: 'zone_error',
+        );
+        return true;
+      };
+
+      runApp(
+        ProviderScope(
+          overrides: [
+            diagnosticsStoreProvider.overrideWithValue(diagnosticsStore),
+          ],
+          child: const ArmFieldCompanionApp(),
+        ),
+      );
+    },
   );
 }
 
