@@ -132,18 +132,21 @@ class AmendPlotRatingUseCase {
       final minB = input.minValue ?? 0.0;
       final maxB = input.maxValue ?? 999.0;
       if (parsed != null) {
-        // Fire-and-forget: signal outcome does not block the amendment.
-        ScaleViolationWriter(_signalRepository).checkAndRaise(
-          trialId: input.trialId,
-          sessionId: input.sessionId,
-          plotId: input.plotPk,
-          enteredValue: parsed,
-          scaleMin: minB,
-          scaleMax: maxB,
-          seType: input.seType ?? 'LOCAL',
-          consequenceText:
-              'Numeric rating outside declared scale; value clamped before save.',
-        ).ignore();
+        try {
+          await ScaleViolationWriter(_signalRepository).checkAndRaise(
+            trialId: input.trialId,
+            sessionId: input.sessionId,
+            plotId: input.plotPk,
+            enteredValue: parsed,
+            scaleMin: minB,
+            scaleMax: maxB,
+            seType: input.seType ?? 'LOCAL',
+            consequenceText:
+                'Numeric rating outside declared scale; value clamped before save.',
+          );
+        } catch (_) {
+          // Signal write failure does not block the amendment.
+        }
         numericValue = parsed.clamp(minB, maxB);
       } else {
         numericValue = input.existingNumericValue;

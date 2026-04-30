@@ -87,9 +87,6 @@ void main() {
         seType: 'CONTRO',
       ));
 
-      // Allow the fire-and-forget signal write to settle.
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-
       // Assert: one scaleViolation signal was raised.
       final signals = await db.select(db.signals).get();
       expect(signals, hasLength(1));
@@ -149,8 +146,6 @@ void main() {
         amendedBy: 'tester',
         seType: 'CONTRO',
       ));
-
-      await Future<void>.delayed(const Duration(milliseconds: 20));
 
       final signals = await db.select(db.signals).get();
       expect(signals, isEmpty);
