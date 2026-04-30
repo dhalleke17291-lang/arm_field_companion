@@ -3,8 +3,7 @@
 // Uses ProviderContainer with databaseProvider overridden to an in-memory DB.
 // applicationRepositoryProvider resolves automatically through databaseProvider.
 
-import 'package:arm_field_companion/core/database/app_database.dart'
-    hide EvidenceAnchor;
+import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/providers.dart';
 import 'package:arm_field_companion/domain/relationships/evidence_anchors_provider.dart';
 import 'package:drift/drift.dart' show Value;
@@ -126,7 +125,7 @@ Future<void> _createRatingWithGps(
       );
 }
 
-Future<List<EvidenceAnchor>> _run(ProviderContainer c, int trialId) =>
+Future<List<TrialEvidenceSummary>> _run(ProviderContainer c, int trialId) =>
     c.read(evidenceAnchorsProvider(trialId).future);
 
 // ---------------------------------------------------------------------------

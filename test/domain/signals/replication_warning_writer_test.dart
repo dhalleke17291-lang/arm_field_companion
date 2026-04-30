@@ -295,5 +295,31 @@ void main() {
           signals.single.referenceContext);
       expect(ctx.treatmentId, t2);
     });
+
+    test('8 — consequence text contains no ARM-specific language', () async {
+      final seed = await _seedSession(db);
+      final tId = await _insertTreatment(db,
+          trialId: seed.trialId, code: 'T1', name: 'Fungicide A');
+      final assessmentId = await db
+          .into(db.assessments)
+          .insert(AssessmentsCompanion.insert(
+              trialId: seed.trialId, name: 'W003'));
+      final p1 = await _insertPlot(db,
+          trialId: seed.trialId, treatmentId: tId, plotId: '101');
+      await _insertRating(db,
+          trialId: seed.trialId,
+          sessionId: seed.sessionId,
+          plotPk: p1,
+          assessmentId: assessmentId);
+
+      final repo = container.read(signalRepositoryProvider);
+      await ReplicationWarningWriter(db, repo).checkAndRaiseForSession(
+          trialId: seed.trialId, sessionId: seed.sessionId);
+
+      final signal = (await db.select(db.signals).get()).single;
+      final text = signal.consequenceText.toLowerCase();
+      expect(text, isNot(contains('arm')),
+          reason: 'consequence text must not mention ARM software');
+    });
   });
 }

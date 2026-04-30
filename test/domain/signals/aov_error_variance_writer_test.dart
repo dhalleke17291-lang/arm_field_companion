@@ -218,5 +218,39 @@ void main() {
       expect(allSignals, hasLength(1));
       expect(first, equals(second));
     });
+
+    test('5 — consequence text contains no ARM-specific language', () async {
+      final seed = await _seedBasicTrial(db);
+      final tId = await db.into(db.treatments).insert(
+            TreatmentsCompanion.insert(
+                trialId: seed.trialId, code: 'T1', name: 'Fungicide A'),
+          );
+      final p1 = await _insertPlot(db,
+          trialId: seed.trialId, treatmentId: tId, plotId: '101');
+      final p2 = await _insertPlot(db,
+          trialId: seed.trialId, treatmentId: tId, plotId: '102');
+      await _insertRating(db,
+          trialId: seed.trialId,
+          sessionId: seed.sessionId,
+          plotPk: p1,
+          assessmentId: seed.assessmentId,
+          value: 75.0);
+      await _insertRating(db,
+          trialId: seed.trialId,
+          sessionId: seed.sessionId,
+          plotPk: p2,
+          assessmentId: seed.assessmentId,
+          value: 75.0);
+
+      final repo = container.read(signalRepositoryProvider);
+      await AovErrorVarianceWriter(db, repo)
+          .checkAndRaiseForSession(trialId: seed.trialId, sessionId: seed.sessionId);
+
+      final signal = (await db.select(db.signals).get()).single;
+      final text = signal.consequenceText.toLowerCase();
+      expect(text, isNot(contains('arm')),
+          reason: 'consequence text must not mention ARM software');
+      expect(text, isNot(contains('arm cannot')));
+    });
   });
 }

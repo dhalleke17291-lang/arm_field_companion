@@ -10,7 +10,15 @@ import '../../core/providers.dart';
 
 enum EvidenceEventType { session, application }
 
-class EvidenceAnchor {
+// NOTE: This class is a computed UI summary assembled from source tables
+// (sessions, photos, weather snapshots, GPS rating records, application
+// events). It is NOT a mirror of the `evidence_anchors` DB table — that
+// table stores durable anchors written by TrialEvidenceSummaryRepository for the
+// CRO audit trail and is not read by this provider.
+//
+// The class name intentionally differs from the Drift-generated TrialEvidenceSummary
+// row type; do not merge them.
+class TrialEvidenceSummary {
   final String eventId;
   final EvidenceEventType eventType;
   final List<int> photoIds;
@@ -18,7 +26,7 @@ class EvidenceAnchor {
   final bool hasWeather;
   final bool hasTimestamp;
 
-  const EvidenceAnchor({
+  const TrialEvidenceSummary({
     required this.eventId,
     required this.eventType,
     required this.photoIds,
@@ -33,7 +41,7 @@ class EvidenceAnchor {
 // ---------------------------------------------------------------------------
 
 final evidenceAnchorsProvider =
-    FutureProvider.autoDispose.family<List<EvidenceAnchor>, int>(
+    FutureProvider.autoDispose.family<List<TrialEvidenceSummary>, int>(
         (ref, trialId) async {
   final db = ref.watch(databaseProvider);
   final appRepo = ref.watch(applicationRepositoryProvider);
@@ -95,10 +103,10 @@ final evidenceAnchorsProvider =
   final sessionIdsWithGps = {for (final r in gpsRecords) r.sessionId};
 
   // ── Map to anchors ────────────────────────────────────────────────────────
-  final anchors = <EvidenceAnchor>[];
+  final anchors = <TrialEvidenceSummary>[];
 
   for (final session in sessions) {
-    anchors.add(EvidenceAnchor(
+    anchors.add(TrialEvidenceSummary(
       eventId: session.id.toString(),
       eventType: EvidenceEventType.session,
       photoIds: photosBySession[session.id] ?? [],
@@ -109,7 +117,7 @@ final evidenceAnchorsProvider =
   }
 
   for (final app in applications) {
-    anchors.add(EvidenceAnchor(
+    anchors.add(TrialEvidenceSummary(
       eventId: app.id,
       eventType: EvidenceEventType.application,
       photoIds: const [],
