@@ -1182,24 +1182,27 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                     .toList();
                 final dataPlotCount = dataPlots.length;
 
+                // Hub grid + filters use [dataPlots] only — same set as the header
+                // "N plots" count (guard rows and excludeFromAnalysis plots are omitted).
+                final hubPlots = dataPlots;
+
                 // Per-plot rating map for hub filters
                 final ratingsByPlot = <int, List<RatingRecord>>{};
                 for (final r in ratings) {
                   ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
                 }
 
-                // Unique reps for rep filter chips
-                final reps = plots
+                // Unique reps among data plots (matches filter / grid scope)
+                final reps = hubPlots
                     .map((p) => p.rep)
                     .whereType<int>()
                     .toSet()
                     .toList()
                   ..sort();
 
-                // Apply hub review filters to the grid plot list
                 final filteredPlots = _anyHubFilterActive
                     ? applyPlotQueueFilters(
-                        plotsInWalkOrder: plots,
+                        plotsInWalkOrder: hubPlots,
                         ratedPks: ratedPks,
                         ratingsByPlot: ratingsByPlot,
                         flaggedIds: flaggedIds,
@@ -1210,7 +1213,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                         editedOnly: _filterEditedOnly,
                         flaggedOnly: _filterFlaggedOnly,
                       )
-                    : plots;
+                    : hubPlots;
 
                 final report = reportAsync.valueOrNull;
                 final canClose = report?.canClose ?? false;
@@ -1522,7 +1525,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
                         child: Text(
-                          'Showing ${filteredPlots.length} of ${plots.length} plots',
+                          'Showing ${filteredPlots.length} of ${hubPlots.length} plots',
                           style: TextStyle(
                             fontSize: 11,
                             color: Theme.of(context)

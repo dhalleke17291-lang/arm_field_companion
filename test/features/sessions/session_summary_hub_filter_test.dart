@@ -42,6 +42,24 @@ Plot _plot(int id, {int trialId = 1, int? rep}) => Plot(
       rep: rep,
     );
 
+Plot _guardPlot(int id) => Plot(
+      id: id,
+      trialId: 1,
+      plotId: 'G$id',
+      isGuardRow: true,
+      isDeleted: false,
+      excludeFromAnalysis: false,
+    );
+
+Plot _excludedPlot(int id) => Plot(
+      id: id,
+      trialId: 1,
+      plotId: 'X$id',
+      isGuardRow: false,
+      isDeleted: false,
+      excludeFromAnalysis: true,
+    );
+
 // ---------------------------------------------------------------------------
 // Widget pump helper
 // ---------------------------------------------------------------------------
@@ -230,6 +248,46 @@ void main() {
 
       // Filter strip no longer rendered.
       expect(find.text('Unrated'), findsNothing);
+    });
+
+    testWidgets(
+        'hub filter denominator matches header data plot count when guard row present',
+        (tester) async {
+      final guard = _guardPlot(99);
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [guard, plot1, plot2],
+        ratedPks: {plot1.id},
+      );
+
+      expect(find.textContaining('· 2 plots'), findsOneWidget);
+
+      await tester.tap(find.text('Unrated'));
+      await tester.pump();
+
+      expect(find.textContaining('Showing 1 of 2 plots'), findsOneWidget);
+    });
+
+    testWidgets(
+        'hub filter denominator matches header when excludeFromAnalysis plot present',
+        (tester) async {
+      final excluded = _excludedPlot(98);
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [excluded, plot1, plot2],
+        ratedPks: {plot1.id},
+      );
+
+      expect(find.textContaining('· 2 plots'), findsOneWidget);
+
+      await tester.tap(find.text('Unrated'));
+      await tester.pump();
+
+      expect(find.textContaining('Showing 1 of 2 plots'), findsOneWidget);
     });
   });
 }
