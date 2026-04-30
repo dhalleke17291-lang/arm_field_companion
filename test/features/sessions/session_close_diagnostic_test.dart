@@ -1,9 +1,12 @@
+import 'package:drift/drift.dart' show Value;
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/domain/signals/signal_providers.dart';
+import 'package:arm_field_companion/domain/signals/signal_repository.dart';
 import 'package:arm_field_companion/features/sessions/widgets/session_close_diagnostic.dart';
 
 // ---------------------------------------------------------------------------
@@ -159,6 +162,141 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(proceedCalled, isFalse);
+    });
+
+    // Tests 6-8 use plain test() (not testWidgets) to avoid the fake-async
+    // zone hanging on Drift's fire-and-forget microtask chain.
+
+    test('6 — logSessionCloseDeferEvents: shown signal → defer event written',
+        () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      final trialId =
+          await db.into(db.trials).insert(TrialsCompanion.insert(name: 'T1'));
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-04-28',
+            ),
+          );
+      final plotPk = await db
+          .into(db.plots)
+          .insert(PlotsCompanion.insert(trialId: trialId, plotId: 'P1'));
+      final signalId = await db.into(db.signals).insert(
+            SignalsCompanion.insert(
+              trialId: trialId,
+              sessionId: Value(sessionId),
+              plotId: Value(plotPk),
+              signalType: 'scale_violation',
+              moment: 1,
+              severity: 'critical',
+              raisedAt: 0,
+              referenceContext: '{}',
+              consequenceText: 'Out of range.',
+              status: const Value('open'),
+              createdAt: 0,
+            ),
+          );
+
+      final repo = SignalRepository.attach(db);
+      logSessionCloseDeferEvents(
+        repo: repo,
+        userId: null,
+        shown: [_signal(id: signalId, severity: 'critical')],
+        hidden: [],
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      final events = await db.select(db.signalDecisionEvents).get();
+      expect(events, hasLength(1));
+      expect(events.single.signalId, signalId);
+      expect(events.single.eventType, 'defer');
+      expect(events.single.note, 'Proceeded at session close');
+    });
+
+    test(
+        '7 — logSessionCloseDeferEvents: hidden signal → defer event with cap note',
+        () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      final trialId =
+          await db.into(db.trials).insert(TrialsCompanion.insert(name: 'T2'));
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-04-28',
+            ),
+          );
+      final plotPk = await db
+          .into(db.plots)
+          .insert(PlotsCompanion.insert(trialId: trialId, plotId: 'P1'));
+
+      Future<int> insertSignal(int idx, String severity) => db
+          .into(db.signals)
+          .insert(SignalsCompanion.insert(
+            trialId: trialId,
+            sessionId: Value(sessionId),
+            plotId: Value(plotPk),
+            signalType: 'scale_violation',
+            moment: idx,
+            severity: severity,
+            raisedAt: 0,
+            referenceContext: '{}',
+            consequenceText: 'Item $idx.',
+            status: const Value('open'),
+            createdAt: 0,
+          ));
+
+      // 1 critical + 4 review → only 3 review shown, 4th is hidden
+      final critId = await insertSignal(1, 'critical');
+      final r1 = await insertSignal(2, 'review');
+      final r2 = await insertSignal(3, 'review');
+      final r3 = await insertSignal(4, 'review');
+      final r4Hidden = await insertSignal(5, 'review');
+
+      final repo = SignalRepository.attach(db);
+      logSessionCloseDeferEvents(
+        repo: repo,
+        userId: null,
+        shown: [
+          _signal(id: critId, severity: 'critical'),
+          _signal(id: r1, severity: 'review'),
+          _signal(id: r2, severity: 'review'),
+          _signal(id: r3, severity: 'review'),
+        ],
+        hidden: [_signal(id: r4Hidden, severity: 'review')],
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      final events = await db.select(db.signalDecisionEvents).get();
+      expect(events, hasLength(5));
+
+      final shownNotes =
+          events.where((e) => e.note == 'Proceeded at session close').toList();
+      final hiddenNotes = events
+          .where((e) =>
+              e.note == 'Not shown at session close — exceeded display limit')
+          .toList();
+      expect(shownNotes, hasLength(4));
+      expect(hiddenNotes, hasLength(1));
+      expect(hiddenNotes.single.signalId, r4Hidden);
+    });
+
+    test('8 — logSessionCloseDeferEvents not called → no events written',
+        () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      // Simulate "Review plots" path: logSessionCloseDeferEvents is never
+      // called so the decision events table stays empty.
+      final events = await db.select(db.signalDecisionEvents).get();
+      expect(events, isEmpty);
     });
   });
 }

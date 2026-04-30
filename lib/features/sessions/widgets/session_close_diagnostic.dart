@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
+import '../../../core/providers.dart';
+import '../../../domain/signals/signal_models.dart';
 import '../../../domain/signals/signal_providers.dart';
+import '../../../domain/signals/signal_repository.dart';
 
 /// Bottom-sheet content surfaced before the researcher closes a session.
 ///
@@ -42,12 +45,8 @@ class SessionCloseDiagnostic extends ConsumerWidget {
             allSignals.where((s) => s.severity == 'review').toList();
         // Info signals are never surfaced at session close.
 
-        final shown = [
-          ...criticals.take(1),
-          ...reviews.take(3),
-        ];
-        final hiddenCount = (criticals.length - criticals.take(1).length) +
-            (reviews.length - reviews.take(3).length);
+        final shown = [...criticals.take(1), ...reviews.take(3)];
+        final hidden = [...criticals.skip(1), ...reviews.skip(3)];
 
         if (shown.isEmpty) {
           return _AutoAllClear(onAllClear: onAllClear);
@@ -55,9 +54,17 @@ class SessionCloseDiagnostic extends ConsumerWidget {
 
         return _DiagnosticSheet(
           signals: shown,
-          hiddenCount: hiddenCount,
+          hiddenCount: hidden.length,
           onReviewPlots: () => Navigator.of(context).pop(),
-          onClose: onProceedAnyway,
+          onClose: () {
+            logSessionCloseDeferEvents(
+              repo: ref.read(signalRepositoryProvider),
+              userId: ref.read(currentUserIdProvider).valueOrNull,
+              shown: shown,
+              hidden: hidden,
+            );
+            onProceedAnyway();
+          },
         );
       },
     );
@@ -223,3 +230,32 @@ String _typeLabel(String signalType) => switch (signalType) {
       'replication_warning' => 'Replication gap',
       _ => 'Field observation',
     };
+
+void logSessionCloseDeferEvents({
+  required SignalRepository repo,
+  required int? userId,
+  required List<Signal> shown,
+  required List<Signal> hidden,
+}) {
+  final now = DateTime.now().millisecondsSinceEpoch;
+
+  for (final s in shown) {
+    repo.recordDecisionEvent(
+      signalId: s.id,
+      eventType: SignalDecisionEventType.defer,
+      occurredAt: now,
+      actorUserId: userId,
+      note: 'Proceeded at session close',
+    ).ignore();
+  }
+
+  for (final s in hidden) {
+    repo.recordDecisionEvent(
+      signalId: s.id,
+      eventType: SignalDecisionEventType.defer,
+      occurredAt: now,
+      actorUserId: userId,
+      note: 'Not shown at session close — exceeded display limit',
+    ).ignore();
+  }
+}
