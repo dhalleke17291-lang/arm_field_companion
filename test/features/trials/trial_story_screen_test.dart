@@ -106,5 +106,57 @@ void main() {
       expect(find.text('Seeding'), findsOneWidget);
       expect(find.text('Var. Pioneer P9910'), findsOneWidget);
     });
+
+    testWidgets(
+        'session with count=3 hasCritical=true → shows Critical signal present, not a count',
+        (WidgetTester tester) async {
+      final trial = _trial();
+      final events = [
+        TrialStoryEvent(
+          id: '42',
+          type: TrialStoryEventType.session,
+          occurredAt: DateTime(2026, 6, 1),
+          title: 'Session 1',
+          subtitle: '2026-06-01',
+          activeSignalSummary: const ActiveSignalSummary(
+            count: 3,
+            hasCritical: true,
+            consequenceTexts: ['a', 'b', 'c'],
+          ),
+          divergenceSummary: const DivergenceSummary(
+            count: 0,
+            hasMissing: false,
+            hasUnexpected: false,
+            hasTiming: false,
+          ),
+          evidenceSummary: const EvidenceSummary(
+            hasGps: false,
+            hasWeather: false,
+            hasTimestamp: true,
+            photoCount: 0,
+          ),
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            trialStoryProvider(trial.id).overrideWith(
+              (ref) async => events,
+            ),
+          ],
+          child: MaterialApp(
+            home: TrialStoryScreen(trial: trial),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Critical signal present'), findsOneWidget);
+      expect(find.textContaining('3 critical'), findsNothing);
+      expect(find.textContaining(RegExp(r'\d+ critical')), findsNothing);
+    });
   });
 }

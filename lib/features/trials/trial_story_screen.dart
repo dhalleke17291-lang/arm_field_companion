@@ -158,8 +158,8 @@ class _SessionDetails extends StatelessWidget {
                 '${signals.count} active signal${signals.count == 1 ? '' : 's'}',
           ),
           if (signals.hasCritical)
-            _DetailRow(
-              label: '${_criticalCount(signals)} critical',
+            const _DetailRow(
+              label: 'Critical signal present',
               muted: true,
             ),
         ],
@@ -175,17 +175,6 @@ class _SessionDetails extends StatelessWidget {
     );
   }
 
-  // Count critical signals from consequenceTexts list length is not
-  // available directly — hasCritical is a bool; report "critical" without
-  // an exact count since the model only exposes the flag.
-  int _criticalCount(ActiveSignalSummary signals) {
-    // consequenceTexts is sized to total count; we don't have per-severity
-    // breakdown. hasCritical tells us at least one is critical.
-    // Show total as conservative: if all could be critical, show count.
-    // For now, we can't know the exact critical count from the model.
-    // The caller already guards with hasCritical == true.
-    return signals.count;
-  }
 }
 
 class _DetailRow extends StatelessWidget {
