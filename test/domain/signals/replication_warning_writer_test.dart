@@ -213,5 +213,87 @@ void main() {
       expect(allSignals, hasLength(1));
       expect(first, equals(second));
     });
+
+    test(
+        '6 — T1 rated (1 plot), T2 unrated → signal for T1 only, T2 skipped',
+        () async {
+      final seed = await _seedSession(db);
+      final t1 = await _insertTreatment(db,
+          trialId: seed.trialId, code: 'T1', name: 'Fungicide');
+      final t2 = await _insertTreatment(db,
+          trialId: seed.trialId, code: 'T2', name: 'Untreated');
+      final assessmentId = await db
+          .into(db.assessments)
+          .insert(AssessmentsCompanion.insert(
+              trialId: seed.trialId, name: 'W003'));
+      final p1 = await _insertPlot(db,
+          trialId: seed.trialId, treatmentId: t1, plotId: '101');
+      // T2 has an assigned plot but no rating this session.
+      await _insertPlot(db,
+          trialId: seed.trialId, treatmentId: t2, plotId: '201');
+      await _insertRating(db,
+          trialId: seed.trialId,
+          sessionId: seed.sessionId,
+          plotPk: p1,
+          assessmentId: assessmentId);
+
+      final repo = container.read(signalRepositoryProvider);
+      final raised = await ReplicationWarningWriter(db, repo)
+          .checkAndRaiseForSession(
+              trialId: seed.trialId, sessionId: seed.sessionId);
+
+      // Only T1 (started but under-replicated) gets a signal; T2 is skipped.
+      expect(raised, hasLength(1));
+      final signals = await db.select(db.signals).get();
+      expect(signals, hasLength(1));
+      final ctx = SignalReferenceContext.decodeJson(
+          signals.single.referenceContext);
+      expect(ctx.treatmentId, t1);
+    });
+
+    test(
+        '7 — T1 fully replicated (3 plots), T2 partial (1 plot) → only T2 gets signal',
+        () async {
+      final seed = await _seedSession(db);
+      final t1 = await _insertTreatment(db,
+          trialId: seed.trialId, code: 'T1', name: 'Fungicide');
+      final t2 = await _insertTreatment(db,
+          trialId: seed.trialId, code: 'T2', name: 'Untreated');
+      final assessmentId = await db
+          .into(db.assessments)
+          .insert(AssessmentsCompanion.insert(
+              trialId: seed.trialId, name: 'W003'));
+      // T1: 3 rated plots — no signal.
+      for (var i = 1; i <= 3; i++) {
+        final pk = await _insertPlot(db,
+            trialId: seed.trialId, treatmentId: t1, plotId: '10$i');
+        await _insertRating(db,
+            trialId: seed.trialId,
+            sessionId: seed.sessionId,
+            plotPk: pk,
+            assessmentId: assessmentId);
+      }
+      // T2: 1 rated plot — critical signal.
+      final p2 = await _insertPlot(db,
+          trialId: seed.trialId, treatmentId: t2, plotId: '201');
+      await _insertRating(db,
+          trialId: seed.trialId,
+          sessionId: seed.sessionId,
+          plotPk: p2,
+          assessmentId: assessmentId);
+
+      final repo = container.read(signalRepositoryProvider);
+      final raised = await ReplicationWarningWriter(db, repo)
+          .checkAndRaiseForSession(
+              trialId: seed.trialId, sessionId: seed.sessionId);
+
+      expect(raised, hasLength(1));
+      final signals = await db.select(db.signals).get();
+      expect(signals, hasLength(1));
+      expect(signals.single.severity, SignalSeverity.critical.dbValue);
+      final ctx = SignalReferenceContext.decodeJson(
+          signals.single.referenceContext);
+      expect(ctx.treatmentId, t2);
+    });
   });
 }

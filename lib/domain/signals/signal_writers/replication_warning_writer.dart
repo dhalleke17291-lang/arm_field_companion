@@ -54,6 +54,7 @@ class ReplicationWarningWriter {
 
     for (final treatment in treatments) {
       final count = ratedByTreatment[treatment.id]?.length ?? 0;
+      if (count == 0) continue; // treatment not yet touched this session
       if (count >= 3) continue;
 
       // Dedup: skip if an open/deferred signal already exists for this
