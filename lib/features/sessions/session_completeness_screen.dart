@@ -12,6 +12,7 @@ import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../plots/plot_queue_screen.dart';
 import 'domain/session_completeness_report.dart';
+import 'session_plot_predicates.dart';
 
 /// Read-only plot-level completeness; Phase 2: rows in session walk order (Plot Queue parity).
 class SessionCompletenessScreen extends ConsumerStatefulWidget {
@@ -205,29 +206,13 @@ class _SessionCompletenessScreenState
                           }
                         }
 
-                        var ratedCount = 0;
-                        var notRatedCount = 0;
-                        var flaggedCount = 0;
-                        var issuesCount = 0;
-                        var editedCount = 0;
-
-                        for (final plot in rawPlots) {
-                          final plotRatings = ratingsByPlot[plot.id] ?? [];
-                          final isRated = ratedPks.contains(plot.id);
-                          if (isRated) {
-                            ratedCount++;
-                          } else {
-                            notRatedCount++;
-                          }
-                          if (flaggedIds.contains(plot.id)) flaggedCount++;
-                          final hasIssues = plotRatings
-                              .any((r) => r.resultStatus != 'RECORDED');
-                          if (hasIssues) issuesCount++;
-                          final hasEdited = plotRatings.any(
-                                  (r) => r.amended || (r.previousId != null)) ||
-                              correctionPlotPks.contains(plot.id);
-                          if (hasEdited) editedCount++;
-                        }
+                        final counts = countPlotStatus(
+                          plots: rawPlots,
+                          ratingsByPlot: ratingsByPlot,
+                          ratedPks: ratedPks,
+                          flaggedIds: flaggedIds,
+                          correctionPlotPks: correctionPlotPks,
+                        );
 
                         final orderedPlots = sortPlotsByWalkOrder(
                           rawPlots,
@@ -240,12 +225,12 @@ class _SessionCompletenessScreenState
                           children: [
                             _SummaryStrip(
                               report: report,
-                              totalPlots: rawPlots.length,
-                              ratedCount: ratedCount,
-                              notRatedCount: notRatedCount,
-                              flaggedCount: flaggedCount,
-                              issuesCount: issuesCount,
-                              editedCount: editedCount,
+                              totalPlots: counts.total,
+                              ratedCount: counts.rated,
+                              notRatedCount: counts.unrated,
+                              flaggedCount: counts.flagged,
+                              issuesCount: counts.withIssues,
+                              editedCount: counts.edited,
                               showCoverageRowFootnote: sTotal > 0,
                               walkOrderLabel:
                                   SessionWalkOrderStore.labelForMode(
@@ -263,15 +248,13 @@ class _SessionCompletenessScreenState
                                   final plot = orderedPlots[index];
                                   final plotRatings =
                                       ratingsByPlot[plot.id] ?? [];
-                                  final isRated = ratedPks.contains(plot.id);
-                                  final isFlagged =
-                                      flaggedIds.contains(plot.id);
-                                  final hasIssues = plotRatings
-                                      .any((r) => r.resultStatus != 'RECORDED');
-                                  final hasEdited = plotRatings.any((r) =>
-                                          r.amended ||
-                                          (r.previousId != null)) ||
-                                      correctionPlotPks.contains(plot.id);
+                                  final isRated = plotIsRated(plot.id, ratedPks);
+                                  final isFlagged = plotIsFlagged(plot.id, flaggedIds);
+                                  final hasIssues = plotHasRatingIssues(plotRatings);
+                                  final hasEdited = plotHasEdits(
+                                    plotRatings,
+                                    hasCorrection: correctionPlotPks.contains(plot.id),
+                                  );
                                   final label =
                                       getDisplayPlotLabel(plot, rawPlots);
 

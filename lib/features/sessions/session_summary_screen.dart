@@ -39,6 +39,7 @@ import '../../domain/relationships/evidence_anchors_provider.dart';
 import '../../domain/relationships/protocol_divergence_provider.dart';
 import 'session_export_actions.dart';
 import 'session_export_trust_dialog.dart';
+import 'session_plot_predicates.dart';
 import 'session_summary_share.dart';
 import 'session_treatment_summary.dart';
 import 'widgets/session_close_diagnostic.dart';
@@ -1795,30 +1796,18 @@ class _SessionDetailsBody extends ConsumerWidget {
                           ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
                         }
 
-                        var ratedCount = 0;
-                        var notRatedCount = 0;
-                        var flaggedCount = 0;
-                        var issuesPlotCount = 0;
-                        var editedPlotCount = 0;
-
-                        for (final plot in rawPlots) {
-                          final plotRatings = ratingsByPlot[plot.id] ?? [];
-                          if (ratedPks.contains(plot.id)) {
-                            ratedCount++;
-                          } else {
-                            notRatedCount++;
-                          }
-                          if (flaggedIds.contains(plot.id)) flaggedCount++;
-                          if (plotRatings
-                              .any((r) => r.resultStatus != 'RECORDED')) {
-                            issuesPlotCount++;
-                          }
-                          if (plotRatings.any(
-                                  (r) => r.amended || (r.previousId != null)) ||
-                              correctionPlotPks.contains(plot.id)) {
-                            editedPlotCount++;
-                          }
-                        }
+                        final counts = countPlotStatus(
+                          plots: rawPlots,
+                          ratingsByPlot: ratingsByPlot,
+                          ratedPks: ratedPks,
+                          flaggedIds: flaggedIds,
+                          correctionPlotPks: correctionPlotPks,
+                        );
+                        final ratedCount = counts.rated;
+                        final notRatedCount = counts.unrated;
+                        final flaggedCount = counts.flagged;
+                        final issuesPlotCount = counts.withIssues;
+                        final editedPlotCount = counts.edited;
 
                         final latestEditAmongEdited =
                             latestEditRecencyAcrossEditedPlots(

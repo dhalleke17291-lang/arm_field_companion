@@ -20,6 +20,7 @@ import '../../core/session_walk_order_store.dart';
 import '../sessions/arrange_plots_screen.dart';
 import '../sessions/crop_stage_bbch_editor_dialog.dart';
 import '../sessions/session_export_trust_dialog.dart';
+import '../sessions/session_plot_predicates.dart';
 import '../weather/weather_capture_form.dart';
 
 typedef _PlotQueueOpenRating = Future<void> Function(
@@ -91,32 +92,19 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
     Map<int, List<RatingRecord>> ratingsByPlot,
     Set<int> flaggedIds,
     Set<int> plotPksWithCorrections,
-  ) {
-    var filtered = plotsInWalkOrder;
-    if (_repFilter != null) {
-      filtered = filtered.where((p) => p.rep == _repFilter).toList();
-    }
-    if (_showUnratedOnly) {
-      filtered = filtered.where((p) => !ratedPks.contains(p.id)).toList();
-    }
-    if (_showIssuesOnly) {
-      filtered = filtered.where((p) {
-        final pr = ratingsByPlot[p.id] ?? [];
-        return pr.any((r) => r.resultStatus != 'RECORDED');
-      }).toList();
-    }
-    if (_showEditedOnly) {
-      filtered = filtered.where((p) {
-        final pr = ratingsByPlot[p.id] ?? [];
-        return pr.any((r) => r.amended || (r.previousId != null)) ||
-            plotPksWithCorrections.contains(p.id);
-      }).toList();
-    }
-    if (_showFlaggedOnly) {
-      filtered = filtered.where((p) => flaggedIds.contains(p.id)).toList();
-    }
-    return filtered;
-  }
+  ) =>
+      applyPlotQueueFilters(
+        plotsInWalkOrder: plotsInWalkOrder,
+        ratedPks: ratedPks,
+        ratingsByPlot: ratingsByPlot,
+        flaggedIds: flaggedIds,
+        correctionPlotPks: plotPksWithCorrections,
+        repFilter: _repFilter,
+        unratedOnly: _showUnratedOnly,
+        issuesOnly: _showIssuesOnly,
+        editedOnly: _showEditedOnly,
+        flaggedOnly: _showFlaggedOnly,
+      );
 
   void _scheduleScrollToPlotPkOnOpen(List<Plot> filteredPlots) {
     final pk = widget.scrollToPlotPkOnOpen;
