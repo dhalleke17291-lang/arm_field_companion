@@ -289,5 +289,67 @@ void main() {
 
       expect(find.textContaining('Showing 1 of 2 plots'), findsOneWidget);
     });
+
+    // ── Stats footer tests ───────────────────────────────────────────────────
+
+    testWidgets('stats footer shows rated and unrated counts', (tester) async {
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id}, // 1 rated, 1 unrated
+      );
+
+      // Footer must mention both dimensions.
+      expect(find.textContaining('1 rated'), findsOneWidget);
+      expect(find.textContaining('1 unrated'), findsOneWidget);
+    });
+
+    testWidgets('stats footer counts reflect active Unrated filter',
+        (tester) async {
+      // Three plots: plot1 rated, plot2 unrated, plot3 unrated.
+      final plot3 = _plot(3, rep: 1);
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2, plot3],
+        ratedPks: {plot1.id},
+      );
+
+      // Before filter: footer shows full set (1 rated, 2 unrated).
+      expect(find.textContaining('1 rated'), findsOneWidget);
+      expect(find.textContaining('2 unrated'), findsOneWidget);
+
+      // Activate Unrated filter → only 2 plots visible.
+      await tester.tap(find.text('Unrated'));
+      await tester.pump();
+
+      // Footer now reflects the filtered set (0 rated, 2 unrated).
+      expect(find.textContaining('0 rated'), findsOneWidget);
+      expect(find.textContaining('2 unrated'), findsOneWidget);
+    });
+
+    testWidgets('stats footer is absent in Treatments view', (tester) async {
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id},
+      );
+
+      // Footer visible initially (Plots view) — use count-prefixed text to
+      // avoid false match on the "Unrated" filter pill.
+      expect(find.textContaining('1 rated'), findsOneWidget);
+
+      // Switch to Treatments view.
+      await tester.tap(find.text('Treatments'));
+      await tester.pump();
+
+      // Footer no longer rendered.
+      expect(find.textContaining('1 rated'), findsNothing);
+    });
   });
 }

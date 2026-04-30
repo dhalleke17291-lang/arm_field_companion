@@ -1215,6 +1215,15 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                       )
                     : hubPlots;
 
+                // Stats footer counts track the visible filtered set.
+                final footerCounts = countPlotStatus(
+                  plots: filteredPlots,
+                  ratingsByPlot: ratingsByPlot,
+                  ratedPks: ratedPks,
+                  flaggedIds: flaggedIds,
+                  correctionPlotPks: correctionPks,
+                );
+
                 final report = reportAsync.valueOrNull;
                 final canClose = report?.canClose ?? false;
                 final blockerCount = report?.issues
@@ -1621,6 +1630,9 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                               treatmentColors: treatmentColorMap,
                             )),
                     ),
+                    // Stats footer — tracks the visible filtered set (plots view only)
+                    if (!_showTreatments && filteredPlots.isNotEmpty)
+                      _GridStatsFooter(counts: footerCounts),
                   ],
                 );
               },
@@ -1728,6 +1740,49 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
           assessmentDisplayNames:
               displayNames.isNotEmpty ? displayNames : null,
         ),
+      ),
+    );
+  }
+}
+
+/// Compact single-line stats bar below the session grid.
+/// Counts are derived from the currently visible (filtered) plot set so the
+/// numbers always match what the grid is showing.
+class _GridStatsFooter extends StatelessWidget {
+  const _GridStatsFooter({required this.counts});
+
+  final SessionPlotCounts counts;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    final parts = <String>[
+      '${counts.rated} rated',
+      '${counts.unrated} unrated',
+      if (counts.withIssues > 0)
+        '${counts.withIssues} ${counts.withIssues == 1 ? 'issue' : 'issues'}',
+      if (counts.edited > 0) '${counts.edited} edited',
+      if (counts.flagged > 0) '${counts.flagged} flagged',
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: const BoxDecoration(
+        color: AppDesignTokens.sectionHeaderBg,
+        border: Border(
+          top: BorderSide(color: AppDesignTokens.borderCrisp),
+        ),
+      ),
+      child: Text(
+        parts.join(' · '),
+        style: TextStyle(
+          fontSize: 11,
+          color: scheme.onSurfaceVariant,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
