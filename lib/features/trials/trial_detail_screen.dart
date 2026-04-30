@@ -55,6 +55,7 @@ import '../backup/backup_reminder_store.dart';
 import '../notes/field_notes_list_screen.dart';
 import '../../domain/relationships/protocol_divergence_provider.dart';
 import '../../domain/relationships/evidence_anchors_provider.dart';
+import '../sessions/widgets/session_close_diagnostic.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -4511,6 +4512,27 @@ class SessionsView extends ConsumerWidget {
     }
 
     if (!context.mounted) return;
+
+    // Show signal diagnostic before final close. onAllClear / "Close session"
+    // both proceed; "Review plots" cancels close.
+    var proceedAfterDiagnostic = false;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SessionCloseDiagnostic(
+        sessionId: session.id,
+        trialId: trial.id,
+        onAllClear: () {
+          proceedAfterDiagnostic = true;
+          Navigator.of(ctx).pop();
+        },
+        onProceedAnyway: () {
+          proceedAfterDiagnostic = true;
+          Navigator.of(ctx).pop();
+        },
+      ),
+    );
+    if (!proceedAfterDiagnostic || !context.mounted) return;
 
     if (policy.decision == SessionClosePolicyDecision.proceedToClose &&
         policy.contextInfoFindings.isNotEmpty) {

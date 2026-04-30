@@ -39,6 +39,7 @@ import '../../domain/relationships/evidence_anchors_provider.dart';
 import '../../domain/relationships/protocol_divergence_provider.dart';
 import 'session_summary_share.dart';
 import 'session_treatment_summary.dart';
+import 'widgets/session_close_diagnostic.dart';
 
 /// Bottom sheet showing full rating context for a tapped grid cell.
 void _showCellDetailSheet({
@@ -443,6 +444,27 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         if (!mounted) return;
       }
     }
+
+    // Diagnostic step — surfaces open signals before close.
+    if (!mounted) return;
+    var proceedAfterDiagnostic = false;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SessionCloseDiagnostic(
+        sessionId: widget.session.id,
+        trialId: widget.trial.id,
+        onAllClear: () {
+          proceedAfterDiagnostic = true;
+          Navigator.of(ctx).pop();
+        },
+        onProceedAnyway: () {
+          proceedAfterDiagnostic = true;
+          Navigator.of(ctx).pop();
+        },
+      ),
+    );
+    if (!proceedAfterDiagnostic || !mounted) return;
 
     setState(() => _isClosing = true);
     try {
