@@ -112,6 +112,7 @@ class SignalReferenceContext {
     this.enteredValue,
     this.scaleMin,
     this.scaleMax,
+    this.treatmentId,
   });
 
   final List<double>? neighborValues;
@@ -130,6 +131,10 @@ class SignalReferenceContext {
   final double? scaleMin;
   final double? scaleMax;
 
+  /// Used by session-level writers (aovPrediction, replicationWarning) to
+  /// uniquely identify the subject treatment for dedup on re-run.
+  final int? treatmentId;
+
   Map<String, dynamic> toJson() => <String, dynamic>{
         if (neighborValues != null) 'neighborValues': neighborValues,
         if (treatmentMean != null) 'treatmentMean': treatmentMean,
@@ -143,6 +148,7 @@ class SignalReferenceContext {
         if (enteredValue != null) 'enteredValue': enteredValue,
         if (scaleMin != null) 'scaleMin': scaleMin,
         if (scaleMax != null) 'scaleMax': scaleMax,
+        if (treatmentId != null) 'treatmentId': treatmentId,
       };
 
   factory SignalReferenceContext.fromJson(Map<String, dynamic> json) {
@@ -163,6 +169,7 @@ class SignalReferenceContext {
       enteredValue: (json['enteredValue'] as num?)?.toDouble(),
       scaleMin: (json['scaleMin'] as num?)?.toDouble(),
       scaleMax: (json['scaleMax'] as num?)?.toDouble(),
+      treatmentId: (json['treatmentId'] as num?)?.toInt(),
     );
   }
 

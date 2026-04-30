@@ -213,4 +213,51 @@ class SignalRepository {
           ..where((s) => s.status.equals(SignalStatus.open.dbValue)))
         .getSingleOrNull();
   }
+
+  /// Used by [AovErrorVarianceWriter] — finds an existing open/deferred signal
+  /// for the given session + assessment column (matched by seType in context).
+  Future<Signal?> findOpenAovSignalForSessionAssessmentTreatment({
+    required int sessionId,
+    required String seType,
+    required int treatmentId,
+  }) async {
+    final rows = await (_db.select(_db.signals)
+          ..where((s) => s.sessionId.equals(sessionId))
+          ..where(
+              (s) => s.signalType.equals(SignalType.aovPrediction.dbValue))
+          ..where((s) =>
+              s.status.isIn([SignalStatus.open.dbValue, SignalStatus.deferred.dbValue])))
+        .get();
+    return rows.where((s) {
+      try {
+        final ctx = SignalReferenceContext.decodeJson(s.referenceContext);
+        return ctx.seType == seType && ctx.treatmentId == treatmentId;
+      } catch (_) {
+        return false;
+      }
+    }).firstOrNull;
+  }
+
+  /// Used by [ReplicationWarningWriter] — finds an existing open/deferred
+  /// signal for the given session + treatment.
+  Future<Signal?> findOpenReplicationWarningForSessionTreatment({
+    required int sessionId,
+    required int treatmentId,
+  }) async {
+    final rows = await (_db.select(_db.signals)
+          ..where((s) => s.sessionId.equals(sessionId))
+          ..where((s) =>
+              s.signalType.equals(SignalType.replicationWarning.dbValue))
+          ..where((s) =>
+              s.status.isIn([SignalStatus.open.dbValue, SignalStatus.deferred.dbValue])))
+        .get();
+    return rows.where((s) {
+      try {
+        final ctx = SignalReferenceContext.decodeJson(s.referenceContext);
+        return ctx.treatmentId == treatmentId;
+      } catch (_) {
+        return false;
+      }
+    }).firstOrNull;
+  }
 }
