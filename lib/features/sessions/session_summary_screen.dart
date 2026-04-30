@@ -347,6 +347,28 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
   /// false = plots grid (default), true = treatment summary
   bool _showTreatments = false;
 
+  // Hub review filter state
+  int? _repFilter;
+  bool _filterUnratedOnly = false;
+  bool _filterIssuesOnly = false;
+  bool _filterEditedOnly = false;
+  bool _filterFlaggedOnly = false;
+
+  bool get _anyHubFilterActive =>
+      _repFilter != null ||
+      _filterUnratedOnly ||
+      _filterIssuesOnly ||
+      _filterEditedOnly ||
+      _filterFlaggedOnly;
+
+  void _clearHubFilters() => setState(() {
+        _repFilter = null;
+        _filterUnratedOnly = false;
+        _filterIssuesOnly = false;
+        _filterEditedOnly = false;
+        _filterFlaggedOnly = false;
+      });
+
   void _invalidate() {
     ref.invalidate(plotsForTrialProvider(widget.trial.id));
     ref.invalidate(sessionRatingsProvider(widget.session.id));
@@ -901,6 +923,19 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         ref.watch(sessionByIdProvider(widget.session.id)).valueOrNull;
     final isOpen = liveSession?.endedAt == null;
 
+    // Filter-support providers — valueOrNull so they don't block the main grid
+    final ratedPks =
+        ref.watch(ratedPlotPksProvider(widget.session.id)).valueOrNull ??
+            const <int>{};
+    final flaggedIds =
+        ref.watch(flaggedPlotIdsForSessionProvider(widget.session.id))
+                .valueOrNull ??
+            const <int>{};
+    final correctionPks =
+        ref.watch(plotPksWithCorrectionsForSessionProvider(widget.session.id))
+                .valueOrNull ??
+            const <int>{};
+
     // Build plot → treatmentId map from assignments (reliable, not async per-plot)
     final assignments = assignmentsAsync.valueOrNull ?? [];
     final plotTreatmentMap = <int, int>{};
@@ -1145,6 +1180,37 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                         !p.isGuardRow && p.excludeFromAnalysis != true)
                     .toList();
                 final dataPlotCount = dataPlots.length;
+
+                // Per-plot rating map for hub filters
+                final ratingsByPlot = <int, List<RatingRecord>>{};
+                for (final r in ratings) {
+                  ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
+                }
+
+                // Unique reps for rep filter chips
+                final reps = plots
+                    .map((p) => p.rep)
+                    .whereType<int>()
+                    .toSet()
+                    .toList()
+                  ..sort();
+
+                // Apply hub review filters to the grid plot list
+                final filteredPlots = _anyHubFilterActive
+                    ? applyPlotQueueFilters(
+                        plotsInWalkOrder: plots,
+                        ratedPks: ratedPks,
+                        ratingsByPlot: ratingsByPlot,
+                        flaggedIds: flaggedIds,
+                        correctionPlotPks: correctionPks,
+                        repFilter: _repFilter,
+                        unratedOnly: _filterUnratedOnly,
+                        issuesOnly: _filterIssuesOnly,
+                        editedOnly: _filterEditedOnly,
+                        flaggedOnly: _filterFlaggedOnly,
+                      )
+                    : plots;
+
                 final report = reportAsync.valueOrNull;
                 final canClose = report?.canClose ?? false;
                 final blockerCount = report?.issues
@@ -1429,13 +1495,79 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                         ],
                       ),
                     ),
+                    // Hub review filter strip (plots view only)
+                    if (!_showTreatments)
+                      _HubReviewFilterStrip(
+                        reps: reps,
+                        repFilter: _repFilter,
+                        unratedOnly: _filterUnratedOnly,
+                        issuesOnly: _filterIssuesOnly,
+                        editedOnly: _filterEditedOnly,
+                        flaggedOnly: _filterFlaggedOnly,
+                        anyActive: _anyHubFilterActive,
+                        onRepSelected: (r) => setState(
+                            () => _repFilter = r == _repFilter ? null : r),
+                        onUnratedToggle: () => setState(
+                            () => _filterUnratedOnly = !_filterUnratedOnly),
+                        onIssuesToggle: () => setState(
+                            () => _filterIssuesOnly = !_filterIssuesOnly),
+                        onEditedToggle: () => setState(
+                            () => _filterEditedOnly = !_filterEditedOnly),
+                        onFlaggedToggle: () => setState(
+                            () => _filterFlaggedOnly = !_filterFlaggedOnly),
+                        onReset: _clearHubFilters,
+                      ),
+                    if (!_showTreatments && _anyHubFilterActive)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
+                        child: Text(
+                          'Showing ${filteredPlots.length} of ${plots.length} plots',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                        ),
+                      ),
                     // Content
                     Expanded(
                       child: _showTreatments
                           ? _buildTreatmentView(plots, assessments,
                               ratings, assessmentDisplayNames)
-                          : SessionDataGrid(
-                              plots: plots,
+                          : (_anyHubFilterActive && filteredPlots.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.filter_list_off,
+                                        size: 48,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .outlineVariant,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'No plots match these filters.',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextButton(
+                                        onPressed: _clearHubFilters,
+                                        child: const Text('Clear filters'),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : SessionDataGrid(
+                                  plots: filteredPlots,
                               assessments: assessments,
                               ratings: ratings,
                               trialId: widget.trial.id,
@@ -1483,7 +1615,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                               checkTreatmentIds: checkTreatmentIds,
                               assessmentCoverage: assessmentCoverage,
                               treatmentColors: treatmentColorMap,
-                            ),
+                            )),
                     ),
                   ],
                 );
@@ -1591,6 +1723,169 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
           assignments: assignments,
           assessmentDisplayNames:
               displayNames.isNotEmpty ? displayNames : null,
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact horizontal filter strip shown above the session summary grid.
+/// Shows rep chips (if reps exist), then Unrated/Issues/Edited/Flagged pills,
+/// then a Reset pill when any filter is active.
+class _HubReviewFilterStrip extends StatelessWidget {
+  const _HubReviewFilterStrip({
+    required this.reps,
+    required this.repFilter,
+    required this.unratedOnly,
+    required this.issuesOnly,
+    required this.editedOnly,
+    required this.flaggedOnly,
+    required this.anyActive,
+    required this.onRepSelected,
+    required this.onUnratedToggle,
+    required this.onIssuesToggle,
+    required this.onEditedToggle,
+    required this.onFlaggedToggle,
+    required this.onReset,
+  });
+
+  final List<int> reps;
+  final int? repFilter;
+  final bool unratedOnly;
+  final bool issuesOnly;
+  final bool editedOnly;
+  final bool flaggedOnly;
+  final bool anyActive;
+  final void Function(int rep) onRepSelected;
+  final VoidCallback onUnratedToggle;
+  final VoidCallback onIssuesToggle;
+  final VoidCallback onEditedToggle;
+  final VoidCallback onFlaggedToggle;
+  final VoidCallback onReset;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 40,
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppDesignTokens.borderCrisp),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Rep chips — only shown when trial has reps
+            for (final rep in reps) ...[
+              _FilterPill(
+                label: 'Rep $rep',
+                selected: repFilter == rep,
+                onTap: () => onRepSelected(rep),
+              ),
+              const SizedBox(width: 6),
+            ],
+            if (reps.isNotEmpty) ...[
+              Container(
+                width: 1,
+                height: 16,
+                color: AppDesignTokens.borderCrisp,
+              ),
+              const SizedBox(width: 6),
+            ],
+            // Status filter pills
+            _FilterPill(
+              label: 'Unrated',
+              selected: unratedOnly,
+              onTap: onUnratedToggle,
+            ),
+            const SizedBox(width: 6),
+            _FilterPill(
+              label: 'Issues',
+              selected: issuesOnly,
+              onTap: onIssuesToggle,
+            ),
+            const SizedBox(width: 6),
+            _FilterPill(
+              label: 'Edited',
+              selected: editedOnly,
+              onTap: onEditedToggle,
+            ),
+            const SizedBox(width: 6),
+            _FilterPill(
+              label: 'Flagged',
+              selected: flaggedOnly,
+              onTap: onFlaggedToggle,
+            ),
+            // Reset pill — only visible when any filter is active
+            if (anyActive) ...[
+              const SizedBox(width: 10),
+              Container(
+                width: 1,
+                height: 16,
+                color: AppDesignTokens.borderCrisp,
+              ),
+              const SizedBox(width: 6),
+              _FilterPill(
+                label: 'Reset',
+                selected: false,
+                onTap: onReset,
+                isReset: true,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact toggle pill used in the hub review filter strip.
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.isReset = false,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool isReset;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppDesignTokens.primary.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? AppDesignTokens.primary.withValues(alpha: 0.5)
+                : AppDesignTokens.borderCrisp,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: selected
+                ? AppDesignTokens.primary
+                : isReset
+                    ? scheme.onSurfaceVariant
+                    : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+          ),
         ),
       ),
     );
