@@ -201,17 +201,30 @@ class SignalRepository {
     }
   }
 
-  /// Used by [ScaleViolationWriter] — finds an existing open violation.
+  /// Used by [ScaleViolationWriter] — finds an existing open violation for
+  /// the exact (session, plot, seType) triple.
+  ///
+  /// seType is stored in referenceContext JSON and must match exactly so that
+  /// two different assessments on the same plot each get their own signal.
   Future<Signal?> findOpenScaleViolationForPlotSession({
     required int sessionId,
     required int plotId,
+    required String seType,
   }) async {
-    return (_db.select(_db.signals)
+    final rows = await (_db.select(_db.signals)
           ..where((s) => s.sessionId.equals(sessionId))
           ..where((s) => s.plotId.equals(plotId))
           ..where((s) => s.signalType.equals(SignalType.scaleViolation.dbValue))
           ..where((s) => s.status.equals(SignalStatus.open.dbValue)))
-        .getSingleOrNull();
+        .get();
+    return rows.where((s) {
+      try {
+        return SignalReferenceContext.decodeJson(s.referenceContext).seType ==
+            seType;
+      } catch (_) {
+        return false;
+      }
+    }).firstOrNull;
   }
 
   /// Used by [AovErrorVarianceWriter] — finds an existing open/deferred signal

@@ -25,6 +25,7 @@ class ScaleViolationWriter {
     final existing = await _signals.findOpenScaleViolationForPlotSession(
       sessionId: sessionId,
       plotId: plotId,
+      seType: seType,
     );
     if (existing != null) {
       return existing.id;

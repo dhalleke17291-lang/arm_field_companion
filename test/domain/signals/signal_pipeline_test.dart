@@ -219,7 +219,8 @@ void main() {
       expect(row.status, SignalStatus.open.dbValue);
     });
 
-    test('second call for same plot/session returns existing open signal id',
+    test(
+        'second call for same plot/session/assessment returns existing signal id',
         () async {
       final trialId = await _trial(db);
       final sessionId = await _session(db, trialId);
@@ -244,13 +245,87 @@ void main() {
         enteredValue: 200,
         scaleMin: 0,
         scaleMax: 100,
-        seType: 'CONTRO',
+        seType: 'CONTRO', // same assessment — dedup applies
         consequenceText: 'c2',
       );
       expect(id1, id2);
 
-      final count = await db.select(db.signals).get();
-      expect(count.length, 1);
+      final signals = await db.select(db.signals).get();
+      expect(signals.length, 1);
+    });
+
+    test(
+        'different assessment on same plot/session each get their own signal',
+        () async {
+      final trialId = await _trial(db);
+      final sessionId = await _session(db, trialId);
+      final plotPk = await _plot(db, trialId);
+      final repo = container.read(signalRepositoryProvider);
+      final writer = ScaleViolationWriter(repo);
+
+      final id1 = await writer.checkAndRaise(
+        trialId: trialId,
+        sessionId: sessionId,
+        plotId: plotPk,
+        enteredValue: 150,
+        scaleMin: 0,
+        scaleMax: 100,
+        seType: 'CONTRO',
+        consequenceText: 'contro violation',
+      );
+      final id2 = await writer.checkAndRaise(
+        trialId: trialId,
+        sessionId: sessionId,
+        plotId: plotPk,
+        enteredValue: -5,
+        scaleMin: 0,
+        scaleMax: 100,
+        seType: 'PHYGEN', // different assessment — separate signal
+        consequenceText: 'phygen violation',
+      );
+
+      expect(id1, isNotNull);
+      expect(id2, isNotNull);
+      expect(id1, isNot(equals(id2)));
+
+      final signals = await db.select(db.signals).get();
+      expect(signals.length, 2);
+    });
+
+    test('valid value on same plot after violation does not create new signal',
+        () async {
+      final trialId = await _trial(db);
+      final sessionId = await _session(db, trialId);
+      final plotPk = await _plot(db, trialId);
+      final repo = container.read(signalRepositoryProvider);
+      final writer = ScaleViolationWriter(repo);
+
+      // out of range — raises
+      await writer.checkAndRaise(
+        trialId: trialId,
+        sessionId: sessionId,
+        plotId: plotPk,
+        enteredValue: 150,
+        scaleMin: 0,
+        scaleMax: 100,
+        seType: 'CONTRO',
+        consequenceText: 'violation',
+      );
+      // in range — no signal, original violation still open
+      final id2 = await writer.checkAndRaise(
+        trialId: trialId,
+        sessionId: sessionId,
+        plotId: plotPk,
+        enteredValue: 50,
+        scaleMin: 0,
+        scaleMax: 100,
+        seType: 'CONTRO',
+        consequenceText: 'ok',
+      );
+
+      expect(id2, isNull);
+      final signals = await db.select(db.signals).get();
+      expect(signals.length, 1); // original violation untouched
     });
   });
 
