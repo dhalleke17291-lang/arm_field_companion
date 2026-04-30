@@ -37,6 +37,8 @@ import '../../domain/interpretation/protocol_divergence_interpreter.dart';
 import '../../domain/relationships/behavioral_signature_provider.dart';
 import '../../domain/relationships/evidence_anchors_provider.dart';
 import '../../domain/relationships/protocol_divergence_provider.dart';
+import '../../core/export_guard.dart';
+import 'session_export_trust_dialog.dart';
 import 'session_summary_share.dart';
 import 'session_treatment_summary.dart';
 import 'widgets/session_close_diagnostic.dart';
@@ -856,6 +858,248 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
     }
   }
 
+  Future<void> _exportSessionCsv(BuildContext context) async {
+    final guard = ref.read(exportGuardProvider);
+    final ran = await guard.runExclusive(() async {
+      final usecase = ref.read(exportSessionCsvUsecaseProvider);
+      try {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Exporting...')),
+        );
+        final currentUser = await ref.read(currentUserProvider.future);
+        final result = await usecase.exportSessionToCsv(
+          sessionId: widget.session.id,
+          trialId: widget.trial.id,
+          trialName: widget.trial.name,
+          sessionName: widget.session.name,
+          sessionDateLocal: widget.session.sessionDateLocal,
+          sessionRaterName: widget.session.raterName,
+          exportedByDisplayName: currentUser?.displayName,
+          isSessionClosed: widget.session.endedAt != null,
+        );
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).clearSnackBars();
+        if (!result.success) {
+          ref.read(diagnosticsStoreProvider).recordError(
+                result.errorMessage ?? 'Unknown error',
+                code: 'export_failed',
+              );
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Export Failed'),
+              content: SelectableText(result.errorMessage ?? 'Unknown error'),
+              actions: [
+                FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Export Complete'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${result.rowCount} ratings exported'),
+                if (result.auditFilePath != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Session audit events exported (separate file).',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                if (result.warningMessage != null) ...[
+                  const SizedBox(height: AppDesignTokens.spacing8),
+                  Text(
+                    result.warningMessage!,
+                    style: TextStyle(fontSize: 12, color: Colors.amber.shade700),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                const Text('Saved to:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                SelectableText(
+                  result.filePath!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+              FilledButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final files = [XFile(result.filePath!)];
+                  if (result.auditFilePath != null) {
+                    files.add(XFile(result.auditFilePath!));
+                  }
+                  final box = context.findRenderObject() as RenderBox?;
+                  await Share.shareXFiles(
+                    files,
+                    subject:
+                        '${widget.trial.name} - ${widget.session.name} Export',
+                    sharePositionOrigin: box == null
+                        ? const Rect.fromLTWH(0, 0, 100, 100)
+                        : box.localToGlobal(Offset.zero) & box.size,
+                  );
+                },
+                icon: const Icon(Icons.share),
+                label: const Text('Share'),
+              ),
+            ],
+          ),
+        );
+      } catch (e) {
+        if (context.mounted) {
+          final scheme = Theme.of(context).colorScheme;
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Export failed — please try again.',
+                style: TextStyle(color: scheme.onError),
+              ),
+              backgroundColor: scheme.error,
+            ),
+          );
+        }
+      }
+    });
+    if (!ran && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(ExportGuard.busyMessage)),
+      );
+    }
+  }
+
+  Future<void> _exportSessionArmXml(BuildContext context) async {
+    final guard = ref.read(exportGuardProvider);
+    final ran = await guard.runExclusive(() async {
+      final usecase = ref.read(exportSessionArmXmlUsecaseProvider);
+      try {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Exporting XML...')),
+        );
+        final currentUser = await ref.read(currentUserProvider.future);
+        final result = await usecase.exportSessionToArmXml(
+          sessionId: widget.session.id,
+          trialId: widget.trial.id,
+          trialName: widget.trial.name,
+          sessionName: widget.session.name,
+          sessionDateLocal: widget.session.sessionDateLocal,
+          sessionRaterName: widget.session.raterName,
+          exportedByDisplayName: currentUser?.displayName,
+          isSessionClosed: widget.session.endedAt != null,
+        );
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).clearSnackBars();
+        if (!result.success) {
+          ref.read(diagnosticsStoreProvider).recordError(
+                result.errorMessage ?? 'Unknown error',
+                code: 'arm_xml_export_failed',
+              );
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('XML Export Failed'),
+              content: SelectableText(result.errorMessage ?? 'Unknown error'),
+              actions: [
+                FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('XML Export Complete'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Session exported as structured XML.'),
+                const SizedBox(height: 8),
+                const Text('Saved to:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                SelectableText(
+                  result.filePath!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+              FilledButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final box = context.findRenderObject() as RenderBox?;
+                  await Share.shareXFiles(
+                    [XFile(result.filePath!)],
+                    subject:
+                        '${widget.trial.name} - ${widget.session.name} XML Export',
+                    sharePositionOrigin: box == null
+                        ? const Rect.fromLTWH(0, 0, 100, 100)
+                        : box.localToGlobal(Offset.zero) & box.size,
+                  );
+                },
+                icon: const Icon(Icons.share),
+                label: const Text('Share'),
+              ),
+            ],
+          ),
+        );
+      } catch (e) {
+        if (context.mounted) {
+          final scheme = Theme.of(context).colorScheme;
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'XML export failed — please try again.',
+                style: TextStyle(color: scheme.onError),
+              ),
+              backgroundColor: scheme.error,
+            ),
+          );
+        }
+      }
+    });
+    if (!ran && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(ExportGuard.busyMessage)),
+      );
+    }
+  }
+
   void _openRatingForPlot(Plot plot, List<Plot> allPlots,
       List<Assessment> assessments) {
     _openRatingForPlotAtAssessment(plot, allPlots, assessments, null);
@@ -964,7 +1208,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.white),
             tooltip: 'Tools',
-            onSelected: (value) {
+            onSelected: (value) async {
               switch (value) {
                 case 'completeness':
                   Navigator.push<void>(
@@ -996,6 +1240,28 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                       ),
                     ),
                   );
+                case 'share_summary':
+                  _offerShareSummary();
+                case 'session_csv':
+                  final ok = await confirmSessionExportTrust(
+                    context: context,
+                    ref: ref,
+                    trialId: widget.trial.id,
+                    sessionId: widget.session.id,
+                  );
+                  if (!context.mounted) return;
+                  if (!ok) return;
+                  await _exportSessionCsv(context);
+                case 'session_xml':
+                  final ok = await confirmSessionExportTrust(
+                    context: context,
+                    ref: ref,
+                    trialId: widget.trial.id,
+                    sessionId: widget.session.id,
+                  );
+                  if (!context.mounted) return;
+                  if (!ok) return;
+                  await _exportSessionArmXml(context);
               }
             },
             itemBuilder: (_) => [
@@ -1040,6 +1306,38 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                   visualDensity: VisualDensity.compact,
                 ),
               ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'share_summary',
+                child: ListTile(
+                  leading: Icon(Icons.text_snippet_outlined, size: 20),
+                  title: Text('Share text summary', style: TextStyle(fontSize: 14)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'session_csv',
+                child: ListTile(
+                  leading: Icon(Icons.table_chart_outlined, size: 20),
+                  title: Text('Export session data (CSV)', style: TextStyle(fontSize: 14)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              if (widget.session.endedAt != null)
+                const PopupMenuItem(
+                  value: 'session_xml',
+                  child: ListTile(
+                    leading: Icon(Icons.code_outlined, size: 20),
+                    title: Text('Export session (XML)', style: TextStyle(fontSize: 14)),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
             ],
           ),
           IconButton(
