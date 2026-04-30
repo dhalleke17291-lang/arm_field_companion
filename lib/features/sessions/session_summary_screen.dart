@@ -355,6 +355,9 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
   bool _filterEditedOnly = false;
   bool _filterFlaggedOnly = false;
 
+  // Treatment highlight state — null means no highlight active
+  int? _selectedTreatmentId;
+
   bool get _anyHubFilterActive =>
       _repFilter != null ||
       _filterUnratedOnly ||
@@ -1502,8 +1505,10 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                           _ViewToggleChip(
                             label: 'Treatments',
                             selected: _showTreatments,
-                            onTap: () =>
-                                setState(() => _showTreatments = true),
+                            onTap: () => setState(() {
+                              _showTreatments = true;
+                              _selectedTreatmentId = null;
+                            }),
                           ),
                         ],
                       ),
@@ -1529,6 +1534,19 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                         onFlaggedToggle: () => setState(
                             () => _filterFlaggedOnly = !_filterFlaggedOnly),
                         onReset: _clearHubFilters,
+                      ),
+                    // Treatment highlight strip — plots view only, when trial has treatments
+                    if (!_showTreatments && treatments.isNotEmpty)
+                      _TreatmentHighlightStrip(
+                        treatments: treatments,
+                        selectedTreatmentId: _selectedTreatmentId,
+                        treatmentColors: treatmentColorMap,
+                        onTreatmentSelected: (id) => setState(() {
+                          _selectedTreatmentId =
+                              _selectedTreatmentId == id ? null : id;
+                        }),
+                        onClear: () =>
+                            setState(() => _selectedTreatmentId = null),
                       ),
                     if (!_showTreatments && _anyHubFilterActive)
                       Padding(
@@ -1628,6 +1646,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                               checkTreatmentIds: checkTreatmentIds,
                               assessmentCoverage: assessmentCoverage,
                               treatmentColors: treatmentColorMap,
+                              highlightedTreatmentId: _selectedTreatmentId,
                             )),
                     ),
                     // Stats footer — tracks the visible filtered set (plots view only)
@@ -2942,6 +2961,133 @@ class _CropInjuryOption extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Treatment highlight strip
+// ---------------------------------------------------------------------------
+
+/// Compact horizontal chip strip for selecting a treatment to highlight
+/// in the plots grid. Shown only in Plots view when the trial has treatments.
+class _TreatmentHighlightStrip extends StatelessWidget {
+  const _TreatmentHighlightStrip({
+    required this.treatments,
+    required this.selectedTreatmentId,
+    required this.treatmentColors,
+    required this.onTreatmentSelected,
+    required this.onClear,
+  });
+
+  final List<Treatment> treatments;
+  final int? selectedTreatmentId;
+  final Map<int, Color> treatmentColors;
+  final void Function(int id) onTreatmentSelected;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final sorted = treatments.toList()
+      ..sort((a, b) => a.code.compareTo(b.code));
+
+    return Container(
+      height: 36,
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppDesignTokens.borderCrisp),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              'Highlight:',
+              style: TextStyle(
+                fontSize: 11,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(width: 6),
+            for (final t in sorted) ...[
+              _TreatmentHighlightChip(
+                label: t.code.isNotEmpty ? t.code : t.name,
+                selected: selectedTreatmentId == t.id,
+                color: treatmentColors[t.id] ?? AppDesignTokens.primary,
+                onTap: () => onTreatmentSelected(t.id),
+              ),
+              const SizedBox(width: 4),
+            ],
+            if (selectedTreatmentId != null) ...[
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: onClear,
+                child: Semantics(
+                  label: 'Clear treatment highlight',
+                  child: Icon(
+                    Icons.close,
+                    size: 14,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TreatmentHighlightChip extends StatelessWidget {
+  const _TreatmentHighlightChip({
+    required this.label,
+    required this.selected,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      selected: selected,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: selected ? color.withValues(alpha: 0.15) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? color : AppDesignTokens.borderCrisp,
+              width: selected ? 1.5 : 1.0,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: selected
+                  ? color
+                  : Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withValues(alpha: 0.7),
+            ),
           ),
         ),
       ),

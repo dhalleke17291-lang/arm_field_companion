@@ -12,6 +12,23 @@ import 'package:arm_field_companion/features/sessions/session_summary_screen.dar
 
 final _now = DateTime(2026, 4, 29);
 
+Treatment _treatment(int id, String code) => Treatment(
+      id: id,
+      trialId: 1,
+      code: code,
+      name: 'Treatment $code',
+      isDeleted: false,
+    );
+
+Assignment _assignment(int id, int plotId, int treatmentId) => Assignment(
+      id: id,
+      trialId: 1,
+      plotId: plotId,
+      treatmentId: treatmentId,
+      createdAt: _now,
+      updatedAt: _now,
+    );
+
 Trial _trial({int id = 1}) => Trial(
       id: id,
       name: 'Hub Filter Trial',
@@ -73,6 +90,8 @@ Future<void> _pumpScreen(
   required Session session,
   required List<Plot> plots,
   required Set<int> ratedPks,
+  List<Treatment> treatments = const [],
+  List<Assignment> assignments = const [],
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -88,6 +107,12 @@ Future<void> _pumpScreen(
         ),
         ratedPlotPksProvider(session.id).overrideWith(
           (ref) => Stream.value(ratedPks),
+        ),
+        treatmentsForTrialProvider(trial.id).overrideWith(
+          (ref) => Stream.value(treatments),
+        ),
+        assignmentsForTrialProvider(trial.id).overrideWith(
+          (ref) => Stream.value(assignments),
         ),
       ],
       child: MaterialApp(
@@ -350,6 +375,152 @@ void main() {
 
       // Footer no longer rendered.
       expect(find.textContaining('1 rated'), findsNothing);
+    });
+  });
+
+  // ── Treatment highlight strip tests ──────────────────────────────────────
+
+  group('SessionSummaryScreen treatment highlight strip', () {
+    testWidgets('strip renders with treatment chips when treatments available',
+        (tester) async {
+      final t1 = _treatment(10, 'T1');
+      final t2 = _treatment(11, 'CHK');
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {},
+        treatments: [t1, t2],
+        assignments: [
+          _assignment(1, plot1.id, t1.id),
+          _assignment(2, plot2.id, t2.id),
+        ],
+      );
+
+      expect(find.text('Highlight:'), findsOneWidget);
+      expect(find.text('T1'), findsOneWidget);
+      expect(find.text('CHK'), findsOneWidget);
+    });
+
+    testWidgets('strip is absent when trial has no treatments', (tester) async {
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {},
+        treatments: [],
+      );
+
+      expect(find.text('Highlight:'), findsNothing);
+    });
+
+    testWidgets('selecting a treatment chip shows clear button',
+        (tester) async {
+      final t1 = _treatment(10, 'T1');
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1],
+        ratedPks: {},
+        treatments: [t1],
+        assignments: [_assignment(1, plot1.id, t1.id)],
+      );
+
+      // No clear button before selection.
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsNothing);
+
+      await tester.tap(find.text('T1'));
+      await tester.pump();
+
+      // Clear button appears after selection.
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsOneWidget);
+    });
+
+    testWidgets('tapping same chip again clears highlight', (tester) async {
+      final t1 = _treatment(10, 'T1');
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1],
+        ratedPks: {},
+        treatments: [t1],
+        assignments: [_assignment(1, plot1.id, t1.id)],
+      );
+
+      await tester.tap(find.text('T1'));
+      await tester.pump();
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsOneWidget);
+
+      // Tap same chip again to deselect.
+      await tester.tap(find.text('T1'));
+      await tester.pump();
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsNothing);
+    });
+
+    testWidgets('hub filters still work independently with highlight active',
+        (tester) async {
+      final t1 = _treatment(10, 'T1');
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id},
+        treatments: [t1],
+        assignments: [
+          _assignment(1, plot1.id, t1.id),
+          _assignment(2, plot2.id, t1.id),
+        ],
+      );
+
+      // Activate treatment highlight.
+      await tester.tap(find.text('T1'));
+      await tester.pump();
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsOneWidget);
+
+      // Activate Unrated filter — should still work.
+      await tester.tap(find.text('Unrated'));
+      await tester.pump();
+      expect(find.textContaining('Showing 1 of 2 plots'), findsOneWidget);
+
+      // Highlight clear button still present.
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsOneWidget);
+    });
+
+    testWidgets('treatment highlight strip is hidden in Treatments view',
+        (tester) async {
+      final t1 = _treatment(10, 'T1');
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1],
+        ratedPks: {},
+        treatments: [t1],
+        assignments: [_assignment(1, plot1.id, t1.id)],
+      );
+
+      expect(find.text('Highlight:'), findsOneWidget);
+
+      await tester.tap(find.text('Treatments'));
+      await tester.pump();
+
+      expect(find.text('Highlight:'), findsNothing);
     });
   });
 }
