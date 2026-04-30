@@ -1324,6 +1324,164 @@ class SeTypeProfiles extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+// ── Field intelligence: signals / decisions / evidence (schema v72+) ──────
+// Spec uses "rating_sessions" and "raters" — this app maps them to [Sessions]
+// and [Users] respectively.
+
+/// A raised insight or warning for field work (trial/session/plot scoped).
+class Signals extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  IntColumn get trialId => integer().references(Trials, #id)();
+
+  /// [Sessions.id] — spec name "rating_sessions" not used in this codebase.
+  IntColumn get sessionId => integer().nullable().references(Sessions, #id)();
+
+  IntColumn get plotId => integer().nullable().references(Plots, #id)();
+
+  /// scale_violation | spatial_anomaly | protocol_divergence | ...
+  TextColumn get signalType => text()();
+
+  /// 1–5 (Last Actionable Moment).
+  IntColumn get moment => integer()();
+
+  /// critical | review | info
+  TextColumn get severity => text()();
+
+  /// Trusted time, epoch milliseconds UTC.
+  IntColumn get raisedAt => integer()();
+
+  /// [Users.id] — spec "raters"; null = system.
+  IntColumn get raisedBy => integer().nullable().references(Users, #id)();
+
+  /// JSON: neighbors, treatment mean, session mean, protocol expected value.
+  TextColumn get referenceContext => text()();
+
+  /// JSON: deltas, % differences.
+  TextColumn get magnitudeContext => text().nullable()();
+
+  TextColumn get consequenceText => text()();
+
+  /// open | deferred | investigating | resolved | expired | suppressed
+  TextColumn get status => text().withDefault(const Constant('open'))();
+
+  IntColumn get createdAt => integer()();
+}
+
+/// Immutable decision log — application code must never UPDATE rows.
+class SignalDecisionEvents extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  IntColumn get signalId =>
+      integer().references(Signals, #id, onDelete: KeyAction.cascade)();
+
+  /// confirm | re_rate | investigate | defer | suppress | expire
+  TextColumn get eventType => text()();
+
+  IntColumn get occurredAt => integer()();
+
+  IntColumn get actorUserId => integer().nullable().references(Users, #id)();
+
+  TextColumn get note => text().nullable()();
+
+  IntColumn get followUpDueAt => integer().nullable()();
+
+  TextColumn get followUpContext => text().nullable()();
+
+  TextColumn get resultingStatus => text()();
+
+  IntColumn get createdAt => integer()();
+}
+
+/// Materialized side-effects of a decision (field-level audit trail).
+class ActionEffects extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  IntColumn get decisionEventId => integer().references(SignalDecisionEvents, #id,
+      onDelete: KeyAction.cascade)();
+
+  /// plot_observation | session | trial | application | photo
+  TextColumn get entityType => text()();
+
+  IntColumn get entityId => integer()();
+
+  TextColumn get fieldName => text()();
+
+  TextColumn get oldValue => text().nullable()();
+
+  TextColumn get newValue => text().nullable()();
+
+  IntColumn get appliedAt => integer()();
+
+  IntColumn get createdAt => integer()();
+}
+
+/// EPPO-aligned causal expectations per SE type × trial mode (seeded reference).
+class SeTypeCausalProfiles extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// CONTRO | LODGIN | PESINC | ...
+  TextColumn get seType => text()();
+
+  /// efficacy | variety | breeding | on_farm
+  TextColumn get trialType => text()();
+
+  IntColumn get causalWindowDaysMin => integer()();
+
+  IntColumn get causalWindowDaysMax => integer()();
+
+  /// increase | decrease | stable
+  TextColumn get expectedResponseDirection => text()();
+
+  RealColumn get expectedChangeRatePerWeek => real().nullable()();
+
+  BoolColumn get spatialClusteringExpected =>
+      boolean().withDefault(const Constant(false))();
+
+  BoolColumn get untreatedExcludedFromMean =>
+      boolean().withDefault(const Constant(true))();
+
+  RealColumn get baseThresholdSdMultiplier =>
+      real().withDefault(const Constant(2.0))();
+
+  TextColumn get source => text()();
+
+  TextColumn get sourceReference => text().nullable()();
+
+  IntColumn get createdAt => integer()();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {seType, trialType},
+      ];
+}
+
+/// Links evidence rows (photos, weather, GPS, audit) to analytical claims.
+class EvidenceAnchors extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  IntColumn get trialId => integer().references(Trials, #id)();
+
+  /// photo | weather_snapshot | gps_record | audit_entry
+  TextColumn get evidenceType => text()();
+
+  /// Polymorphic FK — resolved via [evidenceType].
+  IntColumn get evidenceId => integer()();
+
+  /// rating | session | application | deviation
+  TextColumn get claimType => text()();
+
+  IntColumn get claimId => integer()();
+
+  TextColumn get anchorReason => text().nullable()();
+
+  IntColumn get anchoredAt => integer()();
+
+  IntColumn get anchoredBy => integer().nullable().references(Users, #id)();
+
+  IntColumn get createdAt => integer()();
+}
+
 @DriftDatabase(tables: [
   Users,
   Trials,
@@ -1371,6 +1529,12 @@ class SeTypeProfiles extends Table {
   ArmApplications,
   // Reference / lookup tables (seeded at install; not per-trial, not computed).
   SeTypeProfiles,
+  // Field intelligence (v72): signals pipeline + causal profiles + evidence anchors.
+  Signals,
+  SignalDecisionEvents,
+  ActionEffects,
+  SeTypeCausalProfiles,
+  EvidenceAnchors,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -1379,7 +1543,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 71;
+  int get schemaVersion => 72;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1388,6 +1552,7 @@ class AppDatabase extends _$AppDatabase {
           await _createIndexes();
           await _seedAssessmentDefinitions();
           await _seedSeTypeProfiles();
+          await _seedSeTypeCausalProfiles();
         },
         onUpgrade: (Migrator m, int from, int to) async {
           if (from < 2) {
@@ -2792,6 +2957,28 @@ WHERE pest_code IS NULL
             await _seedSeTypeProfiles();
           }
 
+          if (from < 72) {
+            final existingTables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!existingTables.contains('signals')) {
+              await m.createTable(signals);
+            }
+            if (!existingTables.contains('signal_decision_events')) {
+              await m.createTable(signalDecisionEvents);
+            }
+            if (!existingTables.contains('action_effects')) {
+              await m.createTable(actionEffects);
+            }
+            if (!existingTables.contains('se_type_causal_profiles')) {
+              await m.createTable(seTypeCausalProfiles);
+            }
+            if (!existingTables.contains('evidence_anchors')) {
+              await m.createTable(evidenceAnchors);
+            }
+            await _seedSeTypeCausalProfiles();
+          }
+
           await _createIndexes();
         },
       );
@@ -2869,6 +3056,66 @@ WHERE pest_code IS NULL
     ]);
   }
 
+  /// EPPO-aligned causal SE profiles (CONTRO / PESINC / LODGIN × efficacy).
+  /// INSERT OR IGNORE — unique on (se_type, trial_type).
+  Future<void> _seedSeTypeCausalProfiles() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    Future<void> insertRow(List<Object?> params) async {
+      await customStatement(
+        'INSERT OR IGNORE INTO se_type_causal_profiles '
+        '(se_type, trial_type, causal_window_days_min, causal_window_days_max, '
+        'expected_response_direction, expected_change_rate_per_week, '
+        'spatial_clustering_expected, untreated_excluded_from_mean, '
+        'base_threshold_sd_multiplier, source, source_reference, created_at) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        params,
+      );
+    }
+
+    await insertRow([
+      'CONTRO',
+      'efficacy',
+      7,
+      28,
+      'increase',
+      8.0,
+      0,
+      1,
+      2.0,
+      'EPPO_PP1',
+      'PP1/152',
+      now,
+    ]);
+    await insertRow([
+      'PESINC',
+      'efficacy',
+      7,
+      21,
+      'decrease',
+      5.0,
+      1,
+      1,
+      2.5,
+      'EPPO_PP1',
+      'PP1/135',
+      now,
+    ]);
+    await insertRow([
+      'LODGIN',
+      'efficacy',
+      0,
+      0,
+      'stable',
+      2.0,
+      1,
+      0,
+      3.0,
+      'EPPO_PP1',
+      'PP1/152',
+      now,
+    ]);
+  }
+
   Future<void> _createIndexes() async {
     await customStatement('''
       CREATE UNIQUE INDEX IF NOT EXISTS idx_rating_current
@@ -2929,6 +3176,44 @@ WHERE pest_code IS NULL
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_arm_applications_event '
       'ON arm_applications(trial_application_event_id)',
     );
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_signals_trial_status
+      ON signals(trial_id, status)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_signals_session
+      ON signals(session_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_signals_open
+      ON signals(status)
+      WHERE status IN ('open', 'deferred', 'investigating')
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_sde_signal_time
+      ON signal_decision_events(signal_id, occurred_at)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_sde_actor
+      ON signal_decision_events(actor_user_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_sde_followup
+      ON signal_decision_events(follow_up_due_at)
+      WHERE follow_up_due_at IS NOT NULL
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_action_effects_event
+      ON action_effects(decision_event_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_evidence_anchors_claim
+      ON evidence_anchors(claim_type, claim_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_se_profiles_type
+      ON se_type_causal_profiles(se_type, trial_type)
+    ''');
   }
 }
 

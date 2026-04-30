@@ -58,6 +58,7 @@ import '../features/ratings/usecases/void_rating_usecase.dart';
 import '../features/ratings/usecases/rating_lineage_usecase.dart';
 import '../features/sessions/usecases/create_session_usecase.dart';
 import '../features/sessions/usecases/close_session_usecase.dart';
+import '../domain/evidence/evidence_anchor_repository.dart';
 import '../features/sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../features/sessions/usecases/compute_session_completeness_usecase.dart';
 import '../features/sessions/usecases/evaluate_session_close_policy_usecase.dart';
@@ -990,6 +991,7 @@ final closeSessionUseCaseProvider = Provider<CloseSessionUseCase>((ref) {
   return CloseSessionUseCase(
     ref.watch(sessionRepositoryProvider),
     ref.watch(evaluateSessionClosePolicyUseCaseProvider),
+    EvidenceAnchorRepository(ref.watch(databaseProvider)),
   );
 });
 

@@ -38613,6 +38613,2968 @@ class SeTypeProfilesCompanion extends UpdateCompanion<SeTypeProfile> {
   }
 }
 
+class $SignalsTable extends Signals with TableInfo<$SignalsTable, Signal> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SignalsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _sessionIdMeta =
+      const VerificationMeta('sessionId');
+  @override
+  late final GeneratedColumn<int> sessionId = GeneratedColumn<int>(
+      'session_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES sessions (id)'));
+  static const VerificationMeta _plotIdMeta = const VerificationMeta('plotId');
+  @override
+  late final GeneratedColumn<int> plotId = GeneratedColumn<int>(
+      'plot_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES plots (id)'));
+  static const VerificationMeta _signalTypeMeta =
+      const VerificationMeta('signalType');
+  @override
+  late final GeneratedColumn<String> signalType = GeneratedColumn<String>(
+      'signal_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _momentMeta = const VerificationMeta('moment');
+  @override
+  late final GeneratedColumn<int> moment = GeneratedColumn<int>(
+      'moment', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _severityMeta =
+      const VerificationMeta('severity');
+  @override
+  late final GeneratedColumn<String> severity = GeneratedColumn<String>(
+      'severity', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _raisedAtMeta =
+      const VerificationMeta('raisedAt');
+  @override
+  late final GeneratedColumn<int> raisedAt = GeneratedColumn<int>(
+      'raised_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _raisedByMeta =
+      const VerificationMeta('raisedBy');
+  @override
+  late final GeneratedColumn<int> raisedBy = GeneratedColumn<int>(
+      'raised_by', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _referenceContextMeta =
+      const VerificationMeta('referenceContext');
+  @override
+  late final GeneratedColumn<String> referenceContext = GeneratedColumn<String>(
+      'reference_context', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _magnitudeContextMeta =
+      const VerificationMeta('magnitudeContext');
+  @override
+  late final GeneratedColumn<String> magnitudeContext = GeneratedColumn<String>(
+      'magnitude_context', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _consequenceTextMeta =
+      const VerificationMeta('consequenceText');
+  @override
+  late final GeneratedColumn<String> consequenceText = GeneratedColumn<String>(
+      'consequence_text', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('open'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        sessionId,
+        plotId,
+        signalType,
+        moment,
+        severity,
+        raisedAt,
+        raisedBy,
+        referenceContext,
+        magnitudeContext,
+        consequenceText,
+        status,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'signals';
+  @override
+  VerificationContext validateIntegrity(Insertable<Signal> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(_sessionIdMeta,
+          sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta));
+    }
+    if (data.containsKey('plot_id')) {
+      context.handle(_plotIdMeta,
+          plotId.isAcceptableOrUnknown(data['plot_id']!, _plotIdMeta));
+    }
+    if (data.containsKey('signal_type')) {
+      context.handle(
+          _signalTypeMeta,
+          signalType.isAcceptableOrUnknown(
+              data['signal_type']!, _signalTypeMeta));
+    } else if (isInserting) {
+      context.missing(_signalTypeMeta);
+    }
+    if (data.containsKey('moment')) {
+      context.handle(_momentMeta,
+          moment.isAcceptableOrUnknown(data['moment']!, _momentMeta));
+    } else if (isInserting) {
+      context.missing(_momentMeta);
+    }
+    if (data.containsKey('severity')) {
+      context.handle(_severityMeta,
+          severity.isAcceptableOrUnknown(data['severity']!, _severityMeta));
+    } else if (isInserting) {
+      context.missing(_severityMeta);
+    }
+    if (data.containsKey('raised_at')) {
+      context.handle(_raisedAtMeta,
+          raisedAt.isAcceptableOrUnknown(data['raised_at']!, _raisedAtMeta));
+    } else if (isInserting) {
+      context.missing(_raisedAtMeta);
+    }
+    if (data.containsKey('raised_by')) {
+      context.handle(_raisedByMeta,
+          raisedBy.isAcceptableOrUnknown(data['raised_by']!, _raisedByMeta));
+    }
+    if (data.containsKey('reference_context')) {
+      context.handle(
+          _referenceContextMeta,
+          referenceContext.isAcceptableOrUnknown(
+              data['reference_context']!, _referenceContextMeta));
+    } else if (isInserting) {
+      context.missing(_referenceContextMeta);
+    }
+    if (data.containsKey('magnitude_context')) {
+      context.handle(
+          _magnitudeContextMeta,
+          magnitudeContext.isAcceptableOrUnknown(
+              data['magnitude_context']!, _magnitudeContextMeta));
+    }
+    if (data.containsKey('consequence_text')) {
+      context.handle(
+          _consequenceTextMeta,
+          consequenceText.isAcceptableOrUnknown(
+              data['consequence_text']!, _consequenceTextMeta));
+    } else if (isInserting) {
+      context.missing(_consequenceTextMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Signal map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Signal(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      sessionId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}session_id']),
+      plotId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}plot_id']),
+      signalType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}signal_type'])!,
+      moment: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}moment'])!,
+      severity: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}severity'])!,
+      raisedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}raised_at'])!,
+      raisedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}raised_by']),
+      referenceContext: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}reference_context'])!,
+      magnitudeContext: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}magnitude_context']),
+      consequenceText: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}consequence_text'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $SignalsTable createAlias(String alias) {
+    return $SignalsTable(attachedDatabase, alias);
+  }
+}
+
+class Signal extends DataClass implements Insertable<Signal> {
+  final int id;
+  final int trialId;
+
+  /// [Sessions.id] — spec name "rating_sessions" not used in this codebase.
+  final int? sessionId;
+  final int? plotId;
+
+  /// scale_violation | spatial_anomaly | protocol_divergence | ...
+  final String signalType;
+
+  /// 1–5 (Last Actionable Moment).
+  final int moment;
+
+  /// critical | review | info
+  final String severity;
+
+  /// Trusted time, epoch milliseconds UTC.
+  final int raisedAt;
+
+  /// [Users.id] — spec "raters"; null = system.
+  final int? raisedBy;
+
+  /// JSON: neighbors, treatment mean, session mean, protocol expected value.
+  final String referenceContext;
+
+  /// JSON: deltas, % differences.
+  final String? magnitudeContext;
+  final String consequenceText;
+
+  /// open | deferred | investigating | resolved | expired | suppressed
+  final String status;
+  final int createdAt;
+  const Signal(
+      {required this.id,
+      required this.trialId,
+      this.sessionId,
+      this.plotId,
+      required this.signalType,
+      required this.moment,
+      required this.severity,
+      required this.raisedAt,
+      this.raisedBy,
+      required this.referenceContext,
+      this.magnitudeContext,
+      required this.consequenceText,
+      required this.status,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    if (!nullToAbsent || sessionId != null) {
+      map['session_id'] = Variable<int>(sessionId);
+    }
+    if (!nullToAbsent || plotId != null) {
+      map['plot_id'] = Variable<int>(plotId);
+    }
+    map['signal_type'] = Variable<String>(signalType);
+    map['moment'] = Variable<int>(moment);
+    map['severity'] = Variable<String>(severity);
+    map['raised_at'] = Variable<int>(raisedAt);
+    if (!nullToAbsent || raisedBy != null) {
+      map['raised_by'] = Variable<int>(raisedBy);
+    }
+    map['reference_context'] = Variable<String>(referenceContext);
+    if (!nullToAbsent || magnitudeContext != null) {
+      map['magnitude_context'] = Variable<String>(magnitudeContext);
+    }
+    map['consequence_text'] = Variable<String>(consequenceText);
+    map['status'] = Variable<String>(status);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  SignalsCompanion toCompanion(bool nullToAbsent) {
+    return SignalsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      sessionId: sessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sessionId),
+      plotId:
+          plotId == null && nullToAbsent ? const Value.absent() : Value(plotId),
+      signalType: Value(signalType),
+      moment: Value(moment),
+      severity: Value(severity),
+      raisedAt: Value(raisedAt),
+      raisedBy: raisedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(raisedBy),
+      referenceContext: Value(referenceContext),
+      magnitudeContext: magnitudeContext == null && nullToAbsent
+          ? const Value.absent()
+          : Value(magnitudeContext),
+      consequenceText: Value(consequenceText),
+      status: Value(status),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Signal.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Signal(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      sessionId: serializer.fromJson<int?>(json['sessionId']),
+      plotId: serializer.fromJson<int?>(json['plotId']),
+      signalType: serializer.fromJson<String>(json['signalType']),
+      moment: serializer.fromJson<int>(json['moment']),
+      severity: serializer.fromJson<String>(json['severity']),
+      raisedAt: serializer.fromJson<int>(json['raisedAt']),
+      raisedBy: serializer.fromJson<int?>(json['raisedBy']),
+      referenceContext: serializer.fromJson<String>(json['referenceContext']),
+      magnitudeContext: serializer.fromJson<String?>(json['magnitudeContext']),
+      consequenceText: serializer.fromJson<String>(json['consequenceText']),
+      status: serializer.fromJson<String>(json['status']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'sessionId': serializer.toJson<int?>(sessionId),
+      'plotId': serializer.toJson<int?>(plotId),
+      'signalType': serializer.toJson<String>(signalType),
+      'moment': serializer.toJson<int>(moment),
+      'severity': serializer.toJson<String>(severity),
+      'raisedAt': serializer.toJson<int>(raisedAt),
+      'raisedBy': serializer.toJson<int?>(raisedBy),
+      'referenceContext': serializer.toJson<String>(referenceContext),
+      'magnitudeContext': serializer.toJson<String?>(magnitudeContext),
+      'consequenceText': serializer.toJson<String>(consequenceText),
+      'status': serializer.toJson<String>(status),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  Signal copyWith(
+          {int? id,
+          int? trialId,
+          Value<int?> sessionId = const Value.absent(),
+          Value<int?> plotId = const Value.absent(),
+          String? signalType,
+          int? moment,
+          String? severity,
+          int? raisedAt,
+          Value<int?> raisedBy = const Value.absent(),
+          String? referenceContext,
+          Value<String?> magnitudeContext = const Value.absent(),
+          String? consequenceText,
+          String? status,
+          int? createdAt}) =>
+      Signal(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        sessionId: sessionId.present ? sessionId.value : this.sessionId,
+        plotId: plotId.present ? plotId.value : this.plotId,
+        signalType: signalType ?? this.signalType,
+        moment: moment ?? this.moment,
+        severity: severity ?? this.severity,
+        raisedAt: raisedAt ?? this.raisedAt,
+        raisedBy: raisedBy.present ? raisedBy.value : this.raisedBy,
+        referenceContext: referenceContext ?? this.referenceContext,
+        magnitudeContext: magnitudeContext.present
+            ? magnitudeContext.value
+            : this.magnitudeContext,
+        consequenceText: consequenceText ?? this.consequenceText,
+        status: status ?? this.status,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  Signal copyWithCompanion(SignalsCompanion data) {
+    return Signal(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      plotId: data.plotId.present ? data.plotId.value : this.plotId,
+      signalType:
+          data.signalType.present ? data.signalType.value : this.signalType,
+      moment: data.moment.present ? data.moment.value : this.moment,
+      severity: data.severity.present ? data.severity.value : this.severity,
+      raisedAt: data.raisedAt.present ? data.raisedAt.value : this.raisedAt,
+      raisedBy: data.raisedBy.present ? data.raisedBy.value : this.raisedBy,
+      referenceContext: data.referenceContext.present
+          ? data.referenceContext.value
+          : this.referenceContext,
+      magnitudeContext: data.magnitudeContext.present
+          ? data.magnitudeContext.value
+          : this.magnitudeContext,
+      consequenceText: data.consequenceText.present
+          ? data.consequenceText.value
+          : this.consequenceText,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Signal(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('plotId: $plotId, ')
+          ..write('signalType: $signalType, ')
+          ..write('moment: $moment, ')
+          ..write('severity: $severity, ')
+          ..write('raisedAt: $raisedAt, ')
+          ..write('raisedBy: $raisedBy, ')
+          ..write('referenceContext: $referenceContext, ')
+          ..write('magnitudeContext: $magnitudeContext, ')
+          ..write('consequenceText: $consequenceText, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      sessionId,
+      plotId,
+      signalType,
+      moment,
+      severity,
+      raisedAt,
+      raisedBy,
+      referenceContext,
+      magnitudeContext,
+      consequenceText,
+      status,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Signal &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.sessionId == this.sessionId &&
+          other.plotId == this.plotId &&
+          other.signalType == this.signalType &&
+          other.moment == this.moment &&
+          other.severity == this.severity &&
+          other.raisedAt == this.raisedAt &&
+          other.raisedBy == this.raisedBy &&
+          other.referenceContext == this.referenceContext &&
+          other.magnitudeContext == this.magnitudeContext &&
+          other.consequenceText == this.consequenceText &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt);
+}
+
+class SignalsCompanion extends UpdateCompanion<Signal> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<int?> sessionId;
+  final Value<int?> plotId;
+  final Value<String> signalType;
+  final Value<int> moment;
+  final Value<String> severity;
+  final Value<int> raisedAt;
+  final Value<int?> raisedBy;
+  final Value<String> referenceContext;
+  final Value<String?> magnitudeContext;
+  final Value<String> consequenceText;
+  final Value<String> status;
+  final Value<int> createdAt;
+  const SignalsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.plotId = const Value.absent(),
+    this.signalType = const Value.absent(),
+    this.moment = const Value.absent(),
+    this.severity = const Value.absent(),
+    this.raisedAt = const Value.absent(),
+    this.raisedBy = const Value.absent(),
+    this.referenceContext = const Value.absent(),
+    this.magnitudeContext = const Value.absent(),
+    this.consequenceText = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  SignalsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    this.sessionId = const Value.absent(),
+    this.plotId = const Value.absent(),
+    required String signalType,
+    required int moment,
+    required String severity,
+    required int raisedAt,
+    this.raisedBy = const Value.absent(),
+    required String referenceContext,
+    this.magnitudeContext = const Value.absent(),
+    required String consequenceText,
+    this.status = const Value.absent(),
+    required int createdAt,
+  })  : trialId = Value(trialId),
+        signalType = Value(signalType),
+        moment = Value(moment),
+        severity = Value(severity),
+        raisedAt = Value(raisedAt),
+        referenceContext = Value(referenceContext),
+        consequenceText = Value(consequenceText),
+        createdAt = Value(createdAt);
+  static Insertable<Signal> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<int>? sessionId,
+    Expression<int>? plotId,
+    Expression<String>? signalType,
+    Expression<int>? moment,
+    Expression<String>? severity,
+    Expression<int>? raisedAt,
+    Expression<int>? raisedBy,
+    Expression<String>? referenceContext,
+    Expression<String>? magnitudeContext,
+    Expression<String>? consequenceText,
+    Expression<String>? status,
+    Expression<int>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (sessionId != null) 'session_id': sessionId,
+      if (plotId != null) 'plot_id': plotId,
+      if (signalType != null) 'signal_type': signalType,
+      if (moment != null) 'moment': moment,
+      if (severity != null) 'severity': severity,
+      if (raisedAt != null) 'raised_at': raisedAt,
+      if (raisedBy != null) 'raised_by': raisedBy,
+      if (referenceContext != null) 'reference_context': referenceContext,
+      if (magnitudeContext != null) 'magnitude_context': magnitudeContext,
+      if (consequenceText != null) 'consequence_text': consequenceText,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  SignalsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<int?>? sessionId,
+      Value<int?>? plotId,
+      Value<String>? signalType,
+      Value<int>? moment,
+      Value<String>? severity,
+      Value<int>? raisedAt,
+      Value<int?>? raisedBy,
+      Value<String>? referenceContext,
+      Value<String?>? magnitudeContext,
+      Value<String>? consequenceText,
+      Value<String>? status,
+      Value<int>? createdAt}) {
+    return SignalsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      sessionId: sessionId ?? this.sessionId,
+      plotId: plotId ?? this.plotId,
+      signalType: signalType ?? this.signalType,
+      moment: moment ?? this.moment,
+      severity: severity ?? this.severity,
+      raisedAt: raisedAt ?? this.raisedAt,
+      raisedBy: raisedBy ?? this.raisedBy,
+      referenceContext: referenceContext ?? this.referenceContext,
+      magnitudeContext: magnitudeContext ?? this.magnitudeContext,
+      consequenceText: consequenceText ?? this.consequenceText,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<int>(sessionId.value);
+    }
+    if (plotId.present) {
+      map['plot_id'] = Variable<int>(plotId.value);
+    }
+    if (signalType.present) {
+      map['signal_type'] = Variable<String>(signalType.value);
+    }
+    if (moment.present) {
+      map['moment'] = Variable<int>(moment.value);
+    }
+    if (severity.present) {
+      map['severity'] = Variable<String>(severity.value);
+    }
+    if (raisedAt.present) {
+      map['raised_at'] = Variable<int>(raisedAt.value);
+    }
+    if (raisedBy.present) {
+      map['raised_by'] = Variable<int>(raisedBy.value);
+    }
+    if (referenceContext.present) {
+      map['reference_context'] = Variable<String>(referenceContext.value);
+    }
+    if (magnitudeContext.present) {
+      map['magnitude_context'] = Variable<String>(magnitudeContext.value);
+    }
+    if (consequenceText.present) {
+      map['consequence_text'] = Variable<String>(consequenceText.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SignalsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('plotId: $plotId, ')
+          ..write('signalType: $signalType, ')
+          ..write('moment: $moment, ')
+          ..write('severity: $severity, ')
+          ..write('raisedAt: $raisedAt, ')
+          ..write('raisedBy: $raisedBy, ')
+          ..write('referenceContext: $referenceContext, ')
+          ..write('magnitudeContext: $magnitudeContext, ')
+          ..write('consequenceText: $consequenceText, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SignalDecisionEventsTable extends SignalDecisionEvents
+    with TableInfo<$SignalDecisionEventsTable, SignalDecisionEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SignalDecisionEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _signalIdMeta =
+      const VerificationMeta('signalId');
+  @override
+  late final GeneratedColumn<int> signalId = GeneratedColumn<int>(
+      'signal_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES signals (id) ON DELETE CASCADE'));
+  static const VerificationMeta _eventTypeMeta =
+      const VerificationMeta('eventType');
+  @override
+  late final GeneratedColumn<String> eventType = GeneratedColumn<String>(
+      'event_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _occurredAtMeta =
+      const VerificationMeta('occurredAt');
+  @override
+  late final GeneratedColumn<int> occurredAt = GeneratedColumn<int>(
+      'occurred_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _actorUserIdMeta =
+      const VerificationMeta('actorUserId');
+  @override
+  late final GeneratedColumn<int> actorUserId = GeneratedColumn<int>(
+      'actor_user_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+      'note', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _followUpDueAtMeta =
+      const VerificationMeta('followUpDueAt');
+  @override
+  late final GeneratedColumn<int> followUpDueAt = GeneratedColumn<int>(
+      'follow_up_due_at', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _followUpContextMeta =
+      const VerificationMeta('followUpContext');
+  @override
+  late final GeneratedColumn<String> followUpContext = GeneratedColumn<String>(
+      'follow_up_context', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _resultingStatusMeta =
+      const VerificationMeta('resultingStatus');
+  @override
+  late final GeneratedColumn<String> resultingStatus = GeneratedColumn<String>(
+      'resulting_status', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        signalId,
+        eventType,
+        occurredAt,
+        actorUserId,
+        note,
+        followUpDueAt,
+        followUpContext,
+        resultingStatus,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'signal_decision_events';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<SignalDecisionEvent> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('signal_id')) {
+      context.handle(_signalIdMeta,
+          signalId.isAcceptableOrUnknown(data['signal_id']!, _signalIdMeta));
+    } else if (isInserting) {
+      context.missing(_signalIdMeta);
+    }
+    if (data.containsKey('event_type')) {
+      context.handle(_eventTypeMeta,
+          eventType.isAcceptableOrUnknown(data['event_type']!, _eventTypeMeta));
+    } else if (isInserting) {
+      context.missing(_eventTypeMeta);
+    }
+    if (data.containsKey('occurred_at')) {
+      context.handle(
+          _occurredAtMeta,
+          occurredAt.isAcceptableOrUnknown(
+              data['occurred_at']!, _occurredAtMeta));
+    } else if (isInserting) {
+      context.missing(_occurredAtMeta);
+    }
+    if (data.containsKey('actor_user_id')) {
+      context.handle(
+          _actorUserIdMeta,
+          actorUserId.isAcceptableOrUnknown(
+              data['actor_user_id']!, _actorUserIdMeta));
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+          _noteMeta, note.isAcceptableOrUnknown(data['note']!, _noteMeta));
+    }
+    if (data.containsKey('follow_up_due_at')) {
+      context.handle(
+          _followUpDueAtMeta,
+          followUpDueAt.isAcceptableOrUnknown(
+              data['follow_up_due_at']!, _followUpDueAtMeta));
+    }
+    if (data.containsKey('follow_up_context')) {
+      context.handle(
+          _followUpContextMeta,
+          followUpContext.isAcceptableOrUnknown(
+              data['follow_up_context']!, _followUpContextMeta));
+    }
+    if (data.containsKey('resulting_status')) {
+      context.handle(
+          _resultingStatusMeta,
+          resultingStatus.isAcceptableOrUnknown(
+              data['resulting_status']!, _resultingStatusMeta));
+    } else if (isInserting) {
+      context.missing(_resultingStatusMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SignalDecisionEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SignalDecisionEvent(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      signalId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}signal_id'])!,
+      eventType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}event_type'])!,
+      occurredAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}occurred_at'])!,
+      actorUserId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}actor_user_id']),
+      note: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}note']),
+      followUpDueAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}follow_up_due_at']),
+      followUpContext: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}follow_up_context']),
+      resultingStatus: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}resulting_status'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $SignalDecisionEventsTable createAlias(String alias) {
+    return $SignalDecisionEventsTable(attachedDatabase, alias);
+  }
+}
+
+class SignalDecisionEvent extends DataClass
+    implements Insertable<SignalDecisionEvent> {
+  final int id;
+  final int signalId;
+
+  /// confirm | re_rate | investigate | defer | suppress | expire
+  final String eventType;
+  final int occurredAt;
+  final int? actorUserId;
+  final String? note;
+  final int? followUpDueAt;
+  final String? followUpContext;
+  final String resultingStatus;
+  final int createdAt;
+  const SignalDecisionEvent(
+      {required this.id,
+      required this.signalId,
+      required this.eventType,
+      required this.occurredAt,
+      this.actorUserId,
+      this.note,
+      this.followUpDueAt,
+      this.followUpContext,
+      required this.resultingStatus,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['signal_id'] = Variable<int>(signalId);
+    map['event_type'] = Variable<String>(eventType);
+    map['occurred_at'] = Variable<int>(occurredAt);
+    if (!nullToAbsent || actorUserId != null) {
+      map['actor_user_id'] = Variable<int>(actorUserId);
+    }
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    if (!nullToAbsent || followUpDueAt != null) {
+      map['follow_up_due_at'] = Variable<int>(followUpDueAt);
+    }
+    if (!nullToAbsent || followUpContext != null) {
+      map['follow_up_context'] = Variable<String>(followUpContext);
+    }
+    map['resulting_status'] = Variable<String>(resultingStatus);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  SignalDecisionEventsCompanion toCompanion(bool nullToAbsent) {
+    return SignalDecisionEventsCompanion(
+      id: Value(id),
+      signalId: Value(signalId),
+      eventType: Value(eventType),
+      occurredAt: Value(occurredAt),
+      actorUserId: actorUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actorUserId),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      followUpDueAt: followUpDueAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(followUpDueAt),
+      followUpContext: followUpContext == null && nullToAbsent
+          ? const Value.absent()
+          : Value(followUpContext),
+      resultingStatus: Value(resultingStatus),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SignalDecisionEvent.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SignalDecisionEvent(
+      id: serializer.fromJson<int>(json['id']),
+      signalId: serializer.fromJson<int>(json['signalId']),
+      eventType: serializer.fromJson<String>(json['eventType']),
+      occurredAt: serializer.fromJson<int>(json['occurredAt']),
+      actorUserId: serializer.fromJson<int?>(json['actorUserId']),
+      note: serializer.fromJson<String?>(json['note']),
+      followUpDueAt: serializer.fromJson<int?>(json['followUpDueAt']),
+      followUpContext: serializer.fromJson<String?>(json['followUpContext']),
+      resultingStatus: serializer.fromJson<String>(json['resultingStatus']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'signalId': serializer.toJson<int>(signalId),
+      'eventType': serializer.toJson<String>(eventType),
+      'occurredAt': serializer.toJson<int>(occurredAt),
+      'actorUserId': serializer.toJson<int?>(actorUserId),
+      'note': serializer.toJson<String?>(note),
+      'followUpDueAt': serializer.toJson<int?>(followUpDueAt),
+      'followUpContext': serializer.toJson<String?>(followUpContext),
+      'resultingStatus': serializer.toJson<String>(resultingStatus),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  SignalDecisionEvent copyWith(
+          {int? id,
+          int? signalId,
+          String? eventType,
+          int? occurredAt,
+          Value<int?> actorUserId = const Value.absent(),
+          Value<String?> note = const Value.absent(),
+          Value<int?> followUpDueAt = const Value.absent(),
+          Value<String?> followUpContext = const Value.absent(),
+          String? resultingStatus,
+          int? createdAt}) =>
+      SignalDecisionEvent(
+        id: id ?? this.id,
+        signalId: signalId ?? this.signalId,
+        eventType: eventType ?? this.eventType,
+        occurredAt: occurredAt ?? this.occurredAt,
+        actorUserId: actorUserId.present ? actorUserId.value : this.actorUserId,
+        note: note.present ? note.value : this.note,
+        followUpDueAt:
+            followUpDueAt.present ? followUpDueAt.value : this.followUpDueAt,
+        followUpContext: followUpContext.present
+            ? followUpContext.value
+            : this.followUpContext,
+        resultingStatus: resultingStatus ?? this.resultingStatus,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  SignalDecisionEvent copyWithCompanion(SignalDecisionEventsCompanion data) {
+    return SignalDecisionEvent(
+      id: data.id.present ? data.id.value : this.id,
+      signalId: data.signalId.present ? data.signalId.value : this.signalId,
+      eventType: data.eventType.present ? data.eventType.value : this.eventType,
+      occurredAt:
+          data.occurredAt.present ? data.occurredAt.value : this.occurredAt,
+      actorUserId:
+          data.actorUserId.present ? data.actorUserId.value : this.actorUserId,
+      note: data.note.present ? data.note.value : this.note,
+      followUpDueAt: data.followUpDueAt.present
+          ? data.followUpDueAt.value
+          : this.followUpDueAt,
+      followUpContext: data.followUpContext.present
+          ? data.followUpContext.value
+          : this.followUpContext,
+      resultingStatus: data.resultingStatus.present
+          ? data.resultingStatus.value
+          : this.resultingStatus,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SignalDecisionEvent(')
+          ..write('id: $id, ')
+          ..write('signalId: $signalId, ')
+          ..write('eventType: $eventType, ')
+          ..write('occurredAt: $occurredAt, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('note: $note, ')
+          ..write('followUpDueAt: $followUpDueAt, ')
+          ..write('followUpContext: $followUpContext, ')
+          ..write('resultingStatus: $resultingStatus, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      signalId,
+      eventType,
+      occurredAt,
+      actorUserId,
+      note,
+      followUpDueAt,
+      followUpContext,
+      resultingStatus,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SignalDecisionEvent &&
+          other.id == this.id &&
+          other.signalId == this.signalId &&
+          other.eventType == this.eventType &&
+          other.occurredAt == this.occurredAt &&
+          other.actorUserId == this.actorUserId &&
+          other.note == this.note &&
+          other.followUpDueAt == this.followUpDueAt &&
+          other.followUpContext == this.followUpContext &&
+          other.resultingStatus == this.resultingStatus &&
+          other.createdAt == this.createdAt);
+}
+
+class SignalDecisionEventsCompanion
+    extends UpdateCompanion<SignalDecisionEvent> {
+  final Value<int> id;
+  final Value<int> signalId;
+  final Value<String> eventType;
+  final Value<int> occurredAt;
+  final Value<int?> actorUserId;
+  final Value<String?> note;
+  final Value<int?> followUpDueAt;
+  final Value<String?> followUpContext;
+  final Value<String> resultingStatus;
+  final Value<int> createdAt;
+  const SignalDecisionEventsCompanion({
+    this.id = const Value.absent(),
+    this.signalId = const Value.absent(),
+    this.eventType = const Value.absent(),
+    this.occurredAt = const Value.absent(),
+    this.actorUserId = const Value.absent(),
+    this.note = const Value.absent(),
+    this.followUpDueAt = const Value.absent(),
+    this.followUpContext = const Value.absent(),
+    this.resultingStatus = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  SignalDecisionEventsCompanion.insert({
+    this.id = const Value.absent(),
+    required int signalId,
+    required String eventType,
+    required int occurredAt,
+    this.actorUserId = const Value.absent(),
+    this.note = const Value.absent(),
+    this.followUpDueAt = const Value.absent(),
+    this.followUpContext = const Value.absent(),
+    required String resultingStatus,
+    required int createdAt,
+  })  : signalId = Value(signalId),
+        eventType = Value(eventType),
+        occurredAt = Value(occurredAt),
+        resultingStatus = Value(resultingStatus),
+        createdAt = Value(createdAt);
+  static Insertable<SignalDecisionEvent> custom({
+    Expression<int>? id,
+    Expression<int>? signalId,
+    Expression<String>? eventType,
+    Expression<int>? occurredAt,
+    Expression<int>? actorUserId,
+    Expression<String>? note,
+    Expression<int>? followUpDueAt,
+    Expression<String>? followUpContext,
+    Expression<String>? resultingStatus,
+    Expression<int>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (signalId != null) 'signal_id': signalId,
+      if (eventType != null) 'event_type': eventType,
+      if (occurredAt != null) 'occurred_at': occurredAt,
+      if (actorUserId != null) 'actor_user_id': actorUserId,
+      if (note != null) 'note': note,
+      if (followUpDueAt != null) 'follow_up_due_at': followUpDueAt,
+      if (followUpContext != null) 'follow_up_context': followUpContext,
+      if (resultingStatus != null) 'resulting_status': resultingStatus,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  SignalDecisionEventsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? signalId,
+      Value<String>? eventType,
+      Value<int>? occurredAt,
+      Value<int?>? actorUserId,
+      Value<String?>? note,
+      Value<int?>? followUpDueAt,
+      Value<String?>? followUpContext,
+      Value<String>? resultingStatus,
+      Value<int>? createdAt}) {
+    return SignalDecisionEventsCompanion(
+      id: id ?? this.id,
+      signalId: signalId ?? this.signalId,
+      eventType: eventType ?? this.eventType,
+      occurredAt: occurredAt ?? this.occurredAt,
+      actorUserId: actorUserId ?? this.actorUserId,
+      note: note ?? this.note,
+      followUpDueAt: followUpDueAt ?? this.followUpDueAt,
+      followUpContext: followUpContext ?? this.followUpContext,
+      resultingStatus: resultingStatus ?? this.resultingStatus,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (signalId.present) {
+      map['signal_id'] = Variable<int>(signalId.value);
+    }
+    if (eventType.present) {
+      map['event_type'] = Variable<String>(eventType.value);
+    }
+    if (occurredAt.present) {
+      map['occurred_at'] = Variable<int>(occurredAt.value);
+    }
+    if (actorUserId.present) {
+      map['actor_user_id'] = Variable<int>(actorUserId.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (followUpDueAt.present) {
+      map['follow_up_due_at'] = Variable<int>(followUpDueAt.value);
+    }
+    if (followUpContext.present) {
+      map['follow_up_context'] = Variable<String>(followUpContext.value);
+    }
+    if (resultingStatus.present) {
+      map['resulting_status'] = Variable<String>(resultingStatus.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SignalDecisionEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('signalId: $signalId, ')
+          ..write('eventType: $eventType, ')
+          ..write('occurredAt: $occurredAt, ')
+          ..write('actorUserId: $actorUserId, ')
+          ..write('note: $note, ')
+          ..write('followUpDueAt: $followUpDueAt, ')
+          ..write('followUpContext: $followUpContext, ')
+          ..write('resultingStatus: $resultingStatus, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ActionEffectsTable extends ActionEffects
+    with TableInfo<$ActionEffectsTable, ActionEffect> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ActionEffectsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _decisionEventIdMeta =
+      const VerificationMeta('decisionEventId');
+  @override
+  late final GeneratedColumn<int> decisionEventId = GeneratedColumn<int>(
+      'decision_event_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES signal_decision_events (id) ON DELETE CASCADE'));
+  static const VerificationMeta _entityTypeMeta =
+      const VerificationMeta('entityType');
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+      'entity_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _entityIdMeta =
+      const VerificationMeta('entityId');
+  @override
+  late final GeneratedColumn<int> entityId = GeneratedColumn<int>(
+      'entity_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _fieldNameMeta =
+      const VerificationMeta('fieldName');
+  @override
+  late final GeneratedColumn<String> fieldName = GeneratedColumn<String>(
+      'field_name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _oldValueMeta =
+      const VerificationMeta('oldValue');
+  @override
+  late final GeneratedColumn<String> oldValue = GeneratedColumn<String>(
+      'old_value', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _newValueMeta =
+      const VerificationMeta('newValue');
+  @override
+  late final GeneratedColumn<String> newValue = GeneratedColumn<String>(
+      'new_value', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _appliedAtMeta =
+      const VerificationMeta('appliedAt');
+  @override
+  late final GeneratedColumn<int> appliedAt = GeneratedColumn<int>(
+      'applied_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        decisionEventId,
+        entityType,
+        entityId,
+        fieldName,
+        oldValue,
+        newValue,
+        appliedAt,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'action_effects';
+  @override
+  VerificationContext validateIntegrity(Insertable<ActionEffect> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('decision_event_id')) {
+      context.handle(
+          _decisionEventIdMeta,
+          decisionEventId.isAcceptableOrUnknown(
+              data['decision_event_id']!, _decisionEventIdMeta));
+    } else if (isInserting) {
+      context.missing(_decisionEventIdMeta);
+    }
+    if (data.containsKey('entity_type')) {
+      context.handle(
+          _entityTypeMeta,
+          entityType.isAcceptableOrUnknown(
+              data['entity_type']!, _entityTypeMeta));
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(_entityIdMeta,
+          entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta));
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('field_name')) {
+      context.handle(_fieldNameMeta,
+          fieldName.isAcceptableOrUnknown(data['field_name']!, _fieldNameMeta));
+    } else if (isInserting) {
+      context.missing(_fieldNameMeta);
+    }
+    if (data.containsKey('old_value')) {
+      context.handle(_oldValueMeta,
+          oldValue.isAcceptableOrUnknown(data['old_value']!, _oldValueMeta));
+    }
+    if (data.containsKey('new_value')) {
+      context.handle(_newValueMeta,
+          newValue.isAcceptableOrUnknown(data['new_value']!, _newValueMeta));
+    }
+    if (data.containsKey('applied_at')) {
+      context.handle(_appliedAtMeta,
+          appliedAt.isAcceptableOrUnknown(data['applied_at']!, _appliedAtMeta));
+    } else if (isInserting) {
+      context.missing(_appliedAtMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ActionEffect map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ActionEffect(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      decisionEventId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}decision_event_id'])!,
+      entityType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}entity_type'])!,
+      entityId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}entity_id'])!,
+      fieldName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}field_name'])!,
+      oldValue: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}old_value']),
+      newValue: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}new_value']),
+      appliedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}applied_at'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $ActionEffectsTable createAlias(String alias) {
+    return $ActionEffectsTable(attachedDatabase, alias);
+  }
+}
+
+class ActionEffect extends DataClass implements Insertable<ActionEffect> {
+  final int id;
+  final int decisionEventId;
+
+  /// plot_observation | session | trial | application | photo
+  final String entityType;
+  final int entityId;
+  final String fieldName;
+  final String? oldValue;
+  final String? newValue;
+  final int appliedAt;
+  final int createdAt;
+  const ActionEffect(
+      {required this.id,
+      required this.decisionEventId,
+      required this.entityType,
+      required this.entityId,
+      required this.fieldName,
+      this.oldValue,
+      this.newValue,
+      required this.appliedAt,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['decision_event_id'] = Variable<int>(decisionEventId);
+    map['entity_type'] = Variable<String>(entityType);
+    map['entity_id'] = Variable<int>(entityId);
+    map['field_name'] = Variable<String>(fieldName);
+    if (!nullToAbsent || oldValue != null) {
+      map['old_value'] = Variable<String>(oldValue);
+    }
+    if (!nullToAbsent || newValue != null) {
+      map['new_value'] = Variable<String>(newValue);
+    }
+    map['applied_at'] = Variable<int>(appliedAt);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  ActionEffectsCompanion toCompanion(bool nullToAbsent) {
+    return ActionEffectsCompanion(
+      id: Value(id),
+      decisionEventId: Value(decisionEventId),
+      entityType: Value(entityType),
+      entityId: Value(entityId),
+      fieldName: Value(fieldName),
+      oldValue: oldValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(oldValue),
+      newValue: newValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(newValue),
+      appliedAt: Value(appliedAt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ActionEffect.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ActionEffect(
+      id: serializer.fromJson<int>(json['id']),
+      decisionEventId: serializer.fromJson<int>(json['decisionEventId']),
+      entityType: serializer.fromJson<String>(json['entityType']),
+      entityId: serializer.fromJson<int>(json['entityId']),
+      fieldName: serializer.fromJson<String>(json['fieldName']),
+      oldValue: serializer.fromJson<String?>(json['oldValue']),
+      newValue: serializer.fromJson<String?>(json['newValue']),
+      appliedAt: serializer.fromJson<int>(json['appliedAt']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'decisionEventId': serializer.toJson<int>(decisionEventId),
+      'entityType': serializer.toJson<String>(entityType),
+      'entityId': serializer.toJson<int>(entityId),
+      'fieldName': serializer.toJson<String>(fieldName),
+      'oldValue': serializer.toJson<String?>(oldValue),
+      'newValue': serializer.toJson<String?>(newValue),
+      'appliedAt': serializer.toJson<int>(appliedAt),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  ActionEffect copyWith(
+          {int? id,
+          int? decisionEventId,
+          String? entityType,
+          int? entityId,
+          String? fieldName,
+          Value<String?> oldValue = const Value.absent(),
+          Value<String?> newValue = const Value.absent(),
+          int? appliedAt,
+          int? createdAt}) =>
+      ActionEffect(
+        id: id ?? this.id,
+        decisionEventId: decisionEventId ?? this.decisionEventId,
+        entityType: entityType ?? this.entityType,
+        entityId: entityId ?? this.entityId,
+        fieldName: fieldName ?? this.fieldName,
+        oldValue: oldValue.present ? oldValue.value : this.oldValue,
+        newValue: newValue.present ? newValue.value : this.newValue,
+        appliedAt: appliedAt ?? this.appliedAt,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  ActionEffect copyWithCompanion(ActionEffectsCompanion data) {
+    return ActionEffect(
+      id: data.id.present ? data.id.value : this.id,
+      decisionEventId: data.decisionEventId.present
+          ? data.decisionEventId.value
+          : this.decisionEventId,
+      entityType:
+          data.entityType.present ? data.entityType.value : this.entityType,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      fieldName: data.fieldName.present ? data.fieldName.value : this.fieldName,
+      oldValue: data.oldValue.present ? data.oldValue.value : this.oldValue,
+      newValue: data.newValue.present ? data.newValue.value : this.newValue,
+      appliedAt: data.appliedAt.present ? data.appliedAt.value : this.appliedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ActionEffect(')
+          ..write('id: $id, ')
+          ..write('decisionEventId: $decisionEventId, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('fieldName: $fieldName, ')
+          ..write('oldValue: $oldValue, ')
+          ..write('newValue: $newValue, ')
+          ..write('appliedAt: $appliedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, decisionEventId, entityType, entityId,
+      fieldName, oldValue, newValue, appliedAt, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ActionEffect &&
+          other.id == this.id &&
+          other.decisionEventId == this.decisionEventId &&
+          other.entityType == this.entityType &&
+          other.entityId == this.entityId &&
+          other.fieldName == this.fieldName &&
+          other.oldValue == this.oldValue &&
+          other.newValue == this.newValue &&
+          other.appliedAt == this.appliedAt &&
+          other.createdAt == this.createdAt);
+}
+
+class ActionEffectsCompanion extends UpdateCompanion<ActionEffect> {
+  final Value<int> id;
+  final Value<int> decisionEventId;
+  final Value<String> entityType;
+  final Value<int> entityId;
+  final Value<String> fieldName;
+  final Value<String?> oldValue;
+  final Value<String?> newValue;
+  final Value<int> appliedAt;
+  final Value<int> createdAt;
+  const ActionEffectsCompanion({
+    this.id = const Value.absent(),
+    this.decisionEventId = const Value.absent(),
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.fieldName = const Value.absent(),
+    this.oldValue = const Value.absent(),
+    this.newValue = const Value.absent(),
+    this.appliedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ActionEffectsCompanion.insert({
+    this.id = const Value.absent(),
+    required int decisionEventId,
+    required String entityType,
+    required int entityId,
+    required String fieldName,
+    this.oldValue = const Value.absent(),
+    this.newValue = const Value.absent(),
+    required int appliedAt,
+    required int createdAt,
+  })  : decisionEventId = Value(decisionEventId),
+        entityType = Value(entityType),
+        entityId = Value(entityId),
+        fieldName = Value(fieldName),
+        appliedAt = Value(appliedAt),
+        createdAt = Value(createdAt);
+  static Insertable<ActionEffect> custom({
+    Expression<int>? id,
+    Expression<int>? decisionEventId,
+    Expression<String>? entityType,
+    Expression<int>? entityId,
+    Expression<String>? fieldName,
+    Expression<String>? oldValue,
+    Expression<String>? newValue,
+    Expression<int>? appliedAt,
+    Expression<int>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (decisionEventId != null) 'decision_event_id': decisionEventId,
+      if (entityType != null) 'entity_type': entityType,
+      if (entityId != null) 'entity_id': entityId,
+      if (fieldName != null) 'field_name': fieldName,
+      if (oldValue != null) 'old_value': oldValue,
+      if (newValue != null) 'new_value': newValue,
+      if (appliedAt != null) 'applied_at': appliedAt,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ActionEffectsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? decisionEventId,
+      Value<String>? entityType,
+      Value<int>? entityId,
+      Value<String>? fieldName,
+      Value<String?>? oldValue,
+      Value<String?>? newValue,
+      Value<int>? appliedAt,
+      Value<int>? createdAt}) {
+    return ActionEffectsCompanion(
+      id: id ?? this.id,
+      decisionEventId: decisionEventId ?? this.decisionEventId,
+      entityType: entityType ?? this.entityType,
+      entityId: entityId ?? this.entityId,
+      fieldName: fieldName ?? this.fieldName,
+      oldValue: oldValue ?? this.oldValue,
+      newValue: newValue ?? this.newValue,
+      appliedAt: appliedAt ?? this.appliedAt,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (decisionEventId.present) {
+      map['decision_event_id'] = Variable<int>(decisionEventId.value);
+    }
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<int>(entityId.value);
+    }
+    if (fieldName.present) {
+      map['field_name'] = Variable<String>(fieldName.value);
+    }
+    if (oldValue.present) {
+      map['old_value'] = Variable<String>(oldValue.value);
+    }
+    if (newValue.present) {
+      map['new_value'] = Variable<String>(newValue.value);
+    }
+    if (appliedAt.present) {
+      map['applied_at'] = Variable<int>(appliedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ActionEffectsCompanion(')
+          ..write('id: $id, ')
+          ..write('decisionEventId: $decisionEventId, ')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('fieldName: $fieldName, ')
+          ..write('oldValue: $oldValue, ')
+          ..write('newValue: $newValue, ')
+          ..write('appliedAt: $appliedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SeTypeCausalProfilesTable extends SeTypeCausalProfiles
+    with TableInfo<$SeTypeCausalProfilesTable, SeTypeCausalProfile> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SeTypeCausalProfilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _seTypeMeta = const VerificationMeta('seType');
+  @override
+  late final GeneratedColumn<String> seType = GeneratedColumn<String>(
+      'se_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _trialTypeMeta =
+      const VerificationMeta('trialType');
+  @override
+  late final GeneratedColumn<String> trialType = GeneratedColumn<String>(
+      'trial_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _causalWindowDaysMinMeta =
+      const VerificationMeta('causalWindowDaysMin');
+  @override
+  late final GeneratedColumn<int> causalWindowDaysMin = GeneratedColumn<int>(
+      'causal_window_days_min', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _causalWindowDaysMaxMeta =
+      const VerificationMeta('causalWindowDaysMax');
+  @override
+  late final GeneratedColumn<int> causalWindowDaysMax = GeneratedColumn<int>(
+      'causal_window_days_max', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _expectedResponseDirectionMeta =
+      const VerificationMeta('expectedResponseDirection');
+  @override
+  late final GeneratedColumn<String> expectedResponseDirection =
+      GeneratedColumn<String>('expected_response_direction', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _expectedChangeRatePerWeekMeta =
+      const VerificationMeta('expectedChangeRatePerWeek');
+  @override
+  late final GeneratedColumn<double> expectedChangeRatePerWeek =
+      GeneratedColumn<double>(
+          'expected_change_rate_per_week', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _spatialClusteringExpectedMeta =
+      const VerificationMeta('spatialClusteringExpected');
+  @override
+  late final GeneratedColumn<bool> spatialClusteringExpected =
+      GeneratedColumn<bool>('spatial_clustering_expected', aliasedName, false,
+          type: DriftSqlType.bool,
+          requiredDuringInsert: false,
+          defaultConstraints: GeneratedColumn.constraintIsAlways(
+              'CHECK ("spatial_clustering_expected" IN (0, 1))'),
+          defaultValue: const Constant(false));
+  static const VerificationMeta _untreatedExcludedFromMeanMeta =
+      const VerificationMeta('untreatedExcludedFromMean');
+  @override
+  late final GeneratedColumn<bool> untreatedExcludedFromMean =
+      GeneratedColumn<bool>('untreated_excluded_from_mean', aliasedName, false,
+          type: DriftSqlType.bool,
+          requiredDuringInsert: false,
+          defaultConstraints: GeneratedColumn.constraintIsAlways(
+              'CHECK ("untreated_excluded_from_mean" IN (0, 1))'),
+          defaultValue: const Constant(true));
+  static const VerificationMeta _baseThresholdSdMultiplierMeta =
+      const VerificationMeta('baseThresholdSdMultiplier');
+  @override
+  late final GeneratedColumn<double> baseThresholdSdMultiplier =
+      GeneratedColumn<double>(
+          'base_threshold_sd_multiplier', aliasedName, false,
+          type: DriftSqlType.double,
+          requiredDuringInsert: false,
+          defaultValue: const Constant(2.0));
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sourceReferenceMeta =
+      const VerificationMeta('sourceReference');
+  @override
+  late final GeneratedColumn<String> sourceReference = GeneratedColumn<String>(
+      'source_reference', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        seType,
+        trialType,
+        causalWindowDaysMin,
+        causalWindowDaysMax,
+        expectedResponseDirection,
+        expectedChangeRatePerWeek,
+        spatialClusteringExpected,
+        untreatedExcludedFromMean,
+        baseThresholdSdMultiplier,
+        source,
+        sourceReference,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'se_type_causal_profiles';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<SeTypeCausalProfile> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('se_type')) {
+      context.handle(_seTypeMeta,
+          seType.isAcceptableOrUnknown(data['se_type']!, _seTypeMeta));
+    } else if (isInserting) {
+      context.missing(_seTypeMeta);
+    }
+    if (data.containsKey('trial_type')) {
+      context.handle(_trialTypeMeta,
+          trialType.isAcceptableOrUnknown(data['trial_type']!, _trialTypeMeta));
+    } else if (isInserting) {
+      context.missing(_trialTypeMeta);
+    }
+    if (data.containsKey('causal_window_days_min')) {
+      context.handle(
+          _causalWindowDaysMinMeta,
+          causalWindowDaysMin.isAcceptableOrUnknown(
+              data['causal_window_days_min']!, _causalWindowDaysMinMeta));
+    } else if (isInserting) {
+      context.missing(_causalWindowDaysMinMeta);
+    }
+    if (data.containsKey('causal_window_days_max')) {
+      context.handle(
+          _causalWindowDaysMaxMeta,
+          causalWindowDaysMax.isAcceptableOrUnknown(
+              data['causal_window_days_max']!, _causalWindowDaysMaxMeta));
+    } else if (isInserting) {
+      context.missing(_causalWindowDaysMaxMeta);
+    }
+    if (data.containsKey('expected_response_direction')) {
+      context.handle(
+          _expectedResponseDirectionMeta,
+          expectedResponseDirection.isAcceptableOrUnknown(
+              data['expected_response_direction']!,
+              _expectedResponseDirectionMeta));
+    } else if (isInserting) {
+      context.missing(_expectedResponseDirectionMeta);
+    }
+    if (data.containsKey('expected_change_rate_per_week')) {
+      context.handle(
+          _expectedChangeRatePerWeekMeta,
+          expectedChangeRatePerWeek.isAcceptableOrUnknown(
+              data['expected_change_rate_per_week']!,
+              _expectedChangeRatePerWeekMeta));
+    }
+    if (data.containsKey('spatial_clustering_expected')) {
+      context.handle(
+          _spatialClusteringExpectedMeta,
+          spatialClusteringExpected.isAcceptableOrUnknown(
+              data['spatial_clustering_expected']!,
+              _spatialClusteringExpectedMeta));
+    }
+    if (data.containsKey('untreated_excluded_from_mean')) {
+      context.handle(
+          _untreatedExcludedFromMeanMeta,
+          untreatedExcludedFromMean.isAcceptableOrUnknown(
+              data['untreated_excluded_from_mean']!,
+              _untreatedExcludedFromMeanMeta));
+    }
+    if (data.containsKey('base_threshold_sd_multiplier')) {
+      context.handle(
+          _baseThresholdSdMultiplierMeta,
+          baseThresholdSdMultiplier.isAcceptableOrUnknown(
+              data['base_threshold_sd_multiplier']!,
+              _baseThresholdSdMultiplierMeta));
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('source_reference')) {
+      context.handle(
+          _sourceReferenceMeta,
+          sourceReference.isAcceptableOrUnknown(
+              data['source_reference']!, _sourceReferenceMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {seType, trialType},
+      ];
+  @override
+  SeTypeCausalProfile map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SeTypeCausalProfile(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      seType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}se_type'])!,
+      trialType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}trial_type'])!,
+      causalWindowDaysMin: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}causal_window_days_min'])!,
+      causalWindowDaysMax: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}causal_window_days_max'])!,
+      expectedResponseDirection: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}expected_response_direction'])!,
+      expectedChangeRatePerWeek: attachedDatabase.typeMapping.read(
+          DriftSqlType.double,
+          data['${effectivePrefix}expected_change_rate_per_week']),
+      spatialClusteringExpected: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool,
+          data['${effectivePrefix}spatial_clustering_expected'])!,
+      untreatedExcludedFromMean: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool,
+          data['${effectivePrefix}untreated_excluded_from_mean'])!,
+      baseThresholdSdMultiplier: attachedDatabase.typeMapping.read(
+          DriftSqlType.double,
+          data['${effectivePrefix}base_threshold_sd_multiplier'])!,
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
+      sourceReference: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}source_reference']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $SeTypeCausalProfilesTable createAlias(String alias) {
+    return $SeTypeCausalProfilesTable(attachedDatabase, alias);
+  }
+}
+
+class SeTypeCausalProfile extends DataClass
+    implements Insertable<SeTypeCausalProfile> {
+  final int id;
+
+  /// CONTRO | LODGIN | PESINC | ...
+  final String seType;
+
+  /// efficacy | variety | breeding | on_farm
+  final String trialType;
+  final int causalWindowDaysMin;
+  final int causalWindowDaysMax;
+
+  /// increase | decrease | stable
+  final String expectedResponseDirection;
+  final double? expectedChangeRatePerWeek;
+  final bool spatialClusteringExpected;
+  final bool untreatedExcludedFromMean;
+  final double baseThresholdSdMultiplier;
+  final String source;
+  final String? sourceReference;
+  final int createdAt;
+  const SeTypeCausalProfile(
+      {required this.id,
+      required this.seType,
+      required this.trialType,
+      required this.causalWindowDaysMin,
+      required this.causalWindowDaysMax,
+      required this.expectedResponseDirection,
+      this.expectedChangeRatePerWeek,
+      required this.spatialClusteringExpected,
+      required this.untreatedExcludedFromMean,
+      required this.baseThresholdSdMultiplier,
+      required this.source,
+      this.sourceReference,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['se_type'] = Variable<String>(seType);
+    map['trial_type'] = Variable<String>(trialType);
+    map['causal_window_days_min'] = Variable<int>(causalWindowDaysMin);
+    map['causal_window_days_max'] = Variable<int>(causalWindowDaysMax);
+    map['expected_response_direction'] =
+        Variable<String>(expectedResponseDirection);
+    if (!nullToAbsent || expectedChangeRatePerWeek != null) {
+      map['expected_change_rate_per_week'] =
+          Variable<double>(expectedChangeRatePerWeek);
+    }
+    map['spatial_clustering_expected'] =
+        Variable<bool>(spatialClusteringExpected);
+    map['untreated_excluded_from_mean'] =
+        Variable<bool>(untreatedExcludedFromMean);
+    map['base_threshold_sd_multiplier'] =
+        Variable<double>(baseThresholdSdMultiplier);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || sourceReference != null) {
+      map['source_reference'] = Variable<String>(sourceReference);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  SeTypeCausalProfilesCompanion toCompanion(bool nullToAbsent) {
+    return SeTypeCausalProfilesCompanion(
+      id: Value(id),
+      seType: Value(seType),
+      trialType: Value(trialType),
+      causalWindowDaysMin: Value(causalWindowDaysMin),
+      causalWindowDaysMax: Value(causalWindowDaysMax),
+      expectedResponseDirection: Value(expectedResponseDirection),
+      expectedChangeRatePerWeek:
+          expectedChangeRatePerWeek == null && nullToAbsent
+              ? const Value.absent()
+              : Value(expectedChangeRatePerWeek),
+      spatialClusteringExpected: Value(spatialClusteringExpected),
+      untreatedExcludedFromMean: Value(untreatedExcludedFromMean),
+      baseThresholdSdMultiplier: Value(baseThresholdSdMultiplier),
+      source: Value(source),
+      sourceReference: sourceReference == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceReference),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SeTypeCausalProfile.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SeTypeCausalProfile(
+      id: serializer.fromJson<int>(json['id']),
+      seType: serializer.fromJson<String>(json['seType']),
+      trialType: serializer.fromJson<String>(json['trialType']),
+      causalWindowDaysMin:
+          serializer.fromJson<int>(json['causalWindowDaysMin']),
+      causalWindowDaysMax:
+          serializer.fromJson<int>(json['causalWindowDaysMax']),
+      expectedResponseDirection:
+          serializer.fromJson<String>(json['expectedResponseDirection']),
+      expectedChangeRatePerWeek:
+          serializer.fromJson<double?>(json['expectedChangeRatePerWeek']),
+      spatialClusteringExpected:
+          serializer.fromJson<bool>(json['spatialClusteringExpected']),
+      untreatedExcludedFromMean:
+          serializer.fromJson<bool>(json['untreatedExcludedFromMean']),
+      baseThresholdSdMultiplier:
+          serializer.fromJson<double>(json['baseThresholdSdMultiplier']),
+      source: serializer.fromJson<String>(json['source']),
+      sourceReference: serializer.fromJson<String?>(json['sourceReference']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'seType': serializer.toJson<String>(seType),
+      'trialType': serializer.toJson<String>(trialType),
+      'causalWindowDaysMin': serializer.toJson<int>(causalWindowDaysMin),
+      'causalWindowDaysMax': serializer.toJson<int>(causalWindowDaysMax),
+      'expectedResponseDirection':
+          serializer.toJson<String>(expectedResponseDirection),
+      'expectedChangeRatePerWeek':
+          serializer.toJson<double?>(expectedChangeRatePerWeek),
+      'spatialClusteringExpected':
+          serializer.toJson<bool>(spatialClusteringExpected),
+      'untreatedExcludedFromMean':
+          serializer.toJson<bool>(untreatedExcludedFromMean),
+      'baseThresholdSdMultiplier':
+          serializer.toJson<double>(baseThresholdSdMultiplier),
+      'source': serializer.toJson<String>(source),
+      'sourceReference': serializer.toJson<String?>(sourceReference),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  SeTypeCausalProfile copyWith(
+          {int? id,
+          String? seType,
+          String? trialType,
+          int? causalWindowDaysMin,
+          int? causalWindowDaysMax,
+          String? expectedResponseDirection,
+          Value<double?> expectedChangeRatePerWeek = const Value.absent(),
+          bool? spatialClusteringExpected,
+          bool? untreatedExcludedFromMean,
+          double? baseThresholdSdMultiplier,
+          String? source,
+          Value<String?> sourceReference = const Value.absent(),
+          int? createdAt}) =>
+      SeTypeCausalProfile(
+        id: id ?? this.id,
+        seType: seType ?? this.seType,
+        trialType: trialType ?? this.trialType,
+        causalWindowDaysMin: causalWindowDaysMin ?? this.causalWindowDaysMin,
+        causalWindowDaysMax: causalWindowDaysMax ?? this.causalWindowDaysMax,
+        expectedResponseDirection:
+            expectedResponseDirection ?? this.expectedResponseDirection,
+        expectedChangeRatePerWeek: expectedChangeRatePerWeek.present
+            ? expectedChangeRatePerWeek.value
+            : this.expectedChangeRatePerWeek,
+        spatialClusteringExpected:
+            spatialClusteringExpected ?? this.spatialClusteringExpected,
+        untreatedExcludedFromMean:
+            untreatedExcludedFromMean ?? this.untreatedExcludedFromMean,
+        baseThresholdSdMultiplier:
+            baseThresholdSdMultiplier ?? this.baseThresholdSdMultiplier,
+        source: source ?? this.source,
+        sourceReference: sourceReference.present
+            ? sourceReference.value
+            : this.sourceReference,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  SeTypeCausalProfile copyWithCompanion(SeTypeCausalProfilesCompanion data) {
+    return SeTypeCausalProfile(
+      id: data.id.present ? data.id.value : this.id,
+      seType: data.seType.present ? data.seType.value : this.seType,
+      trialType: data.trialType.present ? data.trialType.value : this.trialType,
+      causalWindowDaysMin: data.causalWindowDaysMin.present
+          ? data.causalWindowDaysMin.value
+          : this.causalWindowDaysMin,
+      causalWindowDaysMax: data.causalWindowDaysMax.present
+          ? data.causalWindowDaysMax.value
+          : this.causalWindowDaysMax,
+      expectedResponseDirection: data.expectedResponseDirection.present
+          ? data.expectedResponseDirection.value
+          : this.expectedResponseDirection,
+      expectedChangeRatePerWeek: data.expectedChangeRatePerWeek.present
+          ? data.expectedChangeRatePerWeek.value
+          : this.expectedChangeRatePerWeek,
+      spatialClusteringExpected: data.spatialClusteringExpected.present
+          ? data.spatialClusteringExpected.value
+          : this.spatialClusteringExpected,
+      untreatedExcludedFromMean: data.untreatedExcludedFromMean.present
+          ? data.untreatedExcludedFromMean.value
+          : this.untreatedExcludedFromMean,
+      baseThresholdSdMultiplier: data.baseThresholdSdMultiplier.present
+          ? data.baseThresholdSdMultiplier.value
+          : this.baseThresholdSdMultiplier,
+      source: data.source.present ? data.source.value : this.source,
+      sourceReference: data.sourceReference.present
+          ? data.sourceReference.value
+          : this.sourceReference,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeTypeCausalProfile(')
+          ..write('id: $id, ')
+          ..write('seType: $seType, ')
+          ..write('trialType: $trialType, ')
+          ..write('causalWindowDaysMin: $causalWindowDaysMin, ')
+          ..write('causalWindowDaysMax: $causalWindowDaysMax, ')
+          ..write('expectedResponseDirection: $expectedResponseDirection, ')
+          ..write('expectedChangeRatePerWeek: $expectedChangeRatePerWeek, ')
+          ..write('spatialClusteringExpected: $spatialClusteringExpected, ')
+          ..write('untreatedExcludedFromMean: $untreatedExcludedFromMean, ')
+          ..write('baseThresholdSdMultiplier: $baseThresholdSdMultiplier, ')
+          ..write('source: $source, ')
+          ..write('sourceReference: $sourceReference, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      seType,
+      trialType,
+      causalWindowDaysMin,
+      causalWindowDaysMax,
+      expectedResponseDirection,
+      expectedChangeRatePerWeek,
+      spatialClusteringExpected,
+      untreatedExcludedFromMean,
+      baseThresholdSdMultiplier,
+      source,
+      sourceReference,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SeTypeCausalProfile &&
+          other.id == this.id &&
+          other.seType == this.seType &&
+          other.trialType == this.trialType &&
+          other.causalWindowDaysMin == this.causalWindowDaysMin &&
+          other.causalWindowDaysMax == this.causalWindowDaysMax &&
+          other.expectedResponseDirection == this.expectedResponseDirection &&
+          other.expectedChangeRatePerWeek == this.expectedChangeRatePerWeek &&
+          other.spatialClusteringExpected == this.spatialClusteringExpected &&
+          other.untreatedExcludedFromMean == this.untreatedExcludedFromMean &&
+          other.baseThresholdSdMultiplier == this.baseThresholdSdMultiplier &&
+          other.source == this.source &&
+          other.sourceReference == this.sourceReference &&
+          other.createdAt == this.createdAt);
+}
+
+class SeTypeCausalProfilesCompanion
+    extends UpdateCompanion<SeTypeCausalProfile> {
+  final Value<int> id;
+  final Value<String> seType;
+  final Value<String> trialType;
+  final Value<int> causalWindowDaysMin;
+  final Value<int> causalWindowDaysMax;
+  final Value<String> expectedResponseDirection;
+  final Value<double?> expectedChangeRatePerWeek;
+  final Value<bool> spatialClusteringExpected;
+  final Value<bool> untreatedExcludedFromMean;
+  final Value<double> baseThresholdSdMultiplier;
+  final Value<String> source;
+  final Value<String?> sourceReference;
+  final Value<int> createdAt;
+  const SeTypeCausalProfilesCompanion({
+    this.id = const Value.absent(),
+    this.seType = const Value.absent(),
+    this.trialType = const Value.absent(),
+    this.causalWindowDaysMin = const Value.absent(),
+    this.causalWindowDaysMax = const Value.absent(),
+    this.expectedResponseDirection = const Value.absent(),
+    this.expectedChangeRatePerWeek = const Value.absent(),
+    this.spatialClusteringExpected = const Value.absent(),
+    this.untreatedExcludedFromMean = const Value.absent(),
+    this.baseThresholdSdMultiplier = const Value.absent(),
+    this.source = const Value.absent(),
+    this.sourceReference = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  SeTypeCausalProfilesCompanion.insert({
+    this.id = const Value.absent(),
+    required String seType,
+    required String trialType,
+    required int causalWindowDaysMin,
+    required int causalWindowDaysMax,
+    required String expectedResponseDirection,
+    this.expectedChangeRatePerWeek = const Value.absent(),
+    this.spatialClusteringExpected = const Value.absent(),
+    this.untreatedExcludedFromMean = const Value.absent(),
+    this.baseThresholdSdMultiplier = const Value.absent(),
+    required String source,
+    this.sourceReference = const Value.absent(),
+    required int createdAt,
+  })  : seType = Value(seType),
+        trialType = Value(trialType),
+        causalWindowDaysMin = Value(causalWindowDaysMin),
+        causalWindowDaysMax = Value(causalWindowDaysMax),
+        expectedResponseDirection = Value(expectedResponseDirection),
+        source = Value(source),
+        createdAt = Value(createdAt);
+  static Insertable<SeTypeCausalProfile> custom({
+    Expression<int>? id,
+    Expression<String>? seType,
+    Expression<String>? trialType,
+    Expression<int>? causalWindowDaysMin,
+    Expression<int>? causalWindowDaysMax,
+    Expression<String>? expectedResponseDirection,
+    Expression<double>? expectedChangeRatePerWeek,
+    Expression<bool>? spatialClusteringExpected,
+    Expression<bool>? untreatedExcludedFromMean,
+    Expression<double>? baseThresholdSdMultiplier,
+    Expression<String>? source,
+    Expression<String>? sourceReference,
+    Expression<int>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (seType != null) 'se_type': seType,
+      if (trialType != null) 'trial_type': trialType,
+      if (causalWindowDaysMin != null)
+        'causal_window_days_min': causalWindowDaysMin,
+      if (causalWindowDaysMax != null)
+        'causal_window_days_max': causalWindowDaysMax,
+      if (expectedResponseDirection != null)
+        'expected_response_direction': expectedResponseDirection,
+      if (expectedChangeRatePerWeek != null)
+        'expected_change_rate_per_week': expectedChangeRatePerWeek,
+      if (spatialClusteringExpected != null)
+        'spatial_clustering_expected': spatialClusteringExpected,
+      if (untreatedExcludedFromMean != null)
+        'untreated_excluded_from_mean': untreatedExcludedFromMean,
+      if (baseThresholdSdMultiplier != null)
+        'base_threshold_sd_multiplier': baseThresholdSdMultiplier,
+      if (source != null) 'source': source,
+      if (sourceReference != null) 'source_reference': sourceReference,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  SeTypeCausalProfilesCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? seType,
+      Value<String>? trialType,
+      Value<int>? causalWindowDaysMin,
+      Value<int>? causalWindowDaysMax,
+      Value<String>? expectedResponseDirection,
+      Value<double?>? expectedChangeRatePerWeek,
+      Value<bool>? spatialClusteringExpected,
+      Value<bool>? untreatedExcludedFromMean,
+      Value<double>? baseThresholdSdMultiplier,
+      Value<String>? source,
+      Value<String?>? sourceReference,
+      Value<int>? createdAt}) {
+    return SeTypeCausalProfilesCompanion(
+      id: id ?? this.id,
+      seType: seType ?? this.seType,
+      trialType: trialType ?? this.trialType,
+      causalWindowDaysMin: causalWindowDaysMin ?? this.causalWindowDaysMin,
+      causalWindowDaysMax: causalWindowDaysMax ?? this.causalWindowDaysMax,
+      expectedResponseDirection:
+          expectedResponseDirection ?? this.expectedResponseDirection,
+      expectedChangeRatePerWeek:
+          expectedChangeRatePerWeek ?? this.expectedChangeRatePerWeek,
+      spatialClusteringExpected:
+          spatialClusteringExpected ?? this.spatialClusteringExpected,
+      untreatedExcludedFromMean:
+          untreatedExcludedFromMean ?? this.untreatedExcludedFromMean,
+      baseThresholdSdMultiplier:
+          baseThresholdSdMultiplier ?? this.baseThresholdSdMultiplier,
+      source: source ?? this.source,
+      sourceReference: sourceReference ?? this.sourceReference,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (seType.present) {
+      map['se_type'] = Variable<String>(seType.value);
+    }
+    if (trialType.present) {
+      map['trial_type'] = Variable<String>(trialType.value);
+    }
+    if (causalWindowDaysMin.present) {
+      map['causal_window_days_min'] = Variable<int>(causalWindowDaysMin.value);
+    }
+    if (causalWindowDaysMax.present) {
+      map['causal_window_days_max'] = Variable<int>(causalWindowDaysMax.value);
+    }
+    if (expectedResponseDirection.present) {
+      map['expected_response_direction'] =
+          Variable<String>(expectedResponseDirection.value);
+    }
+    if (expectedChangeRatePerWeek.present) {
+      map['expected_change_rate_per_week'] =
+          Variable<double>(expectedChangeRatePerWeek.value);
+    }
+    if (spatialClusteringExpected.present) {
+      map['spatial_clustering_expected'] =
+          Variable<bool>(spatialClusteringExpected.value);
+    }
+    if (untreatedExcludedFromMean.present) {
+      map['untreated_excluded_from_mean'] =
+          Variable<bool>(untreatedExcludedFromMean.value);
+    }
+    if (baseThresholdSdMultiplier.present) {
+      map['base_threshold_sd_multiplier'] =
+          Variable<double>(baseThresholdSdMultiplier.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (sourceReference.present) {
+      map['source_reference'] = Variable<String>(sourceReference.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SeTypeCausalProfilesCompanion(')
+          ..write('id: $id, ')
+          ..write('seType: $seType, ')
+          ..write('trialType: $trialType, ')
+          ..write('causalWindowDaysMin: $causalWindowDaysMin, ')
+          ..write('causalWindowDaysMax: $causalWindowDaysMax, ')
+          ..write('expectedResponseDirection: $expectedResponseDirection, ')
+          ..write('expectedChangeRatePerWeek: $expectedChangeRatePerWeek, ')
+          ..write('spatialClusteringExpected: $spatialClusteringExpected, ')
+          ..write('untreatedExcludedFromMean: $untreatedExcludedFromMean, ')
+          ..write('baseThresholdSdMultiplier: $baseThresholdSdMultiplier, ')
+          ..write('source: $source, ')
+          ..write('sourceReference: $sourceReference, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EvidenceAnchorsTable extends EvidenceAnchors
+    with TableInfo<$EvidenceAnchorsTable, EvidenceAnchor> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EvidenceAnchorsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _evidenceTypeMeta =
+      const VerificationMeta('evidenceType');
+  @override
+  late final GeneratedColumn<String> evidenceType = GeneratedColumn<String>(
+      'evidence_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _evidenceIdMeta =
+      const VerificationMeta('evidenceId');
+  @override
+  late final GeneratedColumn<int> evidenceId = GeneratedColumn<int>(
+      'evidence_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _claimTypeMeta =
+      const VerificationMeta('claimType');
+  @override
+  late final GeneratedColumn<String> claimType = GeneratedColumn<String>(
+      'claim_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _claimIdMeta =
+      const VerificationMeta('claimId');
+  @override
+  late final GeneratedColumn<int> claimId = GeneratedColumn<int>(
+      'claim_id', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _anchorReasonMeta =
+      const VerificationMeta('anchorReason');
+  @override
+  late final GeneratedColumn<String> anchorReason = GeneratedColumn<String>(
+      'anchor_reason', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _anchoredAtMeta =
+      const VerificationMeta('anchoredAt');
+  @override
+  late final GeneratedColumn<int> anchoredAt = GeneratedColumn<int>(
+      'anchored_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _anchoredByMeta =
+      const VerificationMeta('anchoredBy');
+  @override
+  late final GeneratedColumn<int> anchoredBy = GeneratedColumn<int>(
+      'anchored_by', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        evidenceType,
+        evidenceId,
+        claimType,
+        claimId,
+        anchorReason,
+        anchoredAt,
+        anchoredBy,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'evidence_anchors';
+  @override
+  VerificationContext validateIntegrity(Insertable<EvidenceAnchor> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('evidence_type')) {
+      context.handle(
+          _evidenceTypeMeta,
+          evidenceType.isAcceptableOrUnknown(
+              data['evidence_type']!, _evidenceTypeMeta));
+    } else if (isInserting) {
+      context.missing(_evidenceTypeMeta);
+    }
+    if (data.containsKey('evidence_id')) {
+      context.handle(
+          _evidenceIdMeta,
+          evidenceId.isAcceptableOrUnknown(
+              data['evidence_id']!, _evidenceIdMeta));
+    } else if (isInserting) {
+      context.missing(_evidenceIdMeta);
+    }
+    if (data.containsKey('claim_type')) {
+      context.handle(_claimTypeMeta,
+          claimType.isAcceptableOrUnknown(data['claim_type']!, _claimTypeMeta));
+    } else if (isInserting) {
+      context.missing(_claimTypeMeta);
+    }
+    if (data.containsKey('claim_id')) {
+      context.handle(_claimIdMeta,
+          claimId.isAcceptableOrUnknown(data['claim_id']!, _claimIdMeta));
+    } else if (isInserting) {
+      context.missing(_claimIdMeta);
+    }
+    if (data.containsKey('anchor_reason')) {
+      context.handle(
+          _anchorReasonMeta,
+          anchorReason.isAcceptableOrUnknown(
+              data['anchor_reason']!, _anchorReasonMeta));
+    }
+    if (data.containsKey('anchored_at')) {
+      context.handle(
+          _anchoredAtMeta,
+          anchoredAt.isAcceptableOrUnknown(
+              data['anchored_at']!, _anchoredAtMeta));
+    } else if (isInserting) {
+      context.missing(_anchoredAtMeta);
+    }
+    if (data.containsKey('anchored_by')) {
+      context.handle(
+          _anchoredByMeta,
+          anchoredBy.isAcceptableOrUnknown(
+              data['anchored_by']!, _anchoredByMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  EvidenceAnchor map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EvidenceAnchor(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      evidenceType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}evidence_type'])!,
+      evidenceId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}evidence_id'])!,
+      claimType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}claim_type'])!,
+      claimId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}claim_id'])!,
+      anchorReason: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}anchor_reason']),
+      anchoredAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}anchored_at'])!,
+      anchoredBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}anchored_by']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $EvidenceAnchorsTable createAlias(String alias) {
+    return $EvidenceAnchorsTable(attachedDatabase, alias);
+  }
+}
+
+class EvidenceAnchor extends DataClass implements Insertable<EvidenceAnchor> {
+  final int id;
+  final int trialId;
+
+  /// photo | weather_snapshot | gps_record | audit_entry
+  final String evidenceType;
+
+  /// Polymorphic FK — resolved via [evidenceType].
+  final int evidenceId;
+
+  /// rating | session | application | deviation
+  final String claimType;
+  final int claimId;
+  final String? anchorReason;
+  final int anchoredAt;
+  final int? anchoredBy;
+  final int createdAt;
+  const EvidenceAnchor(
+      {required this.id,
+      required this.trialId,
+      required this.evidenceType,
+      required this.evidenceId,
+      required this.claimType,
+      required this.claimId,
+      this.anchorReason,
+      required this.anchoredAt,
+      this.anchoredBy,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    map['evidence_type'] = Variable<String>(evidenceType);
+    map['evidence_id'] = Variable<int>(evidenceId);
+    map['claim_type'] = Variable<String>(claimType);
+    map['claim_id'] = Variable<int>(claimId);
+    if (!nullToAbsent || anchorReason != null) {
+      map['anchor_reason'] = Variable<String>(anchorReason);
+    }
+    map['anchored_at'] = Variable<int>(anchoredAt);
+    if (!nullToAbsent || anchoredBy != null) {
+      map['anchored_by'] = Variable<int>(anchoredBy);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  EvidenceAnchorsCompanion toCompanion(bool nullToAbsent) {
+    return EvidenceAnchorsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      evidenceType: Value(evidenceType),
+      evidenceId: Value(evidenceId),
+      claimType: Value(claimType),
+      claimId: Value(claimId),
+      anchorReason: anchorReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anchorReason),
+      anchoredAt: Value(anchoredAt),
+      anchoredBy: anchoredBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anchoredBy),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory EvidenceAnchor.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EvidenceAnchor(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      evidenceType: serializer.fromJson<String>(json['evidenceType']),
+      evidenceId: serializer.fromJson<int>(json['evidenceId']),
+      claimType: serializer.fromJson<String>(json['claimType']),
+      claimId: serializer.fromJson<int>(json['claimId']),
+      anchorReason: serializer.fromJson<String?>(json['anchorReason']),
+      anchoredAt: serializer.fromJson<int>(json['anchoredAt']),
+      anchoredBy: serializer.fromJson<int?>(json['anchoredBy']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'evidenceType': serializer.toJson<String>(evidenceType),
+      'evidenceId': serializer.toJson<int>(evidenceId),
+      'claimType': serializer.toJson<String>(claimType),
+      'claimId': serializer.toJson<int>(claimId),
+      'anchorReason': serializer.toJson<String?>(anchorReason),
+      'anchoredAt': serializer.toJson<int>(anchoredAt),
+      'anchoredBy': serializer.toJson<int?>(anchoredBy),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  EvidenceAnchor copyWith(
+          {int? id,
+          int? trialId,
+          String? evidenceType,
+          int? evidenceId,
+          String? claimType,
+          int? claimId,
+          Value<String?> anchorReason = const Value.absent(),
+          int? anchoredAt,
+          Value<int?> anchoredBy = const Value.absent(),
+          int? createdAt}) =>
+      EvidenceAnchor(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        evidenceType: evidenceType ?? this.evidenceType,
+        evidenceId: evidenceId ?? this.evidenceId,
+        claimType: claimType ?? this.claimType,
+        claimId: claimId ?? this.claimId,
+        anchorReason:
+            anchorReason.present ? anchorReason.value : this.anchorReason,
+        anchoredAt: anchoredAt ?? this.anchoredAt,
+        anchoredBy: anchoredBy.present ? anchoredBy.value : this.anchoredBy,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  EvidenceAnchor copyWithCompanion(EvidenceAnchorsCompanion data) {
+    return EvidenceAnchor(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      evidenceType: data.evidenceType.present
+          ? data.evidenceType.value
+          : this.evidenceType,
+      evidenceId:
+          data.evidenceId.present ? data.evidenceId.value : this.evidenceId,
+      claimType: data.claimType.present ? data.claimType.value : this.claimType,
+      claimId: data.claimId.present ? data.claimId.value : this.claimId,
+      anchorReason: data.anchorReason.present
+          ? data.anchorReason.value
+          : this.anchorReason,
+      anchoredAt:
+          data.anchoredAt.present ? data.anchoredAt.value : this.anchoredAt,
+      anchoredBy:
+          data.anchoredBy.present ? data.anchoredBy.value : this.anchoredBy,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EvidenceAnchor(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('evidenceType: $evidenceType, ')
+          ..write('evidenceId: $evidenceId, ')
+          ..write('claimType: $claimType, ')
+          ..write('claimId: $claimId, ')
+          ..write('anchorReason: $anchorReason, ')
+          ..write('anchoredAt: $anchoredAt, ')
+          ..write('anchoredBy: $anchoredBy, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, trialId, evidenceType, evidenceId,
+      claimType, claimId, anchorReason, anchoredAt, anchoredBy, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EvidenceAnchor &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.evidenceType == this.evidenceType &&
+          other.evidenceId == this.evidenceId &&
+          other.claimType == this.claimType &&
+          other.claimId == this.claimId &&
+          other.anchorReason == this.anchorReason &&
+          other.anchoredAt == this.anchoredAt &&
+          other.anchoredBy == this.anchoredBy &&
+          other.createdAt == this.createdAt);
+}
+
+class EvidenceAnchorsCompanion extends UpdateCompanion<EvidenceAnchor> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<String> evidenceType;
+  final Value<int> evidenceId;
+  final Value<String> claimType;
+  final Value<int> claimId;
+  final Value<String?> anchorReason;
+  final Value<int> anchoredAt;
+  final Value<int?> anchoredBy;
+  final Value<int> createdAt;
+  const EvidenceAnchorsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.evidenceType = const Value.absent(),
+    this.evidenceId = const Value.absent(),
+    this.claimType = const Value.absent(),
+    this.claimId = const Value.absent(),
+    this.anchorReason = const Value.absent(),
+    this.anchoredAt = const Value.absent(),
+    this.anchoredBy = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  EvidenceAnchorsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    required String evidenceType,
+    required int evidenceId,
+    required String claimType,
+    required int claimId,
+    this.anchorReason = const Value.absent(),
+    required int anchoredAt,
+    this.anchoredBy = const Value.absent(),
+    required int createdAt,
+  })  : trialId = Value(trialId),
+        evidenceType = Value(evidenceType),
+        evidenceId = Value(evidenceId),
+        claimType = Value(claimType),
+        claimId = Value(claimId),
+        anchoredAt = Value(anchoredAt),
+        createdAt = Value(createdAt);
+  static Insertable<EvidenceAnchor> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<String>? evidenceType,
+    Expression<int>? evidenceId,
+    Expression<String>? claimType,
+    Expression<int>? claimId,
+    Expression<String>? anchorReason,
+    Expression<int>? anchoredAt,
+    Expression<int>? anchoredBy,
+    Expression<int>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (evidenceType != null) 'evidence_type': evidenceType,
+      if (evidenceId != null) 'evidence_id': evidenceId,
+      if (claimType != null) 'claim_type': claimType,
+      if (claimId != null) 'claim_id': claimId,
+      if (anchorReason != null) 'anchor_reason': anchorReason,
+      if (anchoredAt != null) 'anchored_at': anchoredAt,
+      if (anchoredBy != null) 'anchored_by': anchoredBy,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  EvidenceAnchorsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<String>? evidenceType,
+      Value<int>? evidenceId,
+      Value<String>? claimType,
+      Value<int>? claimId,
+      Value<String?>? anchorReason,
+      Value<int>? anchoredAt,
+      Value<int?>? anchoredBy,
+      Value<int>? createdAt}) {
+    return EvidenceAnchorsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      evidenceType: evidenceType ?? this.evidenceType,
+      evidenceId: evidenceId ?? this.evidenceId,
+      claimType: claimType ?? this.claimType,
+      claimId: claimId ?? this.claimId,
+      anchorReason: anchorReason ?? this.anchorReason,
+      anchoredAt: anchoredAt ?? this.anchoredAt,
+      anchoredBy: anchoredBy ?? this.anchoredBy,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (evidenceType.present) {
+      map['evidence_type'] = Variable<String>(evidenceType.value);
+    }
+    if (evidenceId.present) {
+      map['evidence_id'] = Variable<int>(evidenceId.value);
+    }
+    if (claimType.present) {
+      map['claim_type'] = Variable<String>(claimType.value);
+    }
+    if (claimId.present) {
+      map['claim_id'] = Variable<int>(claimId.value);
+    }
+    if (anchorReason.present) {
+      map['anchor_reason'] = Variable<String>(anchorReason.value);
+    }
+    if (anchoredAt.present) {
+      map['anchored_at'] = Variable<int>(anchoredAt.value);
+    }
+    if (anchoredBy.present) {
+      map['anchored_by'] = Variable<int>(anchoredBy.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EvidenceAnchorsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('evidenceType: $evidenceType, ')
+          ..write('evidenceId: $evidenceId, ')
+          ..write('claimType: $claimType, ')
+          ..write('claimId: $claimId, ')
+          ..write('anchorReason: $anchorReason, ')
+          ..write('anchoredAt: $anchoredAt, ')
+          ..write('anchoredBy: $anchoredBy, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -38684,6 +41646,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ArmApplicationsTable armApplications =
       $ArmApplicationsTable(this);
   late final $SeTypeProfilesTable seTypeProfiles = $SeTypeProfilesTable(this);
+  late final $SignalsTable signals = $SignalsTable(this);
+  late final $SignalDecisionEventsTable signalDecisionEvents =
+      $SignalDecisionEventsTable(this);
+  late final $ActionEffectsTable actionEffects = $ActionEffectsTable(this);
+  late final $SeTypeCausalProfilesTable seTypeCausalProfiles =
+      $SeTypeCausalProfilesTable(this);
+  late final $EvidenceAnchorsTable evidenceAnchors =
+      $EvidenceAnchorsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -38732,7 +41702,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         armTrialMetadata,
         armTreatmentMetadata,
         armApplications,
-        seTypeProfiles
+        seTypeProfiles,
+        signals,
+        signalDecisionEvents,
+        actionEffects,
+        seTypeCausalProfiles,
+        evidenceAnchors
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -38772,6 +41747,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
                 limitUpdateKind: UpdateKind.delete),
             result: [
               TableUpdate('arm_applications', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('signals',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('signal_decision_events', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('signal_decision_events',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('action_effects', kind: UpdateKind.delete),
             ],
           ),
         ],
@@ -39039,6 +42028,51 @@ class $$UsersTableFilterComposer
                     $state.db.trialApplicationEvents,
                     joinBuilder,
                     parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter signalsRefs(
+      ComposableFilter Function($$SignalsTableFilterComposer f) f) {
+    final $$SignalsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.signals,
+        getReferencedColumn: (t) => t.raisedBy,
+        builder: (joinBuilder, parentComposers) => $$SignalsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.signals, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter signalDecisionEventsRefs(
+      ComposableFilter Function($$SignalDecisionEventsTableFilterComposer f)
+          f) {
+    final $$SignalDecisionEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.signalDecisionEvents,
+            getReferencedColumn: (t) => t.actorUserId,
+            builder: (joinBuilder, parentComposers) =>
+                $$SignalDecisionEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.signalDecisionEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter evidenceAnchorsRefs(
+      ComposableFilter Function($$EvidenceAnchorsTableFilterComposer f) f) {
+    final $$EvidenceAnchorsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.evidenceAnchors,
+            getReferencedColumn: (t) => t.anchoredBy,
+            builder: (joinBuilder, parentComposers) =>
+                $$EvidenceAnchorsTableFilterComposer(ComposerState($state.db,
+                    $state.db.evidenceAnchors, joinBuilder, parentComposers)));
     return f(composer);
   }
 }
@@ -40400,6 +43434,33 @@ class $$TrialsTableFilterComposer
             builder: (joinBuilder, parentComposers) =>
                 $$ArmTrialMetadataTableFilterComposer(ComposerState($state.db,
                     $state.db.armTrialMetadata, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter signalsRefs(
+      ComposableFilter Function($$SignalsTableFilterComposer f) f) {
+    final $$SignalsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.signals,
+        getReferencedColumn: (t) => t.trialId,
+        builder: (joinBuilder, parentComposers) => $$SignalsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.signals, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter evidenceAnchorsRefs(
+      ComposableFilter Function($$EvidenceAnchorsTableFilterComposer f) f) {
+    final $$EvidenceAnchorsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.evidenceAnchors,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$EvidenceAnchorsTableFilterComposer(ComposerState($state.db,
+                    $state.db.evidenceAnchors, joinBuilder, parentComposers)));
     return f(composer);
   }
 }
@@ -43314,6 +46375,19 @@ class $$PlotsTableFilterComposer
                 $state.db.yieldDetails, joinBuilder, parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter signalsRefs(
+      ComposableFilter Function($$SignalsTableFilterComposer f) f) {
+    final $$SignalsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.signals,
+        getReferencedColumn: (t) => t.plotId,
+        builder: (joinBuilder, parentComposers) => $$SignalsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.signals, joinBuilder, parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$PlotsTableOrderingComposer
@@ -44266,6 +47340,19 @@ class $$SessionsTableFilterComposer
                     $state.db.armSessionMetadata,
                     joinBuilder,
                     parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter signalsRefs(
+      ComposableFilter Function($$SignalsTableFilterComposer f) f) {
+    final $$SignalsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.signals,
+        getReferencedColumn: (t) => t.sessionId,
+        builder: (joinBuilder, parentComposers) => $$SignalsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.signals, joinBuilder, parentComposers)));
     return f(composer);
   }
 }
@@ -55967,6 +59054,1286 @@ class $$SeTypeProfilesTableOrderingComposer
           ColumnOrderings(column, joinBuilders: joinBuilders));
 }
 
+typedef $$SignalsTableCreateCompanionBuilder = SignalsCompanion Function({
+  Value<int> id,
+  required int trialId,
+  Value<int?> sessionId,
+  Value<int?> plotId,
+  required String signalType,
+  required int moment,
+  required String severity,
+  required int raisedAt,
+  Value<int?> raisedBy,
+  required String referenceContext,
+  Value<String?> magnitudeContext,
+  required String consequenceText,
+  Value<String> status,
+  required int createdAt,
+});
+typedef $$SignalsTableUpdateCompanionBuilder = SignalsCompanion Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<int?> sessionId,
+  Value<int?> plotId,
+  Value<String> signalType,
+  Value<int> moment,
+  Value<String> severity,
+  Value<int> raisedAt,
+  Value<int?> raisedBy,
+  Value<String> referenceContext,
+  Value<String?> magnitudeContext,
+  Value<String> consequenceText,
+  Value<String> status,
+  Value<int> createdAt,
+});
+
+class $$SignalsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SignalsTable,
+    Signal,
+    $$SignalsTableFilterComposer,
+    $$SignalsTableOrderingComposer,
+    $$SignalsTableCreateCompanionBuilder,
+    $$SignalsTableUpdateCompanionBuilder> {
+  $$SignalsTableTableManager(_$AppDatabase db, $SignalsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$SignalsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$SignalsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<int?> sessionId = const Value.absent(),
+            Value<int?> plotId = const Value.absent(),
+            Value<String> signalType = const Value.absent(),
+            Value<int> moment = const Value.absent(),
+            Value<String> severity = const Value.absent(),
+            Value<int> raisedAt = const Value.absent(),
+            Value<int?> raisedBy = const Value.absent(),
+            Value<String> referenceContext = const Value.absent(),
+            Value<String?> magnitudeContext = const Value.absent(),
+            Value<String> consequenceText = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              SignalsCompanion(
+            id: id,
+            trialId: trialId,
+            sessionId: sessionId,
+            plotId: plotId,
+            signalType: signalType,
+            moment: moment,
+            severity: severity,
+            raisedAt: raisedAt,
+            raisedBy: raisedBy,
+            referenceContext: referenceContext,
+            magnitudeContext: magnitudeContext,
+            consequenceText: consequenceText,
+            status: status,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            Value<int?> sessionId = const Value.absent(),
+            Value<int?> plotId = const Value.absent(),
+            required String signalType,
+            required int moment,
+            required String severity,
+            required int raisedAt,
+            Value<int?> raisedBy = const Value.absent(),
+            required String referenceContext,
+            Value<String?> magnitudeContext = const Value.absent(),
+            required String consequenceText,
+            Value<String> status = const Value.absent(),
+            required int createdAt,
+          }) =>
+              SignalsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            sessionId: sessionId,
+            plotId: plotId,
+            signalType: signalType,
+            moment: moment,
+            severity: severity,
+            raisedAt: raisedAt,
+            raisedBy: raisedBy,
+            referenceContext: referenceContext,
+            magnitudeContext: magnitudeContext,
+            consequenceText: consequenceText,
+            status: status,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$SignalsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $SignalsTable> {
+  $$SignalsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get signalType => $state.composableBuilder(
+      column: $state.table.signalType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get moment => $state.composableBuilder(
+      column: $state.table.moment,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get severity => $state.composableBuilder(
+      column: $state.table.severity,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get raisedAt => $state.composableBuilder(
+      column: $state.table.raisedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get referenceContext => $state.composableBuilder(
+      column: $state.table.referenceContext,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get magnitudeContext => $state.composableBuilder(
+      column: $state.table.magnitudeContext,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get consequenceText => $state.composableBuilder(
+      column: $state.table.consequenceText,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$SessionsTableFilterComposer get sessionId {
+    final $$SessionsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sessionId,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableFilterComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$PlotsTableFilterComposer get plotId {
+    final $$PlotsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.plotId,
+        referencedTable: $state.db.plots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$PlotsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.plots, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get raisedBy {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.raisedBy,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  ComposableFilter signalDecisionEventsRefs(
+      ComposableFilter Function($$SignalDecisionEventsTableFilterComposer f)
+          f) {
+    final $$SignalDecisionEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.signalDecisionEvents,
+            getReferencedColumn: (t) => t.signalId,
+            builder: (joinBuilder, parentComposers) =>
+                $$SignalDecisionEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.signalDecisionEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+}
+
+class $$SignalsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $SignalsTable> {
+  $$SignalsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get signalType => $state.composableBuilder(
+      column: $state.table.signalType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get moment => $state.composableBuilder(
+      column: $state.table.moment,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get severity => $state.composableBuilder(
+      column: $state.table.severity,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get raisedAt => $state.composableBuilder(
+      column: $state.table.raisedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get referenceContext => $state.composableBuilder(
+      column: $state.table.referenceContext,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get magnitudeContext => $state.composableBuilder(
+      column: $state.table.magnitudeContext,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get consequenceText => $state.composableBuilder(
+      column: $state.table.consequenceText,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$SessionsTableOrderingComposer get sessionId {
+    final $$SessionsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sessionId,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$PlotsTableOrderingComposer get plotId {
+    final $$PlotsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.plotId,
+        referencedTable: $state.db.plots,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$PlotsTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.plots, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get raisedBy {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.raisedBy,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$SignalDecisionEventsTableCreateCompanionBuilder
+    = SignalDecisionEventsCompanion Function({
+  Value<int> id,
+  required int signalId,
+  required String eventType,
+  required int occurredAt,
+  Value<int?> actorUserId,
+  Value<String?> note,
+  Value<int?> followUpDueAt,
+  Value<String?> followUpContext,
+  required String resultingStatus,
+  required int createdAt,
+});
+typedef $$SignalDecisionEventsTableUpdateCompanionBuilder
+    = SignalDecisionEventsCompanion Function({
+  Value<int> id,
+  Value<int> signalId,
+  Value<String> eventType,
+  Value<int> occurredAt,
+  Value<int?> actorUserId,
+  Value<String?> note,
+  Value<int?> followUpDueAt,
+  Value<String?> followUpContext,
+  Value<String> resultingStatus,
+  Value<int> createdAt,
+});
+
+class $$SignalDecisionEventsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SignalDecisionEventsTable,
+    SignalDecisionEvent,
+    $$SignalDecisionEventsTableFilterComposer,
+    $$SignalDecisionEventsTableOrderingComposer,
+    $$SignalDecisionEventsTableCreateCompanionBuilder,
+    $$SignalDecisionEventsTableUpdateCompanionBuilder> {
+  $$SignalDecisionEventsTableTableManager(
+      _$AppDatabase db, $SignalDecisionEventsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$SignalDecisionEventsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$SignalDecisionEventsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> signalId = const Value.absent(),
+            Value<String> eventType = const Value.absent(),
+            Value<int> occurredAt = const Value.absent(),
+            Value<int?> actorUserId = const Value.absent(),
+            Value<String?> note = const Value.absent(),
+            Value<int?> followUpDueAt = const Value.absent(),
+            Value<String?> followUpContext = const Value.absent(),
+            Value<String> resultingStatus = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              SignalDecisionEventsCompanion(
+            id: id,
+            signalId: signalId,
+            eventType: eventType,
+            occurredAt: occurredAt,
+            actorUserId: actorUserId,
+            note: note,
+            followUpDueAt: followUpDueAt,
+            followUpContext: followUpContext,
+            resultingStatus: resultingStatus,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int signalId,
+            required String eventType,
+            required int occurredAt,
+            Value<int?> actorUserId = const Value.absent(),
+            Value<String?> note = const Value.absent(),
+            Value<int?> followUpDueAt = const Value.absent(),
+            Value<String?> followUpContext = const Value.absent(),
+            required String resultingStatus,
+            required int createdAt,
+          }) =>
+              SignalDecisionEventsCompanion.insert(
+            id: id,
+            signalId: signalId,
+            eventType: eventType,
+            occurredAt: occurredAt,
+            actorUserId: actorUserId,
+            note: note,
+            followUpDueAt: followUpDueAt,
+            followUpContext: followUpContext,
+            resultingStatus: resultingStatus,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$SignalDecisionEventsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $SignalDecisionEventsTable> {
+  $$SignalDecisionEventsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get eventType => $state.composableBuilder(
+      column: $state.table.eventType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get occurredAt => $state.composableBuilder(
+      column: $state.table.occurredAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get note => $state.composableBuilder(
+      column: $state.table.note,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get followUpDueAt => $state.composableBuilder(
+      column: $state.table.followUpDueAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get followUpContext => $state.composableBuilder(
+      column: $state.table.followUpContext,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get resultingStatus => $state.composableBuilder(
+      column: $state.table.resultingStatus,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$SignalsTableFilterComposer get signalId {
+    final $$SignalsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.signalId,
+        referencedTable: $state.db.signals,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$SignalsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.signals, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get actorUserId {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.actorUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  ComposableFilter actionEffectsRefs(
+      ComposableFilter Function($$ActionEffectsTableFilterComposer f) f) {
+    final $$ActionEffectsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.actionEffects,
+        getReferencedColumn: (t) => t.decisionEventId,
+        builder: (joinBuilder, parentComposers) =>
+            $$ActionEffectsTableFilterComposer(ComposerState($state.db,
+                $state.db.actionEffects, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+}
+
+class $$SignalDecisionEventsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $SignalDecisionEventsTable> {
+  $$SignalDecisionEventsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get eventType => $state.composableBuilder(
+      column: $state.table.eventType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get occurredAt => $state.composableBuilder(
+      column: $state.table.occurredAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get note => $state.composableBuilder(
+      column: $state.table.note,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get followUpDueAt => $state.composableBuilder(
+      column: $state.table.followUpDueAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get followUpContext => $state.composableBuilder(
+      column: $state.table.followUpContext,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get resultingStatus => $state.composableBuilder(
+      column: $state.table.resultingStatus,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$SignalsTableOrderingComposer get signalId {
+    final $$SignalsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.signalId,
+        referencedTable: $state.db.signals,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SignalsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.signals, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get actorUserId {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.actorUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$ActionEffectsTableCreateCompanionBuilder = ActionEffectsCompanion
+    Function({
+  Value<int> id,
+  required int decisionEventId,
+  required String entityType,
+  required int entityId,
+  required String fieldName,
+  Value<String?> oldValue,
+  Value<String?> newValue,
+  required int appliedAt,
+  required int createdAt,
+});
+typedef $$ActionEffectsTableUpdateCompanionBuilder = ActionEffectsCompanion
+    Function({
+  Value<int> id,
+  Value<int> decisionEventId,
+  Value<String> entityType,
+  Value<int> entityId,
+  Value<String> fieldName,
+  Value<String?> oldValue,
+  Value<String?> newValue,
+  Value<int> appliedAt,
+  Value<int> createdAt,
+});
+
+class $$ActionEffectsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ActionEffectsTable,
+    ActionEffect,
+    $$ActionEffectsTableFilterComposer,
+    $$ActionEffectsTableOrderingComposer,
+    $$ActionEffectsTableCreateCompanionBuilder,
+    $$ActionEffectsTableUpdateCompanionBuilder> {
+  $$ActionEffectsTableTableManager(_$AppDatabase db, $ActionEffectsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$ActionEffectsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$ActionEffectsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> decisionEventId = const Value.absent(),
+            Value<String> entityType = const Value.absent(),
+            Value<int> entityId = const Value.absent(),
+            Value<String> fieldName = const Value.absent(),
+            Value<String?> oldValue = const Value.absent(),
+            Value<String?> newValue = const Value.absent(),
+            Value<int> appliedAt = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              ActionEffectsCompanion(
+            id: id,
+            decisionEventId: decisionEventId,
+            entityType: entityType,
+            entityId: entityId,
+            fieldName: fieldName,
+            oldValue: oldValue,
+            newValue: newValue,
+            appliedAt: appliedAt,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int decisionEventId,
+            required String entityType,
+            required int entityId,
+            required String fieldName,
+            Value<String?> oldValue = const Value.absent(),
+            Value<String?> newValue = const Value.absent(),
+            required int appliedAt,
+            required int createdAt,
+          }) =>
+              ActionEffectsCompanion.insert(
+            id: id,
+            decisionEventId: decisionEventId,
+            entityType: entityType,
+            entityId: entityId,
+            fieldName: fieldName,
+            oldValue: oldValue,
+            newValue: newValue,
+            appliedAt: appliedAt,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$ActionEffectsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ActionEffectsTable> {
+  $$ActionEffectsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get entityType => $state.composableBuilder(
+      column: $state.table.entityType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get entityId => $state.composableBuilder(
+      column: $state.table.entityId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get fieldName => $state.composableBuilder(
+      column: $state.table.fieldName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get oldValue => $state.composableBuilder(
+      column: $state.table.oldValue,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get newValue => $state.composableBuilder(
+      column: $state.table.newValue,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get appliedAt => $state.composableBuilder(
+      column: $state.table.appliedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$SignalDecisionEventsTableFilterComposer get decisionEventId {
+    final $$SignalDecisionEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.decisionEventId,
+            referencedTable: $state.db.signalDecisionEvents,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$SignalDecisionEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.signalDecisionEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return composer;
+  }
+}
+
+class $$ActionEffectsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ActionEffectsTable> {
+  $$ActionEffectsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get entityType => $state.composableBuilder(
+      column: $state.table.entityType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get entityId => $state.composableBuilder(
+      column: $state.table.entityId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get fieldName => $state.composableBuilder(
+      column: $state.table.fieldName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get oldValue => $state.composableBuilder(
+      column: $state.table.oldValue,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get newValue => $state.composableBuilder(
+      column: $state.table.newValue,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get appliedAt => $state.composableBuilder(
+      column: $state.table.appliedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$SignalDecisionEventsTableOrderingComposer get decisionEventId {
+    final $$SignalDecisionEventsTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.decisionEventId,
+            referencedTable: $state.db.signalDecisionEvents,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$SignalDecisionEventsTableOrderingComposer(ComposerState(
+                    $state.db,
+                    $state.db.signalDecisionEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$SeTypeCausalProfilesTableCreateCompanionBuilder
+    = SeTypeCausalProfilesCompanion Function({
+  Value<int> id,
+  required String seType,
+  required String trialType,
+  required int causalWindowDaysMin,
+  required int causalWindowDaysMax,
+  required String expectedResponseDirection,
+  Value<double?> expectedChangeRatePerWeek,
+  Value<bool> spatialClusteringExpected,
+  Value<bool> untreatedExcludedFromMean,
+  Value<double> baseThresholdSdMultiplier,
+  required String source,
+  Value<String?> sourceReference,
+  required int createdAt,
+});
+typedef $$SeTypeCausalProfilesTableUpdateCompanionBuilder
+    = SeTypeCausalProfilesCompanion Function({
+  Value<int> id,
+  Value<String> seType,
+  Value<String> trialType,
+  Value<int> causalWindowDaysMin,
+  Value<int> causalWindowDaysMax,
+  Value<String> expectedResponseDirection,
+  Value<double?> expectedChangeRatePerWeek,
+  Value<bool> spatialClusteringExpected,
+  Value<bool> untreatedExcludedFromMean,
+  Value<double> baseThresholdSdMultiplier,
+  Value<String> source,
+  Value<String?> sourceReference,
+  Value<int> createdAt,
+});
+
+class $$SeTypeCausalProfilesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SeTypeCausalProfilesTable,
+    SeTypeCausalProfile,
+    $$SeTypeCausalProfilesTableFilterComposer,
+    $$SeTypeCausalProfilesTableOrderingComposer,
+    $$SeTypeCausalProfilesTableCreateCompanionBuilder,
+    $$SeTypeCausalProfilesTableUpdateCompanionBuilder> {
+  $$SeTypeCausalProfilesTableTableManager(
+      _$AppDatabase db, $SeTypeCausalProfilesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$SeTypeCausalProfilesTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$SeTypeCausalProfilesTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> seType = const Value.absent(),
+            Value<String> trialType = const Value.absent(),
+            Value<int> causalWindowDaysMin = const Value.absent(),
+            Value<int> causalWindowDaysMax = const Value.absent(),
+            Value<String> expectedResponseDirection = const Value.absent(),
+            Value<double?> expectedChangeRatePerWeek = const Value.absent(),
+            Value<bool> spatialClusteringExpected = const Value.absent(),
+            Value<bool> untreatedExcludedFromMean = const Value.absent(),
+            Value<double> baseThresholdSdMultiplier = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<String?> sourceReference = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              SeTypeCausalProfilesCompanion(
+            id: id,
+            seType: seType,
+            trialType: trialType,
+            causalWindowDaysMin: causalWindowDaysMin,
+            causalWindowDaysMax: causalWindowDaysMax,
+            expectedResponseDirection: expectedResponseDirection,
+            expectedChangeRatePerWeek: expectedChangeRatePerWeek,
+            spatialClusteringExpected: spatialClusteringExpected,
+            untreatedExcludedFromMean: untreatedExcludedFromMean,
+            baseThresholdSdMultiplier: baseThresholdSdMultiplier,
+            source: source,
+            sourceReference: sourceReference,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String seType,
+            required String trialType,
+            required int causalWindowDaysMin,
+            required int causalWindowDaysMax,
+            required String expectedResponseDirection,
+            Value<double?> expectedChangeRatePerWeek = const Value.absent(),
+            Value<bool> spatialClusteringExpected = const Value.absent(),
+            Value<bool> untreatedExcludedFromMean = const Value.absent(),
+            Value<double> baseThresholdSdMultiplier = const Value.absent(),
+            required String source,
+            Value<String?> sourceReference = const Value.absent(),
+            required int createdAt,
+          }) =>
+              SeTypeCausalProfilesCompanion.insert(
+            id: id,
+            seType: seType,
+            trialType: trialType,
+            causalWindowDaysMin: causalWindowDaysMin,
+            causalWindowDaysMax: causalWindowDaysMax,
+            expectedResponseDirection: expectedResponseDirection,
+            expectedChangeRatePerWeek: expectedChangeRatePerWeek,
+            spatialClusteringExpected: spatialClusteringExpected,
+            untreatedExcludedFromMean: untreatedExcludedFromMean,
+            baseThresholdSdMultiplier: baseThresholdSdMultiplier,
+            source: source,
+            sourceReference: sourceReference,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$SeTypeCausalProfilesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $SeTypeCausalProfilesTable> {
+  $$SeTypeCausalProfilesTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get seType => $state.composableBuilder(
+      column: $state.table.seType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get trialType => $state.composableBuilder(
+      column: $state.table.trialType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get causalWindowDaysMin => $state.composableBuilder(
+      column: $state.table.causalWindowDaysMin,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get causalWindowDaysMax => $state.composableBuilder(
+      column: $state.table.causalWindowDaysMax,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get expectedResponseDirection =>
+      $state.composableBuilder(
+          column: $state.table.expectedResponseDirection,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get expectedChangeRatePerWeek =>
+      $state.composableBuilder(
+          column: $state.table.expectedChangeRatePerWeek,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get spatialClusteringExpected => $state.composableBuilder(
+      column: $state.table.spatialClusteringExpected,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get untreatedExcludedFromMean => $state.composableBuilder(
+      column: $state.table.untreatedExcludedFromMean,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get baseThresholdSdMultiplier =>
+      $state.composableBuilder(
+          column: $state.table.baseThresholdSdMultiplier,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get sourceReference => $state.composableBuilder(
+      column: $state.table.sourceReference,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$SeTypeCausalProfilesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $SeTypeCausalProfilesTable> {
+  $$SeTypeCausalProfilesTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get seType => $state.composableBuilder(
+      column: $state.table.seType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get trialType => $state.composableBuilder(
+      column: $state.table.trialType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get causalWindowDaysMin => $state.composableBuilder(
+      column: $state.table.causalWindowDaysMin,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get causalWindowDaysMax => $state.composableBuilder(
+      column: $state.table.causalWindowDaysMax,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get expectedResponseDirection => $state
+      .composableBuilder(
+          column: $state.table.expectedResponseDirection,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get expectedChangeRatePerWeek => $state
+      .composableBuilder(
+          column: $state.table.expectedChangeRatePerWeek,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get spatialClusteringExpected =>
+      $state.composableBuilder(
+          column: $state.table.spatialClusteringExpected,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get untreatedExcludedFromMean =>
+      $state.composableBuilder(
+          column: $state.table.untreatedExcludedFromMean,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get baseThresholdSdMultiplier => $state
+      .composableBuilder(
+          column: $state.table.baseThresholdSdMultiplier,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get sourceReference => $state.composableBuilder(
+      column: $state.table.sourceReference,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+typedef $$EvidenceAnchorsTableCreateCompanionBuilder = EvidenceAnchorsCompanion
+    Function({
+  Value<int> id,
+  required int trialId,
+  required String evidenceType,
+  required int evidenceId,
+  required String claimType,
+  required int claimId,
+  Value<String?> anchorReason,
+  required int anchoredAt,
+  Value<int?> anchoredBy,
+  required int createdAt,
+});
+typedef $$EvidenceAnchorsTableUpdateCompanionBuilder = EvidenceAnchorsCompanion
+    Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<String> evidenceType,
+  Value<int> evidenceId,
+  Value<String> claimType,
+  Value<int> claimId,
+  Value<String?> anchorReason,
+  Value<int> anchoredAt,
+  Value<int?> anchoredBy,
+  Value<int> createdAt,
+});
+
+class $$EvidenceAnchorsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $EvidenceAnchorsTable,
+    EvidenceAnchor,
+    $$EvidenceAnchorsTableFilterComposer,
+    $$EvidenceAnchorsTableOrderingComposer,
+    $$EvidenceAnchorsTableCreateCompanionBuilder,
+    $$EvidenceAnchorsTableUpdateCompanionBuilder> {
+  $$EvidenceAnchorsTableTableManager(
+      _$AppDatabase db, $EvidenceAnchorsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$EvidenceAnchorsTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$EvidenceAnchorsTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<String> evidenceType = const Value.absent(),
+            Value<int> evidenceId = const Value.absent(),
+            Value<String> claimType = const Value.absent(),
+            Value<int> claimId = const Value.absent(),
+            Value<String?> anchorReason = const Value.absent(),
+            Value<int> anchoredAt = const Value.absent(),
+            Value<int?> anchoredBy = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              EvidenceAnchorsCompanion(
+            id: id,
+            trialId: trialId,
+            evidenceType: evidenceType,
+            evidenceId: evidenceId,
+            claimType: claimType,
+            claimId: claimId,
+            anchorReason: anchorReason,
+            anchoredAt: anchoredAt,
+            anchoredBy: anchoredBy,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            required String evidenceType,
+            required int evidenceId,
+            required String claimType,
+            required int claimId,
+            Value<String?> anchorReason = const Value.absent(),
+            required int anchoredAt,
+            Value<int?> anchoredBy = const Value.absent(),
+            required int createdAt,
+          }) =>
+              EvidenceAnchorsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            evidenceType: evidenceType,
+            evidenceId: evidenceId,
+            claimType: claimType,
+            claimId: claimId,
+            anchorReason: anchorReason,
+            anchoredAt: anchoredAt,
+            anchoredBy: anchoredBy,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$EvidenceAnchorsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $EvidenceAnchorsTable> {
+  $$EvidenceAnchorsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get evidenceType => $state.composableBuilder(
+      column: $state.table.evidenceType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get evidenceId => $state.composableBuilder(
+      column: $state.table.evidenceId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get claimType => $state.composableBuilder(
+      column: $state.table.claimType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get claimId => $state.composableBuilder(
+      column: $state.table.claimId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get anchorReason => $state.composableBuilder(
+      column: $state.table.anchorReason,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get anchoredAt => $state.composableBuilder(
+      column: $state.table.anchoredAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get anchoredBy {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.anchoredBy,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$EvidenceAnchorsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $EvidenceAnchorsTable> {
+  $$EvidenceAnchorsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get evidenceType => $state.composableBuilder(
+      column: $state.table.evidenceType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get evidenceId => $state.composableBuilder(
+      column: $state.table.evidenceId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get claimType => $state.composableBuilder(
+      column: $state.table.claimType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get claimId => $state.composableBuilder(
+      column: $state.table.claimId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get anchorReason => $state.composableBuilder(
+      column: $state.table.anchorReason,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get anchoredAt => $state.composableBuilder(
+      column: $state.table.anchoredAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get anchoredBy {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.anchoredBy,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -56064,4 +60431,14 @@ class $AppDatabaseManager {
       $$ArmApplicationsTableTableManager(_db, _db.armApplications);
   $$SeTypeProfilesTableTableManager get seTypeProfiles =>
       $$SeTypeProfilesTableTableManager(_db, _db.seTypeProfiles);
+  $$SignalsTableTableManager get signals =>
+      $$SignalsTableTableManager(_db, _db.signals);
+  $$SignalDecisionEventsTableTableManager get signalDecisionEvents =>
+      $$SignalDecisionEventsTableTableManager(_db, _db.signalDecisionEvents);
+  $$ActionEffectsTableTableManager get actionEffects =>
+      $$ActionEffectsTableTableManager(_db, _db.actionEffects);
+  $$SeTypeCausalProfilesTableTableManager get seTypeCausalProfiles =>
+      $$SeTypeCausalProfilesTableTableManager(_db, _db.seTypeCausalProfiles);
+  $$EvidenceAnchorsTableTableManager get evidenceAnchors =>
+      $$EvidenceAnchorsTableTableManager(_db, _db.evidenceAnchors);
 }
