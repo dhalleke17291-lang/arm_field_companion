@@ -41,6 +41,17 @@ class SignalRepository {
     return 99;
   }
 
+  static bool _ctxMatches(
+    Signal s,
+    bool Function(SignalReferenceContext) predicate,
+  ) {
+    try {
+      return predicate(SignalReferenceContext.decodeJson(s.referenceContext));
+    } catch (_) {
+      return false;
+    }
+  }
+
   static void _sortOpenSignals(List<Signal> rows) {
     rows.sort((a, b) {
       final c = _severityRank(a.severity).compareTo(_severityRank(b.severity));
@@ -217,14 +228,9 @@ class SignalRepository {
           ..where((s) => s.signalType.equals(SignalType.scaleViolation.dbValue))
           ..where((s) => s.status.equals(SignalStatus.open.dbValue)))
         .get();
-    return rows.where((s) {
-      try {
-        return SignalReferenceContext.decodeJson(s.referenceContext).seType ==
-            seType;
-      } catch (_) {
-        return false;
-      }
-    }).firstOrNull;
+    return rows
+        .where((s) => _ctxMatches(s, (ctx) => ctx.seType == seType))
+        .firstOrNull;
   }
 
   /// Used by [AovErrorVarianceWriter] — finds an existing open/deferred signal
@@ -241,14 +247,10 @@ class SignalRepository {
           ..where((s) =>
               s.status.isIn([SignalStatus.open.dbValue, SignalStatus.deferred.dbValue])))
         .get();
-    return rows.where((s) {
-      try {
-        final ctx = SignalReferenceContext.decodeJson(s.referenceContext);
-        return ctx.seType == seType && ctx.treatmentId == treatmentId;
-      } catch (_) {
-        return false;
-      }
-    }).firstOrNull;
+    return rows
+        .where((s) => _ctxMatches(
+            s, (ctx) => ctx.seType == seType && ctx.treatmentId == treatmentId))
+        .firstOrNull;
   }
 
   /// Used by [ReplicationWarningWriter] — finds an existing open/deferred
@@ -264,13 +266,8 @@ class SignalRepository {
           ..where((s) =>
               s.status.isIn([SignalStatus.open.dbValue, SignalStatus.deferred.dbValue])))
         .get();
-    return rows.where((s) {
-      try {
-        final ctx = SignalReferenceContext.decodeJson(s.referenceContext);
-        return ctx.treatmentId == treatmentId;
-      } catch (_) {
-        return false;
-      }
-    }).firstOrNull;
+    return rows
+        .where((s) => _ctxMatches(s, (ctx) => ctx.treatmentId == treatmentId))
+        .firstOrNull;
   }
 }
