@@ -8,12 +8,10 @@ import '../../core/database/app_database.dart';
 import '../../core/ui/assessment_display_helper.dart';
 import '../../core/plot_display.dart';
 import '../../core/plot_sort.dart';
-import '../../core/export_guard.dart';
 import '../../core/providers.dart';
 import '../../core/last_session_store.dart';
 import '../../core/session_resume_store.dart';
 import '../../core/session_walk_order_store.dart';
-import 'package:share_plus/share_plus.dart';
 import 'arrange_plots_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import '../../data/repositories/weather_snapshot_repository.dart';
@@ -25,6 +23,7 @@ import '../derived/derived_snapshot_provider.dart'
 import 'usecases/start_or_continue_rating_usecase.dart';
 import 'rating_order_sheet.dart';
 import 'session_summary_screen.dart';
+import 'session_export_actions.dart';
 import 'session_export_trust_dialog.dart';
 import 'session_export_trust_messaging.dart';
 import '../../core/ui/field_note_timestamp_format.dart';
@@ -308,16 +307,19 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
               if (!context.mounted) return;
               if (!ok) return;
               if (value == 'csv') {
-                await _exportCsv(context, ref);
+                await runSessionCsvExport(context, ref,
+                    trial: trial, session: session);
               } else if (value == 'arm_xml') {
-                await _exportArmXml(context, ref);
+                await runSessionArmXmlExport(context, ref,
+                    trial: trial, session: session);
               }
             },
             itemBuilder: (context) => [
               const PopupMenuItem(
                   value: 'csv', child: Text('Session Data (CSV)')),
-              const PopupMenuItem(
-                  value: 'arm_xml', child: Text('Session (XML)')),
+              if (isSessionXmlExportAvailable(session))
+                const PopupMenuItem(
+                    value: 'arm_xml', child: Text('Session (XML)')),
             ],
           ),
           PopupMenuButton<String>(
@@ -571,250 +573,6 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         );
       },
     );
-  }
-
-  Future<void> _exportCsv(BuildContext context, WidgetRef ref) async {
-    final guard = ref.read(exportGuardProvider);
-    final ran = await guard.runExclusive(() async {
-      final usecase = ref.read(exportSessionCsvUsecaseProvider);
-
-      try {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Exporting...')),
-        );
-
-        final currentUser = await ref.read(currentUserProvider.future);
-        final result = await usecase.exportSessionToCsv(
-          sessionId: widget.session.id,
-          trialId: widget.trial.id,
-          trialName: widget.trial.name,
-          sessionName: widget.session.name,
-          sessionDateLocal: widget.session.sessionDateLocal,
-          sessionRaterName: widget.session.raterName,
-          exportedByDisplayName: currentUser?.displayName,
-          isSessionClosed: widget.session.endedAt != null,
-        );
-
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).clearSnackBars();
-
-        if (!result.success) {
-          ref.read(diagnosticsStoreProvider).recordError(
-                result.errorMessage ?? 'Unknown error',
-                code: 'export_failed',
-              );
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text('Export Failed'),
-              content: SelectableText(result.errorMessage ?? 'Unknown error'),
-              actions: [
-                FilledButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
-          return;
-        }
-
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Export Complete'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('${result.rowCount} ratings exported'),
-                if (result.auditFilePath != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                        'Session audit events exported (separate file).',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant)),
-                  ),
-                if (result.warningMessage != null) ...[
-                  const SizedBox(height: AppDesignTokens.spacing8),
-                  Text(
-                    result.warningMessage!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.amber.shade700,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                const Text('Saved to:',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                SelectableText(result.filePath!,
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
-              ),
-              FilledButton.icon(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  final files = [XFile(result.filePath!)];
-                  if (result.auditFilePath != null) {
-                    files.add(XFile(result.auditFilePath!));
-                  }
-                  final box = context.findRenderObject() as RenderBox?;
-                  await Share.shareXFiles(
-                    files,
-                    subject:
-                        '${widget.trial.name} - ${widget.session.name} Export',
-                    sharePositionOrigin: box == null
-                        ? const Rect.fromLTWH(0, 0, 100, 100)
-                        : box.localToGlobal(Offset.zero) & box.size,
-                  );
-                },
-                icon: const Icon(Icons.share),
-                label: const Text('Share'),
-              ),
-            ],
-          ),
-        );
-      } catch (e) {
-        if (context.mounted) {
-          final scheme = Theme.of(context).colorScheme;
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Export failed — please try again. If the problem persists, check trial data for missing or incomplete records.',
-                style: TextStyle(color: scheme.onError),
-              ),
-              backgroundColor: scheme.error,
-            ),
-          );
-        }
-      }
-    });
-    if (!ran && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(ExportGuard.busyMessage)),
-      );
-    }
-  }
-
-  Future<void> _exportArmXml(BuildContext context, WidgetRef ref) async {
-    final guard = ref.read(exportGuardProvider);
-    final ran = await guard.runExclusive(() async {
-      final usecase = ref.read(exportSessionArmXmlUsecaseProvider);
-      try {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Exporting XML...')),
-        );
-        final currentUser = await ref.read(currentUserProvider.future);
-        final result = await usecase.exportSessionToArmXml(
-          sessionId: widget.session.id,
-          trialId: widget.trial.id,
-          trialName: widget.trial.name,
-          sessionName: widget.session.name,
-          sessionDateLocal: widget.session.sessionDateLocal,
-          sessionRaterName: widget.session.raterName,
-          exportedByDisplayName: currentUser?.displayName,
-          isSessionClosed: widget.session.endedAt != null,
-        );
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).clearSnackBars();
-        if (!result.success) {
-          ref.read(diagnosticsStoreProvider).recordError(
-                result.errorMessage ?? 'Unknown error',
-                code: 'arm_xml_export_failed',
-              );
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text('XML Export Failed'),
-              content: SelectableText(result.errorMessage ?? 'Unknown error'),
-              actions: [
-                FilledButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('OK'),
-                ),
-              ],
-            ),
-          );
-          return;
-        }
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('XML Export Complete'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Session exported as structured XML.'),
-                const SizedBox(height: 8),
-                const Text('Saved to:',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                SelectableText(result.filePath!,
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
-              ),
-              FilledButton.icon(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  final box = context.findRenderObject() as RenderBox?;
-                  await Share.shareXFiles(
-                    [XFile(result.filePath!)],
-                    subject:
-                        '${widget.trial.name} - ${widget.session.name} XML Export',
-                    sharePositionOrigin: box == null
-                        ? const Rect.fromLTWH(0, 0, 100, 100)
-                        : box.localToGlobal(Offset.zero) & box.size,
-                  );
-                },
-                icon: const Icon(Icons.share),
-                label: const Text('Share'),
-              ),
-            ],
-          ),
-        );
-      } catch (e) {
-        if (context.mounted) {
-          final scheme = Theme.of(context).colorScheme;
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'XML export failed — please try again. If the problem persists, check session data for missing or incomplete records.',
-                style: TextStyle(color: scheme.onError),
-              ),
-              backgroundColor: scheme.error,
-            ),
-          );
-        }
-      }
-    });
-    if (!ran && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(ExportGuard.busyMessage)),
-      );
-    }
   }
 
   Widget _buildRateTab(
