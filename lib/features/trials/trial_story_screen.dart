@@ -34,18 +34,67 @@ class TrialStoryScreen extends ConsumerWidget {
         data: (events) {
           if (events.isEmpty) {
             return const Center(
-              child: Text(
-                'No events recorded yet',
-                style: TextStyle(color: AppDesignTokens.secondaryText),
+              child: Padding(
+                padding: EdgeInsets.all(AppDesignTokens.spacing32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'No trial story yet',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: AppDesignTokens.spacing8),
+                    Text(
+                      'Seeding, applications, and sessions will appear here '
+                      'as the trial is executed.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppDesignTokens.secondaryText,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-            itemCount: events.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(height: AppDesignTokens.spacing12),
-            itemBuilder: (context, i) => _TrialStoryEventTile(event: events[i]),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppDesignTokens.spacing16,
+                  AppDesignTokens.spacing12,
+                  AppDesignTokens.spacing16,
+                  0,
+                ),
+                child: Text(
+                  'Events are shown with current unresolved signal context '
+                  'where available.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppDesignTokens.secondaryText,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+                  itemCount: events.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(height: AppDesignTokens.spacing12),
+                  itemBuilder: (context, i) =>
+                      _TrialStoryEventTile(event: events[i]),
+                ),
+              ),
+            ],
           );
         },
       ),

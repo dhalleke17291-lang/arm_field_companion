@@ -27,7 +27,7 @@ Trial _trial({int id = 1, String name = 'Test Trial'}) => Trial(
 
 void main() {
   group('TrialStoryScreen', () {
-    testWidgets('empty provider → shows No events recorded yet',
+    testWidgets('empty provider → shows No trial story yet with subtitle',
         (WidgetTester tester) async {
       final trial = _trial();
 
@@ -44,11 +44,15 @@ void main() {
         ),
       );
 
-      // First pump resolves the FutureProvider.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('No events recorded yet'), findsOneWidget);
+      expect(find.text('No trial story yet'), findsOneWidget);
+      expect(
+        find.textContaining('Seeding, applications, and sessions'),
+        findsOneWidget,
+      );
+      expect(find.text('No events recorded yet'), findsNothing);
     });
 
     testWidgets('AppBar shows Trial Story title', (WidgetTester tester) async {
@@ -72,6 +76,42 @@ void main() {
 
       expect(find.text('Trial Story'), findsOneWidget);
       expect(find.text('Wheat 2026'), findsOneWidget);
+    });
+
+    testWidgets(
+        'non-empty list → shows unresolved signal context helper text',
+        (WidgetTester tester) async {
+      final trial = _trial();
+      final events = [
+        TrialStoryEvent(
+          id: 'seed-1',
+          type: TrialStoryEventType.seeding,
+          occurredAt: DateTime(2026, 1, 15),
+          title: 'Seeding',
+          subtitle: '',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            trialStoryProvider(trial.id).overrideWith(
+              (ref) async => events,
+            ),
+          ],
+          child: MaterialApp(
+            home: TrialStoryScreen(trial: trial),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+        find.textContaining('current unresolved signal context'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('data list → renders event title in tile',
