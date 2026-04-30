@@ -40,6 +40,7 @@ class ReplicationWarningWriter {
           ..where((r) => r.isDeleted.equals(false)))
         .get();
     final ratedPlotPks = ratedRows.map((r) => r.plotPk).toSet();
+    if (ratedPlotPks.isEmpty) return [];
 
     // Treatment → set of rated plot PKs.
     final ratedByTreatment = <int, Set<int>>{};

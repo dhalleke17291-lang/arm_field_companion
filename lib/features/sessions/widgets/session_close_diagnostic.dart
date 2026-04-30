@@ -231,31 +231,31 @@ String _typeLabel(String signalType) => switch (signalType) {
       _ => 'Field observation',
     };
 
-void logSessionCloseDeferEvents({
+Future<void> logSessionCloseDeferEvents({
   required SignalRepository repo,
   required int? userId,
   required List<Signal> shown,
   required List<Signal> hidden,
-}) {
+}) async {
   final now = DateTime.now().millisecondsSinceEpoch;
 
   for (final s in shown) {
-    repo.recordDecisionEvent(
+    await repo.recordDecisionEvent(
       signalId: s.id,
       eventType: SignalDecisionEventType.defer,
       occurredAt: now,
       actorUserId: userId,
       note: 'Proceeded at session close',
-    ).ignore();
+    );
   }
 
   for (final s in hidden) {
-    repo.recordDecisionEvent(
+    await repo.recordDecisionEvent(
       signalId: s.id,
       eventType: SignalDecisionEventType.defer,
       occurredAt: now,
       actorUserId: userId,
       note: 'Not shown at session close — exceeded display limit',
-    ).ignore();
+    );
   }
 }

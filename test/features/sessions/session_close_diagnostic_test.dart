@@ -164,9 +164,6 @@ void main() {
       expect(proceedCalled, isFalse);
     });
 
-    // Tests 6-8 use plain test() (not testWidgets) to avoid the fake-async
-    // zone hanging on Drift's fire-and-forget microtask chain.
-
     test('6 — logSessionCloseDeferEvents: shown signal → defer event written',
         () async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -201,14 +198,12 @@ void main() {
           );
 
       final repo = SignalRepository.attach(db);
-      logSessionCloseDeferEvents(
+      await logSessionCloseDeferEvents(
         repo: repo,
         userId: null,
         shown: [_signal(id: signalId, severity: 'critical')],
         hidden: [],
       );
-
-      await Future<void>.delayed(const Duration(milliseconds: 20));
 
       final events = await db.select(db.signalDecisionEvents).get();
       expect(events, hasLength(1));
@@ -260,7 +255,7 @@ void main() {
       final r4Hidden = await insertSignal(5, 'review');
 
       final repo = SignalRepository.attach(db);
-      logSessionCloseDeferEvents(
+      await logSessionCloseDeferEvents(
         repo: repo,
         userId: null,
         shown: [
@@ -271,8 +266,6 @@ void main() {
         ],
         hidden: [_signal(id: r4Hidden, severity: 'review')],
       );
-
-      await Future<void>.delayed(const Duration(milliseconds: 20));
 
       final events = await db.select(db.signalDecisionEvents).get();
       expect(events, hasLength(5));

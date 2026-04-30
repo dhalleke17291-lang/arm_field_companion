@@ -170,6 +170,21 @@ void main() {
       expect(await db.select(db.signals).get(), isEmpty);
     });
 
+    test('5 — empty session (no rated plots) → returns [], no signals raised',
+        () async {
+      final seed = await _seedSession(db);
+      await _insertTreatment(db,
+          trialId: seed.trialId, code: 'T1', name: 'Control');
+
+      final repo = container.read(signalRepositoryProvider);
+      final raised = await ReplicationWarningWriter(db, repo)
+          .checkAndRaiseForSession(
+              trialId: seed.trialId, sessionId: seed.sessionId);
+
+      expect(raised, isEmpty);
+      expect(await db.select(db.signals).get(), isEmpty);
+    });
+
     test('4 — duplicate call → no new signal, existing id returned', () async {
       final seed = await _seedSession(db);
       final tId = await _insertTreatment(db,

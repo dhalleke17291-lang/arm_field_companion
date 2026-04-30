@@ -66,10 +66,11 @@ class AovErrorVarianceWriter {
 
         // Dedup: skip if an open/deferred signal already exists for this
         // (session, assessment column, treatment).
+        final seKey = sa.assessmentId.toString();
         final existing =
             await _signals.findOpenAovSignalForSessionAssessmentTreatment(
           sessionId: sessionId,
-          seType: seName,
+          seType: seKey,
           treatmentId: tId,
         );
         if (existing != null) {
@@ -90,13 +91,13 @@ class AovErrorVarianceWriter {
           moment: SignalMoment.three,
           severity: SignalSeverity.critical,
           referenceContext: SignalReferenceContext(
-            seType: seName,
+            seType: seKey,
             neighborValues: values,
             treatmentId: tId,
           ),
           consequenceText:
-              'All plots in $treatmentName rated identically for $seName. '
-              'ARM cannot compare treatments for this column.',
+              'All plots in $treatmentName have the same value for $seName. '
+              'Statistical comparison will not be possible for this column.',
           raisedBy: raisedBy,
         );
         raised.add(id);
