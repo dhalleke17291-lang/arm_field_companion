@@ -22,24 +22,24 @@ class SignalRepository {
 
   AppDatabase get _db => _resolveDb();
 
-  static const Set<String> _openStatuses = {
-    'open',
-    'deferred',
-    'investigating',
+  static final Set<String> _openStatuses = {
+    SignalStatus.open.dbValue,
+    SignalStatus.deferred.dbValue,
+    SignalStatus.investigating.dbValue,
   };
 
-  static const Set<String> _terminalStatuses = {
-    'resolved',
-    'expired',
-    'suppressed',
+  static final Set<String> _terminalStatuses = {
+    SignalStatus.resolved.dbValue,
+    SignalStatus.expired.dbValue,
+    SignalStatus.suppressed.dbValue,
   };
 
-  static int _severityRank(String severity) => switch (severity) {
-        'critical' => 0,
-        'review' => 1,
-        'info' => 2,
-        _ => 99,
-      };
+  static int _severityRank(String severity) {
+    if (severity == SignalSeverity.critical.dbValue) return 0;
+    if (severity == SignalSeverity.review.dbValue) return 1;
+    if (severity == SignalSeverity.info.dbValue) return 2;
+    return 99;
+  }
 
   static void _sortOpenSignals(List<Signal> rows) {
     rows.sort((a, b) {

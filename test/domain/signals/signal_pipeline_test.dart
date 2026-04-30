@@ -4,8 +4,11 @@ import 'package:arm_field_companion/core/trial_state.dart';
 import 'package:arm_field_companion/domain/signals/se_type_causal_profile_provider.dart';
 import 'package:arm_field_companion/domain/signals/signal_models.dart';
 import 'package:arm_field_companion/domain/signals/signal_providers.dart';
+import 'package:arm_field_companion/domain/signals/signal_writers/aov_error_variance_writer.dart';
+import 'package:arm_field_companion/domain/signals/signal_writers/replication_warning_writer.dart';
 import 'package:arm_field_companion/domain/signals/signal_writers/scale_violation_writer.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -365,6 +368,84 @@ void main() {
         ).future,
       );
       expect(profile, isNull);
+    });
+  });
+
+  // ── Session-close writers idempotency ────────────────────────────────────
+
+  group('Session-close writers idempotency', () {
+    late AppDatabase db;
+    late ProviderContainer container;
+
+    setUp(() {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      container = _container(db);
+    });
+
+    tearDown(() async {
+      container.dispose();
+      await db.close();
+    });
+
+    test(
+        'running AOV + replication writers twice produces same signal count',
+        () async {
+      final trialId = await _trial(db);
+      final sessionId = await _session(db, trialId);
+
+      // Assessment linked to session.
+      final assessmentId = await db
+          .into(db.assessments)
+          .insert(AssessmentsCompanion.insert(trialId: trialId, name: 'W003'));
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+              sessionId: sessionId,
+              assessmentId: assessmentId,
+            ),
+          );
+
+      // One treatment, two plots — both rated identically (triggers AOV).
+      final tId = await db.into(db.treatments).insert(
+            TreatmentsCompanion.insert(
+                trialId: trialId, code: 'T1', name: 'Fungicide'),
+          );
+      for (final plotId in ['P1', 'P2']) {
+        final pk = await db.into(db.plots).insert(
+              PlotsCompanion.insert(
+                trialId: trialId,
+                plotId: plotId,
+                treatmentId: Value(tId),
+              ),
+            );
+        await db.into(db.ratingRecords).insert(
+              RatingRecordsCompanion.insert(
+                trialId: trialId,
+                plotPk: pk,
+                assessmentId: assessmentId,
+                sessionId: sessionId,
+                numericValue: const Value(75.0),
+              ),
+            );
+      }
+
+      final repo = container.read(signalRepositoryProvider);
+
+      // First run.
+      await AovErrorVarianceWriter(db, repo)
+          .checkAndRaiseForSession(trialId: trialId, sessionId: sessionId);
+      await ReplicationWarningWriter(db, repo)
+          .checkAndRaiseForSession(trialId: trialId, sessionId: sessionId);
+      final countAfterFirst = (await db.select(db.signals).get()).length;
+
+      // Second run — simulates diagnostic re-open.
+      await AovErrorVarianceWriter(db, repo)
+          .checkAndRaiseForSession(trialId: trialId, sessionId: sessionId);
+      await ReplicationWarningWriter(db, repo)
+          .checkAndRaiseForSession(trialId: trialId, sessionId: sessionId);
+      final countAfterSecond = (await db.select(db.signals).get()).length;
+
+      expect(countAfterSecond, countAfterFirst,
+          reason: 're-running session-close writers must not create duplicates');
     });
   });
 }

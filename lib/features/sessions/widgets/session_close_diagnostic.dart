@@ -39,10 +39,12 @@ class SessionCloseDiagnostic extends ConsumerWidget {
       // Never block close on error.
       error: (_, __) => const SizedBox.shrink(),
       data: (allSignals) {
-        final criticals =
-            allSignals.where((s) => s.severity == 'critical').toList();
-        final reviews =
-            allSignals.where((s) => s.severity == 'review').toList();
+        final criticals = allSignals
+            .where((s) => s.severity == SignalSeverity.critical.dbValue)
+            .toList();
+        final reviews = allSignals
+            .where((s) => s.severity == SignalSeverity.review.dbValue)
+            .toList();
         // Info signals are never surfaced at session close.
 
         final shown = [...criticals.take(1), ...reviews.take(3)];
