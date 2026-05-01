@@ -549,7 +549,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'Recording crop injury status is required by EPPO/GLP standards. '
+                  'Recording crop injury status is required by GLP and efficacy trial standards. '
                   '"None observed" is positive evidence that the crop was checked.',
                   style: TextStyle(
                     fontSize: 13,
