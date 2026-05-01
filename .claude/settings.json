@@ -40,7 +40,8 @@
       "Bash(awk '/^class MockApplicationRepository/{found=1} found{print NR\": \"$0} /^}/{if\\(found\\){print NR\": \"$0; exit}}' test/features/export/report_data_assembly_service_test.dart)",
       "Bash(grep -n \"completeness_dashboard\\\\|CompletenesDashboard\\\\|Completeness\" /Users/parminder/Desktop/arm_field_companion/lib/features/**/*.dart)",
       "Read(//Users/parminder/Library/Logs/DiagnosticReports/**)",
-      "Bash(find lib *)"
+      "Bash(find lib *)",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "/Users/parminder/Desktop/arm_field_companion/lib/features/arm_import/usecases"

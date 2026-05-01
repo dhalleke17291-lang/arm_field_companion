@@ -51,8 +51,7 @@ class SessionPlotCounts {
 }
 
 /// Accumulates [SessionPlotCounts] across [plots] using pre-indexed lookup
-/// structures. This replaces the identical for-loop in
-/// SessionSummaryScreen and SessionCompletenessScreen.
+/// structures. Shared by SessionSummaryScreen and the completeness hub sheet.
 SessionPlotCounts countPlotStatus({
   required List<Plot> plots,
   required Map<int, List<RatingRecord>> ratingsByPlot,
