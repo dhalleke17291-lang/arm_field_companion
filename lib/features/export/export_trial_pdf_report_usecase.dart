@@ -76,11 +76,12 @@ class ExportTrialPdfReportUseCase {
 
     await File(path).writeAsBytes(bytes);
     if (_shareOverride != null) {
-      await _shareOverride!([XFile(path, mimeType: 'application/pdf')], text: '${trial.name} – PDF field report');
+      await _shareOverride!([XFile(path, mimeType: 'application/pdf')],
+          text: '${trial.name} — Field Trial Report (PDF)');
     } else {
       await Share.shareXFiles(
         [XFile(path, mimeType: 'application/pdf')],
-        text: '${trial.name} – PDF field report',
+        text: '${trial.name} — Field Trial Report (PDF)',
       );
     }
     _publishDiagnostics(trial.id, const []);

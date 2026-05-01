@@ -28,7 +28,7 @@ extension ExportFormatDetails on ExportFormat {
       case ExportFormat.zipBundle:
         return 'Data + Photos (ZIP)';
       case ExportFormat.pdfReport:
-        return 'Field Report (PDF)';
+        return 'Field Trial Report (PDF)';
       case ExportFormat.evidenceReport:
         return 'Evidence Report (PDF)';
       case ExportFormat.trialReport:
