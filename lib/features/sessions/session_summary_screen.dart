@@ -1024,6 +1024,14 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                 case 'share_summary':
                   _offerShareSummary();
                 case 'fer_pdf':
+                  final ok = await confirmSessionExportTrust(
+                    context: context,
+                    ref: ref,
+                    trialId: widget.trial.id,
+                    sessionId: widget.session.id,
+                  );
+                  if (!context.mounted) return;
+                  if (!ok) return;
                   await runFieldExecutionReportExport(
                     context,
                     ref,

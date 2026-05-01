@@ -680,5 +680,55 @@ void main() {
 
       expect(find.text('Field execution report (PDF)'), findsOneWidget);
     });
+
+    testWidgets('tapping field execution report item shows trust dialog',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      const report = SessionCompletenessReport(
+        expectedPlots: 2,
+        completedPlots: 1,
+        incompletePlots: 1,
+        issues: [],
+        canClose: false,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            plotsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value([plot1, plot2])),
+            sessionAssessmentsProvider(session.id)
+                .overrideWith((ref) => Stream.value(<Assessment>[])),
+            sessionRatingsProvider(session.id)
+                .overrideWith((ref) => Stream.value(<RatingRecord>[])),
+            ratedPlotPksProvider(session.id)
+                .overrideWith((ref) => Stream.value(<int>{})),
+            treatmentsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value(<Treatment>[])),
+            assignmentsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value(<Assignment>[])),
+            plotPksWithCorrectionsForSessionProvider(session.id)
+                .overrideWith((ref) => Stream.value(<int>{})),
+            sessionCompletenessReportProvider(session.id)
+                .overrideWith((ref) => Future.value(report)),
+          ],
+          child: MaterialApp(
+            home: SessionSummaryScreen(trial: trial, session: session),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Open the overflow menu and tap the FER item.
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(find.text('Field execution report (PDF)'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Trust dialog must appear before any report generation.
+      expect(find.text('Before you export'), findsOneWidget);
+    });
   });
 }

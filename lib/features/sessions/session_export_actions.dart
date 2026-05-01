@@ -285,6 +285,9 @@ Future<void> runSessionArmXmlExport(
 }
 
 /// Assembles and shares a Field Execution Report PDF for the given session.
+///
+/// Trust confirmation ([confirmSessionExportTrust]) must be obtained at the
+/// call site before invoking this function — same pattern as CSV/XML exports.
 Future<void> runFieldExecutionReportExport(
   BuildContext context,
   WidgetRef ref, {
@@ -360,17 +363,24 @@ Future<void> runFieldExecutionReportExport(
           ],
         ),
       );
-    } catch (_) {
+    } catch (e) {
       if (context.mounted) {
-        final scheme = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Report generation failed — please try again.',
-              style: TextStyle(color: scheme.onError),
-            ),
-            backgroundColor: scheme.error,
+        ref.read(diagnosticsStoreProvider).recordError(
+              e.toString(),
+              code: 'field_execution_report_failed',
+            );
+        showDialog<void>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Report Failed'),
+            content: SelectableText(e.toString()),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
         );
       }
