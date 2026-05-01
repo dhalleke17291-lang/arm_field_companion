@@ -40458,6 +40458,19 @@ class $SeTypeCausalProfilesTable extends SeTypeCausalProfiles
   late final GeneratedColumn<String> sourceReference = GeneratedColumn<String>(
       'source_reference', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _regionMeta = const VerificationMeta('region');
+  @override
+  late final GeneratedColumn<String> region = GeneratedColumn<String>(
+      'region', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _windowTypeMeta =
+      const VerificationMeta('windowType');
+  @override
+  late final GeneratedColumn<String> windowType = GeneratedColumn<String>(
+      'window_type', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('bbch'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -40478,6 +40491,8 @@ class $SeTypeCausalProfilesTable extends SeTypeCausalProfiles
         baseThresholdSdMultiplier,
         source,
         sourceReference,
+        region,
+        windowType,
         createdAt
       ];
   @override
@@ -40571,6 +40586,16 @@ class $SeTypeCausalProfilesTable extends SeTypeCausalProfiles
           sourceReference.isAcceptableOrUnknown(
               data['source_reference']!, _sourceReferenceMeta));
     }
+    if (data.containsKey('region')) {
+      context.handle(_regionMeta,
+          region.isAcceptableOrUnknown(data['region']!, _regionMeta));
+    }
+    if (data.containsKey('window_type')) {
+      context.handle(
+          _windowTypeMeta,
+          windowType.isAcceptableOrUnknown(
+              data['window_type']!, _windowTypeMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -40584,7 +40609,7 @@ class $SeTypeCausalProfilesTable extends SeTypeCausalProfiles
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   List<Set<GeneratedColumn>> get uniqueKeys => [
-        {seType, trialType},
+        {seType, trialType, region},
       ];
   @override
   SeTypeCausalProfile map(Map<String, dynamic> data, {String? tablePrefix}) {
@@ -40619,6 +40644,10 @@ class $SeTypeCausalProfilesTable extends SeTypeCausalProfiles
           .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
       sourceReference: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}source_reference']),
+      region: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}region']),
+      windowType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}window_type']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
     );
@@ -40650,6 +40679,13 @@ class SeTypeCausalProfile extends DataClass
   final double baseThresholdSdMultiplier;
   final String source;
   final String? sourceReference;
+
+  /// Regulatory region; NULL means profile applies to any region.
+  final String? region;
+
+  /// Timing window type: 'bbch' (days-based) or 'gdd' (growing degree days).
+  /// Open text to allow future window types without a schema change.
+  final String? windowType;
   final int createdAt;
   const SeTypeCausalProfile(
       {required this.id,
@@ -40664,6 +40700,8 @@ class SeTypeCausalProfile extends DataClass
       required this.baseThresholdSdMultiplier,
       required this.source,
       this.sourceReference,
+      this.region,
+      this.windowType,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -40689,6 +40727,12 @@ class SeTypeCausalProfile extends DataClass
     if (!nullToAbsent || sourceReference != null) {
       map['source_reference'] = Variable<String>(sourceReference);
     }
+    if (!nullToAbsent || region != null) {
+      map['region'] = Variable<String>(region);
+    }
+    if (!nullToAbsent || windowType != null) {
+      map['window_type'] = Variable<String>(windowType);
+    }
     map['created_at'] = Variable<int>(createdAt);
     return map;
   }
@@ -40712,6 +40756,11 @@ class SeTypeCausalProfile extends DataClass
       sourceReference: sourceReference == null && nullToAbsent
           ? const Value.absent()
           : Value(sourceReference),
+      region:
+          region == null && nullToAbsent ? const Value.absent() : Value(region),
+      windowType: windowType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(windowType),
       createdAt: Value(createdAt),
     );
   }
@@ -40739,6 +40788,8 @@ class SeTypeCausalProfile extends DataClass
           serializer.fromJson<double>(json['baseThresholdSdMultiplier']),
       source: serializer.fromJson<String>(json['source']),
       sourceReference: serializer.fromJson<String?>(json['sourceReference']),
+      region: serializer.fromJson<String?>(json['region']),
+      windowType: serializer.fromJson<String?>(json['windowType']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
     );
   }
@@ -40763,6 +40814,8 @@ class SeTypeCausalProfile extends DataClass
           serializer.toJson<double>(baseThresholdSdMultiplier),
       'source': serializer.toJson<String>(source),
       'sourceReference': serializer.toJson<String?>(sourceReference),
+      'region': serializer.toJson<String?>(region),
+      'windowType': serializer.toJson<String?>(windowType),
       'createdAt': serializer.toJson<int>(createdAt),
     };
   }
@@ -40780,6 +40833,8 @@ class SeTypeCausalProfile extends DataClass
           double? baseThresholdSdMultiplier,
           String? source,
           Value<String?> sourceReference = const Value.absent(),
+          Value<String?> region = const Value.absent(),
+          Value<String?> windowType = const Value.absent(),
           int? createdAt}) =>
       SeTypeCausalProfile(
         id: id ?? this.id,
@@ -40802,6 +40857,8 @@ class SeTypeCausalProfile extends DataClass
         sourceReference: sourceReference.present
             ? sourceReference.value
             : this.sourceReference,
+        region: region.present ? region.value : this.region,
+        windowType: windowType.present ? windowType.value : this.windowType,
         createdAt: createdAt ?? this.createdAt,
       );
   SeTypeCausalProfile copyWithCompanion(SeTypeCausalProfilesCompanion data) {
@@ -40834,6 +40891,9 @@ class SeTypeCausalProfile extends DataClass
       sourceReference: data.sourceReference.present
           ? data.sourceReference.value
           : this.sourceReference,
+      region: data.region.present ? data.region.value : this.region,
+      windowType:
+          data.windowType.present ? data.windowType.value : this.windowType,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -40853,6 +40913,8 @@ class SeTypeCausalProfile extends DataClass
           ..write('baseThresholdSdMultiplier: $baseThresholdSdMultiplier, ')
           ..write('source: $source, ')
           ..write('sourceReference: $sourceReference, ')
+          ..write('region: $region, ')
+          ..write('windowType: $windowType, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -40872,6 +40934,8 @@ class SeTypeCausalProfile extends DataClass
       baseThresholdSdMultiplier,
       source,
       sourceReference,
+      region,
+      windowType,
       createdAt);
   @override
   bool operator ==(Object other) =>
@@ -40889,6 +40953,8 @@ class SeTypeCausalProfile extends DataClass
           other.baseThresholdSdMultiplier == this.baseThresholdSdMultiplier &&
           other.source == this.source &&
           other.sourceReference == this.sourceReference &&
+          other.region == this.region &&
+          other.windowType == this.windowType &&
           other.createdAt == this.createdAt);
 }
 
@@ -40906,6 +40972,8 @@ class SeTypeCausalProfilesCompanion
   final Value<double> baseThresholdSdMultiplier;
   final Value<String> source;
   final Value<String?> sourceReference;
+  final Value<String?> region;
+  final Value<String?> windowType;
   final Value<int> createdAt;
   const SeTypeCausalProfilesCompanion({
     this.id = const Value.absent(),
@@ -40920,6 +40988,8 @@ class SeTypeCausalProfilesCompanion
     this.baseThresholdSdMultiplier = const Value.absent(),
     this.source = const Value.absent(),
     this.sourceReference = const Value.absent(),
+    this.region = const Value.absent(),
+    this.windowType = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   SeTypeCausalProfilesCompanion.insert({
@@ -40935,6 +41005,8 @@ class SeTypeCausalProfilesCompanion
     this.baseThresholdSdMultiplier = const Value.absent(),
     required String source,
     this.sourceReference = const Value.absent(),
+    this.region = const Value.absent(),
+    this.windowType = const Value.absent(),
     required int createdAt,
   })  : seType = Value(seType),
         trialType = Value(trialType),
@@ -40956,6 +41028,8 @@ class SeTypeCausalProfilesCompanion
     Expression<double>? baseThresholdSdMultiplier,
     Expression<String>? source,
     Expression<String>? sourceReference,
+    Expression<String>? region,
+    Expression<String>? windowType,
     Expression<int>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -40978,6 +41052,8 @@ class SeTypeCausalProfilesCompanion
         'base_threshold_sd_multiplier': baseThresholdSdMultiplier,
       if (source != null) 'source': source,
       if (sourceReference != null) 'source_reference': sourceReference,
+      if (region != null) 'region': region,
+      if (windowType != null) 'window_type': windowType,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -40995,6 +41071,8 @@ class SeTypeCausalProfilesCompanion
       Value<double>? baseThresholdSdMultiplier,
       Value<String>? source,
       Value<String?>? sourceReference,
+      Value<String?>? region,
+      Value<String?>? windowType,
       Value<int>? createdAt}) {
     return SeTypeCausalProfilesCompanion(
       id: id ?? this.id,
@@ -41014,6 +41092,8 @@ class SeTypeCausalProfilesCompanion
           baseThresholdSdMultiplier ?? this.baseThresholdSdMultiplier,
       source: source ?? this.source,
       sourceReference: sourceReference ?? this.sourceReference,
+      region: region ?? this.region,
+      windowType: windowType ?? this.windowType,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -41062,6 +41142,12 @@ class SeTypeCausalProfilesCompanion
     if (sourceReference.present) {
       map['source_reference'] = Variable<String>(sourceReference.value);
     }
+    if (region.present) {
+      map['region'] = Variable<String>(region.value);
+    }
+    if (windowType.present) {
+      map['window_type'] = Variable<String>(windowType.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -41083,6 +41169,8 @@ class SeTypeCausalProfilesCompanion
           ..write('baseThresholdSdMultiplier: $baseThresholdSdMultiplier, ')
           ..write('source: $source, ')
           ..write('sourceReference: $sourceReference, ')
+          ..write('region: $region, ')
+          ..write('windowType: $windowType, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -59915,6 +60003,8 @@ typedef $$SeTypeCausalProfilesTableCreateCompanionBuilder
   Value<double> baseThresholdSdMultiplier,
   required String source,
   Value<String?> sourceReference,
+  Value<String?> region,
+  Value<String?> windowType,
   required int createdAt,
 });
 typedef $$SeTypeCausalProfilesTableUpdateCompanionBuilder
@@ -59931,6 +60021,8 @@ typedef $$SeTypeCausalProfilesTableUpdateCompanionBuilder
   Value<double> baseThresholdSdMultiplier,
   Value<String> source,
   Value<String?> sourceReference,
+  Value<String?> region,
+  Value<String?> windowType,
   Value<int> createdAt,
 });
 
@@ -59964,6 +60056,8 @@ class $$SeTypeCausalProfilesTableTableManager extends RootTableManager<
             Value<double> baseThresholdSdMultiplier = const Value.absent(),
             Value<String> source = const Value.absent(),
             Value<String?> sourceReference = const Value.absent(),
+            Value<String?> region = const Value.absent(),
+            Value<String?> windowType = const Value.absent(),
             Value<int> createdAt = const Value.absent(),
           }) =>
               SeTypeCausalProfilesCompanion(
@@ -59979,6 +60073,8 @@ class $$SeTypeCausalProfilesTableTableManager extends RootTableManager<
             baseThresholdSdMultiplier: baseThresholdSdMultiplier,
             source: source,
             sourceReference: sourceReference,
+            region: region,
+            windowType: windowType,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
@@ -59994,6 +60090,8 @@ class $$SeTypeCausalProfilesTableTableManager extends RootTableManager<
             Value<double> baseThresholdSdMultiplier = const Value.absent(),
             required String source,
             Value<String?> sourceReference = const Value.absent(),
+            Value<String?> region = const Value.absent(),
+            Value<String?> windowType = const Value.absent(),
             required int createdAt,
           }) =>
               SeTypeCausalProfilesCompanion.insert(
@@ -60009,6 +60107,8 @@ class $$SeTypeCausalProfilesTableTableManager extends RootTableManager<
             baseThresholdSdMultiplier: baseThresholdSdMultiplier,
             source: source,
             sourceReference: sourceReference,
+            region: region,
+            windowType: windowType,
             createdAt: createdAt,
           ),
         ));
@@ -60077,6 +60177,16 @@ class $$SeTypeCausalProfilesTableFilterComposer
 
   ColumnFilters<String> get sourceReference => $state.composableBuilder(
       column: $state.table.sourceReference,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get region => $state.composableBuilder(
+      column: $state.table.region,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get windowType => $state.composableBuilder(
+      column: $state.table.windowType,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -60151,6 +60261,16 @@ class $$SeTypeCausalProfilesTableOrderingComposer
 
   ColumnOrderings<String> get sourceReference => $state.composableBuilder(
       column: $state.table.sourceReference,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get region => $state.composableBuilder(
+      column: $state.table.region,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get windowType => $state.composableBuilder(
+      column: $state.table.windowType,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

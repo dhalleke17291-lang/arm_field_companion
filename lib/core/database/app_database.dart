@@ -1453,11 +1453,19 @@ class SeTypeCausalProfiles extends Table {
 
   TextColumn get sourceReference => text().nullable()();
 
+  /// Regulatory region; NULL means profile applies to any region.
+  TextColumn get region => text().nullable()();
+
+  /// Timing window type: 'bbch' (days-based) or 'gdd' (growing degree days).
+  /// Open text to allow future window types without a schema change.
+  TextColumn get windowType =>
+      text().nullable().withDefault(const Constant('bbch'))();
+
   IntColumn get createdAt => integer()();
 
   @override
   List<Set<Column>> get uniqueKeys => [
-        {seType, trialType},
+        {seType, trialType, region},
       ];
 }
 
@@ -1548,7 +1556,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 73;
+  int get schemaVersion => 74;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -2996,6 +3004,50 @@ WHERE pest_code IS NULL
             }
           }
 
+          if (from < 74) {
+            final profileCols = await customSelect(
+              "SELECT name FROM pragma_table_info('se_type_causal_profiles')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!profileCols.contains('region')) {
+              // Step 1: add the two new columns to the existing table so the
+              // data copy below works with a simple SELECT *.
+              await customStatement(
+                'ALTER TABLE se_type_causal_profiles ADD COLUMN region TEXT',
+              );
+              await customStatement(
+                "ALTER TABLE se_type_causal_profiles ADD COLUMN window_type TEXT DEFAULT 'bbch'",
+              );
+              // Step 2: rebuild to change inline UNIQUE(se_type, trial_type)
+              // → UNIQUE(se_type, trial_type, region). SQLite does not support
+              // DROP CONSTRAINT, so a rename-recreate-copy cycle is required.
+              await customStatement(
+                'ALTER TABLE se_type_causal_profiles RENAME TO se_type_causal_profiles_v73',
+              );
+              await m.createTable(seTypeCausalProfiles);
+              await customStatement('''
+INSERT INTO se_type_causal_profiles (
+  id, se_type, trial_type, causal_window_days_min, causal_window_days_max,
+  expected_response_direction, expected_change_rate_per_week,
+  spatial_clustering_expected, untreated_excluded_from_mean,
+  base_threshold_sd_multiplier, source, source_reference,
+  region, window_type, created_at
+)
+SELECT
+  id, se_type, trial_type, causal_window_days_min, causal_window_days_max,
+  expected_response_direction, expected_change_rate_per_week,
+  spatial_clustering_expected, untreated_excluded_from_mean,
+  base_threshold_sd_multiplier, source, source_reference,
+  region, window_type, created_at
+FROM se_type_causal_profiles_v73
+''');
+              await customStatement('DROP TABLE se_type_causal_profiles_v73');
+              await customStatement('''
+INSERT OR REPLACE INTO sqlite_sequence (name, seq)
+SELECT 'se_type_causal_profiles', COALESCE((SELECT MAX(id) FROM se_type_causal_profiles), 0)
+''');
+            }
+          }
+
           await _createIndexes();
         },
       );
@@ -3074,7 +3126,10 @@ WHERE pest_code IS NULL
   }
 
   /// EPPO-aligned causal SE profiles (CONTRO / PESINC / LODGIN × efficacy).
-  /// INSERT OR IGNORE — unique on (se_type, trial_type).
+  /// INSERT OR IGNORE — unique on (se_type, trial_type, region).
+  /// All seed rows have region NULL (applies to any region). SQLite treats
+  /// NULLs as distinct in UNIQUE constraints; seeding is only called once
+  /// (onCreate) so duplicates cannot accumulate.
   Future<void> _seedSeTypeCausalProfiles() async {
     final now = DateTime.now().millisecondsSinceEpoch;
     Future<void> insertRow(List<Object?> params) async {
@@ -3229,7 +3284,7 @@ WHERE pest_code IS NULL
     ''');
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_se_profiles_type
-      ON se_type_causal_profiles(se_type, trial_type)
+      ON se_type_causal_profiles(se_type, trial_type, region)
     ''');
   }
 }
