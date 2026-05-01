@@ -13,7 +13,14 @@ import '../../core/ui/assessment_display_helper.dart';
 /// binder. Distinct from the Evidence Report (provenance/audit) and the
 /// session grid PDF (single-session data snapshot).
 ///
-/// Sections 1-5 in this pass. Sections 6-10 deferred to Sprint 4.
+/// Implemented sections:
+/// - **§1–4** (portrait): Site summary; product/treatment table; experimental
+///   design; application details (or empty-state message).
+/// - **§5** (landscape, only when assessments and analyzable plots exist):
+///   Assessment data tables — plot × treatment × session columns per assessment.
+/// - **§6–10** (portrait): Treatment summary statistics; crop injury log;
+///   field notes; completeness summary (KPI table); conclusions placeholder
+///   (`[To be completed by Study Director]`).
 class TrialReportPdfBuilder {
   static const _primary = PdfColor.fromInt(0xFF0E3D2F);
   static const _borderColor = PdfColor.fromInt(0xFFCCCCCC);
