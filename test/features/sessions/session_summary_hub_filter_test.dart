@@ -660,4 +660,25 @@ void main() {
       expect(find.textContaining('Complete — ready to close'), findsOneWidget);
     });
   });
+
+  group('SessionSummaryScreen export menu', () {
+    testWidgets('Field execution report item appears in overflow menu',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {},
+      );
+
+      // Open the overflow (more_vert) menu.
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Field execution report (PDF)'), findsOneWidget);
+    });
+  });
 }

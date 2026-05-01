@@ -84,6 +84,7 @@ import '../features/export/usecases/arm_export_preflight_usecase.dart';
 import '../features/export/report_data_assembly_service.dart';
 import '../features/export/standalone_report_data.dart';
 import '../features/export/report_pdf_builder_service.dart';
+import '../features/export/field_execution_report_assembly_service.dart';
 import '../features/arm_import/data/arm_assessment_definition_resolver.dart';
 import '../features/arm_import/data/arm_import_persistence_repository.dart';
 import '../features/arm_import/data/arm_import_report_builder.dart';
@@ -1390,6 +1391,19 @@ final exportEvidenceReportUseCaseProvider =
       db: ref.watch(databaseProvider),
     ),
     pdfBuilder: EvidenceReportPdfBuilder(),
+  );
+});
+
+final fieldExecutionReportAssemblyServiceProvider =
+    Provider<FieldExecutionReportAssemblyService>((ref) {
+  return FieldExecutionReportAssemblyService(
+    plotRepository: ref.watch(plotRepositoryProvider),
+    ratingRepository: ref.watch(ratingRepositoryProvider),
+    sessionRepository: ref.watch(sessionRepositoryProvider),
+    signalRepository: ref.watch(signalRepositoryProvider),
+    seedingRepository: ref.watch(seedingRepositoryProvider),
+    completenessUseCase: ref.watch(computeSessionCompletenessUseCaseProvider),
+    db: ref.watch(databaseProvider),
   );
 });
 

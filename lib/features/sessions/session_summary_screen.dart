@@ -1023,6 +1023,16 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                   );
                 case 'share_summary':
                   _offerShareSummary();
+                case 'fer_pdf':
+                  await runFieldExecutionReportExport(
+                    context,
+                    ref,
+                    trial: widget.trial,
+                    session: ref
+                            .read(sessionByIdProvider(widget.session.id))
+                            .valueOrNull ??
+                        widget.session,
+                  );
                 case 'session_csv':
                   final ok = await confirmSessionExportTrust(
                     context: context,
@@ -1109,6 +1119,16 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                 child: ListTile(
                   leading: Icon(Icons.text_snippet_outlined, size: 20),
                   title: Text('Share text summary', style: TextStyle(fontSize: 14)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'fer_pdf',
+                child: ListTile(
+                  leading: Icon(Icons.summarize_outlined, size: 20),
+                  title: Text('Field execution report (PDF)', style: TextStyle(fontSize: 14)),
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,

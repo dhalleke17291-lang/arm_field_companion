@@ -1,11 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/export_guard.dart';
 import '../../core/providers.dart';
+import '../export/field_execution_report_pdf_builder.dart';
 
 /// Single policy for session ARM XML export menu/actions (closed sessions only).
 bool isSessionXmlExportAvailable(Session session) => session.endedAt != null;
@@ -265,6 +269,105 @@ Future<void> runSessionArmXmlExport(
           SnackBar(
             content: Text(
               _sessionXmlExportFailedSnack,
+              style: TextStyle(color: scheme.onError),
+            ),
+            backgroundColor: scheme.error,
+          ),
+        );
+      }
+    }
+  });
+  if (!ran && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(ExportGuard.busyMessage)),
+    );
+  }
+}
+
+/// Assembles and shares a Field Execution Report PDF for the given session.
+Future<void> runFieldExecutionReportExport(
+  BuildContext context,
+  WidgetRef ref, {
+  required Trial trial,
+  required Session session,
+}) async {
+  final guard = ref.read(exportGuardProvider);
+  final ran = await guard.runExclusive(() async {
+    final assemblyService =
+        ref.read(fieldExecutionReportAssemblyServiceProvider);
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Generating report...')),
+      );
+
+      final data = await assemblyService.assembleForSession(
+        trial: trial,
+        session: session,
+      );
+      final bytes = await FieldExecutionReportPdfBuilder().build(data);
+
+      final dir = await getTemporaryDirectory();
+      final sanitizedName = session.name.replaceAll(RegExp(r'[^\w\-]'), '_');
+      final file = File('${dir.path}/fer_$sanitizedName.pdf');
+      await file.writeAsBytes(bytes);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+
+      showDialog<void>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Report Ready'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Field Execution Report generated.'),
+              const SizedBox(height: AppDesignTokens.spacing8),
+              const Text('Saved to:',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              SelectableText(
+                file.path,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                Navigator.pop(context);
+                final box = context.findRenderObject() as RenderBox?;
+                await Share.shareXFiles(
+                  [XFile(file.path)],
+                  subject:
+                      '${trial.name} — ${session.name} Field Execution Report',
+                  sharePositionOrigin: box == null
+                      ? const Rect.fromLTWH(0, 0, 100, 100)
+                      : box.localToGlobal(Offset.zero) & box.size,
+                );
+              },
+              icon: const Icon(Icons.share),
+              label: const Text('Share'),
+            ),
+          ],
+        ),
+      );
+    } catch (_) {
+      if (context.mounted) {
+        final scheme = Theme.of(context).colorScheme;
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Report generation failed — please try again.',
               style: TextStyle(color: scheme.onError),
             ),
             backgroundColor: scheme.error,
