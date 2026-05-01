@@ -4329,16 +4329,27 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     if (result.isSuccess) {
       ref.invalidate(sessionRatingsProvider(widget.session.id));
       ref.invalidate(ratedPlotPksProvider(widget.session.id));
-      ref.invalidate(openSignalsForSessionProvider(widget.session.id));
       // Assessment consistency check (non-blocking, SnackBar only).
       _runAssessmentConsistencyCheck();
-      TimingWindowViolationWriter(
-        ref.read(databaseProvider),
-        ref.read(signalRepositoryProvider),
-      ).checkAndRaise(
-        ratingId: result.rating!.id,
-        trialAssessmentId: _taIdForCurrentAssessment(),
-      ).ignore();
+      // _taIdForCurrentAssessment() is null when the provider is still loading;
+      // fall back to the rating row in case SaveRatingUseCase starts writing it.
+      final taId = _taIdForCurrentAssessment() ?? result.rating!.trialAssessmentId;
+      // openSignalsForSessionProvider is invalidated inside .then() so FER /
+      // export never reads the signal list before the timing signal has landed.
+      unawaited(
+        TimingWindowViolationWriter(
+          ref.read(databaseProvider),
+          ref.read(signalRepositoryProvider),
+        ).checkAndRaise(
+          ratingId: result.rating!.id,
+          trialAssessmentId: taId,
+        ).then<void>((_) {
+          if (mounted) ref.invalidate(openSignalsForSessionProvider(widget.session.id));
+        }).catchError((Object e) {
+          debugPrint('[TimingWindowViolationWriter] save: $e');
+          if (mounted) ref.invalidate(openSignalsForSessionProvider(widget.session.id));
+        }),
+      );
       if (numericValue != null) {
         ref.read(lastValueMemoryProvider.notifier).set(
               widget.session.id,

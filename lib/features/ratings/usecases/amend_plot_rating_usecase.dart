@@ -1,3 +1,7 @@
+import 'dart:async' show unawaited;
+
+import 'package:flutter/foundation.dart' show debugPrint;
+
 import '../../../core/database/app_database.dart';
 import '../../sessions/session_repository.dart';
 import '../rating_repository.dart';
@@ -216,12 +220,17 @@ class AmendPlotRatingUseCase {
       return AmendPlotRatingResult.failure('Error: $e');
     }
 
-    TimingWindowViolationWriter(_db, _signalRepository)
-        .checkAndRaise(
-          ratingId: saved.id,
-          trialAssessmentId: input.trialAssessmentId,
-        )
-        .ignore();
+    unawaited(
+      TimingWindowViolationWriter(_db, _signalRepository)
+          .checkAndRaise(
+            ratingId: saved.id,
+            trialAssessmentId: input.trialAssessmentId,
+          )
+          .then<void>((_) {})
+          .catchError((Object e) {
+            debugPrint('[TimingWindowViolationWriter] amend: $e');
+          }),
+    );
 
     return AmendPlotRatingResult.success(saved.id);
   }
