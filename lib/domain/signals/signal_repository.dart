@@ -289,4 +289,20 @@ class SignalRepository {
         .where((s) => _ctxMatches(s, (ctx) => ctx.treatmentId == treatmentId))
         .firstOrNull;
   }
+
+  /// Used by [RaterDriftWriter] — session-level attribution consistency;
+  /// [SignalReferenceContext.seType] discriminator is `'session_attribution'`.
+  Future<Signal?> findOpenRaterDriftSessionAttribution({
+    required int sessionId,
+  }) async {
+    final rows = await (_db.select(_db.signals)
+          ..where((s) => s.sessionId.equals(sessionId))
+          ..where((s) => s.signalType.equals(SignalType.raterDrift.dbValue))
+          ..where((s) => s.status.isIn(_openStatuses.toList())))
+        .get();
+    return rows
+        .where(
+            (s) => _ctxMatches(s, (ctx) => ctx.seType == 'session_attribution'))
+        .firstOrNull;
+  }
 }
