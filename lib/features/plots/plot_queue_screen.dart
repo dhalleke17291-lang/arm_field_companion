@@ -176,8 +176,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
       final ratings =
           ref.read(sessionRatingsProvider(widget.session.id)).valueOrNull ?? [];
       final plotRatings = ratings.where((r) => r.plotPk == plot.id).toList();
-      final hasIssues =
-          plotRatings.any((r) => r.resultStatus != 'RECORDED');
+      final hasIssues = plotHasRatingIssues(plotRatings);
       if (hasIssues) {
         for (final r in plotRatings) {
           if (r.resultStatus == 'RECORDED') continue;
@@ -1040,9 +1039,10 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
         }
         final plot = item.plot!;
         final plotRatings = ratingsByPlot[plot.id] ?? [];
-        final hasEdited =
-            plotRatings.any((r) => r.amended || (r.previousId != null)) ||
-                plotPksWithCorrections.contains(plot.id);
+        final hasEdited = plotHasEdits(
+          plotRatings,
+          hasCorrection: plotPksWithCorrections.contains(plot.id),
+        );
         final plotHasCorr = plotPksWithCorrections.contains(plot.id);
         String? editRecencyLine;
         if (hasEdited) {
@@ -1069,7 +1069,7 @@ class _PlotQueueScreenState extends ConsumerState<PlotQueueScreen> {
           // If a non-RECORDED row exists only for an assessmentId not in this
           // session's list, the badge can still show while no chip highlights it;
           // badge filtering was deferred until orphan cases are verified in product data.
-          hasIssues: plotRatings.any((r) => r.resultStatus != 'RECORDED'),
+          hasIssues: plotHasRatingIssues(plotRatings),
           hasEdited: hasEdited,
           editRecencyLine: editRecencyLine,
           onOpenRating: onOpenRating,
