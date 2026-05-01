@@ -1096,8 +1096,10 @@ Future<void> _showEditRatingSheet(
       ref.read(armAssessmentMetadataMapForTrialProvider(trial.id)).valueOrNull ??
           <int, ArmAssessmentMetadataData>{};
   String seType = 'LOCAL';
+  int? trialAssessmentId;
   for (final ta in trialAssessments) {
     if (ta.legacyAssessmentId == rating.assessmentId) {
+      trialAssessmentId = ta.id;
       final rt = aamData[ta.id]?.ratingType?.trim();
       if (rt != null && rt.isNotEmpty) seType = rt;
       break;
@@ -1209,6 +1211,7 @@ Future<void> _showEditRatingSheet(
                     existingNumericValue: rating.numericValue,
                     existingTextValue: rating.textValue,
                     seType: seType,
+                    trialAssessmentId: trialAssessmentId,
                   ));
 
                   if (!result.isSuccess) {

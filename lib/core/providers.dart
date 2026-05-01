@@ -903,6 +903,7 @@ final amendPlotRatingUseCaseProvider = Provider<AmendPlotRatingUseCase>((ref) {
     ref.watch(saveRatingUseCaseProvider),
     ref.watch(ratingRepositoryProvider),
     ref.watch(signalRepositoryProvider),
+    ref.watch(databaseProvider),
   );
 });
 

@@ -27,6 +27,7 @@ import '../../core/workspace/workspace_config.dart';
 import '../../domain/ratings/assessment_scale_resolver.dart';
 import '../../domain/signals/signal_providers.dart';
 import '../../domain/signals/signal_writers/scale_violation_writer.dart';
+import '../../domain/signals/signal_writers/timing_window_violation_writer.dart';
 import '../photos/photo_filename_helper.dart';
 import '../photos/photo_view_screen.dart';
 import '../photos/usecases/save_photo_usecase.dart';
@@ -4091,6 +4092,18 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     return 'LOCAL';
   }
 
+  /// Returns the TrialAssessment.id for the current assessment, or null when
+  /// this is a standalone (non-ARM) trial.
+  int? _taIdForCurrentAssessment() {
+    final taList =
+        ref.read(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
+            <TrialAssessment>[];
+    for (final ta in taList) {
+      if (ta.legacyAssessmentId == _currentAssessment.id) return ta.id;
+    }
+    return null;
+  }
+
   /// Returns the 1-based sub-unit ID to tag this save with, or null when the
   /// current assessment is whole-plot (numSubsamples ≤ 1).
   int? _activeSubUnitId() {
@@ -4319,6 +4332,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
       ref.invalidate(openSignalsForSessionProvider(widget.session.id));
       // Assessment consistency check (non-blocking, SnackBar only).
       _runAssessmentConsistencyCheck();
+      TimingWindowViolationWriter(
+        ref.read(databaseProvider),
+        ref.read(signalRepositoryProvider),
+      ).checkAndRaise(
+        ratingId: result.rating!.id,
+        trialAssessmentId: _taIdForCurrentAssessment(),
+      ).ignore();
       if (numericValue != null) {
         ref.read(lastValueMemoryProvider.notifier).set(
               widget.session.id,

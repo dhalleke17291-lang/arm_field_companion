@@ -69,6 +69,7 @@ void main() {
         saveUseCase,
         ratingRepo,
         signalRepo,
+        db,
       );
 
       // Act: amend with value 150 — above maxValue of 100.
@@ -130,6 +131,7 @@ void main() {
         saveUseCase,
         ratingRepo,
         signalRepo,
+        db,
       );
 
       await useCase.execute(AmendPlotRatingInput(

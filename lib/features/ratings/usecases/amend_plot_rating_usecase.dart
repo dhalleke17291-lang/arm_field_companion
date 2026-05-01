@@ -1,8 +1,10 @@
+import '../../../core/database/app_database.dart';
 import '../../sessions/session_repository.dart';
 import '../rating_repository.dart';
 import 'save_rating_usecase.dart';
 import '../../../domain/signals/signal_repository.dart';
 import '../../../domain/signals/signal_writers/scale_violation_writer.dart';
+import '../../../domain/signals/signal_writers/timing_window_violation_writer.dart';
 
 /// Payload for amending a plot rating from the plot-detail edit sheet.
 ///
@@ -33,6 +35,7 @@ class AmendPlotRatingInput {
     this.existingNumericValue,
     this.existingTextValue,
     this.seType,
+    this.trialAssessmentId,
   });
 
   final int trialId;
@@ -64,6 +67,10 @@ class AmendPlotRatingInput {
   /// ARM rating-type prefix for scale violation signals (e.g. 'CONTRO').
   /// Resolved by the caller from ARM metadata; defaults to 'LOCAL' when absent.
   final String? seType;
+
+  /// ARM trialAssessmentId for timing window signals.
+  /// Passed explicitly because the new rating row won't have it in the DB yet.
+  final int? trialAssessmentId;
 }
 
 class AmendPlotRatingResult {
@@ -106,12 +113,14 @@ class AmendPlotRatingUseCase {
     this._saveRatingUseCase,
     this._ratingRepository,
     this._signalRepository,
+    this._db,
   );
 
   final SessionRepository _sessionRepository;
   final SaveRatingUseCase _saveRatingUseCase;
   final RatingRepository _ratingRepository;
   final SignalRepository _signalRepository;
+  final AppDatabase _db;
 
   Future<AmendPlotRatingResult> execute(AmendPlotRatingInput input) async {
     final session = await _sessionRepository.getSessionById(input.sessionId);
@@ -206,6 +215,13 @@ class AmendPlotRatingUseCase {
     } catch (e) {
       return AmendPlotRatingResult.failure('Error: $e');
     }
+
+    TimingWindowViolationWriter(_db, _signalRepository)
+        .checkAndRaise(
+          ratingId: saved.id,
+          trialAssessmentId: input.trialAssessmentId,
+        )
+        .ignore();
 
     return AmendPlotRatingResult.success(saved.id);
   }

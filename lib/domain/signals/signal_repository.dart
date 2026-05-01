@@ -212,8 +212,8 @@ class SignalRepository {
     }
   }
 
-  /// Used by [TimingWindowViolationWriter] — finds an existing open violation
-  /// for the exact (session, plot, seType) triple.
+  /// Used by [TimingWindowViolationWriter] — finds an existing open/deferred/
+  /// investigating violation for the exact (session, plot, seType) triple.
   Future<Signal?> findOpenTimingWindowViolationForPlotSession({
     required int sessionId,
     required int plotId,
@@ -224,7 +224,7 @@ class SignalRepository {
           ..where((s) => s.plotId.equals(plotId))
           ..where(
               (s) => s.signalType.equals(SignalType.causalContextFlag.dbValue))
-          ..where((s) => s.status.equals(SignalStatus.open.dbValue)))
+          ..where((s) => s.status.isIn(_openStatuses.toList())))
         .get();
     return rows
         .where((s) => _ctxMatches(s, (ctx) => ctx.seType == seType))

@@ -25,6 +25,10 @@ class TimingWindowViolationWriter {
 
   Future<int?> checkAndRaise({
     required int ratingId,
+    /// Optional pre-resolved ARM trialAssessmentId. When provided, this skips
+    /// the DB lookup from the rating row — required when new ratings from the
+    /// save/amend paths haven't had trialAssessmentId written to the DB yet.
+    int? trialAssessmentId,
     int? raisedBy,
   }) async {
     // ── Load rating ───────────────────────────────────────────────────────────
@@ -32,12 +36,13 @@ class TimingWindowViolationWriter {
           ..where((r) => r.id.equals(ratingId)))
         .getSingleOrNull();
     if (rating == null) return null;
-    if (rating.trialAssessmentId == null) return null;
+
+    final taId = trialAssessmentId ?? rating.trialAssessmentId;
+    if (taId == null) return null;
 
     // ── ARM metadata → seType ─────────────────────────────────────────────────
     final meta = await (_db.select(_db.armAssessmentMetadata)
-          ..where(
-              (m) => m.trialAssessmentId.equals(rating.trialAssessmentId!)))
+          ..where((m) => m.trialAssessmentId.equals(taId)))
         .getSingleOrNull();
     final seType = meta?.ratingType;
     if (seType == null) return null;

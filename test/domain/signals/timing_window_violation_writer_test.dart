@@ -279,5 +279,70 @@ void main() {
       expect(first, equals(second));
       expect(await db.select(db.signals).get(), hasLength(1));
     });
+
+    test('7 — deferred signal blocks duplicate', () async {
+      final s = await _seedScaffold(db);
+      final assessmentId = await _seedAssessment(db, s.trialId);
+      final taId = await _seedArmChain(db,
+          trialId: s.trialId, ratingType: 'CONTRO');
+      final ratingId = await _seedRating(db,
+          trialId: s.trialId,
+          sessionId: s.sessionId,
+          plotPk: s.plotPk,
+          assessmentId: assessmentId,
+          createdAt: DateTime.utc(2026, 6, 10),
+          trialAssessmentId: taId);
+      await _seedApplication(db,
+          trialId: s.trialId,
+          applicationDate: DateTime.utc(2026, 6, 7)); // 3 days early
+
+      final writer = makeWriter();
+      final first = await writer.checkAndRaise(ratingId: ratingId);
+      expect(first, isNotNull);
+
+      // Defer the signal — should still block a second raise.
+      await container
+          .read(signalRepositoryProvider)
+          .recordDecisionEvent(
+            signalId: first!,
+            eventType: SignalDecisionEventType.defer,
+            occurredAt: DateTime.now().millisecondsSinceEpoch,
+          );
+
+      final second = await writer.checkAndRaise(ratingId: ratingId);
+      expect(second, equals(first));
+      expect(await db.select(db.signals).get(), hasLength(1));
+    });
+
+    test('8 — trialAssessmentId param bypasses DB lookup for new ratings',
+        () async {
+      final s = await _seedScaffold(db);
+      final assessmentId = await _seedAssessment(db, s.trialId);
+      final taId = await _seedArmChain(db,
+          trialId: s.trialId, ratingType: 'CONTRO');
+      // Rating has NO trialAssessmentId in DB (simulates fresh save path).
+      final ratingId = await _seedRating(db,
+          trialId: s.trialId,
+          sessionId: s.sessionId,
+          plotPk: s.plotPk,
+          assessmentId: assessmentId,
+          createdAt: DateTime.utc(2026, 6, 10));
+      await _seedApplication(db,
+          trialId: s.trialId,
+          applicationDate: DateTime.utc(2026, 6, 7)); // 3 days early
+
+      // Without trialAssessmentId parameter → no signal (DB lookup finds null).
+      final noParam = await makeWriter().checkAndRaise(ratingId: ratingId);
+      expect(noParam, isNull);
+      expect(await db.select(db.signals).get(), isEmpty);
+
+      // With trialAssessmentId passed explicitly → signal raised.
+      final withParam = await makeWriter().checkAndRaise(
+        ratingId: ratingId,
+        trialAssessmentId: taId,
+      );
+      expect(withParam, isNotNull);
+      expect(await db.select(db.signals).get(), hasLength(1));
+    });
   });
 }
