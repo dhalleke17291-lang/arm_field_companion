@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/providers.dart';
+import 'package:arm_field_companion/features/sessions/domain/session_completeness_report.dart';
 import 'package:arm_field_companion/features/sessions/session_summary_screen.dart';
 
 // ---------------------------------------------------------------------------
@@ -551,6 +553,111 @@ void main() {
       // clears any stale internal grid long-press highlight via didUpdateWidget.
       expect(
           find.bySemanticsLabel('Clear treatment highlight'), findsNothing);
+    });
+  });
+
+  // ── Completeness sheet tests ─────────────────────────────────────────────
+
+  group('SessionSummaryScreen completeness sheet', () {
+    setUpAll(() async {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    Future<void> pumpWithCompleteness(
+      WidgetTester tester, {
+      required Trial trial,
+      required Session session,
+      required List<Plot> plots,
+      required Set<int> ratedPks,
+      required SessionCompletenessReport report,
+    }) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            plotsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value(plots)),
+            sessionAssessmentsProvider(session.id)
+                .overrideWith((ref) => Stream.value(<Assessment>[])),
+            sessionRatingsProvider(session.id)
+                .overrideWith((ref) => Stream.value(<RatingRecord>[])),
+            ratedPlotPksProvider(session.id)
+                .overrideWith((ref) => Stream.value(ratedPks)),
+            treatmentsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value(<Treatment>[])),
+            assignmentsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value(<Assignment>[])),
+            flaggedPlotIdsForSessionProvider(session.id)
+                .overrideWith((ref) => Stream.value(<int>{})),
+            plotPksWithCorrectionsForSessionProvider(session.id)
+                .overrideWith((ref) => Stream.value(<int>{})),
+            sessionCompletenessReportProvider(session.id)
+                .overrideWith((ref) => Future.value(report)),
+          ],
+          child: MaterialApp(
+            home: SessionSummaryScreen(trial: trial, session: session),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    testWidgets('tapping completeness chip opens sheet with title',
+        (tester) async {
+      addTearDown(() async => tester.binding.setSurfaceSize(null));
+      const report = SessionCompletenessReport(
+        expectedPlots: 2,
+        completedPlots: 1,
+        incompletePlots: 1,
+        issues: [],
+        canClose: false,
+      );
+      await pumpWithCompleteness(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id},
+        report: report,
+      );
+
+      expect(find.textContaining('1/2 complete'), findsOneWidget);
+
+      await tester.tap(find.textContaining('1/2 complete'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Sheet header title should be visible.
+      expect(find.text('Session Completeness'), findsWidgets);
+    });
+
+    testWidgets('complete session shows ready-to-close in sheet',
+        (tester) async {
+      addTearDown(() async => tester.binding.setSurfaceSize(null));
+      const report = SessionCompletenessReport(
+        expectedPlots: 2,
+        completedPlots: 2,
+        incompletePlots: 0,
+        issues: [],
+        canClose: true,
+      );
+      await pumpWithCompleteness(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id, plot2.id},
+        report: report,
+      );
+
+      // Tap the completeness chip — '2/2 complete' shows when canClose.
+      await tester.tap(find.textContaining('2/2 complete'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.textContaining('Complete — ready to close'), findsOneWidget);
     });
   });
 }
