@@ -57,6 +57,7 @@ class TimingWindowViolationWriter {
       _db,
       seType,
       trial?.workspaceType ?? 'efficacy',
+      trial?.region,
     );
     if (profile == null) return null;
 

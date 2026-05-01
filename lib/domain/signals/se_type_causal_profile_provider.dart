@@ -55,35 +55,36 @@ class SeTypeCausalProfile {
   }
 }
 
-/// Lookup key for causal profiles (`se_type` × `trial_type`).
+/// Lookup key for causal profiles (`se_type` × `trial_type` × `region`).
 class SeTypeProfileKey {
   const SeTypeProfileKey({
     required this.seType,
     required this.trialType,
+    this.region,
   });
 
   final String seType;
   final String trialType;
 
+  /// Trial region for region-aware lookup. Null means region-agnostic.
+  final String? region;
+
   @override
   bool operator ==(Object other) =>
       other is SeTypeProfileKey &&
       other.seType == seType &&
-      other.trialType == trialType;
+      other.trialType == trialType &&
+      other.region == region;
 
   @override
-  int get hashCode => Object.hash(seType, trialType);
+  int get hashCode => Object.hash(seType, trialType, region);
 }
 
 final seTypeCausalProfileProvider =
     FutureProvider.family<SeTypeCausalProfile?, SeTypeProfileKey>(
         (ref, key) async {
   final database = ref.watch(databaseProvider);
-  final row = await (database.select(database.seTypeCausalProfiles)
-        ..where((p) => p.seType.equals(key.seType))
-        ..where((p) => p.trialType.equals(key.trialType)))
-      .getSingleOrNull();
-  return row != null ? SeTypeCausalProfile.fromDrift(row) : null;
+  return lookupCausalProfile(database, key.seType, key.trialType, key.region);
 });
 
 final seTypeCausalProfilesAllProvider =
@@ -95,19 +96,36 @@ final seTypeCausalProfilesAllProvider =
   return rows.map(SeTypeCausalProfile.fromDrift).toList();
 });
 
-/// Looks up the causal profile for a (seType, trialType) pair.
+/// Looks up the causal profile for a (seType, trialType, region) triple.
 ///
-/// Matches on (seType, trialType) only. Region-aware lookup is deferred until
-/// the se_type_causal_profiles schema adds a region column.
-/// Returns null if no matching row exists.
+/// 3-step resolution:
+///   1. Profile matching seType AND trialType AND region (exact region match).
+///   2. Profile matching seType AND trialType AND region IS NULL (universal fallback).
+///   3. No profile — returns null.
+///
+/// This never calls getSingleOrNull() on an unfiltered (seType, trialType)
+/// result, so it is safe when both NULL-region and region-specific rows exist.
 Future<SeTypeCausalProfile?> lookupCausalProfile(
   db.AppDatabase database,
   String seType,
   String trialType,
+  String? region,
 ) async {
-  final row = await (database.select(database.seTypeCausalProfiles)
+  // Step 1: region-specific match (skipped when region is null).
+  if (region != null) {
+    final row = await (database.select(database.seTypeCausalProfiles)
+          ..where((p) => p.seType.equals(seType))
+          ..where((p) => p.trialType.equals(trialType))
+          ..where((p) => p.region.equals(region)))
+        .getSingleOrNull();
+    if (row != null) return SeTypeCausalProfile.fromDrift(row);
+  }
+
+  // Step 2: universal (null-region) fallback.
+  final rows = await (database.select(database.seTypeCausalProfiles)
         ..where((p) => p.seType.equals(seType))
-        ..where((p) => p.trialType.equals(trialType)))
-      .getSingleOrNull();
-  return row != null ? SeTypeCausalProfile.fromDrift(row) : null;
+        ..where((p) => p.trialType.equals(trialType))
+        ..where((p) => p.region.isNull()))
+      .get();
+  return rows.isNotEmpty ? SeTypeCausalProfile.fromDrift(rows.first) : null;
 }

@@ -126,6 +126,7 @@ final causalContextProvider =
         db,
         seType,
         trial?.workspaceType ?? 'efficacy',
+        trial?.region,
       );
     }
   }
