@@ -1,9 +1,14 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/core/providers.dart';
 import 'package:arm_field_companion/domain/ratings/rating_integrity_exception.dart';
 import 'package:arm_field_companion/domain/ratings/rating_integrity_guard.dart';
+import 'package:arm_field_companion/domain/signals/signal_models.dart';
+import 'package:arm_field_companion/domain/signals/signal_providers.dart';
+import 'package:arm_field_companion/domain/signals/signal_writers/timing_window_violation_writer.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
 
@@ -604,6 +609,106 @@ void main() {
 
       expect(result.isSuccess, true);
       expect(result.rating!.trialAssessmentId, isNull);
+    });
+  });
+
+  group('SaveRatingUseCase + TimingWindowViolationWriter integration', () {
+    late AppDatabase db;
+    late ProviderContainer container;
+
+    setUp(() {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      container = ProviderContainer(
+        overrides: [databaseProvider.overrideWithValue(db)],
+      );
+    });
+
+    tearDown(() async {
+      container.dispose();
+      await db.close();
+    });
+
+    test('out-of-window save followed by writer check raises timing signal',
+        () async {
+      final trialId = await db.into(db.trials).insert(
+            TrialsCompanion.insert(
+              name: 'SaveTimingE2E',
+              workspaceType: const Value('efficacy'),
+            ),
+          );
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-06-10',
+            ),
+          );
+      final plotPk = await db.into(db.plots).insert(
+            PlotsCompanion.insert(trialId: trialId, plotId: 'P1'),
+          );
+      final assessmentId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(trialId: trialId, name: 'A'),
+          );
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+              sessionId: sessionId,
+              assessmentId: assessmentId,
+            ),
+          );
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'TST',
+              name: 'Test',
+              category: 'pest',
+            ),
+          );
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+            ),
+          );
+      await db.into(db.armAssessmentMetadata).insert(
+            ArmAssessmentMetadataCompanion.insert(
+              trialAssessmentId: taId,
+              ratingType: const Value('CONTRO'),
+            ),
+          );
+      await db.into(db.trialApplicationEvents).insert(
+            TrialApplicationEventsCompanion(
+              trialId: Value(trialId),
+              applicationDate: Value(DateTime.now().toUtc()),
+              status: const Value('applied'),
+            ),
+          );
+
+      final repo = RatingRepository(db);
+      final useCase = SaveRatingUseCase(repo, _NoOpRatingReferentialIntegrity());
+
+      final save = await useCase.execute(SaveRatingInput(
+        trialId: trialId,
+        plotPk: plotPk,
+        assessmentId: assessmentId,
+        sessionId: sessionId,
+        resultStatus: 'RECORDED',
+        numericValue: 12.0,
+        trialAssessmentId: taId,
+      ));
+      expect(save.isSuccess, isTrue);
+
+      final writer = TimingWindowViolationWriter(
+        db,
+        container.read(signalRepositoryProvider),
+      );
+      final signalId = await writer.checkAndRaise(
+        ratingId: save.rating!.id,
+        trialAssessmentId: taId,
+      );
+
+      expect(signalId, isNotNull);
+      final signals = await db.select(db.signals).get();
+      expect(signals, hasLength(1));
+      expect(signals.single.signalType, SignalType.causalContextFlag.dbValue);
     });
   });
 }

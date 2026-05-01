@@ -20,9 +20,13 @@ import 'package:arm_field_companion/domain/signals/signal_repository.dart';
 import 'package:arm_field_companion/features/export/field_execution_report_assembly_service.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
+import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
 import 'package:arm_field_companion/features/sessions/usecases/compute_session_completeness_usecase.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
+import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
+import 'package:arm_field_companion/domain/ratings/rating_integrity_guard.dart';
+import 'package:arm_field_companion/domain/signals/signal_writers/timing_window_violation_writer.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -539,6 +543,76 @@ void main() {
 
       expect(data.signals.openSignals, isEmpty,
           reason: 'resolved signals must not appear as open');
+    });
+
+    test('save + timing writer flow appears in FER Section E', () async {
+      final sid = await session('S1', date: '2026-06-10');
+      final p = await plot('101');
+      final a = await assessment('Weed');
+      await linkAssessmentToSession(sid, a);
+      final s = await getSession(sid);
+
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'TST',
+              name: 'Test',
+              category: 'pest',
+            ),
+          );
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+            ),
+          );
+      await db.into(db.armAssessmentMetadata).insert(
+            ArmAssessmentMetadataCompanion.insert(
+              trialAssessmentId: taId,
+              ratingType: const Value('CONTRO'),
+            ),
+          );
+      await db.into(db.trialApplicationEvents).insert(
+            TrialApplicationEventsCompanion(
+              trialId: Value(trialId),
+              applicationDate:
+                  Value(DateTime.now().toUtc().subtract(const Duration(days: 3))),
+              status: const Value('applied'),
+            ),
+          );
+
+      final ratingRepo = RatingRepository(db);
+      final saveUc = SaveRatingUseCase(
+        ratingRepo,
+        RatingIntegrityGuard(
+          PlotRepository(db),
+          SessionRepository(db),
+          TreatmentRepository(db),
+        ),
+      );
+      final saveResult = await saveUc.execute(SaveRatingInput(
+        trialId: trialId,
+        plotPk: p,
+        assessmentId: a,
+        sessionId: sid,
+        resultStatus: 'RECORDED',
+        numericValue: 80.0,
+        trialAssessmentId: taId,
+      ));
+      expect(saveResult.isSuccess, isTrue);
+
+      final writer = TimingWindowViolationWriter(db, SignalRepository.attach(db));
+      final timingId = await writer.checkAndRaise(
+        ratingId: saveResult.rating!.id,
+        trialAssessmentId: taId,
+      );
+      expect(timingId, isNotNull);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+      final timingRows = data.signals.openSignals
+          .where((r) => r.signalType == SignalType.causalContextFlag.dbValue)
+          .toList();
+      expect(timingRows, hasLength(1));
+      expect(timingRows.single.consequenceText, contains('outside the configured biological window'));
     });
   });
 

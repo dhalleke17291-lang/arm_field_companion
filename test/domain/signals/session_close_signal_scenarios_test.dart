@@ -16,6 +16,7 @@ import 'package:arm_field_companion/domain/signals/signal_providers.dart';
 import 'package:arm_field_companion/domain/signals/signal_repository.dart';
 import 'package:arm_field_companion/domain/signals/signal_writers/aov_error_variance_writer.dart';
 import 'package:arm_field_companion/domain/signals/signal_writers/replication_warning_writer.dart';
+import 'package:arm_field_companion/domain/signals/signal_writers/timing_window_violation_writer.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -329,6 +330,63 @@ void main() {
           reason: 'AOV returns same signal id on re-run');
       expect(first.rep, equals(second.rep),
           reason: 'replication returns same signal id on re-run');
+    });
+
+    test('6 — session-close timing sweep raises causal context signal', () async {
+      final seed = await _seedSession(db);
+      final asmId = await _addAssessment(db,
+          trialId: seed.trialId, sessionId: seed.sessionId, name: 'W003');
+      final p1 = await _addPlot(db,
+          trialId: seed.trialId, treatmentId: await _addTreatment(db,
+              trialId: seed.trialId, code: 'T1', name: 'Control'), plotId: '101');
+
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'TST',
+              name: 'Test',
+              category: 'pest',
+            ),
+          );
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: seed.trialId,
+              assessmentDefinitionId: defId,
+            ),
+          );
+      await db.into(db.armAssessmentMetadata).insert(
+            ArmAssessmentMetadataCompanion.insert(
+              trialAssessmentId: taId,
+              ratingType: const Value('CONTRO'),
+            ),
+          );
+      await db.into(db.trialApplicationEvents).insert(
+            TrialApplicationEventsCompanion(
+              trialId: Value(seed.trialId),
+              applicationDate: Value(DateTime.utc(2026, 4, 26)),
+              status: const Value('applied'),
+            ),
+          );
+      await db.into(db.ratingRecords).insert(
+            RatingRecordsCompanion.insert(
+              trialId: seed.trialId,
+              sessionId: seed.sessionId,
+              plotPk: p1,
+              assessmentId: asmId,
+              trialAssessmentId: Value(taId),
+              createdAt: Value(DateTime.utc(2026, 4, 29)),
+              numericValue: const Value(50.0),
+              resultStatus: const Value('RECORDED'),
+            ),
+          );
+
+      final timing = await TimingWindowViolationWriter(db, repo)
+          .checkAndRaiseForSession(sessionId: seed.sessionId);
+
+      expect(timing.whereType<int>().length, 1);
+      final signals = await db.select(db.signals).get();
+      expect(
+          signals.where((s) => s.signalType == SignalType.causalContextFlag.dbValue),
+          hasLength(1));
     });
   });
 }

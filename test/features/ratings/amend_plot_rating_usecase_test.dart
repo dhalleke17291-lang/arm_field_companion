@@ -9,6 +9,7 @@ import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/ratings/usecases/amend_plot_rating_usecase.dart';
 import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,6 +27,7 @@ void main() {
     });
 
     tearDown(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
       container.dispose();
       await db.close();
     });
@@ -166,6 +168,7 @@ void main() {
     });
 
     tearDown(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
       container.dispose();
       await db.close();
     });
@@ -247,6 +250,109 @@ void main() {
       final current = ratings.where((r) => r.isCurrent).toList();
       expect(current, hasLength(1));
       expect(current.single.trialAssessmentId, taId);
+    });
+
+    test(
+        'amend outside timing window raises causal_context_flag and keeps trialAssessmentId',
+        () async {
+      final trialId = await db
+          .into(db.trials)
+          .insert(TrialsCompanion.insert(
+            name: 'AmendTiming',
+            workspaceType: const Value('efficacy'),
+          ));
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-06-10',
+            ),
+          );
+      final plotPk = await db
+          .into(db.plots)
+          .insert(PlotsCompanion.insert(trialId: trialId, plotId: 'P1'));
+      final assessmentId = await db
+          .into(db.assessments)
+          .insert(AssessmentsCompanion.insert(trialId: trialId, name: 'A'));
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+              sessionId: sessionId,
+              assessmentId: assessmentId,
+            ),
+          );
+
+      // ARM chain + metadata used by timing writer.
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'TST',
+              name: 'Test',
+              category: 'pest',
+            ),
+          );
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+            ),
+          );
+      await db.into(db.armAssessmentMetadata).insert(
+            ArmAssessmentMetadataCompanion.insert(
+              trialAssessmentId: taId,
+              ratingType: const Value('CONTRO'),
+            ),
+          );
+      await db.into(db.trialApplicationEvents).insert(
+            TrialApplicationEventsCompanion(
+              trialId: Value(trialId),
+              applicationDate: Value(DateTime.now().toUtc()),
+              status: const Value('applied'),
+            ),
+          );
+
+      final sessionRepo = SessionRepository(db);
+      final ratingRepo = RatingRepository(db);
+      final plotRepo = PlotRepository(db);
+      final treatmentRepo = TreatmentRepository(db);
+      final integrityGuard =
+          RatingIntegrityGuard(plotRepo, sessionRepo, treatmentRepo);
+      final saveUseCase = SaveRatingUseCase(ratingRepo, integrityGuard);
+      final signalRepo = container.read(signalRepositoryProvider);
+
+      final useCase = AmendPlotRatingUseCase(
+        sessionRepo,
+        saveUseCase,
+        ratingRepo,
+        signalRepo,
+        db,
+      );
+
+      final result = await useCase.execute(AmendPlotRatingInput(
+        trialId: trialId,
+        plotPk: plotPk,
+        assessmentId: assessmentId,
+        sessionId: sessionId,
+        rawValue: '55',
+        dataType: 'numeric',
+        resultStatus: 'RECORDED',
+        minValue: 0.0,
+        maxValue: 100.0,
+        amendmentReason: 'timing test',
+        amendedBy: 'tester',
+        trialAssessmentId: taId,
+      ));
+
+      expect(result.isSuccess, isTrue);
+
+      final ratings = await db.select(db.ratingRecords).get();
+      final current = ratings.where((r) => r.isCurrent).toList();
+      expect(current, hasLength(1));
+      expect(current.single.trialAssessmentId, taId);
+
+      // Timing writer runs unawaited inside AmendPlotRatingUseCase.
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      final signals = await db.select(db.signals).get();
+      expect(signals, hasLength(1));
+      expect(signals.single.signalType, SignalType.causalContextFlag.dbValue);
     });
   });
 }

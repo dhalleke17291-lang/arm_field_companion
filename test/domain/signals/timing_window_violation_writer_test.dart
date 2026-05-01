@@ -104,6 +104,32 @@ Future<void> _seedApplication(
           ),
         );
 
+class _ThrowingSweepTimingWriter extends TimingWindowViolationWriter {
+  _ThrowingSweepTimingWriter(
+    super.db,
+    super.signals, {
+    required this.throwOnRatingId,
+  });
+
+  final int throwOnRatingId;
+
+  @override
+  Future<int?> checkAndRaise({
+    required int ratingId,
+    int? trialAssessmentId,
+    int? raisedBy,
+  }) async {
+    if (ratingId == throwOnRatingId) {
+      throw StateError('intentional test throw');
+    }
+    return super.checkAndRaise(
+      ratingId: ratingId,
+      trialAssessmentId: trialAssessmentId,
+      raisedBy: raisedBy,
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -482,6 +508,49 @@ void main() {
       // Both ratings were processed; loop did not stop after the first.
       expect(results, hasLength(2));
       expect(results.where((id) => id != null), hasLength(1));
+      expect(await db.select(db.signals).get(), hasLength(1));
+    });
+
+    test(
+        '13 — sweep keeps processing after one checkAndRaise throws',
+        () async {
+      final s = await _seedScaffold(db);
+      final assessmentId = await _seedAssessment(db, s.trialId);
+      final taId =
+          await _seedArmChain(db, trialId: s.trialId, ratingType: 'CONTRO');
+      await _seedApplication(db,
+          trialId: s.trialId,
+          applicationDate: DateTime.utc(2026, 6, 7)); // 3 days early
+
+      final throwRatingId = await _seedRating(db,
+          trialId: s.trialId,
+          sessionId: s.sessionId,
+          plotPk: s.plotPk,
+          assessmentId: assessmentId,
+          createdAt: DateTime.utc(2026, 6, 10),
+          trialAssessmentId: taId);
+
+      final plotPk2 = await db
+          .into(db.plots)
+          .insert(PlotsCompanion.insert(trialId: s.trialId, plotId: 'P2'));
+      await _seedRating(db,
+          trialId: s.trialId,
+          sessionId: s.sessionId,
+          plotPk: plotPk2,
+          assessmentId: assessmentId,
+          createdAt: DateTime.utc(2026, 6, 10),
+          trialAssessmentId: taId);
+
+      final writer = _ThrowingSweepTimingWriter(
+        db,
+        container.read(signalRepositoryProvider),
+        throwOnRatingId: throwRatingId,
+      );
+      final results = await writer.checkAndRaiseForSession(sessionId: s.sessionId);
+
+      // The throwing rating is skipped, but the other rating still gets processed.
+      expect(results, hasLength(1));
+      expect(results.single, isNotNull);
       expect(await db.select(db.signals).get(), hasLength(1));
     });
   });
