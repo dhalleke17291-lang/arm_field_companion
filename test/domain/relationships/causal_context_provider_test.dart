@@ -691,30 +691,28 @@ void main() {
     });
 
     test(
-        'pmra_canada trial with only null-region CONTRO profile falls back to '
+        'pmra_canada trial with no pmra_canada profile for seType falls back to '
         'null-region profile', () async {
-      // No pmra_canada profile exists — only the seeded null-region CONTRO/efficacy.
+      // LODGIN has no pmra_canada profile seeded — falls back to null-region seed.
       final ratingId =
-          await armRating(db, region: 'pmra_canada', seType: 'CONTRO');
+          await armRating(db, region: 'pmra_canada', seType: 'LODGIN');
 
       final result = await _run(container, ratingId);
       expect(result.profile, isNotNull,
           reason: 'null-region profile must serve as fallback');
-      expect(result.profile!.seType, 'CONTRO');
+      expect(result.profile!.seType, 'LODGIN');
     });
 
     test(
         'pmra_canada trial with matching pmra_canada profile gets that profile '
         '(region-specific preferred over null-region)', () async {
-      await insertProfile(db,
-          seType: 'CONTRO', trialType: 'efficacy', region: 'pmra_canada');
-
+      // Seed already provides (CONTRO, efficacy, pmra_canada) — no manual insert.
       final ratingId =
           await armRating(db, region: 'pmra_canada', seType: 'CONTRO');
 
       final result = await _run(container, ratingId);
       expect(result.profile, isNotNull);
-      // Both the null-region seed and the pmra_canada row match CONTRO/efficacy.
+      // Both null-region (7–28d) and pmra_canada (14–42d) CONTRO seeds exist.
       // Region-specific must win — verified by confirming no StateError and
       // the profile is resolved.
       expect(result.profile!.seType, 'CONTRO');
@@ -739,11 +737,8 @@ void main() {
         'CRITICAL: lookup does not throw when both null-region and pmra_canada '
         'rows exist for same (seType, trialType) — correct row returned each time',
         () async {
-      // Both rows now coexist. Without region filtering, getSingleOrNull()
-      // would throw StateError here.
-      await insertProfile(db,
-          seType: 'CONTRO', trialType: 'efficacy', region: 'pmra_canada');
-
+      // Seed provides both (CONTRO, efficacy, null) and (CONTRO, efficacy,
+      // pmra_canada). Without region filtering getSingleOrNull() would throw.
       final canadaRatingId =
           await armRating(db, region: 'pmra_canada', seType: 'CONTRO');
       final eppoRatingId =
