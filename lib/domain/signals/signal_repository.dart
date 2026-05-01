@@ -231,8 +231,8 @@ class SignalRepository {
         .firstOrNull;
   }
 
-  /// Used by [ScaleViolationWriter] — finds an existing open violation for
-  /// the exact (session, plot, seType) triple.
+  /// Used by [ScaleViolationWriter] — finds an existing open/deferred/
+  /// investigating violation for the exact (session, plot, seType) triple.
   ///
   /// seType is stored in referenceContext JSON and must match exactly so that
   /// two different assessments on the same plot each get their own signal.
@@ -245,15 +245,16 @@ class SignalRepository {
           ..where((s) => s.sessionId.equals(sessionId))
           ..where((s) => s.plotId.equals(plotId))
           ..where((s) => s.signalType.equals(SignalType.scaleViolation.dbValue))
-          ..where((s) => s.status.equals(SignalStatus.open.dbValue)))
+          ..where((s) => s.status.isIn(_openStatuses.toList())))
         .get();
     return rows
         .where((s) => _ctxMatches(s, (ctx) => ctx.seType == seType))
         .firstOrNull;
   }
 
-  /// Used by [AovErrorVarianceWriter] — finds an existing open/deferred signal
-  /// for the given session + assessment column (matched by seType in context).
+  /// Used by [AovErrorVarianceWriter] — finds an existing open/deferred/
+  /// investigating signal for the given session + assessment column
+  /// (matched by seType in context).
   Future<Signal?> findOpenAovSignalForSessionAssessmentTreatment({
     required int sessionId,
     required String seType,
@@ -263,8 +264,7 @@ class SignalRepository {
           ..where((s) => s.sessionId.equals(sessionId))
           ..where(
               (s) => s.signalType.equals(SignalType.aovPrediction.dbValue))
-          ..where((s) =>
-              s.status.isIn([SignalStatus.open.dbValue, SignalStatus.deferred.dbValue])))
+          ..where((s) => s.status.isIn(_openStatuses.toList())))
         .get();
     return rows
         .where((s) => _ctxMatches(
@@ -272,8 +272,8 @@ class SignalRepository {
         .firstOrNull;
   }
 
-  /// Used by [ReplicationWarningWriter] — finds an existing open/deferred
-  /// signal for the given session + treatment.
+  /// Used by [ReplicationWarningWriter] — finds an existing open/deferred/
+  /// investigating signal for the given session + treatment.
   Future<Signal?> findOpenReplicationWarningForSessionTreatment({
     required int sessionId,
     required int treatmentId,
@@ -282,8 +282,7 @@ class SignalRepository {
           ..where((s) => s.sessionId.equals(sessionId))
           ..where((s) =>
               s.signalType.equals(SignalType.replicationWarning.dbValue))
-          ..where((s) =>
-              s.status.isIn([SignalStatus.open.dbValue, SignalStatus.deferred.dbValue])))
+          ..where((s) => s.status.isIn(_openStatuses.toList())))
         .get();
     return rows
         .where((s) => _ctxMatches(s, (ctx) => ctx.treatmentId == treatmentId))

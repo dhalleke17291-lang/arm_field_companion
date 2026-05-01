@@ -448,4 +448,98 @@ void main() {
           reason: 're-running session-close writers must not create duplicates');
     });
   });
+
+  group('Dedup status alignment', () {
+    late AppDatabase db;
+    late ProviderContainer container;
+
+    setUp(() {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      container = _container(db);
+    });
+
+    tearDown(() async {
+      container.dispose();
+      await db.close();
+    });
+
+    test('deferred scale violation blocks a second raise', () async {
+      final trialId = await _trial(db);
+      final sessionId = await _session(db, trialId);
+      final plotPk = await _plot(db, trialId);
+      final repo = container.read(signalRepositoryProvider);
+      final writer = ScaleViolationWriter(repo);
+
+      final firstId = await writer.checkAndRaise(
+        trialId: trialId,
+        sessionId: sessionId,
+        plotId: plotPk,
+        enteredValue: 150,
+        scaleMin: 0,
+        scaleMax: 100,
+        seType: 'CONTRO',
+        consequenceText: 'violation',
+      );
+      expect(firstId, isNotNull);
+
+      // Transition to deferred.
+      await repo.recordDecisionEvent(
+        signalId: firstId!,
+        eventType: SignalDecisionEventType.defer,
+        occurredAt: DateTime.now().millisecondsSinceEpoch,
+      );
+
+      final secondId = await writer.checkAndRaise(
+        trialId: trialId,
+        sessionId: sessionId,
+        plotId: plotPk,
+        enteredValue: 200,
+        scaleMin: 0,
+        scaleMax: 100,
+        seType: 'CONTRO',
+        consequenceText: 'still violated',
+      );
+
+      expect(secondId, equals(firstId));
+      expect(await db.select(db.signals).get(), hasLength(1));
+    });
+
+    test('investigating AOV signal blocks a second raise', () async {
+      final trialId = await _trial(db);
+      final sessionId = await _session(db, trialId);
+      final repo = container.read(signalRepositoryProvider);
+
+      const seType = 'CONTRO';
+      const treatmentId = 42;
+      final signalId = await repo.raiseSignal(
+        trialId: trialId,
+        sessionId: sessionId,
+        signalType: SignalType.aovPrediction,
+        moment: SignalMoment.two,
+        severity: SignalSeverity.review,
+        referenceContext: const SignalReferenceContext(
+          seType: seType,
+          treatmentId: treatmentId,
+        ),
+        consequenceText: 'aov signal',
+      );
+
+      // Transition to investigating.
+      await repo.recordDecisionEvent(
+        signalId: signalId,
+        eventType: SignalDecisionEventType.investigate,
+        occurredAt: DateTime.now().millisecondsSinceEpoch,
+      );
+
+      final found = await repo.findOpenAovSignalForSessionAssessmentTreatment(
+        sessionId: sessionId,
+        seType: seType,
+        treatmentId: treatmentId,
+      );
+
+      expect(found, isNotNull);
+      expect(found!.id, signalId);
+      expect(found.status, SignalStatus.investigating.dbValue);
+    });
+  });
 }

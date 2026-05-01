@@ -153,4 +153,100 @@ void main() {
       expect(signals, isEmpty);
     });
   });
+
+  group('AmendPlotRatingUseCase — trialAssessmentId propagation', () {
+    late AppDatabase db;
+    late ProviderContainer container;
+
+    setUp(() {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      container = ProviderContainer(
+        overrides: [databaseProvider.overrideWithValue(db)],
+      );
+    });
+
+    tearDown(() async {
+      container.dispose();
+      await db.close();
+    });
+
+    test('amended rating row carries trialAssessmentId in the DB', () async {
+      final trialId = await db
+          .into(db.trials)
+          .insert(TrialsCompanion.insert(name: 'TAITest'));
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-05-01',
+            ),
+          );
+      final plotPk = await db
+          .into(db.plots)
+          .insert(PlotsCompanion.insert(trialId: trialId, plotId: 'P1'));
+      final assessmentId = await db
+          .into(db.assessments)
+          .insert(AssessmentsCompanion.insert(trialId: trialId, name: 'A'));
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+              sessionId: sessionId,
+              assessmentId: assessmentId,
+            ),
+          );
+
+      // ARM chain providing trialAssessmentId.
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'TST',
+              name: 'Test',
+              category: 'pest',
+            ),
+          );
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+            ),
+          );
+
+      final sessionRepo = SessionRepository(db);
+      final ratingRepo = RatingRepository(db);
+      final plotRepo = PlotRepository(db);
+      final treatmentRepo = TreatmentRepository(db);
+      final integrityGuard =
+          RatingIntegrityGuard(plotRepo, sessionRepo, treatmentRepo);
+      final saveUseCase = SaveRatingUseCase(ratingRepo, integrityGuard);
+      final signalRepo = container.read(signalRepositoryProvider);
+
+      final useCase = AmendPlotRatingUseCase(
+        sessionRepo,
+        saveUseCase,
+        ratingRepo,
+        signalRepo,
+        db,
+      );
+
+      final result = await useCase.execute(AmendPlotRatingInput(
+        trialId: trialId,
+        plotPk: plotPk,
+        assessmentId: assessmentId,
+        sessionId: sessionId,
+        rawValue: '50',
+        dataType: 'numeric',
+        resultStatus: 'RECORDED',
+        minValue: 0.0,
+        maxValue: 100.0,
+        amendmentReason: 'test',
+        amendedBy: 'tester',
+        trialAssessmentId: taId,
+      ));
+
+      expect(result.isSuccess, isTrue);
+
+      final ratings = await db.select(db.ratingRecords).get();
+      final current = ratings.where((r) => r.isCurrent).toList();
+      expect(current, hasLength(1));
+      expect(current.single.trialAssessmentId, taId);
+    });
+  });
 }

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show debugPrint;
+
 import '../../../core/application_state.dart';
 import '../../../core/database/app_database.dart' hide SeTypeCausalProfile;
 import '../se_type_causal_profile_provider.dart';
@@ -120,9 +122,11 @@ class TimingWindowViolationWriter {
     );
   }
 
-  /// Session-close sweep: checks every current, non-deleted rating in
-  /// [sessionId] and raises a timing signal for each one that is outside its
-  /// biological window. Skips ratings without a resolvable causal profile.
+  /// Session-close sweep: checks every current, non-deleted RECORDED rating
+  /// in [sessionId] and raises a timing signal for each one outside its
+  /// biological window. VOID and other non-RECORDED statuses are excluded —
+  /// timing context only applies when a value was actually measured.
+  /// Skips ratings without a resolvable causal profile.
   /// Returns the list of signal IDs raised (null entries = no signal needed).
   Future<List<int?>> checkAndRaiseForSession({
     required int sessionId,
@@ -131,12 +135,18 @@ class TimingWindowViolationWriter {
     final ratings = await (_db.select(_db.ratingRecords)
           ..where((r) => r.sessionId.equals(sessionId))
           ..where((r) => r.isCurrent.equals(true))
-          ..where((r) => r.isDeleted.equals(false)))
+          ..where((r) => r.isDeleted.equals(false))
+          ..where((r) => r.resultStatus.equals('RECORDED')))
         .get();
     final results = <int?>[];
     for (final rating in ratings) {
-      final id = await checkAndRaise(ratingId: rating.id, raisedBy: raisedBy);
-      results.add(id);
+      try {
+        final id = await checkAndRaise(ratingId: rating.id, raisedBy: raisedBy);
+        results.add(id);
+      } catch (e) {
+        debugPrint(
+            '[TimingWindowViolationWriter] sweep error for rating ${rating.id}: $e');
+      }
     }
     return results;
   }

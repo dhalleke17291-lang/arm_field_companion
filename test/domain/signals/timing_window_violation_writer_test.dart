@@ -414,5 +414,75 @@ void main() {
       expect(results, isEmpty);
       expect(await db.select(db.signals).get(), isEmpty);
     });
+
+    test('11 — VOID resultStatus is excluded from session sweep', () async {
+      final s = await _seedScaffold(db);
+      final assessmentId = await _seedAssessment(db, s.trialId);
+      final taId =
+          await _seedArmChain(db, trialId: s.trialId, ratingType: 'CONTRO');
+      await _seedApplication(db,
+          trialId: s.trialId,
+          applicationDate: DateTime.utc(2026, 6, 7)); // 3 days early — would trigger
+
+      // VOID rating — isCurrent and not deleted, but resultStatus blocks it.
+      await db.into(db.ratingRecords).insert(
+            RatingRecordsCompanion.insert(
+              trialId: s.trialId,
+              plotPk: s.plotPk,
+              assessmentId: assessmentId,
+              sessionId: s.sessionId,
+              trialAssessmentId: Value(taId),
+              createdAt: Value(DateTime.utc(2026, 6, 10)),
+              resultStatus: const Value('VOID'),
+            ),
+          );
+
+      final results =
+          await makeWriter().checkAndRaiseForSession(sessionId: s.sessionId);
+
+      expect(results, isEmpty);
+      expect(await db.select(db.signals).get(), isEmpty);
+    });
+
+    test(
+        '12 — sweep processes all ratings independently: '
+        'rating with ARM chain raises signal, rating without does not',
+        () async {
+      final s = await _seedScaffold(db);
+      final assessmentId = await _seedAssessment(db, s.trialId);
+      final taId =
+          await _seedArmChain(db, trialId: s.trialId, ratingType: 'CONTRO');
+      await _seedApplication(db,
+          trialId: s.trialId,
+          applicationDate: DateTime.utc(2026, 6, 7)); // 3 days early
+
+      // Rating A: has ARM chain → outside window → raises signal.
+      await _seedRating(db,
+          trialId: s.trialId,
+          sessionId: s.sessionId,
+          plotPk: s.plotPk,
+          assessmentId: assessmentId,
+          createdAt: DateTime.utc(2026, 6, 10),
+          trialAssessmentId: taId);
+
+      // Rating B: no ARM chain → returns null without raising.
+      final plotPk2 = await db
+          .into(db.plots)
+          .insert(PlotsCompanion.insert(trialId: s.trialId, plotId: 'P2'));
+      await _seedRating(db,
+          trialId: s.trialId,
+          sessionId: s.sessionId,
+          plotPk: plotPk2,
+          assessmentId: assessmentId,
+          createdAt: DateTime.utc(2026, 6, 10));
+
+      final results =
+          await makeWriter().checkAndRaiseForSession(sessionId: s.sessionId);
+
+      // Both ratings were processed; loop did not stop after the first.
+      expect(results, hasLength(2));
+      expect(results.where((id) => id != null), hasLength(1));
+      expect(await db.select(db.signals).get(), hasLength(1));
+    });
   });
 }

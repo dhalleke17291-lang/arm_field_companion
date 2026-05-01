@@ -193,6 +193,7 @@ class AmendPlotRatingUseCase {
       maxValue: maxB,
       ratingTime: ratingTime,
       assessmentConstraints: input.assessmentConstraints,
+      trialAssessmentId: input.trialAssessmentId,
     ));
 
     if (!saveResult.isSuccess) {
