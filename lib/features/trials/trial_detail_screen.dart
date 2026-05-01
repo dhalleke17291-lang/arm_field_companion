@@ -56,11 +56,8 @@ import '../backup/backup_reminder_store.dart';
 import '../notes/field_notes_list_screen.dart';
 import '../../domain/relationships/protocol_divergence_provider.dart';
 import '../../domain/relationships/evidence_anchors_provider.dart';
+import '../sessions/session_close_signal_writers.dart';
 import '../sessions/widgets/session_close_diagnostic.dart';
-import '../../domain/signals/signal_providers.dart';
-import '../../domain/signals/signal_writers/aov_error_variance_writer.dart';
-import '../../domain/signals/signal_writers/replication_warning_writer.dart';
-import '../../domain/signals/signal_writers/timing_window_violation_writer.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -4530,23 +4527,11 @@ class SessionsView extends ConsumerWidget {
     if (!context.mounted) return;
 
     // Fire session-close writers before surfacing the diagnostic.
-    try {
-      final db = ref.read(databaseProvider);
-      final signalRepo = ref.read(signalRepositoryProvider);
-      await AovErrorVarianceWriter(db, signalRepo).checkAndRaiseForSession(
-        trialId: trial.id,
-        sessionId: session.id,
-      );
-      await ReplicationWarningWriter(db, signalRepo).checkAndRaiseForSession(
-        trialId: trial.id,
-        sessionId: session.id,
-      );
-      await TimingWindowViolationWriter(db, signalRepo).checkAndRaiseForSession(
-        sessionId: session.id,
-      );
-    } catch (e) {
-      debugPrint('[session close writers] $e');
-    }
+    await runSessionCloseSignalWriters(
+      ref,
+      trialId: trial.id,
+      sessionId: session.id,
+    );
 
     if (!context.mounted) return;
 

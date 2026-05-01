@@ -100,6 +100,28 @@ void main() {
     });
 
     testWidgets(
+        '2b — causal_context_flag review → Timing context label',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        signals: [
+          _signal(
+            id: 1,
+            severity: 'review',
+            signalType: 'causal_context_flag',
+            consequenceText: 'Rating timing is outside the window.',
+          ),
+        ],
+        onAllClear: () {},
+        onProceedAnyway: () {},
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Before you leave'), findsOneWidget);
+      expect(find.text('Timing context'), findsOneWidget);
+      expect(find.text('Field observation'), findsNothing);
+    });
+
+    testWidgets(
         '3 — 1 critical + 4 review → max limits applied, "and 1 more" shown',
         (tester) async {
       final signals = [

@@ -230,6 +230,7 @@ String _typeLabel(String signalType) => switch (signalType) {
       'spatial_anomaly' => 'Spatial pattern',
       'aov_prediction' => 'Analysis risk',
       'replication_warning' => 'Replication gap',
+      'causal_context_flag' => 'Timing context',
       _ => 'Field observation',
     };
 

@@ -43,11 +43,8 @@ import 'session_hub_review_filters.dart';
 import 'session_plot_predicates.dart';
 import 'session_summary_share.dart';
 import 'session_treatment_summary.dart';
+import 'session_close_signal_writers.dart';
 import 'widgets/session_close_diagnostic.dart';
-import '../../domain/signals/signal_providers.dart';
-import '../../domain/signals/signal_writers/aov_error_variance_writer.dart';
-import '../../domain/signals/signal_writers/replication_warning_writer.dart';
-import '../../domain/signals/signal_writers/timing_window_violation_writer.dart';
 
 /// Bottom sheet showing full rating context for a tapped grid cell.
 void _showCellDetailSheet({
@@ -471,23 +468,11 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
 
     // Fire session-close writers before surfacing the diagnostic.
     if (!mounted) return;
-    try {
-      final db = ref.read(databaseProvider);
-      final signalRepo = ref.read(signalRepositoryProvider);
-      await AovErrorVarianceWriter(db, signalRepo).checkAndRaiseForSession(
-        trialId: widget.trial.id,
-        sessionId: widget.session.id,
-      );
-      await ReplicationWarningWriter(db, signalRepo).checkAndRaiseForSession(
-        trialId: widget.trial.id,
-        sessionId: widget.session.id,
-      );
-      await TimingWindowViolationWriter(db, signalRepo).checkAndRaiseForSession(
-        sessionId: widget.session.id,
-      );
-    } catch (e) {
-      debugPrint('[session close writers] $e');
-    }
+    await runSessionCloseSignalWriters(
+      ref,
+      trialId: widget.trial.id,
+      sessionId: widget.session.id,
+    );
 
     // Diagnostic step — surfaces open signals before close.
     if (!mounted) return;
