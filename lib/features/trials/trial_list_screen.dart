@@ -25,7 +25,6 @@ import '../sessions/usecases/create_session_usecase.dart';
 import '../ratings/rating_screen.dart';
 import '../ratings/rating_scale_map.dart';
 import '../about/about_screen.dart';
-// Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
 
 /// Workspace filter for trial list. Client-side only; no repository changes.
 enum TrialListFilter {
