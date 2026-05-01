@@ -84,8 +84,7 @@ void main() {
         causal.map((r) => '${r.seType}:${r.trialType}').toSet();
     expect(causalKeys,
         containsAll({'CONTRO:efficacy', 'PESINC:efficacy', 'LODGIN:efficacy'}));
-    // 3 null-region (EPPO/GLP) + 5 pmra_canada profiles.
-    expect(causal.length, 8);
+    expect(causal.length, 3);
   });
 
   test(

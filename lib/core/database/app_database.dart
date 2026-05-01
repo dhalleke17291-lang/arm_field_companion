@@ -3144,21 +3144,6 @@ SELECT 'se_type_causal_profiles', COALESCE((SELECT MAX(id) FROM se_type_causal_p
       );
     }
 
-    // Extended INSERT for region-tagged profiles (includes region and window_type).
-    Future<void> insertRegionRow(List<Object?> params) async {
-      await customStatement(
-        'INSERT OR IGNORE INTO se_type_causal_profiles '
-        '(se_type, trial_type, causal_window_days_min, causal_window_days_max, '
-        'expected_response_direction, expected_change_rate_per_week, '
-        'spatial_clustering_expected, untreated_excluded_from_mean, '
-        'base_threshold_sd_multiplier, source, source_reference, '
-        'region, window_type, created_at) '
-        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        params,
-      );
-    }
-
-    // ── Null-region (EPPO/GLP fallback) profiles ─────────────────────────────
     await insertRow([
       'CONTRO',
       'efficacy',
@@ -3199,116 +3184,6 @@ SELECT 'se_type_causal_profiles', COALESCE((SELECT MAX(id) FROM se_type_causal_p
       3.0,
       'EPPO_PP1',
       'PP1/152',
-      now,
-    ]);
-
-    // ── Canadian (PMRA) region-specific profiles ──────────────────────────────
-    // NOTE: seType codes must match the ratingType values in Canadian ARM
-    // imports. Validate these against actual ARM XML data before deployment.
-    // These profiles are seeded on onCreate and on the v71→v72 upgrade path
-    // only; devices already past v72 will not receive them without a migration.
-
-    // Prairie spring wheat herbicide weed control — BBCH 12–30 application
-    // window; rate at 14–42 days post-application (2–6 weeks).
-    // Source: Alberta Grains agronomic staging guide; BBCH 12–30.
-    await insertRegionRow([
-      'CONTRO',
-      'efficacy',
-      14,
-      42,
-      'increase',
-      8.0,
-      0,
-      1,
-      2.0,
-      'AAFC_PMRA',
-      'Alberta Grains; BBCH 12-30',
-      'pmra_canada',
-      'bbch',
-      now,
-    ]);
-
-    // Prairie spring wheat fungicide leaf disease control — BBCH 39–65
-    // application (flag leaf to anthesis); rate at 21–42 days post-application.
-    // T1 timing (BBCH 22–23) excluded — not effective under Prairie conditions
-    // per Asif et al. 2021 AAFC; Strydhorst SK Wheat Development Commission.
-    await insertRegionRow([
-      'LEAFDIS',
-      'efficacy',
-      21,
-      42,
-      'increase',
-      5.0,
-      0,
-      1,
-      2.0,
-      'AAFC_PMRA',
-      'Asif et al. 2021 AAFC; Strydhorst SK Wheat Dev Commission; BBCH 39-65',
-      'pmra_canada',
-      'bbch',
-      now,
-    ]);
-
-    // Prairie wheat midge pest incidence — BBCH 55–61 application (head
-    // emergence to early anthesis); narrow scouting window, rate at 7–21 days.
-    // Source: Elliott AAFC Saskatoon; Saskatchewan Ministry of Agriculture;
-    // Manitoba Agriculture wheat midge factsheet.
-    await insertRegionRow([
-      'PESINC',
-      'efficacy',
-      7,
-      21,
-      'decrease',
-      5.0,
-      1,
-      1,
-      2.5,
-      'AAFC_PMRA',
-      'Elliott AAFC Saskatoon; SK Ministry of Agriculture; MB Ag wheat midge',
-      'pmra_canada',
-      'bbch',
-      now,
-    ]);
-
-    // Prairie canola Sclerotinia stem rot — BBCH 62–65 application (20–50%
-    // bloom); rate at harvest maturity 28–56 days post-application.
-    // Source: Canola Council of Canada; AAFC Saskatoon (Kutcher & Wolf 2001).
-    await insertRegionRow([
-      'SCLERO',
-      'efficacy',
-      28,
-      56,
-      'increase',
-      4.0,
-      0,
-      1,
-      2.0,
-      'AAFC_PMRA',
-      'Canola Council of Canada; Kutcher & Wolf 2001 AAFC Saskatoon; BBCH 62-65',
-      'pmra_canada',
-      'bbch',
-      now,
-    ]);
-
-    // Atlantic lowbush blueberry Botrytis blossom blight — 353–379 GDD
-    // (base 0°C from April 1; 10–25% bloom); rate at 14–28 days post-
-    // application. window_type='gdd' stored for future GDD-aware writer.
-    // Source: Nova Scotia wild blueberry phenology tracker; AAFC crop
-    // profile 2023.
-    await insertRegionRow([
-      'BOTRYT',
-      'efficacy',
-      14,
-      28,
-      'increase',
-      4.0,
-      0,
-      1,
-      2.0,
-      'AAFC_PMRA',
-      'NS wild blueberry phenology tracker; AAFC crop profile 2023; GDD 353-379',
-      'pmra_canada',
-      'gdd',
       now,
     ]);
   }
