@@ -2,6 +2,13 @@
 ///
 /// Seven sections assembled from existing repositories and use cases.
 /// No PDF rendering, no interpretation, no schema changes.
+///
+/// Evidence source distinction:
+///   Section D draws from operational source tables (db.photos,
+///   db.weatherSnapshots, db.ratingRecords). It does NOT read the
+///   evidence_anchors audit table, which is the separate CRO-provenance
+///   store written by EvidenceAnchorRepository. A future Evidence Appendix
+///   build will consume that table; this report does not.
 library;
 
 // ── Section A: Trial and session identity ────────────────────────────────────
@@ -60,6 +67,13 @@ class FerProtocolDivergenceRow {
   final int? actualDat;
 }
 
+/// Protocol divergences for a single session.
+///
+/// Applies the same classification rules as [protocolDivergenceProvider] but
+/// scoped to the one session being reported. The provider returns divergences
+/// for all sessions in a trial; this DTO contains only the current session's
+/// divergence rows. Callers must not read this as the full trial divergence
+/// summary.
 class FerProtocolContext {
   const FerProtocolContext({
     required this.isArmLinked,
@@ -117,6 +131,12 @@ class FerSessionGrid {
 
 // ── Section D: Evidence record ────────────────────────────────────────────────
 
+/// Operational evidence presence for a single session.
+///
+/// All fields are derived from source tables (db.photos, db.weatherSnapshots,
+/// db.ratingRecords). This class does NOT read the evidence_anchors table;
+/// that table stores durable CRO-provenance anchors written at session-close
+/// time and is the subject of a separate Evidence Appendix report.
 class FerEvidenceRecord {
   const FerEvidenceRecord({
     required this.photoCount,
@@ -128,20 +148,27 @@ class FerEvidenceRecord {
 
   final int photoCount;
 
-  /// Durable photo IDs from the photos table for audit provenance.
+  /// Photo IDs from the operational db.photos table (not evidence_anchors).
   final List<int> photoIds;
 
-  /// True if any current rating in this session has captured lat/lng.
+  /// True if any **current, non-deleted** rating for this session has
+  /// captured lat/lng (source: [RatingRepository.getCurrentRatingsForSession]).
+  /// Deleted or superseded ratings do not contribute.
   final bool hasGps;
 
-  /// True if a weather snapshot exists for this session.
+  /// True if a weather snapshot row exists for this session (db.weatherSnapshots).
   final bool hasWeather;
 
   /// True if [FerIdentity.sessionDateLocal] is a parseable date.
   final bool hasTimestamp;
 }
 
-// ── Section E: Signals and decisions ─────────────────────────────────────────
+// ── Section E: Signals ────────────────────────────────────────────────────────
+// Decision history is not included in the initial DTO. Each signal ID is
+// available for a future caller to load decision events via
+// SignalRepository.getDecisionHistory(signalId), but that expansion is
+// deferred until the PDF builder or a dedicated decision-history section is
+// built.
 
 class FerSignalRow {
   const FerSignalRow({
@@ -163,10 +190,17 @@ class FerSignalRow {
   final int raisedAt;
 }
 
+/// Unresolved signals for a single session.
+///
+/// Contains signals with status open | deferred | investigating, sourced from
+/// [SignalRepository.getOpenSignalsForSession]. Terminal statuses (resolved,
+/// expired, suppressed) are excluded. Decision history per signal is not
+/// included here; use [SignalRepository.getDecisionHistory] if needed.
 class FerSignalsSection {
   const FerSignalsSection({required this.openSignals});
 
   /// Signals with status open | deferred | investigating for this session.
+  /// Terminal statuses (resolved, expired, suppressed) are not present.
   final List<FerSignalRow> openSignals;
 }
 

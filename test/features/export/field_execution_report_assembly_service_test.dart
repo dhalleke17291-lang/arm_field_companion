@@ -457,6 +457,32 @@ void main() {
 
       expect(data.evidenceRecord.hasTimestamp, isFalse);
     });
+
+    // Locks the semantic: GPS is derived from current, non-deleted ratings only.
+    // Superseded or deleted ratings must not contribute hasGps.
+    test('non-current rating with GPS is not counted toward hasGps', () async {
+      final p1 = await plot('101');
+      final a = await assessment('Weed');
+      final sid = await session('S1');
+      await linkAssessmentToSession(sid, a);
+
+      // Insert a rating with GPS but isCurrent=false — superseded row.
+      await db.into(db.ratingRecords).insert(RatingRecordsCompanion.insert(
+            trialId: trialId,
+            plotPk: p1,
+            assessmentId: a,
+            sessionId: sid,
+            capturedLatitude: const Value(40.1),
+            capturedLongitude: const Value(-88.2),
+            isCurrent: const Value(false),
+          ));
+
+      final s = await getSession(sid);
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.evidenceRecord.hasGps, isFalse,
+          reason: 'non-current ratings must not contribute GPS evidence');
+    });
   });
 
   // ── E. Signals ────────────────────────────────────────────────────────────────
@@ -495,6 +521,24 @@ void main() {
       final data = await svc.assembleForSession(trial: trial, session: s);
 
       expect(data.signals.openSignals, isEmpty);
+    });
+
+    // Locks the semantic: terminal statuses (resolved/expired/suppressed)
+    // must not appear in openSignals.
+    test('resolved signal is excluded from openSignals', () async {
+      final sid = await session('S1');
+      final signalId = await raiseSignal(sid);
+      await SignalRepository.attach(db).recordDecisionEvent(
+        signalId: signalId,
+        eventType: SignalDecisionEventType.confirm,
+        occurredAt: DateTime.now().millisecondsSinceEpoch,
+      );
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.signals.openSignals, isEmpty,
+          reason: 'resolved signals must not appear as open');
     });
   });
 

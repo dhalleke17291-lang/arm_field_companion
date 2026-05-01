@@ -158,6 +158,14 @@ class FieldExecutionReportAssemblyService {
     );
 
     // ── Section D: Evidence record ─────────────────────────────────────────────
+    // Source: operational tables only (db.photos, db.weatherSnapshots,
+    // db.ratingRecords via getCurrentRatingsForSession). The evidence_anchors
+    // audit table is NOT read here — that is the CRO-provenance store used by
+    // the Evidence Appendix report, not this document.
+
+    // GPS presence derived from current, non-deleted ratings only.
+    // Superseded (isCurrent=false) or deleted (isDeleted=true) ratings are
+    // excluded by getCurrentRatingsForSession and do not count.
     final hasGps = ratings.any(
         (r) => r.capturedLatitude != null && r.capturedLongitude != null);
     final hasWeather = sessionWeather.isNotEmpty;
@@ -172,6 +180,10 @@ class FieldExecutionReportAssemblyService {
     );
 
     // ── Section E: Signals ────────────────────────────────────────────────────
+    // getOpenSignalsForSession returns status in {open, deferred, investigating}.
+    // Resolved, expired, and suppressed signals are excluded at the repository
+    // level. Decision history is not fetched here; each signal.id is available
+    // for a future caller to load it via SignalRepository.getDecisionHistory.
     final signalRows = openSignals
         .map((s) => FerSignalRow(
               id: s.id,
