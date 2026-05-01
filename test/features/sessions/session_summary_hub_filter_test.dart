@@ -38,6 +38,7 @@ Trial _trial({int id = 1}) => Trial(
       workspaceType: 'efficacy',
       createdAt: _now,
       updatedAt: _now,
+      region: 'eppo_eu',
       isDeleted: false,
     );
 

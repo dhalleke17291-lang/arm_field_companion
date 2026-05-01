@@ -29,6 +29,7 @@ Trial _trial({
       workspaceType: workspaceType,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      region: 'eppo_eu',
       isDeleted: false,
     );
 

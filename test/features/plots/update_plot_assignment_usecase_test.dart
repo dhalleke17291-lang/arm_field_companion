@@ -210,6 +210,7 @@ Trial _trial({String status = kTrialStatusDraft, String? workspaceType}) =>
       crop: null,
       location: null,
       season: null,
+      region: 'eppo_eu',
       isDeleted: false,
     );
 

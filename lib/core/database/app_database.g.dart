@@ -1543,6 +1543,13 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('efficacy'));
+  static const VerificationMeta _regionMeta = const VerificationMeta('region');
+  @override
+  late final GeneratedColumn<String> region = GeneratedColumn<String>(
+      'region', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('eppo_eu'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -1654,6 +1661,7 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
         harvestDate,
         studyType,
         workspaceType,
+        region,
         createdAt,
         updatedAt,
         isDeleted,
@@ -1850,6 +1858,10 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           workspaceType.isAcceptableOrUnknown(
               data['workspace_type']!, _workspaceTypeMeta));
     }
+    if (data.containsKey('region')) {
+      context.handle(_regionMeta,
+          region.isAcceptableOrUnknown(data['region']!, _regionMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -1977,6 +1989,8 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           .read(DriftSqlType.string, data['${effectivePrefix}study_type']),
       workspaceType: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}workspace_type'])!,
+      region: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}region'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -2050,6 +2064,11 @@ class Trial extends DataClass implements Insertable<Trial> {
 
   /// Workspace type: variety | efficacy | glp | standalone
   final String workspaceType;
+
+  /// Regulatory region for biological calibration.
+  /// 'eppo_eu' and 'pmra_canada' are current values. Open text — new regions
+  /// are additive without a schema change.
+  final String region;
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isDeleted;
@@ -2107,6 +2126,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       this.harvestDate,
       this.studyType,
       required this.workspaceType,
+      required this.region,
       required this.createdAt,
       required this.updatedAt,
       required this.isDeleted,
@@ -2217,6 +2237,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       map['study_type'] = Variable<String>(studyType);
     }
     map['workspace_type'] = Variable<String>(workspaceType);
+    map['region'] = Variable<String>(region);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['is_deleted'] = Variable<bool>(isDeleted);
@@ -2337,6 +2358,7 @@ class Trial extends DataClass implements Insertable<Trial> {
           ? const Value.absent()
           : Value(studyType),
       workspaceType: Value(workspaceType),
+      region: Value(region),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       isDeleted: Value(isDeleted),
@@ -2404,6 +2426,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       harvestDate: serializer.fromJson<DateTime?>(json['harvestDate']),
       studyType: serializer.fromJson<String?>(json['studyType']),
       workspaceType: serializer.fromJson<String>(json['workspaceType']),
+      region: serializer.fromJson<String>(json['region']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
@@ -2455,6 +2478,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       'harvestDate': serializer.toJson<DateTime?>(harvestDate),
       'studyType': serializer.toJson<String?>(studyType),
       'workspaceType': serializer.toJson<String>(workspaceType),
+      'region': serializer.toJson<String>(region),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'isDeleted': serializer.toJson<bool>(isDeleted),
@@ -2504,6 +2528,7 @@ class Trial extends DataClass implements Insertable<Trial> {
           Value<DateTime?> harvestDate = const Value.absent(),
           Value<String?> studyType = const Value.absent(),
           String? workspaceType,
+          String? region,
           DateTime? createdAt,
           DateTime? updatedAt,
           bool? isDeleted,
@@ -2562,6 +2587,7 @@ class Trial extends DataClass implements Insertable<Trial> {
         harvestDate: harvestDate.present ? harvestDate.value : this.harvestDate,
         studyType: studyType.present ? studyType.value : this.studyType,
         workspaceType: workspaceType ?? this.workspaceType,
+        region: region ?? this.region,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         isDeleted: isDeleted ?? this.isDeleted,
@@ -2641,6 +2667,7 @@ class Trial extends DataClass implements Insertable<Trial> {
       workspaceType: data.workspaceType.present
           ? data.workspaceType.value
           : this.workspaceType,
+      region: data.region.present ? data.region.value : this.region,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
@@ -2698,6 +2725,7 @@ class Trial extends DataClass implements Insertable<Trial> {
           ..write('harvestDate: $harvestDate, ')
           ..write('studyType: $studyType, ')
           ..write('workspaceType: $workspaceType, ')
+          ..write('region: $region, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
@@ -2749,6 +2777,7 @@ class Trial extends DataClass implements Insertable<Trial> {
         harvestDate,
         studyType,
         workspaceType,
+        region,
         createdAt,
         updatedAt,
         isDeleted,
@@ -2799,6 +2828,7 @@ class Trial extends DataClass implements Insertable<Trial> {
           other.harvestDate == this.harvestDate &&
           other.studyType == this.studyType &&
           other.workspaceType == this.workspaceType &&
+          other.region == this.region &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.isDeleted == this.isDeleted &&
@@ -2847,6 +2877,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
   final Value<DateTime?> harvestDate;
   final Value<String?> studyType;
   final Value<String> workspaceType;
+  final Value<String> region;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<bool> isDeleted;
@@ -2893,6 +2924,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.harvestDate = const Value.absent(),
     this.studyType = const Value.absent(),
     this.workspaceType = const Value.absent(),
+    this.region = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isDeleted = const Value.absent(),
@@ -2940,6 +2972,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.harvestDate = const Value.absent(),
     this.studyType = const Value.absent(),
     this.workspaceType = const Value.absent(),
+    this.region = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isDeleted = const Value.absent(),
@@ -2987,6 +3020,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     Expression<DateTime>? harvestDate,
     Expression<String>? studyType,
     Expression<String>? workspaceType,
+    Expression<String>? region,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isDeleted,
@@ -3034,6 +3068,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       if (harvestDate != null) 'harvest_date': harvestDate,
       if (studyType != null) 'study_type': studyType,
       if (workspaceType != null) 'workspace_type': workspaceType,
+      if (region != null) 'region': region,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isDeleted != null) 'is_deleted': isDeleted,
@@ -3083,6 +3118,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       Value<DateTime?>? harvestDate,
       Value<String?>? studyType,
       Value<String>? workspaceType,
+      Value<String>? region,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<bool>? isDeleted,
@@ -3129,6 +3165,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       harvestDate: harvestDate ?? this.harvestDate,
       studyType: studyType ?? this.studyType,
       workspaceType: workspaceType ?? this.workspaceType,
+      region: region ?? this.region,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -3250,6 +3287,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     if (workspaceType.present) {
       map['workspace_type'] = Variable<String>(workspaceType.value);
     }
+    if (region.present) {
+      map['region'] = Variable<String>(region.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -3321,6 +3361,7 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
           ..write('harvestDate: $harvestDate, ')
           ..write('studyType: $studyType, ')
           ..write('workspaceType: $workspaceType, ')
+          ..write('region: $region, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isDeleted: $isDeleted, ')
@@ -42503,6 +42544,7 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<DateTime?> harvestDate,
   Value<String?> studyType,
   Value<String> workspaceType,
+  Value<String> region,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<bool> isDeleted,
@@ -42550,6 +42592,7 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<DateTime?> harvestDate,
   Value<String?> studyType,
   Value<String> workspaceType,
+  Value<String> region,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<bool> isDeleted,
@@ -42614,6 +42657,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<DateTime?> harvestDate = const Value.absent(),
             Value<String?> studyType = const Value.absent(),
             Value<String> workspaceType = const Value.absent(),
+            Value<String> region = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
@@ -42661,6 +42705,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             harvestDate: harvestDate,
             studyType: studyType,
             workspaceType: workspaceType,
+            region: region,
             createdAt: createdAt,
             updatedAt: updatedAt,
             isDeleted: isDeleted,
@@ -42708,6 +42753,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<DateTime?> harvestDate = const Value.absent(),
             Value<String?> studyType = const Value.absent(),
             Value<String> workspaceType = const Value.absent(),
+            Value<String> region = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
@@ -42755,6 +42801,7 @@ class $$TrialsTableTableManager extends RootTableManager<
             harvestDate: harvestDate,
             studyType: studyType,
             workspaceType: workspaceType,
+            region: region,
             createdAt: createdAt,
             updatedAt: updatedAt,
             isDeleted: isDeleted,
@@ -42944,6 +42991,11 @@ class $$TrialsTableFilterComposer
 
   ColumnFilters<String> get workspaceType => $state.composableBuilder(
       column: $state.table.workspaceType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get region => $state.composableBuilder(
+      column: $state.table.region,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -43640,6 +43692,11 @@ class $$TrialsTableOrderingComposer
 
   ColumnOrderings<String> get workspaceType => $state.composableBuilder(
       column: $state.table.workspaceType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get region => $state.composableBuilder(
+      column: $state.table.region,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

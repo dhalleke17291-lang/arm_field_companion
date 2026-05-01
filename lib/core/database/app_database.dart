@@ -69,6 +69,11 @@ class Trials extends Table {
   TextColumn get workspaceType =>
       text().withDefault(const Constant('efficacy'))();
 
+  /// Regulatory region for biological calibration.
+  /// 'eppo_eu' and 'pmra_canada' are current values. Open text — new regions
+  /// are additive without a schema change.
+  TextColumn get region => text().withDefault(const Constant('eppo_eu'))();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -1543,7 +1548,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 72;
+  int get schemaVersion => 73;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -2977,6 +2982,18 @@ WHERE pest_code IS NULL
               await m.createTable(evidenceAnchors);
             }
             await _seedSeTypeCausalProfiles();
+          }
+
+          if (from < 73) {
+            final trialCols = await customSelect(
+              "SELECT name FROM pragma_table_info('trials')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!trialCols.contains('region')) {
+              // NOT NULL DEFAULT 'eppo_eu' fills all existing rows automatically.
+              await customStatement(
+                "ALTER TABLE trials ADD COLUMN region TEXT NOT NULL DEFAULT 'eppo_eu'",
+              );
+            }
           }
 
           await _createIndexes();
