@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' show Value;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/domain/ratings/rating_integrity_exception.dart';
@@ -62,6 +63,7 @@ class MockRatingRepository implements RatingRepository {
     String? ratingTime,
     String? ratingMethod,
     String? confidence,
+    int? trialAssessmentId,
   }) async {
     if (shouldThrow) {
       throw RatingIntegrityException(throwMessage ?? 'Mock error');
@@ -86,6 +88,7 @@ class MockRatingRepository implements RatingRepository {
       plotPk: plotPk,
       assessmentId: assessmentId,
       sessionId: sessionId,
+      trialAssessmentId: trialAssessmentId,
       subUnitId: subUnitId,
       resultStatus: resultStatus,
       numericValue: numericValue,
@@ -513,6 +516,94 @@ void main() {
       expect(updated.amendmentReason, 'Corrected entry');
       expect(updated.lastEditedByUserId, 42);
       expect(firstId, isNot(newId));
+    });
+  });
+
+  group('SaveRatingUseCase — trialAssessmentId persistence (real DB)', () {
+    late AppDatabase db;
+
+    setUp(() {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    Future<({int trialId, int sessionId, int plotPk, int taId})> seed() async {
+      final trialId = await db.into(db.trials).insert(
+            TrialsCompanion.insert(name: 'TA persist test'),
+          );
+      final sessionId = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-06-01',
+            ),
+          );
+      final plotPk = await db.into(db.plots).insert(
+            PlotsCompanion.insert(trialId: trialId, plotId: 'P1'),
+          );
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'TST',
+              name: 'Test',
+              category: 'pest',
+            ),
+          );
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId,
+              assessmentDefinitionId: defId,
+            ),
+          );
+      return (trialId: trialId, sessionId: sessionId, plotPk: plotPk, taId: taId);
+    }
+
+    test('persists trialAssessmentId on rating row when provided', () async {
+      final s = await seed();
+      const assessmentId = 1;
+
+      final repo = RatingRepository(db);
+      final uc = SaveRatingUseCase(repo, _NoOpRatingReferentialIntegrity());
+
+      final result = await uc.execute(SaveRatingInput(
+        trialId: s.trialId,
+        plotPk: s.plotPk,
+        assessmentId: assessmentId,
+        sessionId: s.sessionId,
+        resultStatus: 'RECORDED',
+        numericValue: 5.0,
+        trialAssessmentId: s.taId,
+      ));
+
+      expect(result.isSuccess, true);
+      expect(result.rating!.trialAssessmentId, s.taId);
+
+      // Confirm persisted to DB.
+      final row = await (db.select(db.ratingRecords)
+            ..where((r) => r.id.equals(result.rating!.id)))
+          .getSingle();
+      expect(row.trialAssessmentId, s.taId);
+    });
+
+    test('trialAssessmentId is null when not provided', () async {
+      final s = await seed();
+      const assessmentId = 1;
+
+      final repo = RatingRepository(db);
+      final uc = SaveRatingUseCase(repo, _NoOpRatingReferentialIntegrity());
+
+      final result = await uc.execute(SaveRatingInput(
+        trialId: s.trialId,
+        plotPk: s.plotPk,
+        assessmentId: assessmentId,
+        sessionId: s.sessionId,
+        resultStatus: 'NOT_OBSERVED',
+      ));
+
+      expect(result.isSuccess, true);
+      expect(result.rating!.trialAssessmentId, isNull);
     });
   });
 }

@@ -43,6 +43,11 @@ class SaveRatingInput {
   /// When null, validation stays conservative (status/null + ids only, plus min/max from [minValue]/[maxValue]).
   final RatingAssessmentConstraints? assessmentConstraints;
 
+  /// ARM TrialAssessment.id for this rating. When provided, persisted on the
+  /// rating row so causal-context signals can resolve ARM metadata without a
+  /// separate join. Null for standalone (non-ARM) assessments.
+  final int? trialAssessmentId;
+
   const SaveRatingInput({
     required this.trialId,
     required this.plotPk,
@@ -63,5 +68,6 @@ class SaveRatingInput {
     this.capturedLatitude,
     this.capturedLongitude,
     this.assessmentConstraints,
+    this.trialAssessmentId,
   });
 }

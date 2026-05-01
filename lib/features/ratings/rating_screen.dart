@@ -4318,6 +4318,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
           maxValue: scaleBounds.max,
           unit: _currentAssessment.unit,
         ),
+        trialAssessmentId: _taIdForCurrentAssessment(),
       ),
     );
 

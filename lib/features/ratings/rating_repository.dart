@@ -118,6 +118,7 @@ class RatingRepository {
     String? ratingTime,
     String? ratingMethod,
     String? confidence,
+    int? trialAssessmentId,
   }) async {
     if (isSessionClosed) throw SessionClosedException();
 
@@ -143,6 +144,7 @@ class RatingRepository {
           ratingTime: ratingTime,
           ratingMethod: ratingMethod,
           confidence: confidence,
+          trialAssessmentId: trialAssessmentId,
         ));
   }
 
@@ -165,6 +167,7 @@ class RatingRepository {
     String? ratingTime,
     String? ratingMethod,
     String? confidence,
+    int? trialAssessmentId,
   }) async {
     final existing = await getCurrentRating(
       trialId: trialId,
@@ -204,6 +207,9 @@ class RatingRepository {
             lastEditedAt: existing != null ? Value(nowUtc) : const Value.absent(),
             lastEditedByUserId: existing != null && performedByUserId != null
                 ? Value(performedByUserId)
+                : const Value.absent(),
+            trialAssessmentId: trialAssessmentId != null
+                ? Value(trialAssessmentId)
                 : const Value.absent(),
           ),
         );

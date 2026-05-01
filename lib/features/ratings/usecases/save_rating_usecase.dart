@@ -83,6 +83,7 @@ class SaveRatingUseCase {
         confidence: input.confidence,
         capturedLatitude: input.capturedLatitude,
         capturedLongitude: input.capturedLongitude,
+        trialAssessmentId: input.trialAssessmentId,
       );
 
       return SaveRatingResult.success(rating);
