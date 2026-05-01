@@ -344,5 +344,75 @@ void main() {
       expect(withParam, isNotNull);
       expect(await db.select(db.signals).get(), hasLength(1));
     });
+
+    test(
+        '9 — checkAndRaiseForSession sweeps current ratings and raises signal',
+        () async {
+      final s = await _seedScaffold(db);
+      final assessmentId = await _seedAssessment(db, s.trialId);
+      final taId = await _seedArmChain(db,
+          trialId: s.trialId, ratingType: 'CONTRO');
+      await _seedRating(db,
+          trialId: s.trialId,
+          sessionId: s.sessionId,
+          plotPk: s.plotPk,
+          assessmentId: assessmentId,
+          createdAt: DateTime.utc(2026, 6, 10),
+          trialAssessmentId: taId);
+      await _seedApplication(db,
+          trialId: s.trialId,
+          applicationDate: DateTime.utc(2026, 6, 7)); // 3 days early
+
+      final results =
+          await makeWriter().checkAndRaiseForSession(sessionId: s.sessionId);
+
+      expect(results, hasLength(1));
+      expect(results.single, isNotNull);
+      final signals = await db.select(db.signals).get();
+      expect(signals, hasLength(1));
+      expect(signals.single.signalType, SignalType.causalContextFlag.dbValue);
+    });
+
+    test('10 — checkAndRaiseForSession skips non-current and deleted ratings',
+        () async {
+      final s = await _seedScaffold(db);
+      final assessmentId = await _seedAssessment(db, s.trialId);
+      final taId =
+          await _seedArmChain(db, trialId: s.trialId, ratingType: 'CONTRO');
+      await _seedApplication(db,
+          trialId: s.trialId,
+          applicationDate: DateTime.utc(2026, 6, 7)); // 3 days early
+
+      // Non-current rating with the right trialAssessmentId — must be skipped.
+      await db.into(db.ratingRecords).insert(
+            RatingRecordsCompanion.insert(
+              trialId: s.trialId,
+              plotPk: s.plotPk,
+              assessmentId: assessmentId,
+              sessionId: s.sessionId,
+              trialAssessmentId: Value(taId),
+              createdAt: Value(DateTime.utc(2026, 6, 10)),
+              isCurrent: const Value(false),
+            ),
+          );
+      // Deleted rating — must also be skipped.
+      await db.into(db.ratingRecords).insert(
+            RatingRecordsCompanion.insert(
+              trialId: s.trialId,
+              plotPk: s.plotPk,
+              assessmentId: assessmentId,
+              sessionId: s.sessionId,
+              trialAssessmentId: Value(taId),
+              createdAt: Value(DateTime.utc(2026, 6, 10)),
+              isDeleted: const Value(true),
+            ),
+          );
+
+      final results =
+          await makeWriter().checkAndRaiseForSession(sessionId: s.sessionId);
+
+      expect(results, isEmpty);
+      expect(await db.select(db.signals).get(), isEmpty);
+    });
   });
 }

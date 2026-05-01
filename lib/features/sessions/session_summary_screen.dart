@@ -47,6 +47,7 @@ import 'widgets/session_close_diagnostic.dart';
 import '../../domain/signals/signal_providers.dart';
 import '../../domain/signals/signal_writers/aov_error_variance_writer.dart';
 import '../../domain/signals/signal_writers/replication_warning_writer.dart';
+import '../../domain/signals/signal_writers/timing_window_violation_writer.dart';
 
 /// Bottom sheet showing full rating context for a tapped grid cell.
 void _showCellDetailSheet({
@@ -479,6 +480,9 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
       );
       await ReplicationWarningWriter(db, signalRepo).checkAndRaiseForSession(
         trialId: widget.trial.id,
+        sessionId: widget.session.id,
+      );
+      await TimingWindowViolationWriter(db, signalRepo).checkAndRaiseForSession(
         sessionId: widget.session.id,
       );
     } catch (e) {

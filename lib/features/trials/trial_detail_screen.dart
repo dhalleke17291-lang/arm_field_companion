@@ -60,6 +60,7 @@ import '../sessions/widgets/session_close_diagnostic.dart';
 import '../../domain/signals/signal_providers.dart';
 import '../../domain/signals/signal_writers/aov_error_variance_writer.dart';
 import '../../domain/signals/signal_writers/replication_warning_writer.dart';
+import '../../domain/signals/signal_writers/timing_window_violation_writer.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -4538,6 +4539,9 @@ class SessionsView extends ConsumerWidget {
       );
       await ReplicationWarningWriter(db, signalRepo).checkAndRaiseForSession(
         trialId: trial.id,
+        sessionId: session.id,
+      );
+      await TimingWindowViolationWriter(db, signalRepo).checkAndRaiseForSession(
         sessionId: session.id,
       );
     } catch (e) {

@@ -119,6 +119,27 @@ class TimingWindowViolationWriter {
       raisedBy: raisedBy,
     );
   }
+
+  /// Session-close sweep: checks every current, non-deleted rating in
+  /// [sessionId] and raises a timing signal for each one that is outside its
+  /// biological window. Skips ratings without a resolvable causal profile.
+  /// Returns the list of signal IDs raised (null entries = no signal needed).
+  Future<List<int?>> checkAndRaiseForSession({
+    required int sessionId,
+    int? raisedBy,
+  }) async {
+    final ratings = await (_db.select(_db.ratingRecords)
+          ..where((r) => r.sessionId.equals(sessionId))
+          ..where((r) => r.isCurrent.equals(true))
+          ..where((r) => r.isDeleted.equals(false)))
+        .get();
+    final results = <int?>[];
+    for (final rating in ratings) {
+      final id = await checkAndRaise(ratingId: rating.id, raisedBy: raisedBy);
+      results.add(id);
+    }
+    return results;
+  }
 }
 
 DateTime _dayOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
