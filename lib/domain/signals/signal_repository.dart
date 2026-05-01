@@ -212,6 +212,25 @@ class SignalRepository {
     }
   }
 
+  /// Used by [TimingWindowViolationWriter] — finds an existing open violation
+  /// for the exact (session, plot, seType) triple.
+  Future<Signal?> findOpenTimingWindowViolationForPlotSession({
+    required int sessionId,
+    required int plotId,
+    required String seType,
+  }) async {
+    final rows = await (_db.select(_db.signals)
+          ..where((s) => s.sessionId.equals(sessionId))
+          ..where((s) => s.plotId.equals(plotId))
+          ..where(
+              (s) => s.signalType.equals(SignalType.causalContextFlag.dbValue))
+          ..where((s) => s.status.equals(SignalStatus.open.dbValue)))
+        .get();
+    return rows
+        .where((s) => _ctxMatches(s, (ctx) => ctx.seType == seType))
+        .firstOrNull;
+  }
+
   /// Used by [ScaleViolationWriter] — finds an existing open violation for
   /// the exact (session, plot, seType) triple.
   ///
