@@ -43,6 +43,7 @@ Future<int> _createRating(
   int plotPk,
   int assessmentId, {
   DateTime? createdAt,
+  int? trialAssessmentId,
 }) =>
     db.into(db.ratingRecords).insert(
           RatingRecordsCompanion.insert(
@@ -53,6 +54,42 @@ Future<int> _createRating(
             createdAt: createdAt != null
                 ? Value(createdAt)
                 : const Value.absent(),
+            trialAssessmentId: trialAssessmentId != null
+                ? Value(trialAssessmentId)
+                : const Value.absent(),
+          ),
+        );
+
+Future<int> _createAssessmentDefinition(AppDatabase db) =>
+    db.into(db.assessmentDefinitions).insert(
+          AssessmentDefinitionsCompanion.insert(
+            code: 'TST',
+            name: 'Test Assessment',
+            category: 'pest',
+          ),
+        );
+
+Future<int> _createTrialAssessment(
+  AppDatabase db,
+  int trialId,
+  int defId,
+) =>
+    db.into(db.trialAssessments).insert(
+          TrialAssessmentsCompanion.insert(
+            trialId: trialId,
+            assessmentDefinitionId: defId,
+          ),
+        );
+
+Future<void> _createArmAssessmentMetadata(
+  AppDatabase db,
+  int trialAssessmentId, {
+  String? ratingType,
+}) =>
+    db.into(db.armAssessmentMetadata).insert(
+          ArmAssessmentMetadataCompanion.insert(
+            trialAssessmentId: trialAssessmentId,
+            ratingType: ratingType != null ? Value(ratingType) : const Value.absent(),
           ),
         );
 
@@ -468,24 +505,126 @@ void main() {
     });
   });
 
-  // ── No SETypeProfile usage ────────────────────────────────────────────────
+  // ── SE type + causal profile ──────────────────────────────────────────────
 
-  test('provider does not import or reference SETypeProfile', () async {
-    // Structural test: if SETypeProfile were referenced, the import would
-    // exist and the file would fail to build without it.
-    // This test passes by virtue of the file compiling cleanly with no
-    // SETypeProfile dependency.
-    final trialId = await _createTrial(db);
-    final sessionId = await _createSession(db, trialId);
-    final plotPk = await _createPlot(db, trialId);
-    final assessmentId = await _createAssessment(db, trialId);
-    final ratingId = await _createRating(
-      db, trialId, sessionId, plotPk, assessmentId,
-      createdAt: DateTime.utc(2026, 6, 10),
-    );
+  group('SE type and causal profile', () {
+    test('seType and profile are null when rating has no trialAssessmentId',
+        () async {
+      final trialId = await _createTrial(db);
+      final sessionId = await _createSession(db, trialId);
+      final plotPk = await _createPlot(db, trialId);
+      final assessmentId = await _createAssessment(db, trialId);
+      final ratingId = await _createRating(
+        db, trialId, sessionId, plotPk, assessmentId,
+        createdAt: DateTime.utc(2026, 6, 10),
+      );
 
-    final result = await _run(container, ratingId);
-    expect(result, isA<CausalContext>());
-    expect(result.ratingId, ratingId);
+      final result = await _run(container, ratingId);
+      expect(result.seType, isNull);
+      expect(result.profile, isNull);
+    });
+
+    test(
+        'seType and profile are null when ARM metadata has no ratingType',
+        () async {
+      final trialId = await _createTrial(db);
+      final sessionId = await _createSession(db, trialId);
+      final plotPk = await _createPlot(db, trialId);
+      final assessmentId = await _createAssessment(db, trialId);
+      final defId = await _createAssessmentDefinition(db);
+      final taId = await _createTrialAssessment(db, trialId, defId);
+      await _createArmAssessmentMetadata(db, taId); // no ratingType
+      final ratingId = await _createRating(
+        db, trialId, sessionId, plotPk, assessmentId,
+        createdAt: DateTime.utc(2026, 6, 10),
+        trialAssessmentId: taId,
+      );
+
+      final result = await _run(container, ratingId);
+      expect(result.seType, isNull);
+      expect(result.profile, isNull);
+    });
+
+    test('seType is set and profile resolved for ARM rating with CONTRO/efficacy',
+        () async {
+      // Seed data provides CONTRO × efficacy row; forTesting DB runs onCreate seeds.
+      final trialId = await db.into(db.trials).insert(
+            TrialsCompanion.insert(
+              name: 'ARM Trial',
+              workspaceType: const Value('efficacy'),
+            ),
+          );
+      final sessionId = await _createSession(db, trialId);
+      final plotPk = await _createPlot(db, trialId);
+      final assessmentId = await _createAssessment(db, trialId);
+      final defId = await _createAssessmentDefinition(db);
+      final taId = await _createTrialAssessment(db, trialId, defId);
+      await _createArmAssessmentMetadata(db, taId, ratingType: 'CONTRO');
+      final ratingId = await _createRating(
+        db, trialId, sessionId, plotPk, assessmentId,
+        createdAt: DateTime.utc(2026, 6, 10),
+        trialAssessmentId: taId,
+      );
+
+      final result = await _run(container, ratingId);
+      expect(result.seType, 'CONTRO');
+      expect(result.profile, isNotNull);
+      expect(result.profile!.seType, 'CONTRO');
+      expect(result.profile!.trialType, 'efficacy');
+      expect(result.profile!.causalWindowDaysMin, greaterThanOrEqualTo(0));
+    });
+
+    test('profile is null when seType has no matching row in se_type_causal_profiles',
+        () async {
+      final trialId = await _createTrial(db);
+      final sessionId = await _createSession(db, trialId);
+      final plotPk = await _createPlot(db, trialId);
+      final assessmentId = await _createAssessment(db, trialId);
+      final defId = await _createAssessmentDefinition(db);
+      final taId = await _createTrialAssessment(db, trialId, defId);
+      await _createArmAssessmentMetadata(db, taId, ratingType: 'UNKNWN');
+      final ratingId = await _createRating(
+        db, trialId, sessionId, plotPk, assessmentId,
+        createdAt: DateTime.utc(2026, 6, 10),
+        trialAssessmentId: taId,
+      );
+
+      final result = await _run(container, ratingId);
+      expect(result.seType, 'UNKNWN');
+      expect(result.profile, isNull);
+    });
+
+    test('existing priorEvents are preserved alongside profile fields', () async {
+      final trialId = await db.into(db.trials).insert(
+            TrialsCompanion.insert(
+              name: 'ARM Trial',
+              workspaceType: const Value('efficacy'),
+            ),
+          );
+      final sessionId = await _createSession(db, trialId);
+      final plotPk = await _createPlot(db, trialId);
+      final assessmentId = await _createAssessment(db, trialId);
+      final defId = await _createAssessmentDefinition(db);
+      final taId = await _createTrialAssessment(db, trialId, defId);
+      await _createArmAssessmentMetadata(db, taId, ratingType: 'PESINC');
+      await _createApplication(
+        db, trialId,
+        applicationDate: DateTime.utc(2026, 6, 5),
+        status: 'applied',
+      );
+      final ratingId = await _createRating(
+        db, trialId, sessionId, plotPk, assessmentId,
+        createdAt: DateTime.utc(2026, 6, 10),
+        trialAssessmentId: taId,
+      );
+
+      final result = await _run(container, ratingId);
+      expect(
+        result.priorEvents.where((e) => e.type == CausalEventType.application),
+        hasLength(1),
+      );
+      expect(result.seType, 'PESINC');
+      expect(result.profile, isNotNull);
+    });
   });
 }

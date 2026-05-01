@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/application_state.dart';
-import '../../core/database/app_database.dart';
+import '../../core/database/app_database.dart' hide SeTypeCausalProfile;
 import '../../core/providers.dart';
+import '../signals/se_type_causal_profile_provider.dart';
 
 // ---------------------------------------------------------------------------
 // Model
@@ -27,10 +28,14 @@ class CausalEvent {
 class CausalContext {
   final int ratingId;
   final List<CausalEvent> priorEvents;
+  final String? seType;
+  final SeTypeCausalProfile? profile;
 
   const CausalContext({
     required this.ratingId,
     required this.priorEvents,
+    this.seType,
+    this.profile,
   });
 }
 
@@ -103,7 +108,34 @@ final causalContextProvider =
     ));
   }
 
-  return CausalContext(ratingId: ratingId, priorEvents: events);
+  // ── SE type + causal profile lookup ──────────────────────────────────────
+  String? seType;
+  SeTypeCausalProfile? profile;
+
+  if (rating.trialAssessmentId != null) {
+    final meta = await (db.select(db.armAssessmentMetadata)
+          ..where((m) => m.trialAssessmentId.equals(rating.trialAssessmentId!)))
+        .getSingleOrNull();
+    seType = meta?.ratingType;
+
+    if (seType != null) {
+      final trial = await (db.select(db.trials)
+            ..where((t) => t.id.equals(rating.trialId)))
+          .getSingleOrNull();
+      profile = await lookupCausalProfile(
+        db,
+        seType,
+        trial?.workspaceType ?? 'efficacy',
+      );
+    }
+  }
+
+  return CausalContext(
+    ratingId: ratingId,
+    priorEvents: events,
+    seType: seType,
+    profile: profile,
+  );
 });
 
 // ---------------------------------------------------------------------------

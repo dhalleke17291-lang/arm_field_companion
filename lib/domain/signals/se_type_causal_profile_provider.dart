@@ -94,3 +94,25 @@ final seTypeCausalProfilesAllProvider =
       .get();
   return rows.map(SeTypeCausalProfile.fromDrift).toList();
 });
+
+/// Region-aware causal profile lookup.
+///
+/// Step 1 — same-region match: deferred until the schema adds a region column.
+/// Step 2 — null-region fallback: matches on (seType, trialType) only; all
+/// current seed rows qualify since no region qualifier exists yet.
+/// Returns null if no matching row exists.
+Future<SeTypeCausalProfile?> lookupCausalProfile(
+  db.AppDatabase database,
+  String seType,
+  String trialType, {
+  String? region,
+}) async {
+  // Step 1: same-region match — skipped (no region column in current schema)
+
+  // Step 2: null-region / unconditional match
+  final row = await (database.select(database.seTypeCausalProfiles)
+        ..where((p) => p.seType.equals(seType))
+        ..where((p) => p.trialType.equals(trialType)))
+      .getSingleOrNull();
+  return row != null ? SeTypeCausalProfile.fromDrift(row) : null;
+}
