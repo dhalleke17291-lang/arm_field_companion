@@ -9,8 +9,7 @@ import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/providers.dart';
 import 'package:arm_field_companion/features/sessions/usecases/create_session_usecase.dart';
 import 'package:arm_field_companion/features/ratings/rating_screen.dart';
-import 'package:arm_field_companion/features/sessions/session_detail_screen.dart';
-import 'package:arm_field_companion/features/sessions/usecases/start_or_continue_rating_usecase.dart';
+import 'package:arm_field_companion/features/sessions/session_summary_screen.dart';
 import 'start_or_continue_rating_fakes.dart';
 
 /// Empty [sessions] so Quick Rate stays visible, but [getSessionById] resolves
@@ -38,7 +37,6 @@ void main() {
   late Session session;
   late List<Plot> plots;
   late List<Assessment> assessments;
-  late FakeStartOrContinueRatingUseCase fakeUseCase;
 
   setUp(() {
     trial = Trial(
@@ -111,7 +109,6 @@ void main() {
         isActive: true,
       ),
     ];
-    fakeUseCase = FakeStartOrContinueRatingUseCase();
   });
 
   group('Quick Rate (trial list, no open session)', () {
@@ -174,110 +171,58 @@ void main() {
     });
   });
 
-  group('Rating entry from SessionDetail', () {
-    testWidgets('Start Rating success: use case called, RatingScreen pushed',
-        (WidgetTester tester) async {
+  // Rating entry from session hub (SessionSummaryScreen).
+  //
+  // Migrated from 'Rating entry from SessionDetail':
+  //   SUCCESS path → hub plot tap → RatingScreen pushed (covered below).
+  //   FAILURE path → 'Cannot Start Rating' dialog CANNOT be migrated to the hub:
+  //     SessionSummaryScreen bypasses startOrContinueRatingUseCaseProvider entirely
+  //     and pushes RatingScreen directly on plot tap. The use case failure handling
+  //     survives in trial_list_screen, main_shell_screen, and work_log_screen, and
+  //     is unit-tested in start_or_continue_rating_usecase_test.dart.
+  group('Rating entry from session hub', () {
+    testWidgets('plot tap pushes RatingScreen', (WidgetTester tester) async {
       addTearDown(() async {
         await tester.binding.setSurfaceSize(null);
       });
       await tester.binding.setSurfaceSize(const Size(800, 1400));
 
-      fakeUseCase.result = StartOrContinueRatingResult.success(
-        trial: trial,
-        session: session,
-        allPlotsSerpentine: plots,
-        assessments: assessments,
-        startPlotIndex: 0,
-        isWalkEndReachedWithAnyRating: false,
-      );
-
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
-            sessionRatingsProvider(10).overrideWith((ref) => Stream.value([])),
-            sessionAssessmentsProvider(10)
+            plotsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value(plots)),
+            sessionRatingsProvider(session.id)
+                .overrideWith((ref) => Stream.value([])),
+            sessionAssessmentsProvider(session.id)
                 .overrideWith((ref) => Stream.value(assessments)),
-            treatmentsForTrialProvider(1)
-                .overrideWith((ref) => Stream.value([])),
-            assignmentsForTrialProvider(1)
-                .overrideWith((ref) => Stream.value([])),
-            flaggedPlotIdsForSessionProvider(10)
+            ratedPlotPksProvider(session.id)
                 .overrideWith((ref) => Stream.value({})),
-            startOrContinueRatingUseCaseProvider.overrideWithValue(fakeUseCase),
+            treatmentsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value([])),
+            assignmentsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value([])),
+            flaggedPlotIdsForSessionProvider(session.id)
+                .overrideWith((ref) => Stream.value({})),
           ],
           child: MaterialApp(
-            home: SessionDetailScreen(trial: trial, session: session),
+            home: SessionSummaryScreen(trial: trial, session: session),
           ),
         ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.text('Rate'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-
-      final startRatingFinder = find.text('Start Rating');
-      await tester.ensureVisible(startRatingFinder);
+      // Plot (rep=1, position=1 in rep) renders as '101' in the frozen column.
+      // getDisplayPlotNumber: 1 * 100 + 1 = 101.
+      final plotLabel = find.text('101');
+      expect(plotLabel, findsOneWidget);
+      await tester.tap(plotLabel);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(startRatingFinder, warnIfMissed: false);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(RatingScreen), findsOneWidget);
-    });
-
-    testWidgets('Start Rating failure: error dialog shown',
-        (WidgetTester tester) async {
-      addTearDown(() async {
-        await tester.binding.setSurfaceSize(null);
-      });
-      await tester.binding.setSurfaceSize(const Size(800, 1400));
-
-      fakeUseCase.result =
-          StartOrContinueRatingResult.failure('No plots in trial.');
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            plotsForTrialProvider(1).overrideWith((ref) => Stream.value(plots)),
-            sessionRatingsProvider(10).overrideWith((ref) => Stream.value([])),
-            sessionAssessmentsProvider(10)
-                .overrideWith((ref) => Stream.value(assessments)),
-            treatmentsForTrialProvider(1)
-                .overrideWith((ref) => Stream.value([])),
-            assignmentsForTrialProvider(1)
-                .overrideWith((ref) => Stream.value([])),
-            flaggedPlotIdsForSessionProvider(10)
-                .overrideWith((ref) => Stream.value({})),
-            startOrContinueRatingUseCaseProvider.overrideWithValue(fakeUseCase),
-          ],
-          child: MaterialApp(
-            home: SessionDetailScreen(trial: trial, session: session),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      await tester.tap(find.text('Rate'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
-
-      final startRatingFinder = find.text('Start Rating');
-      await tester.ensureVisible(startRatingFinder);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(startRatingFinder, warnIfMissed: false);
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 3));
-
-      expect(find.byType(RatingScreen), findsNothing);
-      expect(find.text('Cannot Start Rating'), findsOneWidget);
-      expect(find.text('No plots in trial.'), findsOneWidget);
     });
   });
 }
