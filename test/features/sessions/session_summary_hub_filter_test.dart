@@ -522,5 +522,35 @@ void main() {
 
       expect(find.text('Highlight:'), findsNothing);
     });
+
+    testWidgets('tapping clear icon button removes strip highlight',
+        (tester) async {
+      final t1 = _treatment(10, 'T1');
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1],
+        ratedPks: {},
+        treatments: [t1],
+        assignments: [_assignment(1, plot1.id, t1.id)],
+      );
+
+      // Select treatment chip.
+      await tester.tap(find.text('T1'));
+      await tester.pump();
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsOneWidget);
+
+      // Tap the icon clear button (not the chip).
+      await tester.tap(find.bySemanticsLabel('Clear treatment highlight'));
+      await tester.pump();
+
+      // Clear button must be gone — external highlight is null, which also
+      // clears any stale internal grid long-press highlight via didUpdateWidget.
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsNothing);
+    });
   });
 }

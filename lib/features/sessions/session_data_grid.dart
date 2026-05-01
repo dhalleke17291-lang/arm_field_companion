@@ -99,6 +99,17 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
     _vScrollPlots.addListener(_onVScrollPlots);
   }
 
+  @override
+  void didUpdateWidget(SessionDataGrid old) {
+    super.didUpdateWidget(old);
+    // Parent cleared an active external highlight — drop any stale internal
+    // long-press highlight so it cannot reappear via the ?? fallback.
+    if (old.highlightedTreatmentId != null &&
+        widget.highlightedTreatmentId == null) {
+      _highlightedTreatmentId = null;
+    }
+  }
+
   void _onHScrollData() {
     if (_syncingH) return;
     _syncingH = true;
