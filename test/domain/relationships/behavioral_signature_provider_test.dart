@@ -26,21 +26,17 @@ Future<int> _createSession(AppDatabase db, int trialId) =>
           ),
         );
 
-Future<int> _createPlot(AppDatabase db, int trialId) =>
-    db.into(db.plots).insert(
-          PlotsCompanion.insert(trialId: trialId, plotId: 'P'),
-        );
-
 Future<int> _createAssessment(AppDatabase db, int trialId) =>
     db.into(db.assessments).insert(
           AssessmentsCompanion.insert(trialId: trialId, name: 'A'),
         );
 
+// Each call creates a fresh plot so that multiple is_current=true records in
+// the same session never share the same unique key.
 Future<int> _insertRecord(
   AppDatabase db,
   int trialId,
   int sessionId,
-  int plotPk,
   int assessmentId, {
   DateTime? createdAt,
   String? confidence,
@@ -49,27 +45,31 @@ Future<int> _insertRecord(
   bool isCurrent = true,
   bool isDeleted = false,
   DateTime? lastEditedAt,
-}) =>
-    db.into(db.ratingRecords).insert(
-          RatingRecordsCompanion.insert(
-            trialId: trialId,
-            plotPk: plotPk,
-            assessmentId: assessmentId,
-            sessionId: sessionId,
-            createdAt:
-                createdAt != null ? Value(createdAt) : const Value.absent(),
-            confidence:
-                confidence != null ? Value(confidence) : const Value.absent(),
-            amended: Value(amended),
-            previousId:
-                previousId != null ? Value(previousId) : const Value.absent(),
-            isCurrent: Value(isCurrent),
-            isDeleted: Value(isDeleted),
-            lastEditedAt: lastEditedAt != null
-                ? Value(lastEditedAt)
-                : const Value.absent(),
-          ),
-        );
+}) async {
+  final plotPk = await db
+      .into(db.plots)
+      .insert(PlotsCompanion.insert(trialId: trialId, plotId: 'P'));
+  return db.into(db.ratingRecords).insert(
+        RatingRecordsCompanion.insert(
+          trialId: trialId,
+          plotPk: plotPk,
+          assessmentId: assessmentId,
+          sessionId: sessionId,
+          createdAt:
+              createdAt != null ? Value(createdAt) : const Value.absent(),
+          confidence:
+              confidence != null ? Value(confidence) : const Value.absent(),
+          amended: Value(amended),
+          previousId:
+              previousId != null ? Value(previousId) : const Value.absent(),
+          isCurrent: Value(isCurrent),
+          isDeleted: Value(isDeleted),
+          lastEditedAt: lastEditedAt != null
+              ? Value(lastEditedAt)
+              : const Value.absent(),
+        ),
+      );
+}
 
 Future<List<BehavioralSignal>> _run(ProviderContainer c, int sessionId) =>
     c.read(behavioralSignatureProvider(sessionId).future);
@@ -92,7 +92,6 @@ void main() {
   late ProviderContainer container;
   late int trialId;
   late int sessionId;
-  late int plotPk;
   late int assessmentId;
 
   setUp(() async {
@@ -100,7 +99,6 @@ void main() {
     container = _makeContainer(db);
     trialId = await _createTrial(db);
     sessionId = await _createSession(db, trialId);
-    plotPk = await _createPlot(db, trialId);
     assessmentId = await _createAssessment(db, trialId);
   });
 
@@ -122,7 +120,7 @@ void main() {
 
   group('1–3 records → editFrequency only', () {
     test('1 record emits only editFrequency', () async {
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base);
       final result = await _run(container, sessionId);
       expect(result, hasLength(1));
@@ -130,9 +128,9 @@ void main() {
     });
 
     test('2 records emit only editFrequency', () async {
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base);
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 60)));
       final result = await _run(container, sessionId);
       expect(result.map((s) => s.type).toSet(),
@@ -141,7 +139,7 @@ void main() {
 
     test('3 records emit only editFrequency', () async {
       for (var i = 0; i < 3; i++) {
-        await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+        await _insertRecord(db, trialId, sessionId, assessmentId,
             createdAt: _base.add(Duration(seconds: i * 60)));
       }
       final result = await _run(container, sessionId);
@@ -155,7 +153,7 @@ void main() {
   group('paceChange', () {
     test('4+ records emit paceChange', () async {
       for (var i = 0; i < 4; i++) {
-        await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+        await _insertRecord(db, trialId, sessionId, assessmentId,
             createdAt: _base.add(Duration(seconds: i * 30)));
       }
       final result = await _run(container, sessionId);
@@ -172,7 +170,7 @@ void main() {
         _base.add(const Duration(seconds: 120)),
       ];
       for (final t in times) {
-        await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+        await _insertRecord(db, trialId, sessionId, assessmentId,
             createdAt: t);
       }
       final result = await _run(container, sessionId);
@@ -190,7 +188,7 @@ void main() {
         _base.add(const Duration(seconds: 115)),
       ];
       for (final t in times) {
-        await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+        await _insertRecord(db, trialId, sessionId, assessmentId,
             createdAt: t);
       }
       final result = await _run(container, sessionId);
@@ -200,7 +198,7 @@ void main() {
 
     test('equal timestamps give 0.0', () async {
       for (var i = 0; i < 4; i++) {
-        await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+        await _insertRecord(db, trialId, sessionId, assessmentId,
             createdAt: _base);
       }
       final result = await _run(container, sessionId);
@@ -217,7 +215,7 @@ void main() {
       // early mean = 0.0, late mean = 1.0, delta = +1.0
       final confidences = ['uncertain', 'uncertain', 'certain', 'certain'];
       for (var i = 0; i < 4; i++) {
-        await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+        await _insertRecord(db, trialId, sessionId, assessmentId,
             createdAt: _base.add(Duration(seconds: i)),
             confidence: confidences[i]);
       }
@@ -231,7 +229,7 @@ void main() {
       // early mean = 1.0, late mean = 0.0, delta = -1.0
       final confidences = ['certain', 'certain', 'uncertain', 'uncertain'];
       for (var i = 0; i < 4; i++) {
-        await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+        await _insertRecord(db, trialId, sessionId, assessmentId,
             createdAt: _base.add(Duration(seconds: i)),
             confidence: confidences[i]);
       }
@@ -242,7 +240,7 @@ void main() {
 
     test('zero trend when confidence is uniform', () async {
       for (var i = 0; i < 4; i++) {
-        await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+        await _insertRecord(db, trialId, sessionId, assessmentId,
             createdAt: _base.add(Duration(seconds: i)),
             confidence: 'estimated');
       }
@@ -253,20 +251,20 @@ void main() {
 
     test('null confidence records are excluded from calculation', () async {
       // 2 null, then 2 certain + 2 uncertain — only 4 non-null values used
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 0)));
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 1)));
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 2)),
           confidence: 'certain');
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 3)),
           confidence: 'certain');
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 4)),
           confidence: 'uncertain');
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 5)),
           confidence: 'uncertain');
       final result = await _run(container, sessionId);
@@ -277,7 +275,7 @@ void main() {
     test('unknown confidence strings are excluded', () async {
       // 4 records, all with unknown string → 0 usable → no confidenceTrend
       for (var i = 0; i < 4; i++) {
-        await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+        await _insertRecord(db, trialId, sessionId, assessmentId,
             createdAt: _base.add(Duration(seconds: i)),
             confidence: 'HIGH');
       }
@@ -288,16 +286,16 @@ void main() {
     test('fewer than 4 usable confidence values → confidenceTrend omitted',
         () async {
       // 4 records but only 3 have valid confidence
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 0)),
           confidence: 'certain');
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 1)),
           confidence: 'certain');
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 2)),
           confidence: 'uncertain');
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 3)));
       final result = await _run(container, sessionId);
       expect(_find(result, BehavioralSignalType.confidenceTrend), isNull);
@@ -308,7 +306,7 @@ void main() {
 
   group('editFrequency', () {
     test('zero edits = 0.0', () async {
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base);
       final result = await _run(container, sessionId);
       final edit = _find(result, BehavioralSignalType.editFrequency)!;
@@ -316,7 +314,7 @@ void main() {
     });
 
     test('amended == true counts as edit', () async {
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base, amended: true);
       final result = await _run(container, sessionId);
       final edit = _find(result, BehavioralSignalType.editFrequency)!;
@@ -324,7 +322,7 @@ void main() {
     });
 
     test('previousId != null counts as edit', () async {
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base, previousId: 999);
       final result = await _run(container, sessionId);
       final edit = _find(result, BehavioralSignalType.editFrequency)!;
@@ -332,7 +330,7 @@ void main() {
     });
 
     test('amended + previousId on same record counts as 1, not 2', () async {
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base, amended: true, previousId: 999);
       final result = await _run(container, sessionId);
       final edit = _find(result, BehavioralSignalType.editFrequency)!;
@@ -340,7 +338,7 @@ void main() {
     });
 
     test('lastEditedAt alone does not count as edit', () async {
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base, lastEditedAt: _base.add(const Duration(hours: 1)));
       final result = await _run(container, sessionId);
       final edit = _find(result, BehavioralSignalType.editFrequency)!;
@@ -348,12 +346,12 @@ void main() {
     });
 
     test('multiple edits across records counted correctly', () async {
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base); // not an edit
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 1)),
           amended: true); // edit
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 2)),
           previousId: 999); // edit
       final result = await _run(container, sessionId);
@@ -368,10 +366,10 @@ void main() {
     test('deleted records are excluded from all signals', () async {
       // 3 active + 1 deleted → not enough for paceChange (needs 4 active)
       for (var i = 0; i < 3; i++) {
-        await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+        await _insertRecord(db, trialId, sessionId, assessmentId,
             createdAt: _base.add(Duration(seconds: i * 30)));
       }
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 90)),
           isDeleted: true);
 
@@ -382,10 +380,10 @@ void main() {
     test('non-current records are excluded from all signals', () async {
       // 3 active + 1 not-current → not enough for paceChange
       for (var i = 0; i < 3; i++) {
-        await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+        await _insertRecord(db, trialId, sessionId, assessmentId,
             createdAt: _base.add(Duration(seconds: i * 30)));
       }
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 90)),
           isCurrent: false);
 
@@ -395,7 +393,7 @@ void main() {
 
     test('deleted record with amended=true does not inflate editFrequency',
         () async {
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base, isDeleted: true, amended: true);
       // Session has no active records → returns []
       final result = await _run(container, sessionId);
@@ -404,9 +402,9 @@ void main() {
 
     test('non-current amended record does not inflate editFrequency', () async {
       // 1 active (not amended) + 1 non-current (amended)
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base);
-      await _insertRecord(db, trialId, sessionId, plotPk, assessmentId,
+      await _insertRecord(db, trialId, sessionId, assessmentId,
           createdAt: _base.add(const Duration(seconds: 1)),
           isCurrent: false,
           amended: true);

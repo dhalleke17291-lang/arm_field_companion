@@ -3073,9 +3073,15 @@ WHERE status IN ('draft', 'ready')
 
           if (from < 77) {
             // Change 1: drop projection column — zero consumers confirmed in
-            // Phase A audit. Remaining yield_details columns are intact.
-            await customStatement(
-                'ALTER TABLE yield_details DROP COLUMN converted_yield');
+            // Phase A audit. Guard: fresh-install schemas wound back to an older
+            // user_version in test environments never had this column.
+            final ydCols = await customSelect(
+                    "SELECT name FROM pragma_table_info('yield_details')")
+                .get();
+            if (ydCols.any((r) => r.read<String>('name') == 'converted_yield')) {
+              await customStatement(
+                  'ALTER TABLE yield_details DROP COLUMN converted_yield');
+            }
             // Change 2: replace broken partial unique index on rating_records.
             // _createIndexes() uses IF NOT EXISTS throughout, so without an
             // explicit DROP the null-hole form (bare sub_unit_id) would survive

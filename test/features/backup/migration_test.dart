@@ -62,7 +62,7 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 76);
+    expect(db.schemaVersion, 77);
 
     final names = await _tableNames(db);
     expect(names, contains(_kApplicationSlots));
