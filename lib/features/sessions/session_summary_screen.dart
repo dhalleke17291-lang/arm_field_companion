@@ -2290,7 +2290,7 @@ class _SessionDetailsBody extends ConsumerWidget {
                                           const SizedBox(height: 8),
                                           if (!report.canClose)
                                             Text(
-                                              '$blockerCount blocker issue(s). '
+                                              '$blockerCount ${blockerCount == 1 ? 'blocker issue' : 'blocker issues'}. '
                                               'Not ready to close — tap to review plot coverage.',
                                               style: TextStyle(
                                                 fontSize: 13,

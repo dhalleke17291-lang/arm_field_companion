@@ -97,7 +97,7 @@ class CompletenessDashboardScreen extends ConsumerWidget {
       TrialReadinessStatus.readyWithWarnings =>
         'Ready with ${report.warningCount} ${report.warningCount == 1 ? 'warning' : 'warnings'}',
       TrialReadinessStatus.notReady =>
-        '${report.blockerCount} blocker(s) — not ready',
+        '${report.blockerCount} ${report.blockerCount == 1 ? 'blocker' : 'blockers'} — not ready',
     };
 
     // Group checks by section. Unmatched checks go to "Other".
