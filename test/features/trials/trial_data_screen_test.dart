@@ -692,16 +692,76 @@ void main() {
       );
     });
 
-    test('one open session → issue count ≥ 1', () {
-      final result = computeDataQualityRowSuffix(
-          closedCount: 1, openCount: 1, amendedCount: 0, outlierCount: 0);
-      expect(result, '1 issue found');
+    test('one open session → named', () {
+      expect(
+        computeDataQualityRowSuffix(
+            closedCount: 1, openCount: 1, amendedCount: 0, outlierCount: 0),
+        '1 open session',
+      );
     });
 
-    test('mixed issues summed correctly', () {
-      final result = computeDataQualityRowSuffix(
-          closedCount: 2, openCount: 0, amendedCount: 2, outlierCount: 1);
-      expect(result, '3 issues found');
+    test('single amended rating only → named', () {
+      expect(
+        computeDataQualityRowSuffix(
+            closedCount: 2, openCount: 0, amendedCount: 1, outlierCount: 0),
+        '1 amended rating',
+      );
+    });
+
+    test('single outlier only → named', () {
+      expect(
+        computeDataQualityRowSuffix(
+            closedCount: 2, openCount: 0, amendedCount: 0, outlierCount: 1),
+        '1 outlier candidate',
+      );
+    });
+
+    test('open + amended, no outlier → two parts joined', () {
+      expect(
+        computeDataQualityRowSuffix(
+            closedCount: 2, openCount: 1, amendedCount: 1, outlierCount: 0),
+        '1 open session · 1 amended rating',
+      );
+    });
+
+    test('open + outlier, no amended → two parts joined', () {
+      expect(
+        computeDataQualityRowSuffix(
+            closedCount: 2, openCount: 1, amendedCount: 0, outlierCount: 1),
+        '1 open session · 1 outlier candidate',
+      );
+    });
+
+    test('amended + outlier, no open → two parts joined', () {
+      expect(
+        computeDataQualityRowSuffix(
+            closedCount: 2, openCount: 0, amendedCount: 1, outlierCount: 1),
+        '1 amended rating · 1 outlier candidate',
+      );
+    });
+
+    test('all three → three parts joined', () {
+      expect(
+        computeDataQualityRowSuffix(
+            closedCount: 2, openCount: 1, amendedCount: 1, outlierCount: 1),
+        '1 open session · 1 amended rating · 1 outlier candidate',
+      );
+    });
+
+    test('mixed counts (2+2+1) → named with correct plurals', () {
+      expect(
+        computeDataQualityRowSuffix(
+            closedCount: 2, openCount: 0, amendedCount: 2, outlierCount: 1),
+        '2 amended ratings · 1 outlier candidate',
+      );
+    });
+
+    test('plural open sessions', () {
+      expect(
+        computeDataQualityRowSuffix(
+            closedCount: 1, openCount: 2, amendedCount: 0, outlierCount: 0),
+        '2 open sessions',
+      );
     });
   });
 

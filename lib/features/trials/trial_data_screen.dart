@@ -40,9 +40,16 @@ String computeDataQualityRowSuffix({
   required int outlierCount,
 }) {
   if (closedCount == 0) return 'no closed sessions yet';
-  final issues = openCount + amendedCount + outlierCount;
-  if (issues == 0) return 'clean';
-  return '$issues issue${issues == 1 ? '' : 's'} found';
+  final parts = <String>[
+    if (openCount > 0)
+      '$openCount open session${openCount == 1 ? '' : 's'}',
+    if (amendedCount > 0)
+      '$amendedCount amended rating${amendedCount == 1 ? '' : 's'}',
+    if (outlierCount > 0)
+      '$outlierCount outlier candidate${outlierCount == 1 ? '' : 's'}',
+  ];
+  if (parts.isEmpty) return 'clean';
+  return parts.join(' · ');
 }
 
 /// Formats the main weather detail line for a session snapshot.
