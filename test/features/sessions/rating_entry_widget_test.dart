@@ -10,6 +10,8 @@ import 'package:arm_field_companion/core/providers.dart';
 import 'package:arm_field_companion/features/sessions/usecases/create_session_usecase.dart';
 import 'package:arm_field_companion/features/ratings/rating_screen.dart';
 import 'package:arm_field_companion/features/sessions/session_summary_screen.dart';
+import 'package:arm_field_companion/features/diagnostics/trial_readiness.dart';
+import 'package:arm_field_companion/features/trials/widgets/trial_card.dart';
 import 'start_or_continue_rating_fakes.dart';
 
 /// Empty [sessions] so Quick Rate stays visible, but [getSessionById] resolves
@@ -224,6 +226,78 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(RatingScreen), findsOneWidget);
+    });
+  });
+
+  group('TrialCard quick-actions button', () {
+    Widget buildCard({
+      required Session? openSession,
+      VoidCallback? onQuickRate,
+      void Function(Session)? onResume,
+    }) {
+      return ProviderScope(
+        overrides: [
+          openSessionProvider(trial.id)
+              .overrideWith((ref) => Stream.value(openSession)),
+          plotsForTrialProvider(trial.id)
+              .overrideWith((ref) => Stream.value([])),
+          ratedPlotsCountForTrialProvider(trial.id)
+              .overrideWith((ref) => Stream.value(0)),
+          trialReadinessProvider(trial.id)
+              .overrideWith((ref) => Stream.value(
+                    const TrialReadinessReport(checks: []),
+                  )),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: TrialCard(
+              trial: trial,
+              index: 1,
+              totalCount: 1,
+              onTap: () {},
+              onQuickRate: onQuickRate ?? () {},
+              onResume: onResume ?? (_) {},
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('no open session → shows Quick Rate', (tester) async {
+      await tester.pumpWidget(buildCard(openSession: null));
+      await tester.pump();
+      expect(find.text('Quick Rate'), findsOneWidget);
+      expect(find.text('Resume session'), findsNothing);
+    });
+
+    testWidgets('open session exists → shows Resume session', (tester) async {
+      await tester.pumpWidget(buildCard(openSession: session));
+      await tester.pump();
+      expect(find.text('Resume session'), findsOneWidget);
+      expect(find.text('Quick Rate'), findsNothing);
+    });
+
+    testWidgets('tapping Quick Rate invokes onQuickRate', (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        buildCard(openSession: null, onQuickRate: () => tapped = true),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Quick Rate'));
+      await tester.pump();
+      expect(tapped, isTrue);
+    });
+
+    testWidgets('tapping Resume session invokes onResume with open session',
+        (tester) async {
+      Session? received;
+      await tester.pumpWidget(
+        buildCard(openSession: session, onResume: (s) => received = s),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Resume session'));
+      await tester.pump();
+      expect(received?.id, session.id);
     });
   });
 }

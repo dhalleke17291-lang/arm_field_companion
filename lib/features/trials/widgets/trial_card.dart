@@ -77,6 +77,7 @@ class TrialCard extends ConsumerWidget {
     required this.totalCount,
     required this.onTap,
     required this.onQuickRate,
+    required this.onResume,
     this.attentionSummary,
   });
 
@@ -85,6 +86,7 @@ class TrialCard extends ConsumerWidget {
   final int totalCount;
   final VoidCallback onTap;
   final VoidCallback onQuickRate;
+  final void Function(Session session) onResume;
   /// Most urgent HIGH attention line for active trials; null hides the row.
   final String? attentionSummary;
 
@@ -297,6 +299,7 @@ class TrialCard extends ConsumerWidget {
                 _TrialQuickActions(
                     trial: trial,
                     onQuickRate: onQuickRate,
+                    onResume: onResume,
                   ),
               ],
             ),
@@ -311,10 +314,12 @@ class _TrialQuickActions extends ConsumerWidget {
   const _TrialQuickActions({
     required this.trial,
     required this.onQuickRate,
+    required this.onResume,
   });
 
   final Trial trial;
   final VoidCallback onQuickRate;
+  final void Function(Session session) onResume;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -324,25 +329,29 @@ class _TrialQuickActions extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
       error: (e, __) => AppErrorHint(error: e),
       data: (openSession) {
-        final hasOpenSession = openSession != null;
-        if (hasOpenSession) return const SizedBox.shrink();
+        final hasOpen = openSession != null;
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-              TextButton.icon(
-                onPressed: onQuickRate,
-                icon: const Icon(Icons.flash_on, size: 14),
-                label: const Text(
-                  'Quick Rate',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.only(left: 0, right: 8, top: 4, bottom: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.compact,
-                ),
+            TextButton.icon(
+              onPressed: hasOpen ? () => onResume(openSession) : onQuickRate,
+              icon: Icon(hasOpen ? Icons.play_arrow : Icons.flash_on, size: 14),
+              label: Text(
+                hasOpen ? 'Resume session' : 'Quick Rate',
+                style: AppDesignTokens.compactActionLabelStyle,
               ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.only(
+                  left: 0,
+                  right: AppDesignTokens.spacing8,
+                  top: AppDesignTokens.spacing4,
+                  bottom: AppDesignTokens.spacing4,
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
           ],
         );
       },
