@@ -22,9 +22,9 @@ import '../diagnostics/edited_items_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import '../ratings/rating_screen.dart';
 import 'domain/session_completeness_report.dart';
-import 'session_completeness_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../backup/backup_reminder_store.dart';
+import 'session_completeness_sheet.dart';
 import '../../data/repositories/weather_snapshot_repository.dart';
 import '../weather/weather_capture_form.dart';
 import 'session_data_grid.dart';
@@ -32,8 +32,19 @@ import 'session_grid_pdf_export.dart';
 import 'session_summary_assessment_coverage.dart';
 import '../../core/connectivity/gps_service.dart';
 import '../../domain/models/trial_insight.dart';
+import '../../domain/interpretation/behavioral_signature_interpreter.dart';
+import '../../domain/interpretation/protocol_divergence_interpreter.dart';
+import '../../domain/relationships/behavioral_signature_provider.dart';
+import '../../domain/relationships/evidence_anchors_provider.dart';
+import '../../domain/relationships/protocol_divergence_provider.dart';
+import 'session_export_actions.dart';
+import 'session_export_trust_dialog.dart';
+import 'session_hub_review_filters.dart';
+import 'session_plot_predicates.dart';
 import 'session_summary_share.dart';
 import 'session_treatment_summary.dart';
+import 'session_close_signal_writers.dart';
+import 'widgets/session_close_diagnostic.dart';
 
 /// Bottom sheet showing full rating context for a tapped grid cell.
 void _showCellDetailSheet({
@@ -220,15 +231,6 @@ void _navigatePlotQueue(
   );
 }
 
-void _navigateSessionCompleteness(
-    BuildContext context, Trial trial, Session session) {
-  Navigator.push<void>(
-    context,
-    MaterialPageRoute<void>(
-      builder: (_) => SessionCompletenessScreen(trial: trial, session: session),
-    ),
-  );
-}
 
 const int _kSessionSummaryMaxCompletenessIssuesPreview = 5;
 
@@ -305,7 +307,7 @@ List<Widget> _completenessIssuePreviewRows({
           alignment: Alignment.centerLeft,
           child: TextButton(
             onPressed: onSeeAll,
-            child: const Text('See All in Session Completeness'),
+            child: const Text('View all plots'),
           ),
         ),
       ),
@@ -334,6 +336,31 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
   bool _isClosing = false;
   /// false = plots grid (default), true = treatment summary
   bool _showTreatments = false;
+
+  // Hub review filter state
+  int? _repFilter;
+  bool _filterUnratedOnly = false;
+  bool _filterIssuesOnly = false;
+  bool _filterEditedOnly = false;
+  bool _filterFlaggedOnly = false;
+
+  // Treatment highlight state — null means no highlight active
+  int? _selectedTreatmentId;
+
+  bool get _anyHubFilterActive =>
+      _repFilter != null ||
+      _filterUnratedOnly ||
+      _filterIssuesOnly ||
+      _filterEditedOnly ||
+      _filterFlaggedOnly;
+
+  void _clearHubFilters() => setState(() {
+        _repFilter = null;
+        _filterUnratedOnly = false;
+        _filterIssuesOnly = false;
+        _filterEditedOnly = false;
+        _filterFlaggedOnly = false;
+      });
 
   void _invalidate() {
     ref.invalidate(plotsForTrialProvider(widget.trial.id));
@@ -439,6 +466,35 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
       }
     }
 
+    // Fire session-close writers before surfacing the diagnostic.
+    if (!mounted) return;
+    await runSessionCloseSignalWriters(
+      ref,
+      trialId: widget.trial.id,
+      sessionId: widget.session.id,
+    );
+
+    // Diagnostic step — surfaces open signals before close.
+    if (!mounted) return;
+    var proceedAfterDiagnostic = false;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SessionCloseDiagnostic(
+        sessionId: widget.session.id,
+        trialId: widget.trial.id,
+        onAllClear: () {
+          proceedAfterDiagnostic = true;
+          Navigator.of(ctx).pop();
+        },
+        onProceedAnyway: () {
+          proceedAfterDiagnostic = true;
+          Navigator.of(ctx).pop();
+        },
+      ),
+    );
+    if (!proceedAfterDiagnostic || !mounted) return;
+
     setState(() => _isClosing = true);
     try {
       final userId = await ref.read(currentUserIdProvider.future);
@@ -493,7 +549,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'Recording crop injury status is required by EPPO/GLP standards. '
+                  'Recording crop injury status is required by GLP and efficacy trial standards. '
                   '"None observed" is positive evidence that the crop was checked.',
                   style: TextStyle(
                     fontSize: 13,
@@ -851,6 +907,19 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         ref.watch(sessionByIdProvider(widget.session.id)).valueOrNull;
     final isOpen = liveSession?.endedAt == null;
 
+    // Filter-support providers — valueOrNull so they don't block the main grid
+    final ratedPks =
+        ref.watch(ratedPlotPksProvider(widget.session.id)).valueOrNull ??
+            const <int>{};
+    final flaggedIds =
+        ref.watch(flaggedPlotIdsForSessionProvider(widget.session.id))
+                .valueOrNull ??
+            const <int>{};
+    final correctionPks =
+        ref.watch(plotPksWithCorrectionsForSessionProvider(widget.session.id))
+                .valueOrNull ??
+            const <int>{};
+
     // Build plot → treatmentId map from assignments (reliable, not async per-plot)
     final assignments = assignmentsAsync.valueOrNull ?? [];
     final plotTreatmentMap = <int, int>{};
@@ -917,18 +986,10 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.white),
             tooltip: 'Tools',
-            onSelected: (value) {
+            onSelected: (value) async {
               switch (value) {
                 case 'completeness':
-                  Navigator.push<void>(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) => SessionCompletenessScreen(
-                        trial: widget.trial,
-                        session: widget.session,
-                      ),
-                    ),
-                  );
+                  showSessionCompletenessSheet(context, widget.trial, widget.session);
                 case 'plot_queue':
                   _navigatePlotQueue(
                       context, widget.trial, widget.session);
@@ -948,6 +1009,62 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                         session: widget.session,
                       ),
                     ),
+                  );
+                case 'share_summary':
+                  _offerShareSummary();
+                case 'fer_pdf':
+                  final ok = await confirmSessionExportTrust(
+                    context: context,
+                    ref: ref,
+                    trialId: widget.trial.id,
+                    sessionId: widget.session.id,
+                  );
+                  if (!context.mounted) return;
+                  if (!ok) return;
+                  await runFieldExecutionReportExport(
+                    context,
+                    ref,
+                    trial: widget.trial,
+                    session: ref
+                            .read(sessionByIdProvider(widget.session.id))
+                            .valueOrNull ??
+                        widget.session,
+                  );
+                case 'session_csv':
+                  final ok = await confirmSessionExportTrust(
+                    context: context,
+                    ref: ref,
+                    trialId: widget.trial.id,
+                    sessionId: widget.session.id,
+                  );
+                  if (!context.mounted) return;
+                  if (!ok) return;
+                  await runSessionCsvExport(
+                    context,
+                    ref,
+                    trial: widget.trial,
+                    session: ref
+                            .read(sessionByIdProvider(widget.session.id))
+                            .valueOrNull ??
+                        widget.session,
+                  );
+                case 'session_xml':
+                  final ok = await confirmSessionExportTrust(
+                    context: context,
+                    ref: ref,
+                    trialId: widget.trial.id,
+                    sessionId: widget.session.id,
+                  );
+                  if (!context.mounted) return;
+                  if (!ok) return;
+                  await runSessionArmXmlExport(
+                    context,
+                    ref,
+                    trial: widget.trial,
+                    session: ref
+                            .read(sessionByIdProvider(widget.session.id))
+                            .valueOrNull ??
+                        widget.session,
                   );
               }
             },
@@ -993,6 +1110,48 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                   visualDensity: VisualDensity.compact,
                 ),
               ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'share_summary',
+                child: ListTile(
+                  leading: Icon(Icons.text_snippet_outlined, size: 20),
+                  title: Text('Share text summary', style: TextStyle(fontSize: 14)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'fer_pdf',
+                child: ListTile(
+                  leading: Icon(Icons.summarize_outlined, size: 20),
+                  title: Text('Field execution report (PDF)', style: TextStyle(fontSize: 14)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'session_csv',
+                child: ListTile(
+                  leading: Icon(Icons.table_chart_outlined, size: 20),
+                  title: Text('Export session data (CSV)', style: TextStyle(fontSize: 14)),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              if (isSessionXmlExportAvailable(liveSession ?? widget.session))
+                const PopupMenuItem(
+                  value: 'session_xml',
+                  child: ListTile(
+                    leading: Icon(Icons.code_outlined, size: 20),
+                    title: Text('Export session (XML)', style: TextStyle(fontSize: 14)),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
             ],
           ),
           IconButton(
@@ -1025,6 +1184,49 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                         !p.isGuardRow && p.excludeFromAnalysis != true)
                     .toList();
                 final dataPlotCount = dataPlots.length;
+
+                // Hub grid + filters use [dataPlots] only — same set as the header
+                // "N plots" count (guard rows and excludeFromAnalysis plots are omitted).
+                final hubPlots = dataPlots;
+
+                // Per-plot rating map for hub filters
+                final ratingsByPlot = <int, List<RatingRecord>>{};
+                for (final r in ratings) {
+                  ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
+                }
+
+                // Unique reps among data plots (matches filter / grid scope)
+                final reps = hubPlots
+                    .map((p) => p.rep)
+                    .whereType<int>()
+                    .toSet()
+                    .toList()
+                  ..sort();
+
+                final filteredPlots = _anyHubFilterActive
+                    ? applyPlotQueueFilters(
+                        plotsInWalkOrder: hubPlots,
+                        ratedPks: ratedPks,
+                        ratingsByPlot: ratingsByPlot,
+                        flaggedIds: flaggedIds,
+                        correctionPlotPks: correctionPks,
+                        repFilter: _repFilter,
+                        unratedOnly: _filterUnratedOnly,
+                        issuesOnly: _filterIssuesOnly,
+                        editedOnly: _filterEditedOnly,
+                        flaggedOnly: _filterFlaggedOnly,
+                      )
+                    : hubPlots;
+
+                // Stats footer counts track the visible filtered set.
+                final footerCounts = countPlotStatus(
+                  plots: filteredPlots,
+                  ratingsByPlot: ratingsByPlot,
+                  ratedPks: ratedPks,
+                  flaggedIds: flaggedIds,
+                  correctionPlotPks: correctionPks,
+                );
+
                 final report = reportAsync.valueOrNull;
                 final canClose = report?.canClose ?? false;
                 final blockerCount = report?.issues
@@ -1235,11 +1437,8 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                                   color: report.incompletePlots == 0
                                       ? Colors.green
                                       : Colors.orange,
-                                  onTap: () =>
-                                      _navigateSessionCompleteness(
-                                          context,
-                                          widget.trial,
-                                          widget.session),
+                                  onTap: () => showSessionCompletenessSheet(
+                                      context, widget.trial, widget.session),
                                 ),
                               // Blockers
                               if (blockerCount > 0)
@@ -1247,11 +1446,8 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                                   label:
                                       '$blockerCount blocker${blockerCount == 1 ? '' : 's'}',
                                   color: Colors.red,
-                                  onTap: () =>
-                                      _navigateSessionCompleteness(
-                                          context,
-                                          widget.trial,
-                                          widget.session),
+                                  onTap: () => showSessionCompletenessSheet(
+                                      context, widget.trial, widget.session),
                                 ),
                               // Edited
                               if (editedCount > 0)
@@ -1303,19 +1499,100 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                           _ViewToggleChip(
                             label: 'Treatments',
                             selected: _showTreatments,
-                            onTap: () =>
-                                setState(() => _showTreatments = true),
+                            onTap: () => setState(() {
+                              _showTreatments = true;
+                              _selectedTreatmentId = null;
+                            }),
                           ),
                         ],
                       ),
                     ),
+                    // Hub review filter strip (plots view only)
+                    if (!_showTreatments)
+                      HubReviewFilterStrip(
+                        reps: reps,
+                        repFilter: _repFilter,
+                        unratedOnly: _filterUnratedOnly,
+                        issuesOnly: _filterIssuesOnly,
+                        editedOnly: _filterEditedOnly,
+                        flaggedOnly: _filterFlaggedOnly,
+                        anyActive: _anyHubFilterActive,
+                        onRepSelected: (r) => setState(
+                            () => _repFilter = r == _repFilter ? null : r),
+                        onUnratedToggle: () => setState(
+                            () => _filterUnratedOnly = !_filterUnratedOnly),
+                        onIssuesToggle: () => setState(
+                            () => _filterIssuesOnly = !_filterIssuesOnly),
+                        onEditedToggle: () => setState(
+                            () => _filterEditedOnly = !_filterEditedOnly),
+                        onFlaggedToggle: () => setState(
+                            () => _filterFlaggedOnly = !_filterFlaggedOnly),
+                        onReset: _clearHubFilters,
+                      ),
+                    // Treatment highlight strip — plots view only, when trial has treatments
+                    if (!_showTreatments && treatments.isNotEmpty)
+                      _TreatmentHighlightStrip(
+                        treatments: treatments,
+                        selectedTreatmentId: _selectedTreatmentId,
+                        treatmentColors: treatmentColorMap,
+                        onTreatmentSelected: (id) => setState(() {
+                          _selectedTreatmentId =
+                              _selectedTreatmentId == id ? null : id;
+                        }),
+                        onClear: () =>
+                            setState(() => _selectedTreatmentId = null),
+                      ),
+                    if (!_showTreatments && _anyHubFilterActive)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
+                        child: Text(
+                          'Showing ${filteredPlots.length} of ${hubPlots.length} plots',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                        ),
+                      ),
                     // Content
                     Expanded(
                       child: _showTreatments
                           ? _buildTreatmentView(plots, assessments,
                               ratings, assessmentDisplayNames)
-                          : SessionDataGrid(
-                              plots: plots,
+                          : (_anyHubFilterActive && filteredPlots.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.filter_list_off,
+                                        size: 48,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .outlineVariant,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'No plots match these filters.',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextButton(
+                                        onPressed: _clearHubFilters,
+                                        child: const Text('Clear filters'),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : SessionDataGrid(
+                                  plots: filteredPlots,
                               assessments: assessments,
                               ratings: ratings,
                               trialId: widget.trial.id,
@@ -1363,8 +1640,12 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
                               checkTreatmentIds: checkTreatmentIds,
                               assessmentCoverage: assessmentCoverage,
                               treatmentColors: treatmentColorMap,
-                            ),
+                              highlightedTreatmentId: _selectedTreatmentId,
+                            )),
                     ),
+                    // Stats footer — tracks the visible filtered set (plots view only)
+                    if (!_showTreatments && filteredPlots.isNotEmpty)
+                      _GridStatsFooter(counts: footerCounts),
                   ],
                 );
               },
@@ -1472,6 +1753,49 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
           assessmentDisplayNames:
               displayNames.isNotEmpty ? displayNames : null,
         ),
+      ),
+    );
+  }
+}
+
+/// Compact single-line stats bar below the session grid.
+/// Counts are derived from the currently visible (filtered) plot set so the
+/// numbers always match what the grid is showing.
+class _GridStatsFooter extends StatelessWidget {
+  const _GridStatsFooter({required this.counts});
+
+  final SessionPlotCounts counts;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    final parts = <String>[
+      '${counts.rated} rated',
+      '${counts.unrated} unrated',
+      if (counts.withIssues > 0)
+        '${counts.withIssues} ${counts.withIssues == 1 ? 'issue' : 'issues'}',
+      if (counts.edited > 0) '${counts.edited} edited',
+      if (counts.flagged > 0) '${counts.flagged} flagged',
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: const BoxDecoration(
+        color: AppDesignTokens.sectionHeaderBg,
+        border: Border(
+          top: BorderSide(color: AppDesignTokens.borderCrisp),
+        ),
+      ),
+      child: Text(
+        parts.join(' · '),
+        style: TextStyle(
+          fontSize: 11,
+          color: scheme.onSurfaceVariant,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -1608,6 +1932,9 @@ class _SessionDetailsBody extends ConsumerWidget {
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
     final reportAsync =
         ref.watch(sessionCompletenessReportProvider(session.id));
+    final divergencesAsync =
+        ref.watch(protocolDivergenceProvider(trial.id));
+    final anchorsAsync = ref.watch(evidenceAnchorsProvider(trial.id));
     final ratingsAsync = ref.watch(sessionRatingsProvider(session.id));
     final ratedPksAsync = ref.watch(ratedPlotPksProvider(session.id));
     final flaggedAsync =
@@ -1615,6 +1942,8 @@ class _SessionDetailsBody extends ConsumerWidget {
     final correctionsAsync =
         ref.watch(plotPksWithCorrectionsForSessionProvider(session.id));
     final assessmentsAsync = ref.watch(sessionAssessmentsProvider(session.id));
+    final behaviourAsync =
+        ref.watch(behavioralSignatureProvider(session.id));
 
     return plotsAsync.when(
           loading: () => const AppLoadingView(),
@@ -1671,30 +2000,18 @@ class _SessionDetailsBody extends ConsumerWidget {
                           ratingsByPlot.putIfAbsent(r.plotPk, () => []).add(r);
                         }
 
-                        var ratedCount = 0;
-                        var notRatedCount = 0;
-                        var flaggedCount = 0;
-                        var issuesPlotCount = 0;
-                        var editedPlotCount = 0;
-
-                        for (final plot in rawPlots) {
-                          final plotRatings = ratingsByPlot[plot.id] ?? [];
-                          if (ratedPks.contains(plot.id)) {
-                            ratedCount++;
-                          } else {
-                            notRatedCount++;
-                          }
-                          if (flaggedIds.contains(plot.id)) flaggedCount++;
-                          if (plotRatings
-                              .any((r) => r.resultStatus != 'RECORDED')) {
-                            issuesPlotCount++;
-                          }
-                          if (plotRatings.any(
-                                  (r) => r.amended || (r.previousId != null)) ||
-                              correctionPlotPks.contains(plot.id)) {
-                            editedPlotCount++;
-                          }
-                        }
+                        final counts = countPlotStatus(
+                          plots: rawPlots,
+                          ratingsByPlot: ratingsByPlot,
+                          ratedPks: ratedPks,
+                          flaggedIds: flaggedIds,
+                          correctionPlotPks: correctionPlotPks,
+                        );
+                        final ratedCount = counts.rated;
+                        final notRatedCount = counts.unrated;
+                        final flaggedCount = counts.flagged;
+                        final issuesPlotCount = counts.withIssues;
+                        final editedPlotCount = counts.edited;
 
                         final latestEditAmongEdited =
                             latestEditRecencyAcrossEditedPlots(
@@ -1725,6 +2042,12 @@ class _SessionDetailsBody extends ConsumerWidget {
                           sessionAssessments: assessments,
                           currentSessionRatings: ratings,
                         );
+
+                        final sessionAnchor = anchorsAsync.valueOrNull
+                            ?.where((a) =>
+                                a.eventId == session.id.toString() &&
+                                a.eventType == EvidenceEventType.session)
+                            .firstOrNull;
 
                         return ListView(
                           padding:
@@ -1904,9 +2227,9 @@ class _SessionDetailsBody extends ConsumerWidget {
                               padding: const EdgeInsets.only(bottom: 12),
                               child: Semantics(
                                 button: true,
-                                label: 'Open Session Completeness',
+                                label: 'Review plot coverage',
                                 child: GestureDetector(
-                                  onTap: () => _navigateSessionCompleteness(
+                                  onTap: () => showSessionCompletenessSheet(
                                       context, trial, session),
                                   behavior: HitTestBehavior.opaque,
                                   child: AppCard(
@@ -1967,8 +2290,8 @@ class _SessionDetailsBody extends ConsumerWidget {
                                           const SizedBox(height: 8),
                                           if (!report.canClose)
                                             Text(
-                                              '$blockerCount blocker issue(s). '
-                                              'Not ready to close — open Session Completeness for details.',
+                                              '$blockerCount ${blockerCount == 1 ? 'blocker issue' : 'blocker issues'}. '
+                                              'Not ready to close — tap to review plot coverage.',
                                               style: TextStyle(
                                                 fontSize: 13,
                                                 height: 1.35,
@@ -2005,7 +2328,7 @@ class _SessionDetailsBody extends ConsumerWidget {
                                           if (warningCount > 0) ...[
                                             const SizedBox(height: 6),
                                             Text(
-                                              '$warningCount warning(s) — review in Session Completeness.',
+                                              '${warningCount == 1 ? '1 warning' : '$warningCount warnings'} — see plot coverage.',
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 height: 1.35,
@@ -2021,7 +2344,7 @@ class _SessionDetailsBody extends ConsumerWidget {
                                             sessionId: session.id,
                                             issues: report.issues,
                                             onSeeAll: () =>
-                                                _navigateSessionCompleteness(
+                                                showSessionCompletenessSheet(
                                               context,
                                               trial,
                                               session,
@@ -2030,7 +2353,7 @@ class _SessionDetailsBody extends ConsumerWidget {
                                         ],
                                         const SizedBox(height: 10),
                                         Text(
-                                          'Open Session Completeness for plot-by-plot coverage.',
+                                          'Tap to review plot-by-plot coverage.',
                                           style: TextStyle(
                                             fontSize: 12,
                                             height: 1.35,
@@ -2185,6 +2508,89 @@ class _SessionDetailsBody extends ConsumerWidget {
                                 ),
                               ),
                             ),
+                            if (behaviourAsync.valueOrNull?.isNotEmpty ==
+                                true) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: AppCard(
+                                  padding: const EdgeInsets.all(
+                                      AppDesignTokens.spacing16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const _SectionTitle('Session Behaviour'),
+                                      const SizedBox(height: 4),
+                                      const _CaptionHint(
+                                        'How ratings were recorded over the course of this session.',
+                                      ),
+                                      const SizedBox(height: 10),
+                                      for (final signal
+                                          in behaviourAsync.value!) ...[
+                                        _BehaviouralSignalRow(
+                                            interpretBehavioralSignal(signal)),
+                                        const SizedBox(
+                                            height:
+                                                AppDesignTokens.spacing12),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (divergencesAsync.valueOrNull?.isNotEmpty ==
+                                true) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: AppCard(
+                                  padding: const EdgeInsets.all(
+                                      AppDesignTokens.spacing16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const _CardHeaderRow(
+                                          title: 'Protocol Differences'),
+                                      const SizedBox(height: 10),
+                                      for (final d
+                                          in divergencesAsync.value!) ...[
+                                        _ProtocolDifferenceRow(
+                                            interpretProtocolDivergence(d)),
+                                        const SizedBox(
+                                            height:
+                                                AppDesignTokens.spacing12),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (sessionAnchor != null) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: AppCard(
+                                  padding: const EdgeInsets.all(
+                                      AppDesignTokens.spacing16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const _SectionTitle(
+                                          'Evidence captured'),
+                                      const SizedBox(height: 10),
+                                      _EvidenceRow('Photos',
+                                          sessionAnchor.photoIds.isNotEmpty),
+                                      _EvidenceRow(
+                                          'GPS', sessionAnchor.hasGps),
+                                      _EvidenceRow('Weather',
+                                          sessionAnchor.hasWeather),
+                                      _EvidenceRow('Timestamp',
+                                          sessionAnchor.hasTimestamp),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                             Text(
                               'Open related screens',
                               style: TextStyle(
@@ -2201,9 +2607,9 @@ class _SessionDetailsBody extends ConsumerWidget {
                             SizedBox(
                               width: double.infinity,
                               child: OutlinedButton(
-                                onPressed: () => _navigateSessionCompleteness(
+                                onPressed: () => showSessionCompletenessSheet(
                                     context, trial, session),
-                                child: const Text('Open Session Completeness'),
+                                child: const Text('Review Plot Coverage'),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -2249,6 +2655,70 @@ class _SessionDetailsBody extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 // Below: helper widgets used by _SessionDetailsBody
 // ---------------------------------------------------------------------------
+
+class _ProtocolDifferenceRow extends StatelessWidget {
+  const _ProtocolDifferenceRow(this.message);
+
+  final DivergenceMessage message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          message.title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          message.description,
+          style: TextStyle(
+            fontSize: 13,
+            height: 1.35,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BehaviouralSignalRow extends StatelessWidget {
+  const _BehaviouralSignalRow(this.message);
+
+  final BehavioralMessage message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          message.title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          message.description,
+          style: TextStyle(
+            fontSize: 13,
+            height: 1.35,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _CaptionHint extends StatelessWidget {
   const _CaptionHint(this.text);
@@ -2395,6 +2865,41 @@ class _CropInjuryResult {
   final String? notes;
 }
 
+class _EvidenceRow extends StatelessWidget {
+  const _EvidenceRow(this.label, this.present);
+
+  final String label;
+  final bool present;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Text(
+            present ? 'Yes' : 'No',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CropInjuryOption extends StatelessWidget {
   const _CropInjuryOption({
     required this.label,
@@ -2450,6 +2955,133 @@ class _CropInjuryOption extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Treatment highlight strip
+// ---------------------------------------------------------------------------
+
+/// Compact horizontal chip strip for selecting a treatment to highlight
+/// in the plots grid. Shown only in Plots view when the trial has treatments.
+class _TreatmentHighlightStrip extends StatelessWidget {
+  const _TreatmentHighlightStrip({
+    required this.treatments,
+    required this.selectedTreatmentId,
+    required this.treatmentColors,
+    required this.onTreatmentSelected,
+    required this.onClear,
+  });
+
+  final List<Treatment> treatments;
+  final int? selectedTreatmentId;
+  final Map<int, Color> treatmentColors;
+  final void Function(int id) onTreatmentSelected;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final sorted = treatments.toList()
+      ..sort((a, b) => a.code.compareTo(b.code));
+
+    return Container(
+      height: 36,
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppDesignTokens.borderCrisp),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              'Highlight:',
+              style: TextStyle(
+                fontSize: 11,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+              ),
+            ),
+            const SizedBox(width: 6),
+            for (final t in sorted) ...[
+              _TreatmentHighlightChip(
+                label: t.code.isNotEmpty ? t.code : t.name,
+                selected: selectedTreatmentId == t.id,
+                color: treatmentColors[t.id] ?? AppDesignTokens.primary,
+                onTap: () => onTreatmentSelected(t.id),
+              ),
+              const SizedBox(width: 4),
+            ],
+            if (selectedTreatmentId != null) ...[
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: onClear,
+                child: Semantics(
+                  label: 'Clear treatment highlight',
+                  child: Icon(
+                    Icons.close,
+                    size: 14,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TreatmentHighlightChip extends StatelessWidget {
+  const _TreatmentHighlightChip({
+    required this.label,
+    required this.selected,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      selected: selected,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: selected ? color.withValues(alpha: 0.15) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? color : AppDesignTokens.borderCrisp,
+              width: selected ? 1.5 : 1.0,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: selected
+                  ? color
+                  : Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withValues(alpha: 0.7),
+            ),
           ),
         ),
       ),

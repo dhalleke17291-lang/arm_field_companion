@@ -660,7 +660,7 @@ class AssessmentsTab extends ConsumerWidget {
           if (stat.anovaResult != null) ...[
             const SizedBox(height: 8),
             _buildAnovaSummary(stat.anovaResult!, stat.resultDirection,
-                checkComparison, unitSuffix),
+                checkComparison, unitSuffix, trialCv: stat.trialCV),
           ] else if (stat.hasAnyData && displayMeans.isNotEmpty) ...[
             const SizedBox(height: 8),
             if (stat.isPreliminary) ...[
@@ -723,9 +723,10 @@ class AssessmentsTab extends ConsumerWidget {
                               checkComparison[m.treatmentCode]!),
                           style: TextStyle(
                             fontSize: 11,
-                            color: _checkPctColor(
+                            color: checkPctColor(
                               checkComparison[m.treatmentCode]!,
                               stat.resultDirection,
+                              cv: stat.trialCV,
                             ),
                           ),
                         ),
@@ -827,7 +828,8 @@ class AssessmentsTab extends ConsumerWidget {
   /// letters + plain-language interpretation.
   Widget _buildAnovaSummary(
       AnovaResult anova, ResultDirection direction,
-      Map<String, double> checkComparison, String unitSuffix) {
+      Map<String, double> checkComparison, String unitSuffix,
+      {double? trialCv}) {
     final sigColor = switch (anova.significance) {
       SignificanceLevel.highlySignificant => AppDesignTokens.successFg,
       SignificanceLevel.significant => AppDesignTokens.successFg,
@@ -989,9 +991,10 @@ class AssessmentsTab extends ConsumerWidget {
                               checkComparison[m.treatmentCode]!),
                           style: TextStyle(
                             fontSize: 10,
-                            color: _checkPctColor(
+                            color: checkPctColor(
                               checkComparison[m.treatmentCode]!,
                               direction,
+                              cv: trialCv,
                             ),
                           ),
                         ),
@@ -1058,19 +1061,21 @@ class AssessmentsTab extends ConsumerWidget {
   /// higherIsBetter: positive = good (green), negative = bad (red).
   /// lowerIsBetter: negative = good (green), positive = bad (red).
   /// neutral: no value judgment (secondary text).
-  static Color _checkPctColor(double pct, ResultDirection direction) {
-    switch (direction) {
-      case ResultDirection.higherIsBetter:
-        return pct >= 0
-            ? AppDesignTokens.successFg
-            : AppDesignTokens.missedColor;
-      case ResultDirection.lowerIsBetter:
-        return pct <= 0
-            ? AppDesignTokens.successFg
-            : AppDesignTokens.missedColor;
-      case ResultDirection.neutral:
-        return AppDesignTokens.secondaryText;
+  /// When [cv] is null or >= [kHighCvDeltaColorSuppressionThreshold], returns
+  /// secondaryText — variability is too high to visually endorse a claim.
+  @visibleForTesting
+  static Color checkPctColor(double pct, ResultDirection direction,
+      {double? cv}) {
+    if (cv == null || cv >= kHighCvDeltaColorSuppressionThreshold) {
+      return AppDesignTokens.secondaryText;
     }
+    return switch (direction) {
+      ResultDirection.higherIsBetter =>
+        pct >= 0 ? AppDesignTokens.successFg : AppDesignTokens.missedColor,
+      ResultDirection.lowerIsBetter =>
+        pct <= 0 ? AppDesignTokens.successFg : AppDesignTokens.missedColor,
+      ResultDirection.neutral => AppDesignTokens.secondaryText,
+    };
   }
 }
 

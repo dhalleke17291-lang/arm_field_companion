@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/core/diagnostics/diagnostic_finding.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
@@ -435,6 +436,7 @@ class _FakeRatingRepository implements RatingRepository {
     String? ratingMethod,
     String? confidence,
     String? amendmentReason,
+    int? trialAssessmentId,
   }) async {
     throw UnimplementedError();
   }
@@ -562,6 +564,12 @@ class _FakeRatingRepository implements RatingRepository {
     required int plotPk,
   }) async =>
       [];
+
+  @override
+  Future<List<DiagnosticFinding>> repairCurrentFlagsForExport({
+    int? trialId,
+    int? sessionId,
+  }) async => [];
 }
 
 void main() {
@@ -581,6 +589,7 @@ void main() {
         season: null,
         status: 'active',
         workspaceType: 'efficacy',
+        region: 'eppo_eu',
         createdAt: DateTime(2026, 1, 1),
         updatedAt: DateTime(2026, 1, 1),
         isDeleted: false,

@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import '../../core/database/app_database.dart';
+import '../../domain/evidence/evidence_anchor_repository.dart';
 
 const int kThumbnailSize = 200;
 
@@ -93,6 +94,16 @@ class PhotoRepository {
       return await (_db.select(_db.photos)..where((p) => p.id.equals(photoId)))
           .getSingle();
     });
+
+    try {
+      await EvidenceAnchorRepository(_db).writePhotoAnchors(
+        trialId: trialId,
+        photoId: photo.id,
+        sessionId: sessionId,
+        plotPk: plotPk,
+        anchoredBy: performedByUserId,
+      );
+    } catch (_) {}
 
     // Fire-and-forget: generate thumbnail in background isolate.
     generateThumbnailInBackground(finalPath);

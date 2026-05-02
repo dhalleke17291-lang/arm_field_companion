@@ -41,7 +41,9 @@ import 'tabs/plots_tab.dart';
 import 'tabs/photos_tab.dart';
 import 'tabs/timeline_tab.dart';
 import 'trial_data_screen.dart';
+import 'trial_story_screen.dart';
 import 'trial_setup_screen.dart';
+import 'widgets/insight_row.dart';
 import 'widgets/site_details_card.dart';
 import '../diagnostics/completeness_dashboard_screen.dart';
 import '../more/more_backup_actions.dart';
@@ -53,6 +55,10 @@ import '../derived/trial_attention_service.dart';
 import '../../domain/models/trial_insight.dart';
 import '../backup/backup_reminder_store.dart';
 import '../notes/field_notes_list_screen.dart';
+import '../../domain/relationships/protocol_divergence_provider.dart';
+import '../../domain/relationships/evidence_anchors_provider.dart';
+import '../sessions/session_close_signal_writers.dart';
+import '../sessions/widgets/session_close_diagnostic.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -1035,6 +1041,20 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               builder: (_) => AuditLogScreen(trialId: trial.id),
             ),
           );
+        } else if (value == 'trial_data') {
+          Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => TrialDataScreen(trial: trial),
+            ),
+          );
+        } else if (value == 'trial_story') {
+          Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => TrialStoryScreen(trial: trial),
+            ),
+          );
         } else if (value == 'delete_trial') {
           _confirmAndSoftDeleteTrial(context, trial);
         }
@@ -1043,6 +1063,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         const PopupMenuItem<String>(
           value: 'activity',
           child: Text('Activity'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'trial_story',
+          child: Text('Trial Story'),
         ),
         const PopupMenuItem<String>(
           value: 'delete_trial',
@@ -2189,11 +2213,7 @@ class _TrialInsightsCard extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               const Divider(height: 1, color: AppDesignTokens.borderCrisp),
-              for (var i = 0; i < insights.length; i++) ...[
-                if (i > 0)
-                  const Divider(height: 1, color: AppDesignTokens.borderCrisp),
-                _InsightRow(insight: insights[i]),
-              ],
+              ..._buildGroupedInsights(insights),
               if (hasTrends) ...[
                 const Divider(height: 1, color: AppDesignTokens.borderCrisp),
                 const SizedBox(height: 6),
@@ -2223,159 +2243,65 @@ class _TrialInsightsCard extends ConsumerWidget {
       },
     );
   }
-}
 
-// TODO: replace with InsightRow from
-// lib/features/trials/widgets/insight_row.dart
-// when this screen is next refactored.
-class _InsightRow extends StatefulWidget {
-  const _InsightRow({required this.insight});
+  static List<Widget> _buildGroupedInsights(List<TrialInsight> insights) {
+    final groupMap = <String, List<TrialInsight>>{};
+    for (final insight in insights) {
+      if (insight.assessmentName != null) {
+        groupMap.putIfAbsent(insight.assessmentName!, () => []).add(insight);
+      }
+    }
+    final emitted = <String>{};
+    final renderItems = <Widget>[];
+    for (final insight in insights) {
+      if (insight.assessmentName != null &&
+          groupMap[insight.assessmentName!]!.length > 1) {
+        final name = insight.assessmentName!;
+        if (!emitted.contains(name)) {
+          emitted.add(name);
+          if (renderItems.isNotEmpty) {
+            renderItems.add(const Divider(
+                height: 1, color: AppDesignTokens.borderCrisp));
+          }
+          renderItems.add(_buildInsightGroup(groupMap[name]!));
+        }
+      } else {
+        if (renderItems.isNotEmpty) {
+          renderItems.add(
+              const Divider(height: 1, color: AppDesignTokens.borderCrisp));
+        }
+        renderItems.add(InsightRow(insight: insight));
+      }
+    }
+    return renderItems;
+  }
 
-  final TrialInsight insight;
-
-  @override
-  State<_InsightRow> createState() => _InsightRowState();
-}
-
-class _InsightRowState extends State<_InsightRow> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final insight = widget.insight;
-    final severityColor = switch (insight.severity) {
-      InsightSeverity.info => AppDesignTokens.primary,
-      InsightSeverity.notable => AppDesignTokens.warningFg,
-      InsightSeverity.attention => AppDesignTokens.missedColor,
-    };
-
-    return GestureDetector(
-      onTap: () => setState(() => _expanded = !_expanded),
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: insight.severity != InsightSeverity.info
-            ? BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: severityColor, width: 2),
-                ),
-              )
-            : null,
-        child: Padding(
-          padding: EdgeInsets.only(
-              left: insight.severity != InsightSeverity.info ? 8 : 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                insight.title,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppDesignTokens.primaryText,
-                ),
-              ),
-              const SizedBox(height: 3),
-              if (insight.type == InsightType.treatmentTrend &&
-                  insight.fromDate != null &&
-                  insight.toDate != null) ...[
-                Text(
-                  '${insight.fromDate} → ${insight.toDate}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppDesignTokens.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  insight.detail,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.35,
-                    color: AppDesignTokens.primaryText,
-                  ),
-                ),
-              ] else if (insight.type == InsightType.sessionFieldCapture) ...[
-                Text(
-                  insight.detail,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.35,
-                    color: AppDesignTokens.primaryText,
-                  ),
-                ),
-              ] else ...[
-                Text(
-                  insight.detail,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.35,
-                    color: AppDesignTokens.secondaryText,
-                  ),
-                ),
-              ],
-              // Treatment trend rows share a single method note at the card
-              // bottom; suppress per-row method box to avoid repetition.
-              if (insight.type != InsightType.treatmentTrend) ...[
-                if (_expanded) ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppDesignTokens.sectionHeaderBg,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${insight.basis.sessionCount} session${insight.basis.sessionCount == 1 ? '' : 's'} · '
-                          '${insight.basis.repCount} rep${insight.basis.repCount == 1 ? '' : 's'}'
-                          '${insight.basis.assessmentType != null ? ' · ${insight.basis.assessmentType}' : ''}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: AppDesignTokens.primaryText,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Method: ${insight.basis.method}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppDesignTokens.secondaryText,
-                          ),
-                        ),
-                        if (insight.basis.threshold != null) ...[
-                          const SizedBox(height: 1),
-                          Text(
-                            insight.basis.threshold!,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppDesignTokens.secondaryText,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ] else
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      'Tap for method',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppDesignTokens.secondaryText
-                            .withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ),
-              ],
-            ],
+  static Widget _buildInsightGroup(List<TrialInsight> group) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 4),
+          child: Text(
+            group.first.assessmentName!,
+            style: AppDesignTokens.assessmentGroupHeaderStyle,
           ),
         ),
-      ),
+        for (int j = 0; j < group.length; j++) ...[
+          if (j > 0)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Divider(height: 1, color: AppDesignTokens.borderCrisp),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: InsightRow(
+              insight: group[j],
+              titleOverride: group[j].treatmentName,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -2412,6 +2338,8 @@ class _OverviewTabBody extends ConsumerWidget {
             trial: trial,
             onAttentionTap: onAttentionTap,
           ),
+          // 2b — Read-only execution summary (divergences + evidence coverage).
+          _ExecutionSummaryCard(trial: trial),
           // 3 — Physical structure & progress (incl. whole-trial %).
           _OverviewPlotSummary(trial: trial),
           // 4 — Location / metadata.
@@ -2422,6 +2350,92 @@ class _OverviewTabBody extends ConsumerWidget {
           _AutoBackupStatusLine(),
         ],
       ),
+    );
+  }
+}
+
+class _ExecutionSummaryCard extends ConsumerWidget {
+  const _ExecutionSummaryCard({required this.trial});
+
+  final Trial trial;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final divergencesAsync = ref.watch(protocolDivergenceProvider(trial.id));
+    final anchorsAsync = ref.watch(evidenceAnchorsProvider(trial.id));
+
+    return divergencesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (divergences) => anchorsAsync.when(
+        loading: () => const SizedBox.shrink(),
+        error: (_, __) => const SizedBox.shrink(),
+        data: (anchors) {
+          final sessionAnchors = anchors
+              .where((a) => a.eventType == EvidenceEventType.session)
+              .toList();
+          if (divergences.isEmpty && sessionAnchors.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          final withEvidence = sessionAnchors
+              .where((a) =>
+                  a.hasGps ||
+                  a.hasWeather ||
+                  a.photoIds.isNotEmpty ||
+                  a.hasTimestamp)
+              .length;
+          return _OverviewDashboardCard(
+            title: 'Execution Summary',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ExecutionSummaryRow(
+                  label: 'Protocol differences',
+                  value: '${divergences.length}',
+                ),
+                const SizedBox(height: 4),
+                _ExecutionSummaryRow(
+                  label: 'Sessions with evidence',
+                  value: '$withEvidence/${sessionAnchors.length}',
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ExecutionSummaryRow extends StatelessWidget {
+  const _ExecutionSummaryRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppDesignTokens.secondaryText,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -2736,6 +2750,9 @@ class _NeedsAttentionCard extends ConsumerWidget {
               .compareTo(_severityRank(b.severity)));
         final top = sorted.take(3).toList();
         final remaining = items.length - top.length;
+        final actionableCount = items
+            .where((i) => i.severity != AttentionSeverity.info)
+            .length;
 
         return _OverviewDashboardCard(
           title: 'Needs Attention',
@@ -2744,9 +2761,11 @@ class _NeedsAttentionCard extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                items.length == 1
-                    ? '1 item needs attention'
-                    : '${items.length} items need attention',
+                actionableCount == 0
+                    ? 'No warnings'
+                    : actionableCount == 1
+                        ? '1 warning'
+                        : '$actionableCount warnings',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -4443,6 +4462,36 @@ class SessionsView extends ConsumerWidget {
     }
 
     if (!context.mounted) return;
+
+    // Fire session-close writers before surfacing the diagnostic.
+    await runSessionCloseSignalWriters(
+      ref,
+      trialId: trial.id,
+      sessionId: session.id,
+    );
+
+    if (!context.mounted) return;
+
+    // Show signal diagnostic before final close. onAllClear / "Close session"
+    // both proceed; "Review plots" cancels close.
+    var proceedAfterDiagnostic = false;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SessionCloseDiagnostic(
+        sessionId: session.id,
+        trialId: trial.id,
+        onAllClear: () {
+          proceedAfterDiagnostic = true;
+          Navigator.of(ctx).pop();
+        },
+        onProceedAnyway: () {
+          proceedAfterDiagnostic = true;
+          Navigator.of(ctx).pop();
+        },
+      ),
+    );
+    if (!proceedAfterDiagnostic || !context.mounted) return;
 
     if (policy.decision == SessionClosePolicyDecision.proceedToClose &&
         policy.contextInfoFindings.isNotEmpty) {

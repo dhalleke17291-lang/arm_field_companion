@@ -67,6 +67,7 @@ void main() {
         workspaceType: 'efficacy',
         createdAt: now,
         updatedAt: now,
+        region: 'eppo_eu',
         isDeleted: false,
       );
       expect(canEditProtocol(t, trialIsArmLinked: false), false);

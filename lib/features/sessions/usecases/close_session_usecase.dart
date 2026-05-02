@@ -1,16 +1,19 @@
 import '../domain/session_close_policy_result.dart';
 import '../domain/session_completeness_report.dart';
 import '../session_repository.dart';
+import '../../../domain/evidence/evidence_anchor_repository.dart';
 import 'evaluate_session_close_policy_usecase.dart';
 
 class CloseSessionUseCase {
   CloseSessionUseCase(
     this._sessionRepository,
     this._evaluateClosePolicy,
+    this._evidenceAnchors,
   );
 
   final SessionRepository _sessionRepository;
   final EvaluateSessionClosePolicyUseCase _evaluateClosePolicy;
+  final EvidenceAnchorRepository _evidenceAnchors;
 
   Future<CloseSessionResult> execute({
     required int sessionId,
@@ -117,6 +120,14 @@ class CloseSessionUseCase {
         raterName: raterName,
         closedByUserId: closedByUserId,
       );
+
+      try {
+        await _evidenceAnchors.writeSessionCloseAnchors(
+          trialId: trialId,
+          sessionId: sessionId,
+          anchoredBy: closedByUserId,
+        );
+      } catch (_) {}
 
       return CloseSessionResult.success();
     } catch (e) {

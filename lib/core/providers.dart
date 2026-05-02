@@ -12,10 +12,13 @@ import "../data/repositories/seeding_repository.dart";
 import '../data/repositories/weather_snapshot_repository.dart';
 import "../domain/models/plot_context.dart";
 import "../domain/ratings/rating_integrity_guard.dart";
+import "../domain/se_type_profiles/se_type_profile_repository.dart";
+import '../domain/signals/signal_providers.dart';
 import "../domain/usecases/resolve_plot_treatment.dart";
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
+import 'assessment_result_direction.dart';
 import 'database/app_database.dart';
 import '../features/backup/auto_backup_service.dart';
 import 'connectivity/application_weather_backfill_service.dart';
@@ -56,6 +59,7 @@ import '../features/ratings/usecases/void_rating_usecase.dart';
 import '../features/ratings/usecases/rating_lineage_usecase.dart';
 import '../features/sessions/usecases/create_session_usecase.dart';
 import '../features/sessions/usecases/close_session_usecase.dart';
+import '../domain/evidence/evidence_anchor_repository.dart';
 import '../features/sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../features/sessions/usecases/compute_session_completeness_usecase.dart';
 import '../features/sessions/usecases/evaluate_session_close_policy_usecase.dart';
@@ -81,6 +85,7 @@ import '../features/export/usecases/arm_export_preflight_usecase.dart';
 import '../features/export/report_data_assembly_service.dart';
 import '../features/export/standalone_report_data.dart';
 import '../features/export/report_pdf_builder_service.dart';
+import '../features/export/field_execution_report_assembly_service.dart';
 import '../features/arm_import/data/arm_assessment_definition_resolver.dart';
 import '../features/arm_import/data/arm_import_persistence_repository.dart';
 import '../features/arm_import/data/arm_import_report_builder.dart';
@@ -898,6 +903,8 @@ final amendPlotRatingUseCaseProvider = Provider<AmendPlotRatingUseCase>((ref) {
     ref.watch(sessionRepositoryProvider),
     ref.watch(saveRatingUseCaseProvider),
     ref.watch(ratingRepositoryProvider),
+    ref.watch(signalRepositoryProvider),
+    ref.watch(databaseProvider),
   );
 });
 
@@ -987,6 +994,7 @@ final closeSessionUseCaseProvider = Provider<CloseSessionUseCase>((ref) {
   return CloseSessionUseCase(
     ref.watch(sessionRepositoryProvider),
     ref.watch(evaluateSessionClosePolicyUseCaseProvider),
+    EvidenceAnchorRepository(ref.watch(databaseProvider)),
   );
 });
 
@@ -1276,7 +1284,10 @@ final plotPksWithCorrectionsForSessionProvider =
 // ===== Export (CSV) =====
 
 final exportRepositoryProvider = Provider<ExportRepository>((ref) {
-  return ExportRepository(ref.watch(databaseProvider));
+  return ExportRepository(
+    ref.watch(databaseProvider),
+    ratingRepository: ref.watch(ratingRepositoryProvider),
+  );
 });
 
 final exportSessionCsvUsecaseProvider =
@@ -1385,6 +1396,19 @@ final exportEvidenceReportUseCaseProvider =
       db: ref.watch(databaseProvider),
     ),
     pdfBuilder: EvidenceReportPdfBuilder(),
+  );
+});
+
+final fieldExecutionReportAssemblyServiceProvider =
+    Provider<FieldExecutionReportAssemblyService>((ref) {
+  return FieldExecutionReportAssemblyService(
+    plotRepository: ref.watch(plotRepositoryProvider),
+    ratingRepository: ref.watch(ratingRepositoryProvider),
+    sessionRepository: ref.watch(sessionRepositoryProvider),
+    signalRepository: ref.watch(signalRepositoryProvider),
+    seedingRepository: ref.watch(seedingRepositoryProvider),
+    completenessUseCase: ref.watch(computeSessionCompletenessUseCaseProvider),
+    db: ref.watch(databaseProvider),
   );
 });
 
@@ -2023,12 +2047,20 @@ final trialInsightsProvider = FutureProvider.autoDispose
           pair.$1.sortOrder,
         ),
   };
+  final assessmentDirections = <int, ResultDirection>{
+    for (final pair in assessmentPairs)
+      if (pair.$1.legacyAssessmentId != null)
+        pair.$1.legacyAssessmentId!: ResultDirection.fromString(pair.$2.resultDirection),
+  };
+  final trial = await ref.watch(trialProvider(trialId).future);
   return ref
       .watch(trialIntelligenceServiceProvider)
       .computeInsights(
           trialId: trialId,
           treatments: treatments,
-          assessmentNames: assessmentNames);
+          assessmentNames: assessmentNames,
+          assessmentDirections: assessmentDirections,
+          trialIsClosed: trial?.status == kTrialStatusClosed);
 });
 
 // ---------------------------------------------------------------------------
@@ -2071,3 +2103,27 @@ String _cleanAssessmentName(String raw, int sortOrder) {
       .trim();
   return cleaned.isNotEmpty ? cleaned : 'Assessment ${sortOrder + 1}';
 }
+
+// ---------------------------------------------------------------------------
+// SE type profile providers
+// ---------------------------------------------------------------------------
+
+final seTypeProfileRepositoryProvider =
+    Provider<SeTypeProfileRepository>((ref) {
+  return SeTypeProfileRepository(ref.watch(databaseProvider));
+});
+
+/// All seeded SE type profiles, ordered by prefix ascending.
+final seTypeProfilesProvider = FutureProvider<List<SeTypeProfile>>((ref) {
+  return ref.watch(seTypeProfileRepositoryProvider).getAll();
+});
+
+/// SE type profile for a single [ratingTypePrefix], or null if not seeded.
+final seTypeProfileByPrefixProvider =
+    FutureProvider.autoDispose.family<SeTypeProfile?, String>(
+  (ref, ratingTypePrefix) {
+    return ref
+        .watch(seTypeProfileRepositoryProvider)
+        .getByPrefix(ratingTypePrefix);
+  },
+);

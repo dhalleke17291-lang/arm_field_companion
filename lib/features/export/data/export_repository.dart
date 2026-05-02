@@ -1,12 +1,17 @@
 import 'package:drift/drift.dart' as drift;
+import 'package:flutter/foundation.dart' show debugPrint;
 import '../../../core/database/app_database.dart';
 import '../../../core/plot_analysis_eligibility.dart';
+import '../../ratings/rating_repository.dart';
 
 /// ExportRepository
 /// Builds export rows for a session using your exact Drift field names.
 class ExportRepository {
   final AppDatabase db;
-  ExportRepository(this.db);
+  final RatingRepository? _ratingRepo;
+
+  ExportRepository(this.db, {RatingRepository? ratingRepository})
+      : _ratingRepo = ratingRepository;
 
   /// Exports ONLY current ratings (isCurrent == true).
   /// Includes provenance and effective value when a correction exists.
@@ -14,6 +19,13 @@ class ExportRepository {
   Future<List<Map<String, Object?>>> buildSessionExportRows({
     required int sessionId,
   }) async {
+    // Repair any is_current drift before querying export data so stale or
+    // duplicate flags can't silently produce wrong rows for the CRO.
+    try {
+      await _ratingRepo?.repairCurrentFlagsForExport(sessionId: sessionId);
+    } catch (e) {
+      debugPrint('[ExportRepository] repairCurrentFlagsForExport: $e');
+    }
     final rr = db.ratingRecords;
     final p = db.plots;
     final a = db.assessments;
@@ -134,6 +146,11 @@ class ExportRepository {
   Future<List<Map<String, Object?>>> buildTrialExportRows({
     required int trialId,
   }) async {
+    try {
+      await _ratingRepo?.repairCurrentFlagsForExport(trialId: trialId);
+    } catch (e) {
+      debugPrint('[ExportRepository] repairCurrentFlagsForExport: $e');
+    }
     final rr = db.ratingRecords;
     final p = db.plots;
     final a = db.assessments;

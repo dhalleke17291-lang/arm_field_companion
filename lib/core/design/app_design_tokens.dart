@@ -282,4 +282,19 @@ class AppDesignTokens {
         color: color,
         letterSpacing: letterSpacing,
       );
+
+  /// Subheader for grouped assessment names in the Observations section.
+  /// Small, semi-bold, spaced — visually above indented treatment rows.
+  static const TextStyle assessmentGroupHeaderStyle = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.5,
+    color: secondaryText,
+  );
+
+  /// Compact action label — small button labels on trial cards and list items.
+  static const TextStyle compactActionLabelStyle = TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+  );
 }

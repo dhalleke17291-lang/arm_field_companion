@@ -115,6 +115,7 @@ void main() {
         workspaceType: 'efficacy',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        region: 'eppo_eu',
         isDeleted: false,
       ),
       format: ExportFormat.flatCsv,

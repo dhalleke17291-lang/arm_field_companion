@@ -38,6 +38,7 @@ class MockTrialRepository implements TrialRepository {
       workspaceType: workspaceType,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      region: 'eppo_eu',
       isDeleted: false,
     );
     _trials.add(trial);

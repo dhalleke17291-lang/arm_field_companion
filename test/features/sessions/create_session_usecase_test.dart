@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
+import 'package:arm_field_companion/core/diagnostics/diagnostic_finding.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:arm_field_companion/features/sessions/usecases/create_session_usecase.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
@@ -268,5 +269,37 @@ void main() {
       ));
       expect(promotedId, 42);
     });
+
+    test(
+      'promotion failure: session still created and onPromotionFailed receives DiagnosticFinding',
+      () async {
+        DiagnosticFinding? captured;
+        final uc = CreateSessionUseCase(
+          mockRepo,
+          promoteTrialToActiveIfReady: (_) async {
+            throw Exception('DB locked');
+          },
+          onPromotionFailed: (f) => captured = f,
+        );
+
+        final result = await uc.execute(const CreateSessionInput(
+          trialId: 7,
+          name: 'S',
+          sessionDateLocal: '2026-05-01',
+          assessmentIds: [1],
+        ));
+
+        // Session must be created despite promotion failure.
+        expect(result.success, true);
+        expect(result.session, isNotNull);
+
+        // onPromotionFailed must have been called with a warning finding.
+        expect(captured, isNotNull);
+        expect(captured!.code, 'trial_status_promotion_failed');
+        expect(captured!.severity, DiagnosticSeverity.warning);
+        expect(captured!.trialId, 7);
+        expect(captured!.blocksExport, false);
+      },
+    );
   });
 }

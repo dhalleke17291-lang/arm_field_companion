@@ -147,6 +147,7 @@ Trial _trial({
       workspaceType: 'efficacy',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      region: 'eppo_eu',
       isDeleted: false,
     );
 

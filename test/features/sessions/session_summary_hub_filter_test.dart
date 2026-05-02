@@ -1,0 +1,735 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/core/providers.dart';
+import 'package:arm_field_companion/features/sessions/domain/session_completeness_report.dart';
+import 'package:arm_field_companion/features/sessions/session_summary_screen.dart';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+final _now = DateTime(2026, 4, 29);
+
+Treatment _treatment(int id, String code) => Treatment(
+      id: id,
+      trialId: 1,
+      code: code,
+      name: 'Treatment $code',
+      isDeleted: false,
+    );
+
+Assignment _assignment(int id, int plotId, int treatmentId) => Assignment(
+      id: id,
+      trialId: 1,
+      plotId: plotId,
+      treatmentId: treatmentId,
+      createdAt: _now,
+      updatedAt: _now,
+    );
+
+Trial _trial({int id = 1}) => Trial(
+      id: id,
+      name: 'Hub Filter Trial',
+      status: 'active',
+      workspaceType: 'efficacy',
+      createdAt: _now,
+      updatedAt: _now,
+      region: 'eppo_eu',
+      isDeleted: false,
+    );
+
+Session _session({int id = 1, int trialId = 1}) => Session(
+      id: id,
+      trialId: trialId,
+      name: 'Session 1',
+      startedAt: _now,
+      sessionDateLocal: '2026-04-29',
+      status: 'open',
+      isDeleted: false,
+    );
+
+Plot _plot(int id, {int trialId = 1, int? rep}) => Plot(
+      id: id,
+      trialId: trialId,
+      plotId: 'P$id',
+      isGuardRow: false,
+      isDeleted: false,
+      excludeFromAnalysis: false,
+      rep: rep,
+    );
+
+Plot _guardPlot(int id) => Plot(
+      id: id,
+      trialId: 1,
+      plotId: 'G$id',
+      isGuardRow: true,
+      isDeleted: false,
+      excludeFromAnalysis: false,
+    );
+
+Plot _excludedPlot(int id) => Plot(
+      id: id,
+      trialId: 1,
+      plotId: 'X$id',
+      isGuardRow: false,
+      isDeleted: false,
+      excludeFromAnalysis: true,
+    );
+
+// ---------------------------------------------------------------------------
+// Widget pump helper
+// ---------------------------------------------------------------------------
+
+/// Pumps [SessionSummaryScreen] with provider overrides for the given plots
+/// and ratedPks. All other providers return empty-data / loading (graceful
+/// fallbacks are used throughout the screen).
+Future<void> _pumpScreen(
+  WidgetTester tester, {
+  required Trial trial,
+  required Session session,
+  required List<Plot> plots,
+  required Set<int> ratedPks,
+  List<Treatment> treatments = const [],
+  List<Assignment> assignments = const [],
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        plotsForTrialProvider(trial.id).overrideWith(
+          (ref) => Stream.value(plots),
+        ),
+        sessionAssessmentsProvider(session.id).overrideWith(
+          (ref) => Stream.value(<Assessment>[]),
+        ),
+        sessionRatingsProvider(session.id).overrideWith(
+          (ref) => Stream.value(<RatingRecord>[]),
+        ),
+        ratedPlotPksProvider(session.id).overrideWith(
+          (ref) => Stream.value(ratedPks),
+        ),
+        treatmentsForTrialProvider(trial.id).overrideWith(
+          (ref) => Stream.value(treatments),
+        ),
+        assignmentsForTrialProvider(trial.id).overrideWith(
+          (ref) => Stream.value(assignments),
+        ),
+      ],
+      child: MaterialApp(
+        home: SessionSummaryScreen(trial: trial, session: session),
+      ),
+    ),
+  );
+  // Let async providers resolve and widget rebuild.
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+void main() {
+  final trial = _trial();
+  final session = _session();
+  final plot1 = _plot(1, rep: 1); // will be rated
+  final plot2 = _plot(2, rep: 1); // will be unrated
+
+  group('SessionSummaryScreen hub filter strip', () {
+    testWidgets('default state — filter strip renders with Unrated chip',
+        (tester) async {
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id},
+      );
+
+      // Filter strip should be visible in Plots view (default).
+      expect(find.text('Unrated'), findsOneWidget);
+      expect(find.text('Issues'), findsOneWidget);
+      expect(find.text('Edited'), findsOneWidget);
+      expect(find.text('Flagged'), findsOneWidget);
+
+      // No count label when no filter is active.
+      expect(find.textContaining('Showing'), findsNothing);
+      // No Reset pill when inactive.
+      expect(find.text('Reset'), findsNothing);
+    });
+
+    testWidgets('tapping Unrated shows filtered count', (tester) async {
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id}, // plot1 rated, plot2 unrated
+      );
+
+      await tester.tap(find.text('Unrated'));
+      await tester.pump();
+
+      // Count label appears.
+      expect(find.textContaining('Showing 1 of 2 plots'), findsOneWidget);
+      // Reset pill appears.
+      expect(find.text('Reset'), findsOneWidget);
+    });
+
+    testWidgets('Reset clears filter and hides count label', (tester) async {
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id},
+      );
+
+      // Activate filter.
+      await tester.tap(find.text('Unrated'));
+      await tester.pump();
+      expect(find.textContaining('Showing'), findsOneWidget);
+
+      // Reset.
+      await tester.tap(find.text('Reset'));
+      await tester.pump();
+
+      // Count label gone.
+      expect(find.textContaining('Showing'), findsNothing);
+      // Reset pill gone.
+      expect(find.text('Reset'), findsNothing);
+    });
+
+    testWidgets('all-filtered-out shows empty state message', (tester) async {
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id, plot2.id}, // both rated → Unrated returns zero
+      );
+
+      await tester.tap(find.text('Unrated'));
+      await tester.pump();
+
+      expect(
+        find.text('No plots match these filters.'),
+        findsOneWidget,
+      );
+      // Clear filters button inside empty state.
+      expect(find.text('Clear filters'), findsOneWidget);
+    });
+
+    testWidgets('rep chips appear when plots have reps', (tester) async {
+      final p1 = _plot(1, rep: 1);
+      final p2 = _plot(2, rep: 2);
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [p1, p2],
+        ratedPks: {},
+      );
+
+      expect(find.text('Rep 1'), findsOneWidget);
+      expect(find.text('Rep 2'), findsOneWidget);
+    });
+
+    testWidgets('rep filter limits visible count', (tester) async {
+      final p1 = _plot(1, rep: 1);
+      final p2 = _plot(2, rep: 2);
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [p1, p2],
+        ratedPks: {},
+      );
+
+      await tester.tap(find.text('Rep 1'));
+      await tester.pump();
+
+      expect(find.textContaining('Showing 1 of 2 plots'), findsOneWidget);
+    });
+
+    testWidgets('switching to Treatments view hides filter strip',
+        (tester) async {
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id},
+      );
+
+      // Filter strip visible initially.
+      expect(find.text('Unrated'), findsOneWidget);
+
+      // Switch to Treatments view.
+      await tester.tap(find.text('Treatments'));
+      await tester.pump();
+
+      // Filter strip no longer rendered.
+      expect(find.text('Unrated'), findsNothing);
+    });
+
+    testWidgets(
+        'hub filter denominator matches header data plot count when guard row present',
+        (tester) async {
+      final guard = _guardPlot(99);
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [guard, plot1, plot2],
+        ratedPks: {plot1.id},
+      );
+
+      expect(find.textContaining('· 2 plots'), findsOneWidget);
+
+      await tester.tap(find.text('Unrated'));
+      await tester.pump();
+
+      expect(find.textContaining('Showing 1 of 2 plots'), findsOneWidget);
+    });
+
+    testWidgets(
+        'hub filter denominator matches header when excludeFromAnalysis plot present',
+        (tester) async {
+      final excluded = _excludedPlot(98);
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [excluded, plot1, plot2],
+        ratedPks: {plot1.id},
+      );
+
+      expect(find.textContaining('· 2 plots'), findsOneWidget);
+
+      await tester.tap(find.text('Unrated'));
+      await tester.pump();
+
+      expect(find.textContaining('Showing 1 of 2 plots'), findsOneWidget);
+    });
+
+    // ── Stats footer tests ───────────────────────────────────────────────────
+
+    testWidgets('stats footer shows rated and unrated counts', (tester) async {
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id}, // 1 rated, 1 unrated
+      );
+
+      // Footer must mention both dimensions.
+      expect(find.textContaining('1 rated'), findsOneWidget);
+      expect(find.textContaining('1 unrated'), findsOneWidget);
+    });
+
+    testWidgets('stats footer counts reflect active Unrated filter',
+        (tester) async {
+      // Three plots: plot1 rated, plot2 unrated, plot3 unrated.
+      final plot3 = _plot(3, rep: 1);
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2, plot3],
+        ratedPks: {plot1.id},
+      );
+
+      // Before filter: footer shows full set (1 rated, 2 unrated).
+      expect(find.textContaining('1 rated'), findsOneWidget);
+      expect(find.textContaining('2 unrated'), findsOneWidget);
+
+      // Activate Unrated filter → only 2 plots visible.
+      await tester.tap(find.text('Unrated'));
+      await tester.pump();
+
+      // Footer now reflects the filtered set (0 rated, 2 unrated).
+      expect(find.textContaining('0 rated'), findsOneWidget);
+      expect(find.textContaining('2 unrated'), findsOneWidget);
+    });
+
+    testWidgets('stats footer is absent in Treatments view', (tester) async {
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id},
+      );
+
+      // Footer visible initially (Plots view) — use count-prefixed text to
+      // avoid false match on the "Unrated" filter pill.
+      expect(find.textContaining('1 rated'), findsOneWidget);
+
+      // Switch to Treatments view.
+      await tester.tap(find.text('Treatments'));
+      await tester.pump();
+
+      // Footer no longer rendered.
+      expect(find.textContaining('1 rated'), findsNothing);
+    });
+  });
+
+  // ── Treatment highlight strip tests ──────────────────────────────────────
+
+  group('SessionSummaryScreen treatment highlight strip', () {
+    testWidgets('strip renders with treatment chips when treatments available',
+        (tester) async {
+      final t1 = _treatment(10, 'T1');
+      final t2 = _treatment(11, 'CHK');
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {},
+        treatments: [t1, t2],
+        assignments: [
+          _assignment(1, plot1.id, t1.id),
+          _assignment(2, plot2.id, t2.id),
+        ],
+      );
+
+      expect(find.text('Highlight:'), findsOneWidget);
+      expect(find.text('T1'), findsOneWidget);
+      expect(find.text('CHK'), findsOneWidget);
+    });
+
+    testWidgets('strip is absent when trial has no treatments', (tester) async {
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {},
+        treatments: [],
+      );
+
+      expect(find.text('Highlight:'), findsNothing);
+    });
+
+    testWidgets('selecting a treatment chip shows clear button',
+        (tester) async {
+      final t1 = _treatment(10, 'T1');
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1],
+        ratedPks: {},
+        treatments: [t1],
+        assignments: [_assignment(1, plot1.id, t1.id)],
+      );
+
+      // No clear button before selection.
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsNothing);
+
+      await tester.tap(find.text('T1'));
+      await tester.pump();
+
+      // Clear button appears after selection.
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsOneWidget);
+    });
+
+    testWidgets('tapping same chip again clears highlight', (tester) async {
+      final t1 = _treatment(10, 'T1');
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1],
+        ratedPks: {},
+        treatments: [t1],
+        assignments: [_assignment(1, plot1.id, t1.id)],
+      );
+
+      await tester.tap(find.text('T1'));
+      await tester.pump();
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsOneWidget);
+
+      // Tap same chip again to deselect.
+      await tester.tap(find.text('T1'));
+      await tester.pump();
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsNothing);
+    });
+
+    testWidgets('hub filters still work independently with highlight active',
+        (tester) async {
+      final t1 = _treatment(10, 'T1');
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id},
+        treatments: [t1],
+        assignments: [
+          _assignment(1, plot1.id, t1.id),
+          _assignment(2, plot2.id, t1.id),
+        ],
+      );
+
+      // Activate treatment highlight.
+      await tester.tap(find.text('T1'));
+      await tester.pump();
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsOneWidget);
+
+      // Activate Unrated filter — should still work.
+      await tester.tap(find.text('Unrated'));
+      await tester.pump();
+      expect(find.textContaining('Showing 1 of 2 plots'), findsOneWidget);
+
+      // Highlight clear button still present.
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsOneWidget);
+    });
+
+    testWidgets('treatment highlight strip is hidden in Treatments view',
+        (tester) async {
+      final t1 = _treatment(10, 'T1');
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1],
+        ratedPks: {},
+        treatments: [t1],
+        assignments: [_assignment(1, plot1.id, t1.id)],
+      );
+
+      expect(find.text('Highlight:'), findsOneWidget);
+
+      await tester.tap(find.text('Treatments'));
+      await tester.pump();
+
+      expect(find.text('Highlight:'), findsNothing);
+    });
+
+    testWidgets('tapping clear icon button removes strip highlight',
+        (tester) async {
+      final t1 = _treatment(10, 'T1');
+
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1],
+        ratedPks: {},
+        treatments: [t1],
+        assignments: [_assignment(1, plot1.id, t1.id)],
+      );
+
+      // Select treatment chip.
+      await tester.tap(find.text('T1'));
+      await tester.pump();
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsOneWidget);
+
+      // Tap the icon clear button (not the chip).
+      await tester.tap(find.bySemanticsLabel('Clear treatment highlight'));
+      await tester.pump();
+
+      // Clear button must be gone — external highlight is null, which also
+      // clears any stale internal grid long-press highlight via didUpdateWidget.
+      expect(
+          find.bySemanticsLabel('Clear treatment highlight'), findsNothing);
+    });
+  });
+
+  // ── Completeness sheet tests ─────────────────────────────────────────────
+
+  group('SessionSummaryScreen completeness sheet', () {
+    setUpAll(() async {
+      SharedPreferences.setMockInitialValues({});
+    });
+
+    Future<void> pumpWithCompleteness(
+      WidgetTester tester, {
+      required Trial trial,
+      required Session session,
+      required List<Plot> plots,
+      required Set<int> ratedPks,
+      required SessionCompletenessReport report,
+    }) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            plotsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value(plots)),
+            sessionAssessmentsProvider(session.id)
+                .overrideWith((ref) => Stream.value(<Assessment>[])),
+            sessionRatingsProvider(session.id)
+                .overrideWith((ref) => Stream.value(<RatingRecord>[])),
+            ratedPlotPksProvider(session.id)
+                .overrideWith((ref) => Stream.value(ratedPks)),
+            treatmentsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value(<Treatment>[])),
+            assignmentsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value(<Assignment>[])),
+            flaggedPlotIdsForSessionProvider(session.id)
+                .overrideWith((ref) => Stream.value(<int>{})),
+            plotPksWithCorrectionsForSessionProvider(session.id)
+                .overrideWith((ref) => Stream.value(<int>{})),
+            sessionCompletenessReportProvider(session.id)
+                .overrideWith((ref) => Future.value(report)),
+          ],
+          child: MaterialApp(
+            home: SessionSummaryScreen(trial: trial, session: session),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+
+    testWidgets('tapping completeness chip opens sheet with title',
+        (tester) async {
+      addTearDown(() async => tester.binding.setSurfaceSize(null));
+      const report = SessionCompletenessReport(
+        expectedPlots: 2,
+        completedPlots: 1,
+        incompletePlots: 1,
+        issues: [],
+        canClose: false,
+      );
+      await pumpWithCompleteness(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id},
+        report: report,
+      );
+
+      expect(find.textContaining('1/2 complete'), findsOneWidget);
+
+      await tester.tap(find.textContaining('1/2 complete'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Sheet header title should be visible.
+      expect(find.text('Session Completeness'), findsWidgets);
+    });
+
+    testWidgets('complete session shows ready-to-close in sheet',
+        (tester) async {
+      addTearDown(() async => tester.binding.setSurfaceSize(null));
+      const report = SessionCompletenessReport(
+        expectedPlots: 2,
+        completedPlots: 2,
+        incompletePlots: 0,
+        issues: [],
+        canClose: true,
+      );
+      await pumpWithCompleteness(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {plot1.id, plot2.id},
+        report: report,
+      );
+
+      // Tap the completeness chip — '2/2 complete' shows when canClose.
+      await tester.tap(find.textContaining('2/2 complete'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.textContaining('Complete — ready to close'), findsOneWidget);
+    });
+  });
+
+  group('SessionSummaryScreen export menu', () {
+    testWidgets('Field execution report item appears in overflow menu',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      await _pumpScreen(
+        tester,
+        trial: trial,
+        session: session,
+        plots: [plot1, plot2],
+        ratedPks: {},
+      );
+
+      // Open the overflow (more_vert) menu.
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Field execution report (PDF)'), findsOneWidget);
+    });
+
+    testWidgets('tapping field execution report item shows trust dialog',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      const report = SessionCompletenessReport(
+        expectedPlots: 2,
+        completedPlots: 1,
+        incompletePlots: 1,
+        issues: [],
+        canClose: false,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            plotsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value([plot1, plot2])),
+            sessionAssessmentsProvider(session.id)
+                .overrideWith((ref) => Stream.value(<Assessment>[])),
+            sessionRatingsProvider(session.id)
+                .overrideWith((ref) => Stream.value(<RatingRecord>[])),
+            ratedPlotPksProvider(session.id)
+                .overrideWith((ref) => Stream.value(<int>{})),
+            treatmentsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value(<Treatment>[])),
+            assignmentsForTrialProvider(trial.id)
+                .overrideWith((ref) => Stream.value(<Assignment>[])),
+            plotPksWithCorrectionsForSessionProvider(session.id)
+                .overrideWith((ref) => Stream.value(<int>{})),
+            sessionCompletenessReportProvider(session.id)
+                .overrideWith((ref) => Future.value(report)),
+          ],
+          child: MaterialApp(
+            home: SessionSummaryScreen(trial: trial, session: session),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Open the overflow menu and tap the FER item.
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(find.text('Field execution report (PDF)'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Trust dialog must appear before any report generation.
+      expect(find.text('Before you export'), findsOneWidget);
+    });
+  });
+}

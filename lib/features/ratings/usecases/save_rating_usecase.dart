@@ -84,6 +84,7 @@ class SaveRatingUseCase {
         capturedLatitude: input.capturedLatitude,
         capturedLongitude: input.capturedLongitude,
         amendmentReason: input.amendmentReason,
+        trialAssessmentId: input.trialAssessmentId,
       );
 
       return SaveRatingResult.success(rating);

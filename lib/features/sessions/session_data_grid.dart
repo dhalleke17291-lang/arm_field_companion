@@ -29,6 +29,7 @@ class SessionDataGrid extends ConsumerStatefulWidget {
     this.checkTreatmentIds,
     this.assessmentCoverage,
     this.treatmentColors,
+    this.highlightedTreatmentId,
   });
 
   final List<Plot> plots;
@@ -55,6 +56,9 @@ class SessionDataGrid extends ConsumerStatefulWidget {
 
   /// Treatment ID → palette color from plot layout map. Used for tinted highlighting.
   final Map<int, Color>? treatmentColors;
+
+  /// When set by the parent, overrides the internal long-press highlight.
+  final int? highlightedTreatmentId;
 
   /// Per-assessment completion fraction (0.0–1.0). Shown as thin bar under header.
   final Map<int, double>? assessmentCoverage;
@@ -93,6 +97,17 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
     _hScrollHeader.addListener(_onHScrollHeader);
     _vScrollData.addListener(_onVScrollData);
     _vScrollPlots.addListener(_onVScrollPlots);
+  }
+
+  @override
+  void didUpdateWidget(SessionDataGrid old) {
+    super.didUpdateWidget(old);
+    // Parent cleared an active external highlight — drop any stale internal
+    // long-press highlight so it cannot reappear via the ?? fallback.
+    if (old.highlightedTreatmentId != null &&
+        widget.highlightedTreatmentId == null) {
+      _highlightedTreatmentId = null;
+    }
   }
 
   void _onHScrollData() {
@@ -218,14 +233,16 @@ class _SessionDataGridState extends ConsumerState<SessionDataGrid> {
       }
     }
 
-    // Set of plot PKs that match the highlighted treatment
+    // External highlight takes precedence over internal long-press state.
+    final effectiveHighlight =
+        widget.highlightedTreatmentId ?? _highlightedTreatmentId;
     final highlightedPlotPks = <int>{};
     Color highlightColor = AppDesignTokens.primary;
-    if (_highlightedTreatmentId != null) {
-      highlightColor = widget.treatmentColors?[_highlightedTreatmentId!] ??
+    if (effectiveHighlight != null) {
+      highlightColor = widget.treatmentColors?[effectiveHighlight] ??
           AppDesignTokens.primary;
       for (final e in plotTreatmentId.entries) {
-        if (e.value == _highlightedTreatmentId) {
+        if (e.value == effectiveHighlight) {
           highlightedPlotPks.add(e.key);
         }
       }

@@ -25,6 +25,9 @@ import '../../core/session_resume_store.dart';
 import '../../core/session_walk_order_store.dart';
 import '../../core/workspace/workspace_config.dart';
 import '../../domain/ratings/assessment_scale_resolver.dart';
+import '../../domain/signals/signal_providers.dart';
+import '../../domain/signals/signal_writers/scale_violation_writer.dart';
+import '../../domain/signals/signal_writers/timing_window_violation_writer.dart';
 import '../photos/photo_filename_helper.dart';
 import '../photos/photo_view_screen.dart';
 import '../photos/usecases/save_photo_usecase.dart';
@@ -592,6 +595,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                             _currentAssessment, taByLegacy, taById),
                         plotLabel:
                             getDisplayPlotLabel(widget.plot, widget.allPlots),
+                        ratingId: ex.id,
                       );
                     }
                   }
@@ -4069,10 +4073,37 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
 
   // ===== Actions =====
 
-  /// Saves the current rating. When [navigateAfterSave] is true (default), advances to next
-  /// assessment or next plot or shows the end-of-plot-list dialog (navigation only, not session completeness);
-  /// when false, stays on current plot/assessment.
-  /// Returns true when a row was written successfully (or save was appropriate and completed).
+  /// ARM rating-type prefix for signals (e.g. CONTRO); standalone trials → LOCAL.
+  String _ratingTypePrefixForScaleSignal() {
+    final taList =
+        ref.read(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
+            <TrialAssessment>[];
+    final aamData =
+        ref.read(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
+                .valueOrNull ??
+            <int, ArmAssessmentMetadataData>{};
+    for (final ta in taList) {
+      if (ta.legacyAssessmentId == _currentAssessment.id) {
+        final rt = aamData[ta.id]?.ratingType?.trim();
+        if (rt != null && rt.isNotEmpty) return rt;
+        break;
+      }
+    }
+    return 'LOCAL';
+  }
+
+  /// Returns the TrialAssessment.id for the current assessment, or null when
+  /// this is a standalone (non-ARM) trial.
+  int? _taIdForCurrentAssessment() {
+    final taList =
+        ref.read(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
+            <TrialAssessment>[];
+    for (final ta in taList) {
+      if (ta.legacyAssessmentId == _currentAssessment.id) return ta.id;
+    }
+    return null;
+  }
+
   /// Returns the 1-based sub-unit ID to tag this save with, or null when the
   /// current assessment is whole-plot (numSubsamples ≤ 1).
   int? _activeSubUnitId() {
@@ -4233,6 +4264,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     return choice;
   }
 
+  /// Saves the current rating. When [navigateAfterSave] is true (default), advances to next
+  /// assessment or next plot or shows the end-of-plot-list dialog (navigation only, not session completeness);
+  /// when false, stays on current plot/assessment.
+  /// Returns true when a row was written successfully (or save was appropriate and completed).
   Future<bool> _saveRating(BuildContext context,
       {bool navigateAfterSave = true,
       bool skipCarryForwardConfirm = false}) async {
@@ -4314,6 +4349,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
       }
     }
 
+    final userId = await ref.read(currentUserIdProvider.future);
+
     double? numericValue;
     String? textValue;
     if (_selectedStatus == 'RECORDED') {
@@ -4344,13 +4381,28 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
           return false;
         }
         if (numericValue != null) {
-          final original = numericValue;
-          numericValue = numericValue.clamp(_effectiveMin, _effectiveMax);
-          if (numericValue != original) {
+          final enteredBeforeClamp = numericValue;
+          final writer =
+              ScaleViolationWriter(ref.read(signalRepositoryProvider));
+          await writer.checkAndRaise(
+            trialId: widget.trial.id,
+            sessionId: widget.session.id,
+            plotId: widget.plot.id,
+            enteredValue: enteredBeforeClamp,
+            scaleMin: _effectiveMin,
+            scaleMax: _effectiveMax,
+            seType: _ratingTypePrefixForScaleSignal(),
+            consequenceText:
+                'Numeric rating outside declared scale; value clamped before save.',
+            raisedBy: userId,
+          );
+          numericValue =
+              enteredBeforeClamp.clamp(_effectiveMin, _effectiveMax);
+          if (numericValue != enteredBeforeClamp) {
             messenger?.showSnackBar(
               SnackBar(
                 content: Text(
-                  'Value adjusted from $original to $numericValue '
+                  'Value adjusted from $enteredBeforeClamp to $numericValue '
                   '(scale: $_effectiveMin–$_effectiveMax)',
                 ),
                 backgroundColor: AppDesignTokens.warningFg,
@@ -4414,7 +4466,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
       }
     }
 
-    final userId = await ref.read(currentUserIdProvider.future);
     final now = DateTime.now();
     final ratingTime =
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
@@ -4446,6 +4497,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
           maxValue: scaleBounds.max,
           unit: _currentAssessment.unit,
         ),
+        trialAssessmentId: _taIdForCurrentAssessment(),
       ),
     );
 
@@ -4459,6 +4511,25 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
       ref.invalidate(ratedPlotPksProvider(widget.session.id));
       // Assessment consistency check (non-blocking, SnackBar only).
       _runAssessmentConsistencyCheck();
+      // _taIdForCurrentAssessment() is null when the provider is still loading;
+      // fall back to the rating row in case SaveRatingUseCase starts writing it.
+      final taId = _taIdForCurrentAssessment() ?? result.rating!.trialAssessmentId;
+      // openSignalsForSessionProvider is invalidated inside .then() so FER /
+      // export never reads the signal list before the timing signal has landed.
+      unawaited(
+        TimingWindowViolationWriter(
+          ref.read(databaseProvider),
+          ref.read(signalRepositoryProvider),
+        ).checkAndRaise(
+          ratingId: result.rating!.id,
+          trialAssessmentId: taId,
+        ).then<void>((_) {
+          if (mounted) ref.invalidate(openSignalsForSessionProvider(widget.session.id));
+        }).catchError((Object e) {
+          debugPrint('[TimingWindowViolationWriter] save: $e');
+          if (mounted) ref.invalidate(openSignalsForSessionProvider(widget.session.id));
+        }),
+      );
       if (numericValue != null) {
         ref.read(lastValueMemoryProvider.notifier).set(
               widget.session.id,

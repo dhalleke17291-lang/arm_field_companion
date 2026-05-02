@@ -12,6 +12,7 @@ import '../../domain/ratings/save_rating_input.dart';
 import '../ratings/rating_lineage_sheet.dart';
 import '../ratings/rating_scale_map.dart';
 import '../ratings/usecases/amend_plot_rating_usecase.dart';
+import '../../domain/signals/signal_providers.dart';
 import 'plot_detail_form_controller.dart';
 import 'plot_notes_dialog.dart';
 import '../notes/field_note_editor_sheet.dart';
@@ -1044,6 +1045,7 @@ class PlotDetailScreen extends ConsumerWidget {
                             sessionId: rating.sessionId,
                             assessmentName: lineageName,
                             plotLabel: getDisplayPlotLabel(plotToShow, plots),
+                            ratingId: rating.id,
                           );
                         },
                       ),
@@ -1090,6 +1092,19 @@ Future<void> _showEditRatingSheet(
   final trialAssessments =
       ref.read(trialAssessmentsForTrialProvider(trial.id)).valueOrNull ??
           <TrialAssessment>[];
+  final aamData =
+      ref.read(armAssessmentMetadataMapForTrialProvider(trial.id)).valueOrNull ??
+          <int, ArmAssessmentMetadataData>{};
+  String seType = 'LOCAL';
+  int? trialAssessmentId;
+  for (final ta in trialAssessments) {
+    if (ta.legacyAssessmentId == rating.assessmentId) {
+      trialAssessmentId = ta.id;
+      final rt = aamData[ta.id]?.ratingType?.trim();
+      if (rt != null && rt.isNotEmpty) seType = rt;
+      break;
+    }
+  }
   final definitions = ref.read(assessmentDefinitionsProvider).valueOrNull ??
       <AssessmentDefinition>[];
   final ratingScaleMap = buildRatingScaleMap(
@@ -1195,6 +1210,8 @@ Future<void> _showEditRatingSheet(
                     subUnitId: rating.subUnitId,
                     existingNumericValue: rating.numericValue,
                     existingTextValue: rating.textValue,
+                    seType: seType,
+                    trialAssessmentId: trialAssessmentId,
                   ));
 
                   if (!result.isSuccess) {
@@ -1213,6 +1230,8 @@ Future<void> _showEditRatingSheet(
                   if (ctx.mounted) {
                     ref.invalidate(plotRatingHistoryProvider(
                         PlotRatingParams(trialId: trial.id, plotPk: plot.id)));
+                    ref.invalidate(
+                        openSignalsForSessionProvider(rating.sessionId));
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(ctx).showSnackBar(
                         const SnackBar(content: Text('Rating updated')));

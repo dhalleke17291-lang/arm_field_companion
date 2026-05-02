@@ -180,5 +180,25 @@ void main() {
       final b = _item(AttentionType.plotsPartiallyRated, AttentionSeverity.medium);
       expect(portfolioAdditionalAttentionCount([open, a, b]), 1);
     });
+
+    test('info items are excluded: mix of warning and info counts only warnings', () {
+      final warning = _item(AttentionType.seedingMissing, AttentionSeverity.medium);
+      final warning2 = _item(AttentionType.plotsPartiallyRated, AttentionSeverity.high);
+      final info = _item(AttentionType.dataCollectionComplete, AttentionSeverity.info);
+      // 1 warning + info: only 1 actionable, n=1 → 0 additional
+      expect(portfolioAdditionalAttentionCount([warning, info]), 0);
+      // 2 warnings + info: n=2 → 1 additional
+      expect(portfolioAdditionalAttentionCount([warning, warning2, info]), 1);
+    });
+
+    test('only info items: count is 0', () {
+      expect(
+        portfolioAdditionalAttentionCount([
+          _item(AttentionType.dataCollectionComplete, AttentionSeverity.info),
+          _item(AttentionType.statisticalAnalysisPending, AttentionSeverity.info),
+        ]),
+        0,
+      );
+    });
   });
 }

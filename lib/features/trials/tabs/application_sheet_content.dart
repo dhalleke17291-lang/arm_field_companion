@@ -987,7 +987,7 @@ class _ApplicationSheetContentState
                 return Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
-                    'Treatment EPPO: $code',
+                    'Treatment code: $code',
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1020,7 +1020,7 @@ class _ApplicationSheetContentState
                       Expanded(
                         child: Text(
                           'Choose a treatment first. Under Treatments → Add component, '
-                          'enter product name, rate, and optional EPPO (text field '
+                          'enter product name, rate, and optional product code (text field '
                           'directly under the name — not a separate picker). This '
                           'screen records when you applied and as-applied rates only.',
                           style: TextStyle(
@@ -1092,7 +1092,7 @@ class _ApplicationSheetContentState
               child: Text(
                 'Product names and protocol rates come from the Treatments tab. '
                 'Adjust rates here only for as-applied values (planned vs actual is tracked). '
-                'Per-product EPPO codes are shown below when set.',
+                'Per-product codes are shown below when set.',
                 style: TextStyle(
                   fontSize: 12,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1180,7 +1180,7 @@ class _ApplicationSheetContentState
                 if (componentEppo != null && componentEppo.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'EPPO: $componentEppo',
+                    'Code: $componentEppo',
                     style: TextStyle(
                       fontSize: 12,
                       color: Theme.of(context).colorScheme.onSurfaceVariant,

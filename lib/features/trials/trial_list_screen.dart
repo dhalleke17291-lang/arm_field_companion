@@ -21,11 +21,10 @@ import 'trial_detail_screen.dart';
 import 'trials_portfolio_screen.dart';
 import 'widgets/trial_card.dart';
 import '../sessions/usecases/start_or_continue_rating_usecase.dart';
-import '../sessions/usecases/create_session_usecase.dart';
+import '../sessions/create_session_screen.dart';
 import '../ratings/rating_screen.dart';
 import '../ratings/rating_scale_map.dart';
 import '../about/about_screen.dart';
-// Spacing/padding refinements use AppDesignTokens. To reverse: revert trial_list_screen.dart, trial_detail_screen.dart, session_detail_screen.dart.
 
 /// Workspace filter for trial list. Client-side only; no repository changes.
 enum TrialListFilter {
@@ -135,14 +134,9 @@ Future<void> _quickRateFromList(
   WidgetRef ref,
   Trial trial,
 ) async {
-  final dateStr =
-      '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}';
-
-  List<int> assessmentIds;
+  // Pre-flight: prevent opening an empty assessment list in CreateSessionScreen.
   final legacy = await ref.read(assessmentsForTrialProvider(trial.id).future);
-  if (legacy.isNotEmpty) {
-    assessmentIds = legacy.map((a) => a.id).toList();
-  } else {
+  if (legacy.isEmpty) {
     final trialPairs = await ref
         .read(trialAssessmentsWithDefinitionsForTrialProvider(trial.id).future);
     if (trialPairs.isEmpty) {
@@ -156,62 +150,15 @@ Future<void> _quickRateFromList(
       );
       return;
     }
-    final trialRepo = ref.read(trialAssessmentRepositoryProvider);
-    assessmentIds =
-        await trialRepo.getOrCreateLegacyAssessmentIdsForTrialAssessments(
-      trial.id,
-      trialPairs.map((p) => p.$1.id).toList(),
-    );
-    if (assessmentIds.isEmpty) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not resolve assessments for this trial.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
   }
-
-  final currentUserId = await ref.read(currentUserIdProvider.future);
-  final currentUser = currentUserId != null
-      ? await ref.read(userRepositoryProvider).getUserById(currentUserId)
-      : null;
-  if (currentUserId == null || currentUser == null) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please set up a profile before starting a session'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-    return;
-  }
-
-  final createUseCase = ref.read(createSessionUseCaseProvider);
-  final createResult = await createUseCase.execute(CreateSessionInput(
-    trialId: trial.id,
-    name: '$dateStr Quick',
-    sessionDateLocal: dateStr,
-    assessmentIds: assessmentIds,
-    raterName: currentUser.displayName,
-    createdByUserId: currentUserId,
-  ));
-
   if (!context.mounted) return;
-  if (!createResult.success || createResult.session == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(createResult.errorMessage ?? 'Could not create session.'),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
-
-  final session = createResult.session!;
+  final session = await Navigator.push<Session?>(
+    context,
+    MaterialPageRoute<Session?>(
+      builder: (_) => CreateSessionScreen(trial: trial),
+    ),
+  );
+  if (!context.mounted || session == null) return;
   await _navigateToRatingForSession(context, ref, trial, session);
 }
 
@@ -954,6 +901,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                     ),
                   ),
                   onQuickRate: () => _quickRateFromList(context, ref, t),
+                  onResume: (session) =>
+                      _navigateToRatingForSession(context, ref, t, session),
                 ),
               );
             },

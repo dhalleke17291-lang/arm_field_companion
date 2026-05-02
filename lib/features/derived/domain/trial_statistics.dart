@@ -61,6 +61,11 @@ const int _minRepsForCv = 4;
 const double _adequateMax = 20.0;
 const double _marginalMax = 40.0;
 
+// Delta color suppression: CV at or above this threshold suppresses green/red
+// coloring on treatment-vs-check comparisons. CV exactly at threshold is on
+// the wrong side of the boundary — suppress. Unknown CV also suppresses.
+const double kHighCvDeltaColorSuppressionThreshold = 50.0;
+
 enum PowerVerdict { adequate, marginal, underpowered }
 
 class PowerInterpretation {

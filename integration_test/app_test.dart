@@ -213,55 +213,5 @@ void main() {
       );
     });
 
-    // Error path covered by widget test rating_entry_widget_test.dart (Start Rating failure).
-    testWidgets('Start Rating error path: no plots → error dialog',
-        (tester) async {
-      final trialId = await db.into(db.trials).insert(
-            TrialsCompanion.insert(
-              name: 'No Plots Trial',
-              status: const drift.Value('draft'),
-            ),
-          );
-      final assessmentId = await db.into(db.assessments).insert(
-            AssessmentsCompanion.insert(
-              trialId: trialId,
-              name: 'Yield',
-            ),
-          );
-      final sessionId = await db.into(db.sessions).insert(
-            SessionsCompanion.insert(
-              trialId: trialId,
-              name: 'Empty Session',
-              sessionDateLocal: '2026-03-11',
-              startedAt: drift.Value(DateTime.now()),
-            ),
-          );
-      await db.into(db.sessionAssessments).insert(
-            SessionAssessmentsCompanion.insert(
-              sessionId: sessionId,
-              assessmentId: assessmentId,
-            ),
-          );
-
-      await pumpApp(tester);
-      await waitForTrialList(tester);
-
-      await tester.tap(find.text('No Plots Trial'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-      await tester.tap(find.text('Sessions').first);
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-      await tester.tap(find.text('Empty Session'));
-      await tester.pumpAndSettle(const Duration(seconds: 3));
-
-      // Switch to Rate tab via key (key present in UI for testability).
-      await tester.tap(find.byKey(const Key('session_detail_rate_tab')));
-      await tester.pumpAndSettle(const Duration(seconds: 1));
-      await tester.tap(find.text('Start Rating'));
-      await tester.pump(const Duration(seconds: 2));
-
-      expect(find.text('Cannot Start Rating'), findsOneWidget);
-    },
-        skip:
-            true); // Session detail Rate tab not found on device; widget test covers error dialog
   });
 }

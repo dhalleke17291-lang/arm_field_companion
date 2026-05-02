@@ -13,6 +13,7 @@ void main() {
       workspaceType: 'efficacy',
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
+      region: 'eppo_eu',
       isDeleted: false,
     );
     const preview = ShellLinkPreview(
@@ -56,6 +57,7 @@ void main() {
       workspaceType: 'efficacy',
       createdAt: DateTime.utc(2026),
       updatedAt: DateTime.utc(2026),
+      region: 'eppo_eu',
       isDeleted: false,
     );
     const preview = ShellLinkPreview(

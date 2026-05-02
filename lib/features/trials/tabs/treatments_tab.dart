@@ -494,7 +494,7 @@ class TreatmentsTab extends ConsumerWidget {
                   TextField(
                     controller: eppoController,
                     decoration:
-                        FormStyles.inputDecoration(labelText: 'EPPO code'),
+                        FormStyles.inputDecoration(labelText: 'Product code'),
                   ),
                 ],
               ),
@@ -1061,7 +1061,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet>
               ),
               const SizedBox(height: 6),
               Text(
-                'EPPO / product identifier (optional) — enter a standard code for '
+                'Product identifier (optional) — enter a standard code for '
                 'research and regulatory records.',
                 style: TextStyle(
                   fontSize: 12,
@@ -1074,7 +1074,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet>
                 controller: _eppoController,
                 textCapitalization: TextCapitalization.characters,
                 decoration: FormStyles.inputDecoration(
-                  labelText: 'EPPO code',
+                  labelText: 'Product code',
                   hintText: 'e.g. 1BAS5B4048',
                 ),
               ),
@@ -1473,7 +1473,7 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
           ),
           const SizedBox(height: 6),
           Text(
-            'EPPO (optional) — standard product code for research records.',
+            'Product code (optional) — standard code for research records.',
             style: TextStyle(
               fontSize: 12,
               height: 1.3,
@@ -1485,7 +1485,7 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
             controller: eppoController,
             textCapitalization: TextCapitalization.characters,
             decoration: FormStyles.inputDecoration(
-              labelText: 'EPPO code',
+              labelText: 'Product code',
               hintText: 'e.g. 1BAS5B4048',
             ),
           ),

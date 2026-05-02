@@ -19,6 +19,16 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// Kotlin 2.x dropped language version 1.6; force all plugin subprojects to 1.9.
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions {
+            languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
+            apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9)
+        }
+    }
+}
+
 // Force single version of androidx.activity across ALL subprojects (plugins included)
 // to prevent duplicate R class during DEX merge.
 subprojects {

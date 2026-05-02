@@ -76,6 +76,7 @@ Trial _trial({int id = 1, String name = 'Test Trial'}) => Trial(
       workspaceType: 'efficacy',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      region: 'eppo_eu',
       isDeleted: false,
     );
 

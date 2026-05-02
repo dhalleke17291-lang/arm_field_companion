@@ -1,3 +1,4 @@
+import 'package:arm_field_companion/core/assessment_result_direction.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
@@ -149,7 +150,76 @@ void main() {
       }
     });
 
-    test('trial health appears with 3+ sessions and check treatment',
+    test(
+        'trial health title shows assessment name when assessmentNames provided',
+        () async {
+      final seed = await seedTrial(
+        treatmentCount: 4,
+        repsPerTreatment: 4,
+        sessionCount: 3,
+        includeCheck: true,
+      );
+
+      final trialAssessments =
+          await db.select(db.assessments).get();
+      final assessmentId = trialAssessments
+          .where((a) => a.trialId == seed.trialId)
+          .first
+          .id;
+
+      final insights = await service.computeInsights(
+        trialId: seed.trialId,
+        treatments: seed.treatments,
+        assessmentNames: {assessmentId: 'CONTRO'},
+      );
+
+      final healthInsights =
+          insights.where((i) => i.type == InsightType.trialHealth).toList();
+      expect(healthInsights, isNotEmpty);
+
+      final health = healthInsights.first;
+      expect(health.title, 'CONTRO — developing');
+      expect(health.detail, contains('leading:'));
+      expect(health.detail, contains('CV'));
+      expect(health.basis.minimumDataMet, isTrue);
+      expect(health.basis.sessionCount, 3);
+      expect(health.basis.repCount, 4);
+      expect(health.basis.method, contains('check mean'));
+    });
+
+    test('trial health closed path: title unchanged, Best treatment framing',
+        () async {
+      final seed = await seedTrial(
+        treatmentCount: 4,
+        repsPerTreatment: 4,
+        sessionCount: 3,
+        includeCheck: true,
+      );
+
+      final trialAssessments = await db.select(db.assessments).get();
+      final assessmentId = trialAssessments
+          .where((a) => a.trialId == seed.trialId)
+          .first
+          .id;
+
+      final insights = await service.computeInsights(
+        trialId: seed.trialId,
+        treatments: seed.treatments,
+        assessmentNames: {assessmentId: 'CONTRO'},
+        trialIsClosed: true,
+      );
+
+      final healthInsights =
+          insights.where((i) => i.type == InsightType.trialHealth).toList();
+      expect(healthInsights, isNotEmpty);
+
+      final health = healthInsights.first;
+      expect(health.title, 'CONTRO');
+      expect(health.detail, contains('Best treatment:'));
+    });
+
+    test(
+        'trial health title falls back to "Trial health" when assessmentNames absent',
         () async {
       final seed = await seedTrial(
         treatmentCount: 4,
@@ -161,20 +231,13 @@ void main() {
       final insights = await service.computeInsights(
         trialId: seed.trialId,
         treatments: seed.treatments,
+        // assessmentNames not provided → default empty map
       );
 
       final healthInsights =
           insights.where((i) => i.type == InsightType.trialHealth).toList();
       expect(healthInsights, isNotEmpty);
-
-      final health = healthInsights.first;
-      expect(health.title, 'Trial health');
-      expect(health.detail, contains('Effect size'));
-      expect(health.detail, contains('CV'));
-      expect(health.basis.minimumDataMet, isTrue);
-      expect(health.basis.sessionCount, 3);
-      expect(health.basis.repCount, 4);
-      expect(health.basis.method, contains('check mean'));
+      expect(healthInsights.first.title, 'Trial health — developing');
     });
 
     test('trial health absent without check treatment', () async {
@@ -193,6 +256,39 @@ void main() {
       final healthInsights =
           insights.where((i) => i.type == InsightType.trialHealth);
       expect(healthInsights, isEmpty);
+    });
+
+    test('trial health lowerIsBetter: lowest mean wins, not highest', () async {
+      // Seeder formula for latest session (s=2): (plot.id * 7 + aid * 3 + 20) % 100
+      // Plots 1-16 cycle CHK/'2'/'3'/'4' per rep.
+      // Non-check means: '2'=54.0 (highest), '3'=36.0 (lowest), '4'=43.0.
+      // lowerIsBetter must select '3', not '2'.
+      final seed = await seedTrial(
+        treatmentCount: 4,
+        repsPerTreatment: 4,
+        sessionCount: 3,
+        includeCheck: true,
+      );
+
+      final trialAssessments = await db.select(db.assessments).get();
+      final assessmentId = trialAssessments
+          .where((a) => a.trialId == seed.trialId)
+          .first
+          .id;
+
+      final insights = await service.computeInsights(
+        trialId: seed.trialId,
+        treatments: seed.treatments,
+        assessmentDirections: {assessmentId: ResultDirection.lowerIsBetter},
+      );
+
+      final healthInsights =
+          insights.where((i) => i.type == InsightType.trialHealth).toList();
+      expect(healthInsights, isNotEmpty);
+
+      final health = healthInsights.first;
+      expect(health.detail, contains('3 leading:'));
+      expect(health.detail, isNot(contains('2 leading:')));
     });
 
     test('treatment trends appear with 2+ sessions', () async {

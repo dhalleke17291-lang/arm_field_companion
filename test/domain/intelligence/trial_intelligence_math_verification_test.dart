@@ -39,8 +39,8 @@ import '../../stress/stress_import_helpers.dart';
 ///   TRT3 reps: 65, 70, 67, 68 → mean = 67.5
 ///
 /// Manual calculations:
-///   Effect size (session 3): (best=82.5 − check=26.5) / 26.5 × 100 = 211.3%
-///   Separation trend:
+///   Point diff (session 3): best (TRT2 = 82.5) − check (26.5) = +56.00 points
+///   Separation trend (effectSize computed internally, not displayed):
 ///     Session 2 effect: (72.5 − 13.5) / 13.5 × 100 = 437.0%
 ///     Session 3 effect: (82.5 − 26.5) / 26.5 × 100 = 211.3%
 ///     Delta: 211.3 − 437.0 = -225.7 → collapsing (delta < -5)
@@ -209,8 +209,9 @@ void main() {
           .where((i) => i.type == InsightType.trialHealth)
           .first;
 
-      // Manual: (82.5 - 26.5) / 26.5 × 100 = 211.3%
-      expect(health.detail, contains('Effect size: 211%'));
+      // Manual: best (82.5) − check (26.5) = +56.00 points
+      expect(health.detail, contains('leading:'));
+      expect(health.detail, contains('+56.00 points'));
       expect(health.detail, contains('Separation: collapsing'));
     });
 

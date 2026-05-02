@@ -2,6 +2,7 @@ import 'dart:math' show sqrt;
 
 import 'package:intl/intl.dart';
 
+import '../../core/assessment_result_direction.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../data/repositories/assignment_repository.dart';
@@ -57,6 +58,8 @@ class TrialIntelligenceService {
     required int trialId,
     required List<Treatment> treatments,
     Map<int, String> assessmentNames = const {},
+    Map<int, ResultDirection> assessmentDirections = const {},
+    bool trialIsClosed = false,
   }) async {
     final sessions = await _sessionRepo.getSessionsForTrial(trialId);
     final plots = await _plotRepo.getPlotsForTrial(trialId);
@@ -137,6 +140,9 @@ class TrialIntelligenceService {
         treatments: treatments,
         assessmentId: aid,
         repCount: repCount,
+        assessmentNames: assessmentNames,
+        assessmentDirections: assessmentDirections,
+        trialIsClosed: trialIsClosed,
       );
       if (healthInsight != null) insights.add(healthInsight);
 
@@ -305,6 +311,9 @@ class TrialIntelligenceService {
     required List<Treatment> treatments,
     required int assessmentId,
     required int repCount,
+    Map<int, String> assessmentNames = const {},
+    Map<int, ResultDirection> assessmentDirections = const {},
+    bool trialIsClosed = false,
   }) {
     if (sessions.length < kMinSessionsForHealth ||
         repCount < kMinRepsForHealth) {
@@ -329,13 +338,26 @@ class TrialIntelligenceService {
     }
     if (checkMean == null || checkMean.abs() < 1e-9) return null;
 
-    // Best treatment mean (excluding checks)
+    final direction = assessmentDirections[assessmentId] ?? ResultDirection.neutral;
     double? bestMean;
+    int? bestTreatmentId;
     for (final e in treatmentMeans.entries) {
       if (checkIds.contains(e.key)) continue;
-      if (bestMean == null || e.value > bestMean) bestMean = e.value;
+      final isBetter = bestMean == null ||
+          (direction == ResultDirection.lowerIsBetter
+              ? e.value < bestMean
+              : e.value > bestMean);
+      if (isBetter) {
+        bestMean = e.value;
+        bestTreatmentId = e.key;
+      }
     }
     if (bestMean == null) return null;
+
+    final pointDiff = bestMean - checkMean;
+    final pointSign = pointDiff >= 0 ? '+' : '';
+    final bestTreatment = treatments.where((t) => t.id == bestTreatmentId).firstOrNull;
+    final bestCode = bestTreatment?.code ?? 'best';
 
     final effectSize =
         ((bestMean - checkMean) / checkMean.abs()) * 100;
@@ -364,7 +386,11 @@ class TrialIntelligenceService {
         double? prevBest;
         for (final e in prevMeans.entries) {
           if (checkIds.contains(e.key)) continue;
-          if (prevBest == null || e.value > prevBest) prevBest = e.value;
+          final isBetter = prevBest == null ||
+              (direction == ResultDirection.lowerIsBetter
+                  ? e.value < prevBest
+                  : e.value > prevBest);
+          if (isBetter) prevBest = e.value;
         }
         if (prevBest != null) {
           final prevEffect =
@@ -381,9 +407,17 @@ class TrialIntelligenceService {
       }
     }
 
-    final detailParts = <String>[
-      'Effect size: ${effectSize.toStringAsFixed(0)}%',
-    ];
+    // Unit string is 'points' for all numeric assessments. This is conventional
+    // shorthand and matches existing UI. Ordinal/score assessments are not
+    // processed by this code path (filtered upstream by numericValue != null).
+    final baseAssessmentName = assessmentNames[assessmentId] ?? 'Trial health';
+    final title = trialIsClosed
+        ? baseAssessmentName
+        : '$baseAssessmentName — developing';
+    final leadLine = trialIsClosed
+        ? 'Best treatment: $bestCode (${bestMean.toStringAsFixed(2)}) vs check (${checkMean.toStringAsFixed(2)}) · $pointSign${pointDiff.toStringAsFixed(2)} points'
+        : '$bestCode leading: ${bestMean.toStringAsFixed(2)} vs check ${checkMean.toStringAsFixed(2)} · $pointSign${pointDiff.toStringAsFixed(2)} points';
+    final detailParts = <String>[leadLine];
     if (cvRange != null) detailParts.add('CV: $cvRange');
     if (separationTrend != null) {
       detailParts.add('Separation: $separationTrend');
@@ -391,12 +425,12 @@ class TrialIntelligenceService {
 
     return TrialInsight(
       type: InsightType.trialHealth,
-      title: 'Trial health',
+      title: title,
       detail: '${detailParts.join('. ')}.',
       basis: InsightBasis(
         repCount: repCount,
         sessionCount: sessions.length,
-        method: '(best treatment mean − check mean) / check mean × 100',
+        method: 'best treatment mean − check mean',
         minimumDataMet: true,
         threshold: 'Minimum: $kMinSessionsForHealth sessions, $kMinRepsForHealth reps',
       ),

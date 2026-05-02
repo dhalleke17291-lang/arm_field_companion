@@ -54,6 +54,7 @@ void main() {
       season: '2026',
       status: 'active',
       workspaceType: 'efficacy',
+      region: 'eppo_eu',
       createdAt: DateTime(2026, 1, 1),
       updatedAt: DateTime(2026, 1, 1),
       isDeleted: false,

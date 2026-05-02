@@ -102,6 +102,7 @@ Trial _trialFromId(int id) => Trial(
       workspaceType: 'efficacy',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      region: 'eppo_eu',
       isDeleted: false,
     );
 
@@ -232,6 +233,7 @@ void main() {
         workspaceType: 'efficacy',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
+        region: 'eppo_eu',
         isDeleted: false,
       );
       final bundle =

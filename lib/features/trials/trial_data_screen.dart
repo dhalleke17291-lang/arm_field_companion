@@ -12,6 +12,7 @@ import '../../core/ui/assessment_display_helper.dart';
 import '../../core/utils/check_treatment_helper.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../../core/workspace/workspace_config.dart';
+import '../../domain/models/trial_insight.dart';
 import 'domain/trial_data_computer.dart';
 import 'widgets/insight_row.dart';
 
@@ -40,9 +41,16 @@ String computeDataQualityRowSuffix({
   required int outlierCount,
 }) {
   if (closedCount == 0) return 'no closed sessions yet';
-  final issues = amendedCount + outlierCount;
-  if (issues == 0) return 'clean';
-  return '$issues issue${issues == 1 ? '' : 's'} found';
+  final parts = <String>[
+    if (openCount > 0)
+      '$openCount open session${openCount == 1 ? '' : 's'}',
+    if (amendedCount > 0)
+      '$amendedCount amended rating${amendedCount == 1 ? '' : 's'}',
+    if (outlierCount > 0)
+      '$outlierCount outlier candidate${outlierCount == 1 ? '' : 's'}',
+  ];
+  if (parts.isEmpty) return 'clean';
+  return parts.join(' · ');
 }
 
 /// Returns named issue lines for the data quality summary header.
@@ -851,6 +859,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
   Widget _buildSection3(Trial trial) {
     final analysisAsync = ref.watch(_trialAnalysisDataProvider(trial.id));
     return _SectionCard(
+      key: _section3Key,
       title: '3. Assessment quality',
       child: analysisAsync.when(
         loading: () => const AppLoadingView(),
@@ -1593,17 +1602,75 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
               ),
             );
           }
+          // Group treatmentTrend insights by assessmentName. Ungrouped
+          // insights (assessmentName == null) stay flat. Solo groups
+          // (only one insight for an assessmentName) render as today.
+          final groupMap = <String, List<TrialInsight>>{};
+          for (final insight in visible) {
+            if (insight.assessmentName != null) {
+              groupMap
+                  .putIfAbsent(insight.assessmentName!, () => [])
+                  .add(insight);
+            }
+          }
+          final emitted = <String>{};
+          final renderItems = <Object>[];
+          for (final insight in visible) {
+            if (insight.assessmentName == null) {
+              renderItems.add(insight);
+            } else if (emitted.add(insight.assessmentName!)) {
+              final group = groupMap[insight.assessmentName!]!;
+              renderItems.add(group.length >= 2 ? group : insight);
+            }
+          }
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (int i = 0; i < visible.length; i++) ...[
+              for (int i = 0; i < renderItems.length; i++) ...[
                 if (i > 0) const _SectionDivider(),
-                InsightRow(insight: visible[i]),
+                if (renderItems[i] is TrialInsight)
+                  InsightRow(insight: renderItems[i] as TrialInsight)
+                else
+                  _buildAssessmentGroup(
+                    renderItems[i] as List<TrialInsight>,
+                    isFirst: i == 0,
+                  ),
               ],
             ],
           );
         },
       ),
+    );
+  }
+
+  Widget _buildAssessmentGroup(
+      List<TrialInsight> group, {required bool isFirst}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(top: isFirst ? 8 : 0, bottom: 4),
+          child: Text(
+            group.first.assessmentName!,
+            style: AppDesignTokens.assessmentGroupHeaderStyle,
+          ),
+        ),
+        for (int j = 0; j < group.length; j++) ...[
+          if (j > 0)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Divider(height: 1, color: AppDesignTokens.borderCrisp),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: InsightRow(
+              insight: group[j],
+              titleOverride: group[j].treatmentName,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -1738,6 +1805,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
 
 class _SectionCard extends StatelessWidget {
   const _SectionCard({
+    super.key,
     required this.title,
     required this.child,
     this.isCollapsible = false,

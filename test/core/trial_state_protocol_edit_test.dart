@@ -15,6 +15,7 @@ Trial _trial({
     workspaceType: workspaceType,
     createdAt: now,
     updatedAt: now,
+    region: 'eppo_eu',
     isDeleted: false,
   );
 }

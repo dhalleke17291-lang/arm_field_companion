@@ -190,7 +190,7 @@ class _AddTreatmentSheetBodyState extends ConsumerState<_AddTreatmentSheetBody> 
               TextField(
                 controller: _eppoController,
                 decoration: FormStyles.inputDecoration(
-                  labelText: 'EPPO code',
+                  labelText: 'Product code',
                 ),
               ),
             ],

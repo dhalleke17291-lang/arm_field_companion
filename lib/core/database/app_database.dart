@@ -69,6 +69,11 @@ class Trials extends Table {
   TextColumn get workspaceType =>
       text().withDefault(const Constant('efficacy'))();
 
+  /// Regulatory region for biological calibration.
+  /// 'eppo_eu' and 'pmra_canada' are current values. Open text — new regions
+  /// are additive without a schema change.
+  TextColumn get region => text().withDefault(const Constant('eppo_eu'))();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
@@ -1277,6 +1282,220 @@ class ArmApplications extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// Reference lookup table for SE type biological profiles.
+/// One row per ratingType prefix (e.g. 'CONTRO', 'PHYGEN').
+/// This is seeded reference data — not per-trial, not computed.
+/// The authoritative grounding for all relationship-layer biological-window
+/// and variance computations. See docs/architecture/TRIAL_MODEL.md.
+class SeTypeProfiles extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// ARM ratingType prefix used as the natural key (e.g. 'CONTRO', 'PHYGEN').
+  TextColumn get ratingTypePrefix =>
+      text().unique().withLength(min: 1, max: 20)();
+
+  /// Human-readable name (e.g. 'Weed Control', 'Crop Injury - Chlorosis').
+  TextColumn get displayName => text()();
+
+  /// Broad measurement category: 'percent', 'count', 'continuous', 'ordinal'.
+  TextColumn get measurementCategory => text()();
+
+  /// Rating direction: 'higher_better', 'lower_better', 'neutral'.
+  TextColumn get responseDirection => text()();
+
+  /// Earliest DAT at which ratings are biologically meaningful (null = unbounded).
+  IntColumn get validObservationWindowMinDat => integer().nullable()();
+
+  /// Latest DAT at which ratings are biologically meaningful (null = unbounded).
+  IntColumn get validObservationWindowMaxDat => integer().nullable()();
+
+  /// Lower bound of expected coefficient-of-variation range (null = unknown).
+  RealColumn get expectedCvMin => real().nullable()();
+
+  /// Upper bound of expected coefficient-of-variation range (null = unknown).
+  RealColumn get expectedCvMax => real().nullable()();
+
+  /// Minimum valid rating value for this SE type (null = no constraint).
+  RealColumn get scaleMin => real().nullable()();
+
+  /// Maximum valid rating value for this SE type (null = no constraint).
+  RealColumn get scaleMax => real().nullable()();
+
+  /// Reference authority: 'EPPO_PP1', 'ARM_CONVENTION', 'TRAJECTORY_ANALYSIS_TODO'.
+  TextColumn get source => text()();
+
+  /// Caveats or limitations on this profile (null = none).
+  TextColumn get notes => text().nullable()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+// ── Field intelligence: signals / decisions / evidence (schema v72+) ──────
+// Spec uses "rating_sessions" and "raters" — this app maps them to [Sessions]
+// and [Users] respectively.
+
+/// A raised insight or warning for field work (trial/session/plot scoped).
+class Signals extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  IntColumn get trialId => integer().references(Trials, #id)();
+
+  /// [Sessions.id] — spec name "rating_sessions" not used in this codebase.
+  IntColumn get sessionId => integer().nullable().references(Sessions, #id)();
+
+  IntColumn get plotId => integer().nullable().references(Plots, #id)();
+
+  /// scale_violation | spatial_anomaly | protocol_divergence | ...
+  TextColumn get signalType => text()();
+
+  /// 1–5 (Last Actionable Moment).
+  IntColumn get moment => integer()();
+
+  /// critical | review | info
+  TextColumn get severity => text()();
+
+  /// Trusted time, epoch milliseconds UTC.
+  IntColumn get raisedAt => integer()();
+
+  /// [Users.id] — spec "raters"; null = system.
+  IntColumn get raisedBy => integer().nullable().references(Users, #id)();
+
+  /// JSON: neighbors, treatment mean, session mean, protocol expected value.
+  TextColumn get referenceContext => text()();
+
+  /// JSON: deltas, % differences.
+  TextColumn get magnitudeContext => text().nullable()();
+
+  TextColumn get consequenceText => text()();
+
+  /// open | deferred | investigating | resolved | expired | suppressed
+  TextColumn get status => text().withDefault(const Constant('open'))();
+
+  IntColumn get createdAt => integer()();
+}
+
+/// Immutable decision log — application code must never UPDATE rows.
+class SignalDecisionEvents extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  IntColumn get signalId =>
+      integer().references(Signals, #id, onDelete: KeyAction.cascade)();
+
+  /// confirm | re_rate | investigate | defer | suppress | expire
+  TextColumn get eventType => text()();
+
+  IntColumn get occurredAt => integer()();
+
+  IntColumn get actorUserId => integer().nullable().references(Users, #id)();
+
+  TextColumn get note => text().nullable()();
+
+  IntColumn get followUpDueAt => integer().nullable()();
+
+  TextColumn get followUpContext => text().nullable()();
+
+  TextColumn get resultingStatus => text()();
+
+  IntColumn get createdAt => integer()();
+}
+
+/// Materialized side-effects of a decision (field-level audit trail).
+class ActionEffects extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  IntColumn get decisionEventId => integer().references(SignalDecisionEvents, #id,
+      onDelete: KeyAction.cascade)();
+
+  /// plot_observation | session | trial | application | photo
+  TextColumn get entityType => text()();
+
+  IntColumn get entityId => integer()();
+
+  TextColumn get fieldName => text()();
+
+  TextColumn get oldValue => text().nullable()();
+
+  TextColumn get newValue => text().nullable()();
+
+  IntColumn get appliedAt => integer()();
+
+  IntColumn get createdAt => integer()();
+}
+
+/// EPPO-aligned causal expectations per SE type × trial mode (seeded reference).
+class SeTypeCausalProfiles extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// CONTRO | LODGIN | PESINC | ...
+  TextColumn get seType => text()();
+
+  /// efficacy | variety | breeding | on_farm
+  TextColumn get trialType => text()();
+
+  IntColumn get causalWindowDaysMin => integer()();
+
+  IntColumn get causalWindowDaysMax => integer()();
+
+  /// increase | decrease | stable
+  TextColumn get expectedResponseDirection => text()();
+
+  RealColumn get expectedChangeRatePerWeek => real().nullable()();
+
+  BoolColumn get spatialClusteringExpected =>
+      boolean().withDefault(const Constant(false))();
+
+  BoolColumn get untreatedExcludedFromMean =>
+      boolean().withDefault(const Constant(true))();
+
+  RealColumn get baseThresholdSdMultiplier =>
+      real().withDefault(const Constant(2.0))();
+
+  TextColumn get source => text()();
+
+  TextColumn get sourceReference => text().nullable()();
+
+  /// Regulatory region; NULL means profile applies to any region.
+  TextColumn get region => text().nullable()();
+
+  /// Timing window type: 'bbch' (days-based) or 'gdd' (growing degree days).
+  /// Open text to allow future window types without a schema change.
+  TextColumn get windowType =>
+      text().nullable().withDefault(const Constant('bbch'))();
+
+  IntColumn get createdAt => integer()();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {seType, trialType, region},
+      ];
+}
+
+/// Links evidence rows (photos, weather, GPS, audit) to analytical claims.
+class EvidenceAnchors extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  IntColumn get trialId => integer().references(Trials, #id)();
+
+  /// photo | weather_snapshot | gps_record | audit_entry
+  TextColumn get evidenceType => text()();
+
+  /// Polymorphic FK — resolved via [evidenceType].
+  IntColumn get evidenceId => integer()();
+
+  /// rating | session | application | deviation
+  TextColumn get claimType => text()();
+
+  IntColumn get claimId => integer()();
+
+  TextColumn get anchorReason => text().nullable()();
+
+  IntColumn get anchoredAt => integer()();
+
+  IntColumn get anchoredBy => integer().nullable().references(Users, #id)();
+
+  IntColumn get createdAt => integer()();
+}
+
 @DriftDatabase(tables: [
   Users,
   Trials,
@@ -1322,6 +1541,14 @@ class ArmApplications extends Table {
   ArmTrialMetadata,
   ArmTreatmentMetadata,
   ArmApplications,
+  // Reference / lookup tables (seeded at install; not per-trial, not computed).
+  SeTypeProfiles,
+  // Field intelligence (v72): signals pipeline + causal profiles + evidence anchors.
+  Signals,
+  SignalDecisionEvents,
+  ActionEffects,
+  SeTypeCausalProfiles,
+  EvidenceAnchors,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -1330,7 +1557,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 71;
+  int get schemaVersion => 76;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1338,6 +1565,8 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
           await _createIndexes();
           await _seedAssessmentDefinitions();
+          await _seedSeTypeProfiles();
+          await _seedSeTypeCausalProfiles();
         },
         onUpgrade: (Migrator m, int from, int to) async {
           if (from < 2) {
@@ -2743,6 +2972,106 @@ WHERE pest_code IS NULL
             }
           }
 
+          if (from < 72) {
+            final existingTables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!existingTables.contains('se_type_profiles')) {
+              await m.createTable(seTypeProfiles);
+            }
+            await _seedSeTypeProfiles();
+          }
+
+          if (from < 73) {
+            final existingTables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!existingTables.contains('signals')) {
+              await m.createTable(signals);
+            }
+            if (!existingTables.contains('signal_decision_events')) {
+              await m.createTable(signalDecisionEvents);
+            }
+            if (!existingTables.contains('action_effects')) {
+              await m.createTable(actionEffects);
+            }
+            if (!existingTables.contains('se_type_causal_profiles')) {
+              await m.createTable(seTypeCausalProfiles);
+            }
+            if (!existingTables.contains('evidence_anchors')) {
+              await m.createTable(evidenceAnchors);
+            }
+            await _seedSeTypeCausalProfiles();
+          }
+
+          if (from < 74) {
+            final trialCols = await customSelect(
+              "SELECT name FROM pragma_table_info('trials')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!trialCols.contains('region')) {
+              // NOT NULL DEFAULT 'eppo_eu' fills all existing rows automatically.
+              await customStatement(
+                "ALTER TABLE trials ADD COLUMN region TEXT NOT NULL DEFAULT 'eppo_eu'",
+              );
+            }
+          }
+
+          if (from < 75) {
+            final profileCols = await customSelect(
+              "SELECT name FROM pragma_table_info('se_type_causal_profiles')",
+            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            if (!profileCols.contains('region')) {
+              // Step 1: add the two new columns to the existing table so the
+              // data copy below works with a simple SELECT *.
+              await customStatement(
+                'ALTER TABLE se_type_causal_profiles ADD COLUMN region TEXT',
+              );
+              await customStatement(
+                "ALTER TABLE se_type_causal_profiles ADD COLUMN window_type TEXT DEFAULT 'bbch'",
+              );
+              // Step 2: rebuild to change inline UNIQUE(se_type, trial_type)
+              // → UNIQUE(se_type, trial_type, region). SQLite does not support
+              // DROP CONSTRAINT, so a rename-recreate-copy cycle is required.
+              await customStatement(
+                'ALTER TABLE se_type_causal_profiles RENAME TO se_type_causal_profiles_v73',
+              );
+              await m.createTable(seTypeCausalProfiles);
+              await customStatement('''
+INSERT INTO se_type_causal_profiles (
+  id, se_type, trial_type, causal_window_days_min, causal_window_days_max,
+  expected_response_direction, expected_change_rate_per_week,
+  spatial_clustering_expected, untreated_excluded_from_mean,
+  base_threshold_sd_multiplier, source, source_reference,
+  region, window_type, created_at
+)
+SELECT
+  id, se_type, trial_type, causal_window_days_min, causal_window_days_max,
+  expected_response_direction, expected_change_rate_per_week,
+  spatial_clustering_expected, untreated_excluded_from_mean,
+  base_threshold_sd_multiplier, source, source_reference,
+  region, window_type, created_at
+FROM se_type_causal_profiles_v73
+''');
+              await customStatement('DROP TABLE se_type_causal_profiles_v73');
+              await customStatement('''
+INSERT OR REPLACE INTO sqlite_sequence (name, seq)
+SELECT 'se_type_causal_profiles', COALESCE((SELECT MAX(id) FROM se_type_causal_profiles), 0)
+''');
+            }
+          }
+
+          if (from < 76) {
+            // Data-repair: advance trials that have session data but were left
+            // in draft/ready due to silent promoteTrialToActiveIfReady failures.
+            // Idempotent — running twice updates zero rows on the second run.
+            await customStatement('''
+UPDATE trials
+SET status = 'active'
+WHERE status IN ('draft', 'ready')
+  AND id IN (SELECT DISTINCT trial_id FROM sessions WHERE is_deleted = 0)
+''');
+          }
+
           await _createIndexes();
         },
       );
@@ -2798,6 +3127,89 @@ WHERE pest_code IS NULL
         [r[0], r[1], r[2], r[3], r[4], r[5], r[6]],
       );
     }
+  }
+
+  Future<void> _seedSeTypeProfiles() async {
+    // MVP seed rows — conservative defaults pending calibration from EPPO PP1
+    // and ARM field data post-pilot. INSERT OR IGNORE: idempotent; ratingTypePrefix is UNIQUE.
+    const sql = 'INSERT OR IGNORE INTO se_type_profiles '
+        '(rating_type_prefix, display_name, measurement_category, response_direction, '
+        'valid_observation_window_min_dat, valid_observation_window_max_dat, '
+        'expected_cv_min, expected_cv_max, scale_min, scale_max, source, notes, created_at) '
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%s','now'))";
+    await customStatement(sql, [
+      'CONTRO', 'Weed Control', 'percent', 'higher_better',
+      7, null, null, null, 0.0, 100.0, 'ARM_CONVENTION',
+      'MVP default — min DAT conservative; CV range pending calibration',
+    ]);
+    await customStatement(sql, [
+      'PHYGEN', 'Crop Injury — Phytotoxicity', 'percent', 'lower_better',
+      3, null, null, null, 0.0, 100.0, 'EPPO_PP1',
+      'MVP default — min DAT conservative; CV range pending calibration from PP1/135',
+    ]);
+  }
+
+  /// EPPO-aligned causal SE profiles (CONTRO / PESINC / LODGIN × efficacy).
+  /// INSERT OR IGNORE — unique on (se_type, trial_type, region).
+  /// All seed rows have region NULL (applies to any region). SQLite treats
+  /// NULLs as distinct in UNIQUE constraints; seeding is only called once
+  /// (onCreate) so duplicates cannot accumulate.
+  Future<void> _seedSeTypeCausalProfiles() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    Future<void> insertRow(List<Object?> params) async {
+      await customStatement(
+        'INSERT OR IGNORE INTO se_type_causal_profiles '
+        '(se_type, trial_type, causal_window_days_min, causal_window_days_max, '
+        'expected_response_direction, expected_change_rate_per_week, '
+        'spatial_clustering_expected, untreated_excluded_from_mean, '
+        'base_threshold_sd_multiplier, source, source_reference, created_at) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        params,
+      );
+    }
+
+    await insertRow([
+      'CONTRO',
+      'efficacy',
+      7,
+      28,
+      'increase',
+      8.0,
+      0,
+      1,
+      2.0,
+      'EPPO_PP1',
+      'PP1/152',
+      now,
+    ]);
+    await insertRow([
+      'PESINC',
+      'efficacy',
+      7,
+      21,
+      'decrease',
+      5.0,
+      1,
+      1,
+      2.5,
+      'EPPO_PP1',
+      'PP1/135',
+      now,
+    ]);
+    await insertRow([
+      'LODGIN',
+      'efficacy',
+      0,
+      0,
+      'stable',
+      2.0,
+      1,
+      0,
+      3.0,
+      'EPPO_PP1',
+      'PP1/152',
+      now,
+    ]);
   }
 
   Future<void> _createIndexes() async {
@@ -2860,6 +3272,44 @@ WHERE pest_code IS NULL
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_arm_applications_event '
       'ON arm_applications(trial_application_event_id)',
     );
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_signals_trial_status
+      ON signals(trial_id, status)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_signals_session
+      ON signals(session_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_signals_open
+      ON signals(status)
+      WHERE status IN ('open', 'deferred', 'investigating')
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_sde_signal_time
+      ON signal_decision_events(signal_id, occurred_at)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_sde_actor
+      ON signal_decision_events(actor_user_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_sde_followup
+      ON signal_decision_events(follow_up_due_at)
+      WHERE follow_up_due_at IS NOT NULL
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_action_effects_event
+      ON action_effects(decision_event_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_evidence_anchors_claim
+      ON evidence_anchors(claim_type, claim_id)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_se_profiles_type
+      ON se_type_causal_profiles(se_type, trial_type, region)
+    ''');
   }
 }
 

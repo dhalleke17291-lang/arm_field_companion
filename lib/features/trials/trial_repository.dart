@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
 import '../../core/trial_state.dart';
+import '../../domain/signals/signal_repository.dart';
 
 class TrialRepository {
   final AppDatabase _db;
@@ -86,7 +87,14 @@ class TrialRepository {
   Future<bool> updateTrialStatus(int trialId, String status) async {
     final t = await getTrialById(trialId);
     if (t == null) return false;
-    return updateTrial(t.copyWith(status: status));
+    final ok = await updateTrial(t.copyWith(status: status));
+    if (ok && status == kTrialStatusClosed) {
+      await SignalRepository.attach(_db).expireAllOpenSignalsForTrial(
+        trialId,
+        note: 'Trial closed — signals expired under no-vanish policy',
+      );
+    }
+    return ok;
   }
 
   // Get trial with treatment and plot counts
