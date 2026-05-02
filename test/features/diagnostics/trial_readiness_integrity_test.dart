@@ -231,4 +231,17 @@ void main() {
     final c = _check(report.checks, 'corrections_missing_reason');
     expect(c.severity, TrialCheckSeverity.pass);
   });
+
+  test('T6: session with null cropStageBbch → bbch_missing blocker', () async {
+    final trialId = await _seedBaselineTrial(
+      db,
+      name: 'int_t6_${DateTime.now().microsecondsSinceEpoch}',
+    );
+    // _seedBaselineTrial creates a session without cropStageBbch (null).
+    final report = await _runReadiness(db, trialId);
+    final c = _check(report.checks, 'bbch_missing');
+    expect(c.severity, TrialCheckSeverity.blocker);
+    expect(report.blockerCount, greaterThanOrEqualTo(1));
+    expect(report.canExport, isFalse);
+  });
 }

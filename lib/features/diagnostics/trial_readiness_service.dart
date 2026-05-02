@@ -437,7 +437,7 @@ class TrialReadinessService {
         checks.add(TrialReadinessCheck(
           code: 'bbch_missing',
           label: '$sessionsMissingBbch session(s) missing BBCH growth stage',
-          severity: TrialCheckSeverity.warning,
+          severity: TrialCheckSeverity.blocker,
         ));
       } else {
         checks.add(const TrialReadinessCheck(
