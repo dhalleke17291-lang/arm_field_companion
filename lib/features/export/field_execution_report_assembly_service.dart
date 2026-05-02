@@ -354,8 +354,9 @@ class FieldExecutionReportAssemblyService {
       parts.add(
           "${completeness.blockerCount} completeness blocker(s) unresolved.");
     } else if (completeness.warningCount > 0) {
-      parts.add(
-          "${completeness.warningCount} completeness warning(s) recorded.");
+      parts.add(completeness.warningCount == 1
+          ? '1 completeness warning recorded.'
+          : '${completeness.warningCount} completeness warnings recorded.');
     }
 
     return parts.join(' ');

@@ -94,7 +94,7 @@ class CompletenessDashboardScreen extends ConsumerWidget {
     final statusLabel = switch (report.status) {
       TrialReadinessStatus.ready => 'Ready to export',
       TrialReadinessStatus.readyWithWarnings =>
-        'Ready with ${report.warningCount} warning(s)',
+        'Ready with ${report.warningCount} ${report.warningCount == 1 ? 'warning' : 'warnings'}',
       TrialReadinessStatus.notReady =>
         '${report.blockerCount} blocker(s) — not ready',
     };
@@ -167,8 +167,8 @@ class CompletenessDashboardScreen extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       '${report.passCount} passed · '
-                      '${report.warningCount} warning(s) · '
-                      '${report.blockerCount} blocker(s)',
+                      '${report.warningCount} ${report.warningCount == 1 ? 'warning' : 'warnings'} · '
+                      '${report.blockerCount} ${report.blockerCount == 1 ? 'blocker' : 'blockers'}',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppDesignTokens.secondaryText,

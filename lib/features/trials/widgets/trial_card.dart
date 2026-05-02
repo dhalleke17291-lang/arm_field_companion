@@ -39,8 +39,8 @@ String? _readinessSummaryLine(AsyncValue<TrialReadinessReport> readinessAsync) {
       if (report.warningCount > 0) {
         final n = report.warningCount;
         return n == 1
-            ? '1 readiness issue'
-            : '$n readiness issues';
+            ? '1 warning'
+            : '$n warnings';
       }
       return null;
     },

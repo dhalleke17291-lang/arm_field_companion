@@ -2328,7 +2328,7 @@ class _SessionDetailsBody extends ConsumerWidget {
                                           if (warningCount > 0) ...[
                                             const SizedBox(height: 6),
                                             Text(
-                                              '$warningCount warning(s) — see plot coverage.',
+                                              '${warningCount == 1 ? '1 warning' : '$warningCount warnings'} — see plot coverage.',
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 height: 1.35,

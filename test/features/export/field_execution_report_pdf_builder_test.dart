@@ -144,7 +144,7 @@ void main() {
           warningCount: 1,
         ),
         executionStatement:
-            'Session "S-ARM" rated 20 of 20 plots. 1 completeness warning(s) recorded.',
+            'Session "S-ARM" rated 20 of 20 plots. 1 completeness warning recorded.',
         generatedAt: DateTime(2026, 4, 5, 14, 30),
       );
 

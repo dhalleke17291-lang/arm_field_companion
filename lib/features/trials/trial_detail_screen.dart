@@ -2893,8 +2893,8 @@ class _NeedsAttentionCard extends ConsumerWidget {
                 actionableCount == 0
                     ? 'No warnings'
                     : actionableCount == 1
-                        ? '1 item needs attention'
-                        : '$actionableCount items need attention',
+                        ? '1 warning'
+                        : '$actionableCount warnings',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
