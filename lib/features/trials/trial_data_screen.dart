@@ -13,6 +13,8 @@ import '../../core/utils/check_treatment_helper.dart';
 import '../../core/widgets/loading_error_widgets.dart';
 import '../../core/workspace/workspace_config.dart';
 import '../../domain/models/trial_insight.dart';
+import '../../domain/relationships/trial_data_integrity_provider.dart';
+import '../../domain/relationships/trial_evidence_completeness_provider.dart';
 import 'domain/trial_data_computer.dart';
 import 'widgets/insight_row.dart';
 
@@ -499,57 +501,39 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
   // -------------------------------------------------------------------------
 
   Widget _buildSummaryHeader(Trial trial) {
-    final bundlesAsync = ref.watch(_trialAppBundlesProvider(trial.id));
     final analysisAsync = ref.watch(_trialAnalysisDataProvider(trial.id));
+    final integrityAsync = ref.watch(trialDataIntegrityProvider(trial.id));
+    final completenessAsync =
+        ref.watch(trialEvidenceCompletenessProvider(trial.id));
 
-    final isLoading = bundlesAsync.isLoading || analysisAsync.isLoading;
-    if (isLoading) {
-      return ColoredBox(
-        color: AppDesignTokens.sectionHeaderBg,
-        child: const SizedBox(height: 120),
-      );
+    final String resultsSuffix;
+    if (analysisAsync.hasValue) {
+      final data = analysisAsync.value!;
+      final closedX = data.closedSessions.length;
+      final treatY = data.treatments.length;
+      final assessZ = data.assessmentOrder.length;
+      resultsSuffix =
+          '$closedX closed session${closedX == 1 ? '' : 's'} · '
+          '$treatY treatment${treatY == 1 ? '' : 's'} · '
+          '$assessZ assessment${assessZ == 1 ? '' : 's'}';
+    } else {
+      resultsSuffix = '—';
     }
-    if (bundlesAsync.hasError || analysisAsync.hasError) {
-      return const SizedBox.shrink();
-    }
 
-    final bundles = bundlesAsync.value!;
-    final data = analysisAsync.value!;
-
-    final appStates = bundles
-        .map((b) => (
-              status: b.event.status,
-              hasDeviation: b.products.any((p) => p.deviationFlag == true),
-            ))
-        .toList();
-
-    final execSuffix = computeExecutionRowSuffix(appStates);
-    final openCount = data.allSessions.length - data.closedSessions.length;
-    final qualitySuffix = computeDataQualityRowSuffix(
-      closedCount: data.closedSessions.length,
-      openCount: openCount,
-      amendedCount: data.amendedRatings.length,
-      outlierCount: data.outlierCandidates.length,
+    final integritySuffix = integrityAsync.when(
+      loading: () => 'checking...',
+      error: (_, __) => 'unavailable',
+      data: (s) => s.summaryText,
     );
+    final integrityTap = integrityAsync.valueOrNull?.issues.isNotEmpty == true
+        ? () => _scrollTo(_section3Key)
+        : null;
 
-    final closedX = data.closedSessions.length;
-    final treatY = data.treatments.length;
-    final assessZ = data.assessmentOrder.length;
-    final resultsSuffix =
-        '$closedX closed session${closedX == 1 ? '' : 's'} · '
-        '$treatY treatment${treatY == 1 ? '' : 's'} · '
-        '$assessZ assessment${assessZ == 1 ? '' : 's'}';
-
-    final qualityIssueLines = qualitySuffix.endsWith('found')
-        ? computeDataQualityIssueLines(
-            closedSessions: data.closedSessions,
-            closedRatings: data.closedRatings,
-            analyzablePlots: data.analyzablePlots,
-            assessmentDisplayNames: data.assessmentDisplayNames,
-            amendedRatings: data.amendedRatings,
-            outlierCandidates: data.outlierCandidates,
-          )
-        : <String>[];
+    final completenessSuffix = completenessAsync.when(
+      loading: () => 'checking...',
+      error: (_, __) => 'unavailable',
+      data: (c) => c.summaryText,
+    );
 
     return ColoredBox(
       color: AppDesignTokens.sectionHeaderBg,
@@ -558,17 +542,15 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _summaryRow(
-            label: 'Execution',
-            suffix: execSuffix,
-            onTap: execSuffix.endsWith('to review') ? () => _scrollTo(_section2Key) : null,
+            label: 'Data integrity',
+            suffix: integritySuffix,
+            onTap: integrityTap,
           ),
           const Divider(
               height: 1, thickness: 0.5, color: AppDesignTokens.borderCrisp),
           _summaryRow(
-            label: 'Data quality',
-            suffix: qualitySuffix,
-            onTap: qualitySuffix.endsWith('found') ? () => _scrollTo(_section3Key) : null,
-            issueLines: qualityIssueLines,
+            label: 'Evidence completeness',
+            suffix: completenessSuffix,
           ),
           const Divider(
               height: 1, thickness: 0.5, color: AppDesignTokens.borderCrisp),
