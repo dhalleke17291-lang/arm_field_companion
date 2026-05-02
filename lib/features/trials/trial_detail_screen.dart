@@ -2879,6 +2879,9 @@ class _NeedsAttentionCard extends ConsumerWidget {
               .compareTo(_severityRank(b.severity)));
         final top = sorted.take(3).toList();
         final remaining = items.length - top.length;
+        final actionableCount = items
+            .where((i) => i.severity != AttentionSeverity.info)
+            .length;
 
         return _OverviewDashboardCard(
           title: 'Needs Attention',
@@ -2887,9 +2890,11 @@ class _NeedsAttentionCard extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                items.length == 1
-                    ? '1 item needs attention'
-                    : '${items.length} items need attention',
+                actionableCount == 0
+                    ? 'No warnings'
+                    : actionableCount == 1
+                        ? '1 item needs attention'
+                        : '$actionableCount items need attention',
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
