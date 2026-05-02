@@ -18,6 +18,7 @@ import "../domain/usecases/resolve_plot_treatment.dart";
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
+import 'assessment_result_direction.dart';
 import 'database/app_database.dart';
 import '../features/backup/auto_backup_service.dart';
 import 'connectivity/application_weather_backfill_service.dart';
@@ -2046,6 +2047,11 @@ final trialInsightsProvider = FutureProvider.autoDispose
           pair.$1.sortOrder,
         ),
   };
+  final assessmentDirections = <int, ResultDirection>{
+    for (final pair in assessmentPairs)
+      if (pair.$1.legacyAssessmentId != null)
+        pair.$1.legacyAssessmentId!: ResultDirection.fromString(pair.$2.resultDirection),
+  };
   final trial = await ref.watch(trialProvider(trialId).future);
   return ref
       .watch(trialIntelligenceServiceProvider)
@@ -2053,6 +2059,7 @@ final trialInsightsProvider = FutureProvider.autoDispose
           trialId: trialId,
           treatments: treatments,
           assessmentNames: assessmentNames,
+          assessmentDirections: assessmentDirections,
           trialIsClosed: trial?.status == kTrialStatusClosed);
 });
 

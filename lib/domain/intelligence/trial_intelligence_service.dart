@@ -2,6 +2,7 @@ import 'dart:math' show sqrt;
 
 import 'package:intl/intl.dart';
 
+import '../../core/assessment_result_direction.dart';
 import '../../core/database/app_database.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../data/repositories/assignment_repository.dart';
@@ -57,6 +58,7 @@ class TrialIntelligenceService {
     required int trialId,
     required List<Treatment> treatments,
     Map<int, String> assessmentNames = const {},
+    Map<int, ResultDirection> assessmentDirections = const {},
     bool trialIsClosed = false,
   }) async {
     final sessions = await _sessionRepo.getSessionsForTrial(trialId);
@@ -139,6 +141,7 @@ class TrialIntelligenceService {
         assessmentId: aid,
         repCount: repCount,
         assessmentNames: assessmentNames,
+        assessmentDirections: assessmentDirections,
         trialIsClosed: trialIsClosed,
       );
       if (healthInsight != null) insights.add(healthInsight);
@@ -309,6 +312,7 @@ class TrialIntelligenceService {
     required int assessmentId,
     required int repCount,
     Map<int, String> assessmentNames = const {},
+    Map<int, ResultDirection> assessmentDirections = const {},
     bool trialIsClosed = false,
   }) {
     if (sessions.length < kMinSessionsForHealth ||
@@ -334,14 +338,16 @@ class TrialIntelligenceService {
     }
     if (checkMean == null || checkMean.abs() < 1e-9) return null;
 
-    // TODO: 'best' currently means highest mean. For assessments where lower
-    // is better (phytotoxicity, disease severity), this surfaces the worst
-    // treatment as 'best'. Needs assessment-direction metadata to fix correctly.
+    final direction = assessmentDirections[assessmentId] ?? ResultDirection.neutral;
     double? bestMean;
     int? bestTreatmentId;
     for (final e in treatmentMeans.entries) {
       if (checkIds.contains(e.key)) continue;
-      if (bestMean == null || e.value > bestMean) {
+      final isBetter = bestMean == null ||
+          (direction == ResultDirection.lowerIsBetter
+              ? e.value < bestMean
+              : e.value > bestMean);
+      if (isBetter) {
         bestMean = e.value;
         bestTreatmentId = e.key;
       }
@@ -380,7 +386,11 @@ class TrialIntelligenceService {
         double? prevBest;
         for (final e in prevMeans.entries) {
           if (checkIds.contains(e.key)) continue;
-          if (prevBest == null || e.value > prevBest) prevBest = e.value;
+          final isBetter = prevBest == null ||
+              (direction == ResultDirection.lowerIsBetter
+                  ? e.value < prevBest
+                  : e.value > prevBest);
+          if (isBetter) prevBest = e.value;
         }
         if (prevBest != null) {
           final prevEffect =
