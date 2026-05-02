@@ -534,6 +534,10 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
       error: (_, __) => 'unavailable',
       data: (c) => c.summaryText,
     );
+    final bool? completenessIsClean = completenessAsync.hasValue
+        ? completenessAsync.value!.overallState ==
+            EvidenceCompletenessState.complete
+        : null;
 
     return ColoredBox(
       color: AppDesignTokens.sectionHeaderBg,
@@ -545,12 +549,14 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
             label: 'Data integrity',
             suffix: integritySuffix,
             onTap: integrityTap,
+            isClean: integrityAsync.valueOrNull?.isClean,
           ),
           const Divider(
               height: 1, thickness: 0.5, color: AppDesignTokens.borderCrisp),
           _summaryRow(
             label: 'Evidence completeness',
             suffix: completenessSuffix,
+            isClean: completenessIsClean,
           ),
           const Divider(
               height: 1, thickness: 0.5, color: AppDesignTokens.borderCrisp),
@@ -565,6 +571,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     required String suffix,
     VoidCallback? onTap,
     List<String>? issueLines,
+    bool? isClean,
   }) {
     final Color suffixColor;
     if (suffix.endsWith('to review') || suffix.endsWith('found')) {
@@ -576,6 +583,22 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
       suffixColor = AppDesignTokens.primaryText;
     }
 
+    final IconData? rowIcon;
+    final Color? rowIconColor;
+    if (isClean == true) {
+      rowIcon = Icons.check_circle_outline;
+      rowIconColor = AppDesignTokens.successFg;
+    } else if (isClean == false && label == 'Data integrity') {
+      rowIcon = Icons.warning_amber_rounded;
+      rowIconColor = AppDesignTokens.warningFg;
+    } else if (isClean == false && label == 'Evidence completeness') {
+      rowIcon = Icons.info_outline;
+      rowIconColor = AppDesignTokens.secondaryText;
+    } else {
+      rowIcon = null;
+      rowIconColor = null;
+    }
+
     final row = Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDesignTokens.spacing16,
@@ -583,6 +606,10 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
       ),
       child: Row(
         children: [
+          if (rowIcon != null) ...[
+            Icon(rowIcon, size: 16, color: rowIconColor),
+            const SizedBox(width: 6),
+          ],
           Text(
             '$label: ',
             style: const TextStyle(
