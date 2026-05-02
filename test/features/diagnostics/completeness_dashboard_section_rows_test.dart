@@ -123,5 +123,79 @@ void main() {
       // No info tile.
       expect(find.textContaining('informational'), findsNothing);
     });
+
+    testWidgets(
+        'missing_components warning row shows tap hint and is tappable',
+        (tester) async {
+      final trial = _trial();
+      final report = _report([
+        const TrialReadinessCheck(
+          code: 'missing_components',
+          label: 'One or more treatments have no components',
+          severity: TrialCheckSeverity.warning,
+        ),
+      ]);
+
+      await _pumpScreen(tester, report, trial);
+
+      expect(find.text('Tap to go to treatments'), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.text('Tap to go to treatments'),
+          matching: find.byType(InkWell),
+        ),
+        findsWidgets,
+      );
+    });
+
+    testWidgets(
+        'bbch_missing blocker row shows tap hint and is tappable',
+        (tester) async {
+      final trial = _trial();
+      final report = _report([
+        const TrialReadinessCheck(
+          code: 'bbch_missing',
+          label: '1 session(s) missing BBCH growth stage',
+          severity: TrialCheckSeverity.blocker,
+        ),
+      ]);
+
+      await _pumpScreen(tester, report, trial);
+
+      expect(find.text('Tap to go to sessions'), findsOneWidget);
+      expect(
+        find.ancestor(
+          of: find.text('Tap to go to sessions'),
+          matching: find.byType(InkWell),
+        ),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('info and pass rows have no tap hint', (tester) async {
+      final trial = _trial();
+      final report = _report([
+        const TrialReadinessCheck(
+          code: 'sessions_ok',
+          label: 'Sessions recorded',
+          severity: TrialCheckSeverity.pass,
+        ),
+        const TrialReadinessCheck(
+          code: 'ratings_ok',
+          label: 'Ratings complete',
+          severity: TrialCheckSeverity.info,
+        ),
+      ]);
+
+      await _pumpScreen(tester, report, trial);
+
+      // Expand collapsed tiles so their rows enter the widget tree.
+      await tester.tap(find.text('1 passed'));
+      await tester.pump();
+      await tester.tap(find.text('1 informational'));
+      await tester.pump();
+
+      expect(find.textContaining('Tap to go'), findsNothing);
+    });
   });
 }

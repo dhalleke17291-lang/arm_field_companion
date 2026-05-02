@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../core/database/app_database.dart';
 import 'trial_readiness.dart';
+import '../trials/tabs/treatments_tab.dart';
 
 /// Groups readiness check codes into dashboard sections.
 const _sectionGroups = <String, List<String>>{
@@ -200,16 +201,51 @@ class CompletenessDashboardScreen extends ConsumerWidget {
               ),
             ),
           ),
-          ..._sectionRows(entry.value),
+          ..._sectionRows(context, entry.value),
         ],
       ],
+    );
+  }
+
+  VoidCallback? _tapFor(BuildContext context, TrialReadinessCheck check) {
+    if (check.severity != TrialCheckSeverity.warning &&
+        check.severity != TrialCheckSeverity.blocker) {
+      return null;
+    }
+    return switch (check.code) {
+      'bbch_missing' || 'crop_injury_missing' => () => Navigator.pop(context),
+      'missing_components' => () => Navigator.push<void>(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) => Scaffold(
+                appBar: AppBar(title: const Text('Treatments')),
+                body: SafeArea(top: false, child: TreatmentsTab(trial: trial)),
+              ),
+            ),
+          ),
+      _ => null,
+    };
+  }
+
+  String? _hintFor(TrialReadinessCheck check) => switch (check.code) {
+        'bbch_missing' || 'crop_injury_missing' => 'Tap to go to sessions',
+        'missing_components' => 'Tap to go to treatments',
+        _ => null,
+      };
+
+  Widget _rowFor(BuildContext context, TrialReadinessCheck c) {
+    final onTap = _tapFor(context, c);
+    return _CheckRow(
+      check: c,
+      onTap: onTap,
+      tapHint: onTap != null ? _hintFor(c) : null,
     );
   }
 
   /// Renders checks for one section:
   /// blockers and warnings flat (always visible),
   /// info and passed each in a collapsed ExpansionTile.
-  List<Widget> _sectionRows(List<TrialReadinessCheck> checks) {
+  List<Widget> _sectionRows(BuildContext context, List<TrialReadinessCheck> checks) {
     final blockers = checks
         .where((c) => c.severity == TrialCheckSeverity.blocker)
         .toList();
@@ -224,8 +260,8 @@ class CompletenessDashboardScreen extends ConsumerWidget {
         .toList();
 
     return [
-      for (final c in blockers) _CheckRow(check: c),
-      for (final c in warnings) _CheckRow(check: c),
+      for (final c in blockers) _rowFor(context, c),
+      for (final c in warnings) _rowFor(context, c),
       if (infos.isNotEmpty)
         ExpansionTile(
           initiallyExpanded: false,
@@ -244,7 +280,7 @@ class CompletenessDashboardScreen extends ConsumerWidget {
               color: AppDesignTokens.secondaryText,
             ),
           ),
-          children: infos.map((c) => _CheckRow(check: c)).toList(),
+          children: infos.map((c) => _rowFor(context, c)).toList(),
         ),
       if (passes.isNotEmpty)
         ExpansionTile(
@@ -264,15 +300,17 @@ class CompletenessDashboardScreen extends ConsumerWidget {
               color: AppDesignTokens.successFg,
             ),
           ),
-          children: passes.map((c) => _CheckRow(check: c)).toList(),
+          children: passes.map((c) => _rowFor(context, c)).toList(),
         ),
     ];
   }
 }
 
 class _CheckRow extends StatelessWidget {
-  const _CheckRow({required this.check});
+  const _CheckRow({required this.check, this.onTap, this.tapHint});
   final TrialReadinessCheck check;
+  final VoidCallback? onTap;
+  final String? tapHint;
 
   @override
   Widget build(BuildContext context) {
@@ -283,7 +321,7 @@ class _CheckRow extends StatelessWidget {
       TrialCheckSeverity.blocker => (Icons.cancel, const Color(0xFFCC3333)),
     };
 
-    return Padding(
+    final content = Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,11 +354,28 @@ class _CheckRow extends StatelessWidget {
                           .withValues(alpha: 0.8),
                     ),
                   ),
+                if (tapHint != null)
+                  Text(
+                    tapHint!,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
               ],
             ),
           ),
+          if (onTap != null)
+            const Icon(
+              Icons.chevron_right,
+              size: 16,
+              color: AppDesignTokens.iconSubtle,
+            ),
         ],
       ),
     );
+
+    if (onTap == null) return content;
+    return InkWell(onTap: onTap, child: content);
   }
 }
