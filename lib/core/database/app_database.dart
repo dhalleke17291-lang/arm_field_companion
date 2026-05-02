@@ -899,7 +899,6 @@ class YieldDetails extends Table {
   RealColumn get harvestWeight => real().nullable()();
   RealColumn get harvestMoisture => real().nullable()();
   RealColumn get harvestedArea => real().nullable()();
-  RealColumn get convertedYield => real().nullable()();
   RealColumn get standardMoistureUsed => real().nullable()();
 
   DateTimeColumn get createdAt => dateTime()();
@@ -1557,7 +1556,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 76;
+  int get schemaVersion => 77;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -3072,6 +3071,30 @@ WHERE status IN ('draft', 'ready')
 ''');
           }
 
+          if (from < 77) {
+            // Change 1: drop projection column — zero consumers confirmed in
+            // Phase A audit. Remaining yield_details columns are intact.
+            await customStatement(
+                'ALTER TABLE yield_details DROP COLUMN converted_yield');
+            // Change 2: replace broken partial unique index on rating_records.
+            // _createIndexes() uses IF NOT EXISTS throughout, so without an
+            // explicit DROP the null-hole form (bare sub_unit_id) would survive
+            // on every existing device. The DROP lets _createIndexes() below
+            // recreate it with the COALESCE expression that closes the gap.
+            await customStatement('DROP INDEX IF EXISTS idx_rating_current');
+            // Change 3: sync trigger so signals.status is always consistent
+            // with the immutable signal_decision_events log. The manual UPDATE
+            // in SignalRepository.recordDecisionEvent() stays as an idempotent
+            // safety net — having both is harmless.
+            await customStatement('''
+CREATE TRIGGER IF NOT EXISTS sync_signal_status
+AFTER INSERT ON signal_decision_events
+BEGIN
+  UPDATE signals SET status = NEW.resulting_status WHERE id = NEW.signal_id;
+END
+''');
+          }
+
           await _createIndexes();
         },
       );
@@ -3215,7 +3238,7 @@ WHERE status IN ('draft', 'ready')
   Future<void> _createIndexes() async {
     await customStatement('''
       CREATE UNIQUE INDEX IF NOT EXISTS idx_rating_current
-      ON rating_records(trial_id, plot_pk, assessment_id, session_id, sub_unit_id)
+      ON rating_records(trial_id, plot_pk, assessment_id, session_id, COALESCE(sub_unit_id, -1))
       WHERE is_current = 1
     ''');
     await customStatement('''

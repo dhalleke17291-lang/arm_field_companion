@@ -28356,12 +28356,6 @@ class $YieldDetailsTable extends YieldDetails
   late final GeneratedColumn<double> harvestedArea = GeneratedColumn<double>(
       'harvested_area', aliasedName, true,
       type: DriftSqlType.double, requiredDuringInsert: false);
-  static const VerificationMeta _convertedYieldMeta =
-      const VerificationMeta('convertedYield');
-  @override
-  late final GeneratedColumn<double> convertedYield = GeneratedColumn<double>(
-      'converted_yield', aliasedName, true,
-      type: DriftSqlType.double, requiredDuringInsert: false);
   static const VerificationMeta _standardMoistureUsedMeta =
       const VerificationMeta('standardMoistureUsed');
   @override
@@ -28389,7 +28383,6 @@ class $YieldDetailsTable extends YieldDetails
         harvestWeight,
         harvestMoisture,
         harvestedArea,
-        convertedYield,
         standardMoistureUsed,
         createdAt,
         createdBy
@@ -28441,12 +28434,6 @@ class $YieldDetailsTable extends YieldDetails
           harvestedArea.isAcceptableOrUnknown(
               data['harvested_area']!, _harvestedAreaMeta));
     }
-    if (data.containsKey('converted_yield')) {
-      context.handle(
-          _convertedYieldMeta,
-          convertedYield.isAcceptableOrUnknown(
-              data['converted_yield']!, _convertedYieldMeta));
-    }
     if (data.containsKey('standard_moisture_used')) {
       context.handle(
           _standardMoistureUsedMeta,
@@ -28486,8 +28473,6 @@ class $YieldDetailsTable extends YieldDetails
           DriftSqlType.double, data['${effectivePrefix}harvest_moisture']),
       harvestedArea: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}harvested_area']),
-      convertedYield: attachedDatabase.typeMapping
-          .read(DriftSqlType.double, data['${effectivePrefix}converted_yield']),
       standardMoistureUsed: attachedDatabase.typeMapping.read(
           DriftSqlType.double,
           data['${effectivePrefix}standard_moisture_used']),
@@ -28512,7 +28497,6 @@ class YieldDetail extends DataClass implements Insertable<YieldDetail> {
   final double? harvestWeight;
   final double? harvestMoisture;
   final double? harvestedArea;
-  final double? convertedYield;
   final double? standardMoistureUsed;
   final DateTime createdAt;
   final String? createdBy;
@@ -28524,7 +28508,6 @@ class YieldDetail extends DataClass implements Insertable<YieldDetail> {
       this.harvestWeight,
       this.harvestMoisture,
       this.harvestedArea,
-      this.convertedYield,
       this.standardMoistureUsed,
       required this.createdAt,
       this.createdBy});
@@ -28547,9 +28530,6 @@ class YieldDetail extends DataClass implements Insertable<YieldDetail> {
     }
     if (!nullToAbsent || harvestedArea != null) {
       map['harvested_area'] = Variable<double>(harvestedArea);
-    }
-    if (!nullToAbsent || convertedYield != null) {
-      map['converted_yield'] = Variable<double>(convertedYield);
     }
     if (!nullToAbsent || standardMoistureUsed != null) {
       map['standard_moisture_used'] = Variable<double>(standardMoistureUsed);
@@ -28579,9 +28559,6 @@ class YieldDetail extends DataClass implements Insertable<YieldDetail> {
       harvestedArea: harvestedArea == null && nullToAbsent
           ? const Value.absent()
           : Value(harvestedArea),
-      convertedYield: convertedYield == null && nullToAbsent
-          ? const Value.absent()
-          : Value(convertedYield),
       standardMoistureUsed: standardMoistureUsed == null && nullToAbsent
           ? const Value.absent()
           : Value(standardMoistureUsed),
@@ -28603,7 +28580,6 @@ class YieldDetail extends DataClass implements Insertable<YieldDetail> {
       harvestWeight: serializer.fromJson<double?>(json['harvestWeight']),
       harvestMoisture: serializer.fromJson<double?>(json['harvestMoisture']),
       harvestedArea: serializer.fromJson<double?>(json['harvestedArea']),
-      convertedYield: serializer.fromJson<double?>(json['convertedYield']),
       standardMoistureUsed:
           serializer.fromJson<double?>(json['standardMoistureUsed']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -28621,7 +28597,6 @@ class YieldDetail extends DataClass implements Insertable<YieldDetail> {
       'harvestWeight': serializer.toJson<double?>(harvestWeight),
       'harvestMoisture': serializer.toJson<double?>(harvestMoisture),
       'harvestedArea': serializer.toJson<double?>(harvestedArea),
-      'convertedYield': serializer.toJson<double?>(convertedYield),
       'standardMoistureUsed': serializer.toJson<double?>(standardMoistureUsed),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'createdBy': serializer.toJson<String?>(createdBy),
@@ -28636,7 +28611,6 @@ class YieldDetail extends DataClass implements Insertable<YieldDetail> {
           Value<double?> harvestWeight = const Value.absent(),
           Value<double?> harvestMoisture = const Value.absent(),
           Value<double?> harvestedArea = const Value.absent(),
-          Value<double?> convertedYield = const Value.absent(),
           Value<double?> standardMoistureUsed = const Value.absent(),
           DateTime? createdAt,
           Value<String?> createdBy = const Value.absent()}) =>
@@ -28654,8 +28628,6 @@ class YieldDetail extends DataClass implements Insertable<YieldDetail> {
             : this.harvestMoisture,
         harvestedArea:
             harvestedArea.present ? harvestedArea.value : this.harvestedArea,
-        convertedYield:
-            convertedYield.present ? convertedYield.value : this.convertedYield,
         standardMoistureUsed: standardMoistureUsed.present
             ? standardMoistureUsed.value
             : this.standardMoistureUsed,
@@ -28679,9 +28651,6 @@ class YieldDetail extends DataClass implements Insertable<YieldDetail> {
       harvestedArea: data.harvestedArea.present
           ? data.harvestedArea.value
           : this.harvestedArea,
-      convertedYield: data.convertedYield.present
-          ? data.convertedYield.value
-          : this.convertedYield,
       standardMoistureUsed: data.standardMoistureUsed.present
           ? data.standardMoistureUsed.value
           : this.standardMoistureUsed,
@@ -28700,7 +28669,6 @@ class YieldDetail extends DataClass implements Insertable<YieldDetail> {
           ..write('harvestWeight: $harvestWeight, ')
           ..write('harvestMoisture: $harvestMoisture, ')
           ..write('harvestedArea: $harvestedArea, ')
-          ..write('convertedYield: $convertedYield, ')
           ..write('standardMoistureUsed: $standardMoistureUsed, ')
           ..write('createdAt: $createdAt, ')
           ..write('createdBy: $createdBy')
@@ -28717,7 +28685,6 @@ class YieldDetail extends DataClass implements Insertable<YieldDetail> {
       harvestWeight,
       harvestMoisture,
       harvestedArea,
-      convertedYield,
       standardMoistureUsed,
       createdAt,
       createdBy);
@@ -28732,7 +28699,6 @@ class YieldDetail extends DataClass implements Insertable<YieldDetail> {
           other.harvestWeight == this.harvestWeight &&
           other.harvestMoisture == this.harvestMoisture &&
           other.harvestedArea == this.harvestedArea &&
-          other.convertedYield == this.convertedYield &&
           other.standardMoistureUsed == this.standardMoistureUsed &&
           other.createdAt == this.createdAt &&
           other.createdBy == this.createdBy);
@@ -28746,7 +28712,6 @@ class YieldDetailsCompanion extends UpdateCompanion<YieldDetail> {
   final Value<double?> harvestWeight;
   final Value<double?> harvestMoisture;
   final Value<double?> harvestedArea;
-  final Value<double?> convertedYield;
   final Value<double?> standardMoistureUsed;
   final Value<DateTime> createdAt;
   final Value<String?> createdBy;
@@ -28758,7 +28723,6 @@ class YieldDetailsCompanion extends UpdateCompanion<YieldDetail> {
     this.harvestWeight = const Value.absent(),
     this.harvestMoisture = const Value.absent(),
     this.harvestedArea = const Value.absent(),
-    this.convertedYield = const Value.absent(),
     this.standardMoistureUsed = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.createdBy = const Value.absent(),
@@ -28771,7 +28735,6 @@ class YieldDetailsCompanion extends UpdateCompanion<YieldDetail> {
     this.harvestWeight = const Value.absent(),
     this.harvestMoisture = const Value.absent(),
     this.harvestedArea = const Value.absent(),
-    this.convertedYield = const Value.absent(),
     this.standardMoistureUsed = const Value.absent(),
     required DateTime createdAt,
     this.createdBy = const Value.absent(),
@@ -28785,7 +28748,6 @@ class YieldDetailsCompanion extends UpdateCompanion<YieldDetail> {
     Expression<double>? harvestWeight,
     Expression<double>? harvestMoisture,
     Expression<double>? harvestedArea,
-    Expression<double>? convertedYield,
     Expression<double>? standardMoistureUsed,
     Expression<DateTime>? createdAt,
     Expression<String>? createdBy,
@@ -28798,7 +28760,6 @@ class YieldDetailsCompanion extends UpdateCompanion<YieldDetail> {
       if (harvestWeight != null) 'harvest_weight': harvestWeight,
       if (harvestMoisture != null) 'harvest_moisture': harvestMoisture,
       if (harvestedArea != null) 'harvested_area': harvestedArea,
-      if (convertedYield != null) 'converted_yield': convertedYield,
       if (standardMoistureUsed != null)
         'standard_moisture_used': standardMoistureUsed,
       if (createdAt != null) 'created_at': createdAt,
@@ -28814,7 +28775,6 @@ class YieldDetailsCompanion extends UpdateCompanion<YieldDetail> {
       Value<double?>? harvestWeight,
       Value<double?>? harvestMoisture,
       Value<double?>? harvestedArea,
-      Value<double?>? convertedYield,
       Value<double?>? standardMoistureUsed,
       Value<DateTime>? createdAt,
       Value<String?>? createdBy}) {
@@ -28826,7 +28786,6 @@ class YieldDetailsCompanion extends UpdateCompanion<YieldDetail> {
       harvestWeight: harvestWeight ?? this.harvestWeight,
       harvestMoisture: harvestMoisture ?? this.harvestMoisture,
       harvestedArea: harvestedArea ?? this.harvestedArea,
-      convertedYield: convertedYield ?? this.convertedYield,
       standardMoistureUsed: standardMoistureUsed ?? this.standardMoistureUsed,
       createdAt: createdAt ?? this.createdAt,
       createdBy: createdBy ?? this.createdBy,
@@ -28857,9 +28816,6 @@ class YieldDetailsCompanion extends UpdateCompanion<YieldDetail> {
     if (harvestedArea.present) {
       map['harvested_area'] = Variable<double>(harvestedArea.value);
     }
-    if (convertedYield.present) {
-      map['converted_yield'] = Variable<double>(convertedYield.value);
-    }
     if (standardMoistureUsed.present) {
       map['standard_moisture_used'] =
           Variable<double>(standardMoistureUsed.value);
@@ -28883,7 +28839,6 @@ class YieldDetailsCompanion extends UpdateCompanion<YieldDetail> {
           ..write('harvestWeight: $harvestWeight, ')
           ..write('harvestMoisture: $harvestMoisture, ')
           ..write('harvestedArea: $harvestedArea, ')
-          ..write('convertedYield: $convertedYield, ')
           ..write('standardMoistureUsed: $standardMoistureUsed, ')
           ..write('createdAt: $createdAt, ')
           ..write('createdBy: $createdBy')
@@ -55127,7 +55082,6 @@ typedef $$YieldDetailsTableCreateCompanionBuilder = YieldDetailsCompanion
   Value<double?> harvestWeight,
   Value<double?> harvestMoisture,
   Value<double?> harvestedArea,
-  Value<double?> convertedYield,
   Value<double?> standardMoistureUsed,
   required DateTime createdAt,
   Value<String?> createdBy,
@@ -55141,7 +55095,6 @@ typedef $$YieldDetailsTableUpdateCompanionBuilder = YieldDetailsCompanion
   Value<double?> harvestWeight,
   Value<double?> harvestMoisture,
   Value<double?> harvestedArea,
-  Value<double?> convertedYield,
   Value<double?> standardMoistureUsed,
   Value<DateTime> createdAt,
   Value<String?> createdBy,
@@ -55171,7 +55124,6 @@ class $$YieldDetailsTableTableManager extends RootTableManager<
             Value<double?> harvestWeight = const Value.absent(),
             Value<double?> harvestMoisture = const Value.absent(),
             Value<double?> harvestedArea = const Value.absent(),
-            Value<double?> convertedYield = const Value.absent(),
             Value<double?> standardMoistureUsed = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<String?> createdBy = const Value.absent(),
@@ -55184,7 +55136,6 @@ class $$YieldDetailsTableTableManager extends RootTableManager<
             harvestWeight: harvestWeight,
             harvestMoisture: harvestMoisture,
             harvestedArea: harvestedArea,
-            convertedYield: convertedYield,
             standardMoistureUsed: standardMoistureUsed,
             createdAt: createdAt,
             createdBy: createdBy,
@@ -55197,7 +55148,6 @@ class $$YieldDetailsTableTableManager extends RootTableManager<
             Value<double?> harvestWeight = const Value.absent(),
             Value<double?> harvestMoisture = const Value.absent(),
             Value<double?> harvestedArea = const Value.absent(),
-            Value<double?> convertedYield = const Value.absent(),
             Value<double?> standardMoistureUsed = const Value.absent(),
             required DateTime createdAt,
             Value<String?> createdBy = const Value.absent(),
@@ -55210,7 +55160,6 @@ class $$YieldDetailsTableTableManager extends RootTableManager<
             harvestWeight: harvestWeight,
             harvestMoisture: harvestMoisture,
             harvestedArea: harvestedArea,
-            convertedYield: convertedYield,
             standardMoistureUsed: standardMoistureUsed,
             createdAt: createdAt,
             createdBy: createdBy,
@@ -55238,11 +55187,6 @@ class $$YieldDetailsTableFilterComposer
 
   ColumnFilters<double> get harvestedArea => $state.composableBuilder(
       column: $state.table.harvestedArea,
-      builder: (column, joinBuilders) =>
-          ColumnFilters(column, joinBuilders: joinBuilders));
-
-  ColumnFilters<double> get convertedYield => $state.composableBuilder(
-      column: $state.table.convertedYield,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -55319,11 +55263,6 @@ class $$YieldDetailsTableOrderingComposer
 
   ColumnOrderings<double> get harvestedArea => $state.composableBuilder(
       column: $state.table.harvestedArea,
-      builder: (column, joinBuilders) =>
-          ColumnOrderings(column, joinBuilders: joinBuilders));
-
-  ColumnOrderings<double> get convertedYield => $state.composableBuilder(
-      column: $state.table.convertedYield,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
