@@ -1358,7 +1358,11 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
           ),
         ),
         for (int j = 0; j < group.length; j++) ...[
-          if (j > 0) const _SectionDivider(),
+          if (j > 0)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Divider(height: 1, color: AppDesignTokens.borderCrisp),
+            ),
           Padding(
             padding: const EdgeInsets.only(left: 12),
             child: InsightRow(

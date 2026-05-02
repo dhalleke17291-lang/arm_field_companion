@@ -2183,11 +2183,7 @@ class _TrialInsightsCard extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               const Divider(height: 1, color: AppDesignTokens.borderCrisp),
-              for (var i = 0; i < insights.length; i++) ...[
-                if (i > 0)
-                  const Divider(height: 1, color: AppDesignTokens.borderCrisp),
-                _InsightRow(insight: insights[i]),
-              ],
+              ..._buildGroupedInsights(insights),
               if (hasTrends) ...[
                 const Divider(height: 1, color: AppDesignTokens.borderCrisp),
                 const SizedBox(height: 6),
@@ -2217,15 +2213,80 @@ class _TrialInsightsCard extends ConsumerWidget {
       },
     );
   }
+
+  static List<Widget> _buildGroupedInsights(List<TrialInsight> insights) {
+    final groupMap = <String, List<TrialInsight>>{};
+    for (final insight in insights) {
+      if (insight.assessmentName != null) {
+        groupMap.putIfAbsent(insight.assessmentName!, () => []).add(insight);
+      }
+    }
+    final emitted = <String>{};
+    final renderItems = <Widget>[];
+    for (final insight in insights) {
+      if (insight.assessmentName != null &&
+          groupMap[insight.assessmentName!]!.length > 1) {
+        final name = insight.assessmentName!;
+        if (!emitted.contains(name)) {
+          emitted.add(name);
+          if (renderItems.isNotEmpty) {
+            renderItems.add(const Divider(
+                height: 1, color: AppDesignTokens.borderCrisp));
+          }
+          renderItems.add(_buildInsightGroup(groupMap[name]!));
+        }
+      } else {
+        if (renderItems.isNotEmpty) {
+          renderItems.add(
+              const Divider(height: 1, color: AppDesignTokens.borderCrisp));
+        }
+        renderItems.add(_InsightRow(insight: insight));
+      }
+    }
+    return renderItems;
+  }
+
+  static Widget _buildInsightGroup(List<TrialInsight> group) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 4),
+          child: Text(
+            group.first.assessmentName!,
+            style: AppDesignTokens.assessmentGroupHeaderStyle,
+          ),
+        ),
+        for (int j = 0; j < group.length; j++) ...[
+          if (j > 0)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Divider(height: 1, color: AppDesignTokens.borderCrisp),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: _InsightRow(
+              insight: group[j],
+              titleOverride: group[j].treatmentName,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 // TODO: replace with InsightRow from
 // lib/features/trials/widgets/insight_row.dart
 // when this screen is next refactored.
 class _InsightRow extends StatefulWidget {
-  const _InsightRow({required this.insight});
+  const _InsightRow({required this.insight, this.titleOverride});
 
   final TrialInsight insight;
+
+  /// When set, displayed instead of [insight.title]. Used by grouped
+  /// assessment views to show only the treatment name within a group.
+  final String? titleOverride;
 
   @override
   State<_InsightRow> createState() => _InsightRowState();
@@ -2262,7 +2323,7 @@ class _InsightRowState extends State<_InsightRow> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                insight.title,
+                widget.titleOverride ?? insight.title,
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,

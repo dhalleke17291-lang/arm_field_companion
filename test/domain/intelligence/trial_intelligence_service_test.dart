@@ -177,13 +177,44 @@ void main() {
       expect(healthInsights, isNotEmpty);
 
       final health = healthInsights.first;
-      expect(health.title, 'CONTRO');
-      expect(health.detail, contains('Effect size'));
+      expect(health.title, 'CONTRO — developing');
+      expect(health.detail, contains('leading:'));
       expect(health.detail, contains('CV'));
       expect(health.basis.minimumDataMet, isTrue);
       expect(health.basis.sessionCount, 3);
       expect(health.basis.repCount, 4);
       expect(health.basis.method, contains('check mean'));
+    });
+
+    test('trial health closed path: title unchanged, Best treatment framing',
+        () async {
+      final seed = await seedTrial(
+        treatmentCount: 4,
+        repsPerTreatment: 4,
+        sessionCount: 3,
+        includeCheck: true,
+      );
+
+      final trialAssessments = await db.select(db.assessments).get();
+      final assessmentId = trialAssessments
+          .where((a) => a.trialId == seed.trialId)
+          .first
+          .id;
+
+      final insights = await service.computeInsights(
+        trialId: seed.trialId,
+        treatments: seed.treatments,
+        assessmentNames: {assessmentId: 'CONTRO'},
+        trialIsClosed: true,
+      );
+
+      final healthInsights =
+          insights.where((i) => i.type == InsightType.trialHealth).toList();
+      expect(healthInsights, isNotEmpty);
+
+      final health = healthInsights.first;
+      expect(health.title, 'CONTRO');
+      expect(health.detail, contains('Best treatment:'));
     });
 
     test(
@@ -205,7 +236,7 @@ void main() {
       final healthInsights =
           insights.where((i) => i.type == InsightType.trialHealth).toList();
       expect(healthInsights, isNotEmpty);
-      expect(healthInsights.first.title, 'Trial health');
+      expect(healthInsights.first.title, 'Trial health — developing');
     });
 
     test('trial health absent without check treatment', () async {

@@ -2046,12 +2046,14 @@ final trialInsightsProvider = FutureProvider.autoDispose
           pair.$1.sortOrder,
         ),
   };
+  final trial = await ref.watch(trialProvider(trialId).future);
   return ref
       .watch(trialIntelligenceServiceProvider)
       .computeInsights(
           trialId: trialId,
           treatments: treatments,
-          assessmentNames: assessmentNames);
+          assessmentNames: assessmentNames,
+          trialIsClosed: trial?.status == kTrialStatusClosed);
 });
 
 // ---------------------------------------------------------------------------
