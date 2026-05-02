@@ -315,6 +315,7 @@ class TrialDataScreen extends ConsumerStatefulWidget {
 class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
   bool _footerExpanded = false;
   final Set<int> _expandedTreatmentIds = {};
+  final _section3Key = GlobalKey();
 
   static const double _kTreatColWidth = 160.0;
   static const double _kAssessColWidth = 86.0;
@@ -418,7 +419,10 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
         '$treatY treatment${treatY == 1 ? '' : 's'} · '
         '$assessZ assessment${assessZ == 1 ? '' : 's'}';
 
-    // TODO: wire tap-to-scroll when section keys are established in a future refactor.
+    final issues = openCount +
+        data.amendedRatings.length +
+        data.outlierCandidates.length;
+
     return ColoredBox(
       color: AppDesignTokens.sectionHeaderBg,
       child: Column(
@@ -428,7 +432,22 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
           _summaryRow(label: 'Execution', suffix: execSuffix),
           const Divider(
               height: 1, thickness: 0.5, color: AppDesignTokens.borderCrisp),
-          _summaryRow(label: 'Data quality', suffix: qualitySuffix),
+          _summaryRow(
+            label: 'Data quality',
+            suffix: qualitySuffix,
+            onTap: issues > 0
+                ? () {
+                    final ctx = _section3Key.currentContext;
+                    if (ctx != null) {
+                      Scrollable.ensureVisible(
+                        ctx,
+                        duration: const Duration(milliseconds: 350),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  }
+                : null,
+          ),
           const Divider(
               height: 1, thickness: 0.5, color: AppDesignTokens.borderCrisp),
           _summaryRow(label: 'Results', suffix: resultsSuffix),
@@ -437,7 +456,11 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     );
   }
 
-  Widget _summaryRow({required String label, required String suffix}) {
+  Widget _summaryRow({
+    required String label,
+    required String suffix,
+    VoidCallback? onTap,
+  }) {
     final Color suffixColor;
     if (suffix.endsWith('to review') || suffix.endsWith('found')) {
       suffixColor = AppDesignTokens.warningFg;
@@ -448,7 +471,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
       suffixColor = AppDesignTokens.primaryText;
     }
 
-    return Padding(
+    final row = Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppDesignTokens.spacing16,
         vertical: AppDesignTokens.spacing12,
@@ -468,9 +491,20 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
               style: TextStyle(fontSize: 13, color: suffixColor),
             ),
           ),
+          if (onTap != null)
+            const Icon(
+              Icons.chevron_right,
+              size: 14,
+              color: AppDesignTokens.secondaryText,
+            ),
         ],
       ),
     );
+
+    if (onTap != null) {
+      return GestureDetector(onTap: onTap, child: row);
+    }
+    return row;
   }
 
   // -------------------------------------------------------------------------
@@ -673,6 +707,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
   Widget _buildSection3(Trial trial) {
     final analysisAsync = ref.watch(_trialAnalysisDataProvider(trial.id));
     return _SectionCard(
+      key: _section3Key,
       title: '3. Assessment quality',
       child: analysisAsync.when(
         loading: () => const AppLoadingView(),
@@ -1405,6 +1440,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
 
 class _SectionCard extends StatelessWidget {
   const _SectionCard({
+    super.key,
     required this.title,
     required this.child,
     this.isCollapsible = false,
