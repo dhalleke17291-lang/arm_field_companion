@@ -200,11 +200,73 @@ class CompletenessDashboardScreen extends ConsumerWidget {
               ),
             ),
           ),
-          for (final check in entry.value)
-            _CheckRow(check: check),
+          ..._sectionRows(entry.value),
         ],
       ],
     );
+  }
+
+  /// Renders checks for one section:
+  /// blockers and warnings flat (always visible),
+  /// info and passed each in a collapsed ExpansionTile.
+  List<Widget> _sectionRows(List<TrialReadinessCheck> checks) {
+    final blockers = checks
+        .where((c) => c.severity == TrialCheckSeverity.blocker)
+        .toList();
+    final warnings = checks
+        .where((c) => c.severity == TrialCheckSeverity.warning)
+        .toList();
+    final infos = checks
+        .where((c) => c.severity == TrialCheckSeverity.info)
+        .toList();
+    final passes = checks
+        .where((c) => c.severity == TrialCheckSeverity.pass)
+        .toList();
+
+    return [
+      for (final c in blockers) _CheckRow(check: c),
+      for (final c in warnings) _CheckRow(check: c),
+      if (infos.isNotEmpty)
+        ExpansionTile(
+          initiallyExpanded: false,
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: EdgeInsets.zero,
+          leading: const Icon(
+            Icons.info_outline,
+            size: 16,
+            color: AppDesignTokens.secondaryText,
+          ),
+          title: Text(
+            '${infos.length} informational',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          children: infos.map((c) => _CheckRow(check: c)).toList(),
+        ),
+      if (passes.isNotEmpty)
+        ExpansionTile(
+          initiallyExpanded: false,
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: EdgeInsets.zero,
+          leading: const Icon(
+            Icons.check_circle_outline,
+            size: 16,
+            color: AppDesignTokens.successFg,
+          ),
+          title: Text(
+            '${passes.length} passed',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppDesignTokens.successFg,
+            ),
+          ),
+          children: passes.map((c) => _CheckRow(check: c)).toList(),
+        ),
+    ];
   }
 }
 
