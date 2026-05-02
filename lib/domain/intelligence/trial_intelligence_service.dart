@@ -137,6 +137,7 @@ class TrialIntelligenceService {
         treatments: treatments,
         assessmentId: aid,
         repCount: repCount,
+        assessmentNames: assessmentNames,
       );
       if (healthInsight != null) insights.add(healthInsight);
 
@@ -305,6 +306,7 @@ class TrialIntelligenceService {
     required List<Treatment> treatments,
     required int assessmentId,
     required int repCount,
+    Map<int, String> assessmentNames = const {},
   }) {
     if (sessions.length < kMinSessionsForHealth ||
         repCount < kMinRepsForHealth) {
@@ -391,7 +393,7 @@ class TrialIntelligenceService {
 
     return TrialInsight(
       type: InsightType.trialHealth,
-      title: 'Trial health',
+      title: assessmentNames[assessmentId] ?? 'Trial health',
       detail: '${detailParts.join('. ')}.',
       basis: InsightBasis(
         repCount: repCount,

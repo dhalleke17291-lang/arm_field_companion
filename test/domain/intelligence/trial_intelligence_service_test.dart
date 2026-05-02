@@ -149,7 +149,45 @@ void main() {
       }
     });
 
-    test('trial health appears with 3+ sessions and check treatment',
+    test(
+        'trial health title shows assessment name when assessmentNames provided',
+        () async {
+      final seed = await seedTrial(
+        treatmentCount: 4,
+        repsPerTreatment: 4,
+        sessionCount: 3,
+        includeCheck: true,
+      );
+
+      final trialAssessments =
+          await db.select(db.assessments).get();
+      final assessmentId = trialAssessments
+          .where((a) => a.trialId == seed.trialId)
+          .first
+          .id;
+
+      final insights = await service.computeInsights(
+        trialId: seed.trialId,
+        treatments: seed.treatments,
+        assessmentNames: {assessmentId: 'CONTRO'},
+      );
+
+      final healthInsights =
+          insights.where((i) => i.type == InsightType.trialHealth).toList();
+      expect(healthInsights, isNotEmpty);
+
+      final health = healthInsights.first;
+      expect(health.title, 'CONTRO');
+      expect(health.detail, contains('Effect size'));
+      expect(health.detail, contains('CV'));
+      expect(health.basis.minimumDataMet, isTrue);
+      expect(health.basis.sessionCount, 3);
+      expect(health.basis.repCount, 4);
+      expect(health.basis.method, contains('check mean'));
+    });
+
+    test(
+        'trial health title falls back to "Trial health" when assessmentNames absent',
         () async {
       final seed = await seedTrial(
         treatmentCount: 4,
@@ -161,20 +199,13 @@ void main() {
       final insights = await service.computeInsights(
         trialId: seed.trialId,
         treatments: seed.treatments,
+        // assessmentNames not provided → default empty map
       );
 
       final healthInsights =
           insights.where((i) => i.type == InsightType.trialHealth).toList();
       expect(healthInsights, isNotEmpty);
-
-      final health = healthInsights.first;
-      expect(health.title, 'Trial health');
-      expect(health.detail, contains('Effect size'));
-      expect(health.detail, contains('CV'));
-      expect(health.basis.minimumDataMet, isTrue);
-      expect(health.basis.sessionCount, 3);
-      expect(health.basis.repCount, 4);
-      expect(health.basis.method, contains('check mean'));
+      expect(healthInsights.first.title, 'Trial health');
     });
 
     test('trial health absent without check treatment', () async {
