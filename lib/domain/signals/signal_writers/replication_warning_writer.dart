@@ -42,12 +42,27 @@ class ReplicationWarningWriter {
     final ratedPlotPks = ratedRows.map((r) => r.plotPk).toSet();
     if (ratedPlotPks.isEmpty) return [];
 
+    // Build assignments-first treatment map (ARM) with plots.treatmentId fallback.
+    final asgn = await (_db.select(_db.assignments)
+          ..where((a) => a.trialId.equals(trialId)))
+        .get();
+    final plotToTreatment = <int, int>{};
+    for (final a in asgn) {
+      if (a.treatmentId != null) plotToTreatment[a.plotId] = a.treatmentId!;
+    }
+    for (final p in allPlots) {
+      if (!plotToTreatment.containsKey(p.id) && p.treatmentId != null) {
+        plotToTreatment[p.id] = p.treatmentId!;
+      }
+    }
+
     // Treatment → set of rated plot PKs.
     final ratedByTreatment = <int, Set<int>>{};
     for (final plot in allPlots) {
-      if (plot.treatmentId == null) continue;
+      final tId = plotToTreatment[plot.id];
+      if (tId == null) continue;
       if (!ratedPlotPks.contains(plot.id)) continue;
-      ratedByTreatment.putIfAbsent(plot.treatmentId!, () => {}).add(plot.id);
+      ratedByTreatment.putIfAbsent(tId, () => {}).add(plot.id);
     }
 
     final raised = <int>[];

@@ -45,10 +45,18 @@ class AovErrorVarianceWriter {
       final plots = await (_db.select(_db.plots)
             ..where((p) => p.id.isIn(plotPks)))
           .get();
-      final plotTreatment = {
-        for (final p in plots)
-          if (p.treatmentId != null) p.id: p.treatmentId!,
-      };
+      final asgn = await (_db.select(_db.assignments)
+            ..where((a) => a.plotId.isIn(plotPks)))
+          .get();
+      final plotTreatment = <int, int>{};
+      for (final a in asgn) {
+        if (a.treatmentId != null) plotTreatment[a.plotId] = a.treatmentId!;
+      }
+      for (final p in plots) {
+        if (!plotTreatment.containsKey(p.id) && p.treatmentId != null) {
+          plotTreatment[p.id] = p.treatmentId!;
+        }
+      }
 
       // Group values by treatment.
       final valuesByTreatment = <int, List<double>>{};
