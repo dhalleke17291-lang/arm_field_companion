@@ -4,6 +4,7 @@ import 'dart:developer' show log;
 import 'package:drift/drift.dart';
 
 import '../../core/database/app_database.dart';
+import '../../core/diagnostics/diagnostic_finding.dart';
 import '../../domain/ratings/rating_integrity_exception.dart';
 import '../../domain/ratings/result_status.dart';
 
@@ -56,6 +57,67 @@ class RatingRepository {
     await (_db.update(_db.ratingRecords)..where((r) => r.id.isIn(otherIds)))
         .write(const RatingRecordsCompanion(isCurrent: Value(false)));
     return keeper;
+  }
+
+  /// Scans all `is_current=true` rows in the given scope, groups them by
+  /// logical key `(trialId, plotPk, assessmentId, sessionId, subUnitId)`,
+  /// and repairs any groups with duplicate flags via [_pickCurrentAndDedupe].
+  ///
+  /// Returns a [DiagnosticFinding] with code
+  /// `'rating_current_flag_drift_corrected'` for each group where drift was
+  /// found and corrected. Call this before every export read that filters on
+  /// `is_current = true`.
+  Future<List<DiagnosticFinding>> repairCurrentFlagsForExport({
+    int? trialId,
+    int? sessionId,
+  }) async {
+    assert(
+      trialId != null || sessionId != null,
+      'Provide trialId or sessionId',
+    );
+    final query = _db.select(_db.ratingRecords)
+      ..where((r) {
+        final base = r.isCurrent.equals(true) & r.isDeleted.equals(false);
+        if (sessionId != null) return base & r.sessionId.equals(sessionId);
+        return base & r.trialId.equals(trialId!);
+      });
+    final rows = await query.get();
+
+    // Group by logical key — same 5-tuple used by idx_rating_current.
+    final groups = <String, List<RatingRecord>>{};
+    for (final r in rows) {
+      final key =
+          '${r.trialId}|${r.plotPk}|${r.assessmentId}|${r.sessionId}|${r.subUnitId}';
+      groups.putIfAbsent(key, () => []).add(r);
+    }
+
+    final findings = <DiagnosticFinding>[];
+    for (final group in groups.values) {
+      if (group.length <= 1) continue;
+      final correctedCount = group.length - 1;
+      await _pickCurrentAndDedupe(
+        group,
+        logContext: 'repairCurrentFlagsForExport',
+      );
+      findings.add(DiagnosticFinding(
+        code: 'rating_current_flag_drift_corrected',
+        severity: DiagnosticSeverity.warning,
+        message:
+            'Corrected $correctedCount duplicate is_current flag(s) before export.',
+        detail: 'trial_id=${group.first.trialId} '
+            'session_id=${group.first.sessionId} '
+            'plot_pk=${group.first.plotPk} '
+            'assessment_id=${group.first.assessmentId} '
+            'corrected=$correctedCount '
+            'ts=${DateTime.now().toUtc().toIso8601String()}',
+        trialId: group.first.trialId,
+        sessionId: group.first.sessionId,
+        plotPk: group.first.plotPk,
+        source: DiagnosticSource.exportValidation,
+        blocksExport: false,
+      ));
+    }
+    return findings;
   }
 
   // Get current rating for a plot/assessment/session combination

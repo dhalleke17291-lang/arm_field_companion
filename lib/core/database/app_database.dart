@@ -1556,7 +1556,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 74;
+  int get schemaVersion => 75;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -3046,6 +3046,18 @@ INSERT OR REPLACE INTO sqlite_sequence (name, seq)
 SELECT 'se_type_causal_profiles', COALESCE((SELECT MAX(id) FROM se_type_causal_profiles), 0)
 ''');
             }
+          }
+
+          if (from < 75) {
+            // Data-repair: advance trials that have session data but were left
+            // in draft/ready due to silent promoteTrialToActiveIfReady failures.
+            // Idempotent — running twice updates zero rows on the second run.
+            await customStatement('''
+UPDATE trials
+SET status = 'active'
+WHERE status IN ('draft', 'ready')
+  AND id IN (SELECT DISTINCT trial_id FROM sessions WHERE is_deleted = 0)
+''');
           }
 
           await _createIndexes();

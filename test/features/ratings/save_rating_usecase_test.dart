@@ -9,6 +9,7 @@ import 'package:arm_field_companion/domain/ratings/rating_integrity_guard.dart';
 import 'package:arm_field_companion/domain/signals/signal_models.dart';
 import 'package:arm_field_companion/domain/signals/signal_providers.dart';
 import 'package:arm_field_companion/domain/signals/signal_writers/timing_window_violation_writer.dart';
+import 'package:arm_field_companion/core/diagnostics/diagnostic_finding.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
 
@@ -287,6 +288,12 @@ class MockRatingRepository implements RatingRepository {
     required int plotPk,
   }) async =>
       [];
+
+  @override
+  Future<List<DiagnosticFinding>> repairCurrentFlagsForExport({
+    int? trialId,
+    int? sessionId,
+  }) async => [];
 }
 
 class _NoOpRatingReferentialIntegrity implements RatingReferentialIntegrity {

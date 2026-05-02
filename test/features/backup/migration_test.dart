@@ -62,7 +62,7 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 74);
+    expect(db.schemaVersion, 75);
 
     final names = await _tableNames(db);
     expect(names, contains(_kApplicationSlots));
@@ -192,4 +192,142 @@ void main() {
       expect(prefixes, containsAll({'CONTRO', 'PHYGEN'}));
       expect(profiles.length, 2, reason: 'INSERT OR IGNORE must not produce duplicate seed rows');
     });
+
+  group('v75 data-repair migration: trials.status advance', () {
+    test(
+      'trial with draft status and a session is promoted to active',
+      () async {
+        final dbFile = File(p.join(docsPath, 'v75_promote_draft.db'));
+
+        // Start at v74 with a draft trial that has a session.
+        var db = AppDatabase.forTesting(
+            NativeDatabase.createInBackground(dbFile));
+        await db.customStatement(
+            "INSERT INTO trials (name, status, workspace_type, region) "
+            "VALUES ('T1', 'draft', 'efficacy', 'eppo_eu')");
+        final trialId =
+            (await db.customSelect('SELECT last_insert_rowid() AS id').get())
+                .first
+                .read<int>('id');
+        await db.customStatement(
+            "INSERT INTO sessions (trial_id, name, session_date_local, status, "
+            "is_deleted, started_at) VALUES ($trialId, 'S1', '2026-05-01', "
+            "'open', 0, ${DateTime.now().millisecondsSinceEpoch})");
+        await db.close();
+
+        _setUserVersion(dbFile.path, 74);
+        db = AppDatabase.forTesting(
+            NativeDatabase.createInBackground(dbFile));
+        addTearDown(db.close);
+
+        final trial = await (db.select(db.trials)
+              ..where((t) => t.id.equals(trialId)))
+            .getSingleOrNull();
+        expect(trial?.status, 'active',
+            reason: 'draft trial with a session must be promoted to active');
+      },
+    );
+
+    test(
+      'trial with ready status and a session is promoted to active',
+      () async {
+        final dbFile = File(p.join(docsPath, 'v75_promote_ready.db'));
+
+        var db = AppDatabase.forTesting(
+            NativeDatabase.createInBackground(dbFile));
+        await db.customStatement(
+            "INSERT INTO trials (name, status, workspace_type, region) "
+            "VALUES ('T2', 'ready', 'efficacy', 'eppo_eu')");
+        final trialId =
+            (await db.customSelect('SELECT last_insert_rowid() AS id').get())
+                .first
+                .read<int>('id');
+        await db.customStatement(
+            "INSERT INTO sessions (trial_id, name, session_date_local, status, "
+            "is_deleted, started_at) VALUES ($trialId, 'S2', '2026-05-01', "
+            "'open', 0, ${DateTime.now().millisecondsSinceEpoch})");
+        await db.close();
+
+        _setUserVersion(dbFile.path, 74);
+        db = AppDatabase.forTesting(
+            NativeDatabase.createInBackground(dbFile));
+        addTearDown(db.close);
+
+        final trial = await (db.select(db.trials)
+              ..where((t) => t.id.equals(trialId)))
+            .getSingleOrNull();
+        expect(trial?.status, 'active');
+      },
+    );
+
+    test(
+      'trial with draft status and no sessions is not touched',
+      () async {
+        final dbFile = File(p.join(docsPath, 'v75_no_session.db'));
+
+        var db = AppDatabase.forTesting(
+            NativeDatabase.createInBackground(dbFile));
+        await db.customStatement(
+            "INSERT INTO trials (name, status, workspace_type, region) "
+            "VALUES ('T3', 'draft', 'efficacy', 'eppo_eu')");
+        final trialId =
+            (await db.customSelect('SELECT last_insert_rowid() AS id').get())
+                .first
+                .read<int>('id');
+        await db.close();
+
+        _setUserVersion(dbFile.path, 74);
+        db = AppDatabase.forTesting(
+            NativeDatabase.createInBackground(dbFile));
+        addTearDown(db.close);
+
+        final trial = await (db.select(db.trials)
+              ..where((t) => t.id.equals(trialId)))
+            .getSingleOrNull();
+        expect(trial?.status, 'draft',
+            reason: 'draft trial with no sessions must not be promoted');
+      },
+    );
+
+    test(
+      'v75 migration is idempotent — running twice leaves correct state',
+      () async {
+        final dbFile = File(p.join(docsPath, 'v75_idempotent.db'));
+
+        var db = AppDatabase.forTesting(
+            NativeDatabase.createInBackground(dbFile));
+        await db.customStatement(
+            "INSERT INTO trials (name, status, workspace_type, region) "
+            "VALUES ('T4', 'draft', 'efficacy', 'eppo_eu')");
+        final trialId =
+            (await db.customSelect('SELECT last_insert_rowid() AS id').get())
+                .first
+                .read<int>('id');
+        await db.customStatement(
+            "INSERT INTO sessions (trial_id, name, session_date_local, status, "
+            "is_deleted, started_at) VALUES ($trialId, 'S4', '2026-05-01', "
+            "'open', 0, ${DateTime.now().millisecondsSinceEpoch})");
+        // Already at v75 — run migration a second time via raw SQL to prove idempotency.
+        await db.customStatement('''
+UPDATE trials SET status = 'active'
+WHERE status IN ('draft', 'ready')
+  AND id IN (SELECT DISTINCT trial_id FROM sessions WHERE is_deleted = 0)
+''');
+        await db.customStatement('''
+UPDATE trials SET status = 'active'
+WHERE status IN ('draft', 'ready')
+  AND id IN (SELECT DISTINCT trial_id FROM sessions WHERE is_deleted = 0)
+''');
+        addTearDown(db.close);
+
+        final trial = await (db.select(db.trials)
+              ..where((t) => t.id.equals(trialId)))
+            .getSingleOrNull();
+        expect(trial?.status, 'active');
+        // No duplicate rows created, no error thrown.
+        final all = await db.select(db.trials).get();
+        expect(all.where((t) => t.id == trialId).length, 1);
+      },
+    );
+  });
 }

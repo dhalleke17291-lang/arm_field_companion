@@ -1,4 +1,5 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/core/diagnostics/diagnostic_finding.dart';
 import 'package:arm_field_companion/features/sessions/session_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
@@ -574,6 +575,12 @@ class FakeRatingRepository implements RatingRepository {
     required int plotPk,
   }) async =>
       [];
+
+  @override
+  Future<List<DiagnosticFinding>> repairCurrentFlagsForExport({
+    int? trialId,
+    int? sessionId,
+  }) async => [];
 }
 
 /// Use case double that returns a configurable result for widget tests.

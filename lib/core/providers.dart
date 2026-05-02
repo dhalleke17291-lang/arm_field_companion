@@ -1283,7 +1283,10 @@ final plotPksWithCorrectionsForSessionProvider =
 // ===== Export (CSV) =====
 
 final exportRepositoryProvider = Provider<ExportRepository>((ref) {
-  return ExportRepository(ref.watch(databaseProvider));
+  return ExportRepository(
+    ref.watch(databaseProvider),
+    ratingRepository: ref.watch(ratingRepositoryProvider),
+  );
 });
 
 final exportSessionCsvUsecaseProvider =
