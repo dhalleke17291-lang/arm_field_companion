@@ -4,9 +4,13 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../domain/models/trial_insight.dart';
 
 class InsightRow extends StatefulWidget {
-  const InsightRow({super.key, required this.insight});
+  const InsightRow({super.key, required this.insight, this.titleOverride});
 
   final TrialInsight insight;
+
+  /// When set, displayed instead of [insight.title]. Used by grouped
+  /// assessment views to show only the treatment name within a group.
+  final String? titleOverride;
 
   @override
   State<InsightRow> createState() => _InsightRowState();
@@ -43,7 +47,7 @@ class _InsightRowState extends State<InsightRow> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                insight.title,
+                widget.titleOverride ?? insight.title,
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
