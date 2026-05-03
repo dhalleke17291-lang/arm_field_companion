@@ -14,6 +14,8 @@ const List<String> kCtqDefaultFactorKeys = [
   'rater_consistency',
   'photo_evidence',
   'gps_evidence',
+  'data_variance',
+  'untreated_check_pressure',
 ];
 
 const _kDefaultCtqFactors = [
@@ -27,6 +29,8 @@ const _kDefaultCtqFactors = [
   (key: 'rater_consistency', label: 'Rater Consistency', type: 'data_integrity', importance: 'standard'),
   (key: 'photo_evidence', label: 'Photo Evidence', type: 'documentation', importance: 'standard'),
   (key: 'gps_evidence', label: 'GPS Evidence', type: 'documentation', importance: 'supplementary'),
+  (key: 'data_variance', label: 'Data Variance', type: 'interpretation_risk', importance: 'high'),
+  (key: 'untreated_check_pressure', label: 'Untreated Check Pressure', type: 'interpretation_risk', importance: 'high'),
 ];
 
 class CtqFactorDefinitionRepository {
@@ -94,7 +98,8 @@ class CtqFactorDefinitionRepository {
     ));
   }
 
-  /// Seeds default CTQ factors for a purpose. Idempotent — skips if factors already exist.
+  /// Seeds default CTQ factors for a purpose. Additive per key — inserts only
+  /// keys that are not already present, leaving existing rows untouched.
   Future<void> seedDefaultCtqFactorsForPurpose({
     required int trialId,
     required int trialPurposeId,
@@ -102,8 +107,10 @@ class CtqFactorDefinitionRepository {
     final existing = await (_db.select(_db.ctqFactorDefinitions)
           ..where((f) => f.trialPurposeId.equals(trialPurposeId)))
         .get();
-    if (existing.isNotEmpty) return;
-    for (final f in _kDefaultCtqFactors) {
+    final existingKeys = existing.map((f) => f.factorKey).toSet();
+    final toSeed =
+        _kDefaultCtqFactors.where((f) => !existingKeys.contains(f.key));
+    for (final f in toSeed) {
       await addCtqFactorDefinition(
         trialId: trialId,
         trialPurposeId: trialPurposeId,

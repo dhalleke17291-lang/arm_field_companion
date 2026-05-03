@@ -42,11 +42,12 @@ void main() {
     return ctx;
   }
 
-  Future<int> makePlot(int trialId, {bool isGuard = false}) =>
+  Future<int> makePlot(int trialId, {bool isGuard = false, int? treatmentId}) =>
       db.into(db.plots).insert(PlotsCompanion.insert(
         trialId: trialId,
         plotId: 'P${DateTime.now().microsecondsSinceEpoch}',
         isGuardRow: Value(isGuard),
+        treatmentId: Value(treatmentId),
       ));
 
   Future<int> makeSession(int trialId) =>
@@ -68,6 +69,7 @@ void main() {
     int assessmentId, {
     double? lat,
     double? lng,
+    double? numericValue,
   }) =>
       db.into(db.ratingRecords).insert(RatingRecordsCompanion.insert(
         trialId: trialId,
@@ -76,6 +78,14 @@ void main() {
         assessmentId: assessmentId,
         capturedLatitude: Value(lat),
         capturedLongitude: Value(lng),
+        numericValue: Value(numericValue),
+      ));
+
+  Future<int> makeCheckTreatment(int trialId) =>
+      db.into(db.treatments).insert(TreatmentsCompanion.insert(
+        trialId: trialId,
+        code: 'CHK',
+        name: 'Untreated Check',
       ));
 
   Future<void> makePhoto(int trialId, int plotPk, int sessionId) =>
@@ -338,6 +348,153 @@ void main() {
     expect(dto.blockerCount, 0);
     expect(dto.warningCount, 0);
     expect(dto.reviewCount, 0);
+  });
+
+  // ── rating_window upgrades ────────────────────────────────────────────────
+
+  test(
+      '14: rating_window is review_needed when a causal_context_flag signal is open',
+      () async {
+    final ctx = await makeSeededTrial();
+    final plotPk = await makePlot(ctx.trialId);
+    final sessionId = await makeSession(ctx.trialId);
+    final assessmentId = await makeAssessment(ctx.trialId);
+    await makeRating(ctx.trialId, plotPk, sessionId, assessmentId);
+    await makeSignal(ctx.trialId,
+        type: 'causal_context_flag', severity: 'review');
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'rating_window')?.status, 'review_needed');
+    expect(dto.reviewCount, greaterThanOrEqualTo(1));
+  });
+
+  test(
+      '15: rating_window is satisfied when ratings exist and no timing-window signal',
+      () async {
+    final ctx = await makeSeededTrial();
+    final plotPk = await makePlot(ctx.trialId);
+    final sessionId = await makeSession(ctx.trialId);
+    final assessmentId = await makeAssessment(ctx.trialId);
+    await makeRating(ctx.trialId, plotPk, sessionId, assessmentId);
+    // no causal_context_flag signal → satisfied
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'rating_window')?.status, 'satisfied');
+  });
+
+  test('15b: resolved causal_context_flag does not trigger rating_window review',
+      () async {
+    final ctx = await makeSeededTrial();
+    final plotPk = await makePlot(ctx.trialId);
+    final sessionId = await makeSession(ctx.trialId);
+    final assessmentId = await makeAssessment(ctx.trialId);
+    await makeRating(ctx.trialId, plotPk, sessionId, assessmentId);
+    await makeSignal(ctx.trialId,
+        type: 'causal_context_flag', severity: 'review', status: 'resolved');
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'rating_window')?.status, 'satisfied');
+  });
+
+  // ── data_variance ─────────────────────────────────────────────────────────
+
+  test('16: data_variance is unknown when no ratings exist', () async {
+    final ctx = await makeSeededTrial();
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'data_variance')?.status, 'unknown');
+  });
+
+  test(
+      '17: data_variance is unknown when fewer than 3 replicates per assessment',
+      () async {
+    final ctx = await makeSeededTrial();
+    final sessionId = await makeSession(ctx.trialId);
+    final assessmentId = await makeAssessment(ctx.trialId);
+    // 2 ratings — below the 3-rep minimum
+    for (final v in [10.0, 12.0]) {
+      final plotPk = await makePlot(ctx.trialId);
+      await makeRating(ctx.trialId, plotPk, sessionId, assessmentId,
+          numericValue: v);
+    }
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'data_variance')?.status, 'unknown');
+  });
+
+  test('18: data_variance is review_needed when CV ≥ 50%', () async {
+    final ctx = await makeSeededTrial();
+    final sessionId = await makeSession(ctx.trialId);
+    final assessmentId = await makeAssessment(ctx.trialId);
+    // Values [1.0, 1.0, 200.0] → CV ≈ 171% — well above the 50% threshold
+    for (final v in [1.0, 1.0, 200.0]) {
+      final plotPk = await makePlot(ctx.trialId);
+      await makeRating(ctx.trialId, plotPk, sessionId, assessmentId,
+          numericValue: v);
+    }
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'data_variance')?.status, 'review_needed');
+  });
+
+  test('19: data_variance is satisfied when CV < 50%', () async {
+    final ctx = await makeSeededTrial();
+    final sessionId = await makeSession(ctx.trialId);
+    final assessmentId = await makeAssessment(ctx.trialId);
+    // Values [10.0, 11.0, 12.0] → CV ≈ 9.1% — well below the 50% threshold
+    for (final v in [10.0, 11.0, 12.0]) {
+      final plotPk = await makePlot(ctx.trialId);
+      await makeRating(ctx.trialId, plotPk, sessionId, assessmentId,
+          numericValue: v);
+    }
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'data_variance')?.status, 'satisfied');
+  });
+
+  // ── untreated_check_pressure ──────────────────────────────────────────────
+
+  test('20: untreated_check_pressure is unknown when no check treatment exists',
+      () async {
+    final ctx = await makeSeededTrial();
+    await makeTreatment(ctx.trialId); // non-check treatment (code: 'TRT_A')
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'untreated_check_pressure')?.status, 'unknown');
+  });
+
+  test(
+      '21: untreated_check_pressure is unknown when check plots have no numeric values',
+      () async {
+    final ctx = await makeSeededTrial();
+    final checkId = await makeCheckTreatment(ctx.trialId);
+    final plotPk = await makePlot(ctx.trialId, treatmentId: checkId);
+    final sessionId = await makeSession(ctx.trialId);
+    final assessmentId = await makeAssessment(ctx.trialId);
+    // rating with no numericValue → checkValues list remains empty
+    await makeRating(ctx.trialId, plotPk, sessionId, assessmentId);
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'untreated_check_pressure')?.status, 'unknown');
+  });
+
+  test(
+      '22: untreated_check_pressure is review_needed when check mean is at floor zero',
+      () async {
+    final ctx = await makeSeededTrial();
+    final checkId = await makeCheckTreatment(ctx.trialId);
+    final plotPk = await makePlot(ctx.trialId, treatmentId: checkId);
+    final sessionId = await makeSession(ctx.trialId);
+    final assessmentId = await makeAssessment(ctx.trialId);
+    await makeRating(ctx.trialId, plotPk, sessionId, assessmentId,
+        numericValue: 0.0);
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'untreated_check_pressure')?.status, 'review_needed');
+  });
+
+  test(
+      '23: untreated_check_pressure is satisfied when check plots show non-zero mean',
+      () async {
+    final ctx = await makeSeededTrial();
+    final checkId = await makeCheckTreatment(ctx.trialId);
+    final plotPk = await makePlot(ctx.trialId, treatmentId: checkId);
+    final sessionId = await makeSession(ctx.trialId);
+    final assessmentId = await makeAssessment(ctx.trialId);
+    await makeRating(ctx.trialId, plotPk, sessionId, assessmentId,
+        numericValue: 25.0);
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'untreated_check_pressure')?.status, 'satisfied');
   });
 
   // ── DTO structure (pure model, no DB) ─────────────────────────────────────
