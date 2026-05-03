@@ -111,6 +111,29 @@ void main() {
         ),
       );
 
+  Future<void> makeApplicationWithBbch(int trialId, {int? bbch}) =>
+      db.into(db.trialApplicationEvents).insert(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: DateTime(2026, 4, 1),
+          growthStageBbchAtApplication: Value(bbch),
+        ),
+      );
+
+  Future<void> makeTreatmentComponent(
+    int trialId,
+    int treatmentId, {
+    String? pesticideCategory,
+  }) =>
+      db.into(db.treatmentComponents).insert(
+        TreatmentComponentsCompanion.insert(
+          trialId: trialId,
+          treatmentId: treatmentId,
+          productName: 'Test Product',
+          pesticideCategory: Value(pesticideCategory),
+        ),
+      );
+
   Future<void> makeSignal(
     int trialId, {
     required String type,
@@ -495,6 +518,90 @@ void main() {
         numericValue: 25.0);
     final dto = await evaluate(ctx.trialId);
     expect(factorItem(dto, 'untreated_check_pressure')?.status, 'satisfied');
+  });
+
+  // ── application_timing upgrades ──────────────────────────────────────────
+
+  group('AT: application_timing category + BBCH evaluation', () {
+    test('AT-1: no application events → missing', () async {
+      final ctx = await makeSeededTrial();
+      await makeTreatment(ctx.trialId);
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'missing');
+      expect(
+        factorItem(dto, 'application_timing')?.reason,
+        'No application events have been recorded.',
+      );
+    });
+
+    test('AT-2: events exist, no pesticideCategory on any component → satisfied',
+        () async {
+      final ctx = await makeSeededTrial();
+      final trtId = await makeTreatment(ctx.trialId);
+      await makeTreatmentComponent(ctx.trialId, trtId); // no category
+      await makeApplication(ctx.trialId);
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'satisfied');
+      expect(
+        factorItem(dto, 'application_timing')?.reason,
+        'Application events are present.',
+      );
+    });
+
+    test(
+        'AT-3: events exist, pesticideCategory set, all BBCH null → review_needed',
+        () async {
+      final ctx = await makeSeededTrial();
+      final trtId = await makeTreatment(ctx.trialId);
+      await makeTreatmentComponent(ctx.trialId, trtId,
+          pesticideCategory: 'fungicide');
+      await makeApplicationWithBbch(ctx.trialId); // bbch null
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'review_needed');
+      expect(
+        factorItem(dto, 'application_timing')?.reason,
+        'Application events exist but BBCH at application has not been recorded. Timing cannot be evaluated.',
+      );
+    });
+
+    test('AT-4: events exist, pesticideCategory set, BBCH present → satisfied',
+        () async {
+      final ctx = await makeSeededTrial();
+      final trtId = await makeTreatment(ctx.trialId);
+      await makeTreatmentComponent(ctx.trialId, trtId,
+          pesticideCategory: 'fungicide');
+      await makeApplicationWithBbch(ctx.trialId, bbch: 59);
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'satisfied');
+      expect(
+        factorItem(dto, 'application_timing')?.reason,
+        contains('structured BBCH capture'),
+      );
+    });
+
+    test('AT-5: multiple events — any with BBCH present → satisfied', () async {
+      final ctx = await makeSeededTrial();
+      final trtId = await makeTreatment(ctx.trialId);
+      await makeTreatmentComponent(ctx.trialId, trtId,
+          pesticideCategory: 'herbicide');
+      await makeApplicationWithBbch(ctx.trialId); // BBCH null
+      await makeApplicationWithBbch(ctx.trialId, bbch: 30); // BBCH present
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'satisfied');
+    });
+
+    test(
+        'AT-6: multiple events — all BBCH null, category set → review_needed',
+        () async {
+      final ctx = await makeSeededTrial();
+      final trtId = await makeTreatment(ctx.trialId);
+      await makeTreatmentComponent(ctx.trialId, trtId,
+          pesticideCategory: 'insecticide');
+      await makeApplicationWithBbch(ctx.trialId); // BBCH null
+      await makeApplicationWithBbch(ctx.trialId); // BBCH null
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'review_needed');
+    });
   });
 
   // ── DTO structure (pure model, no DB) ─────────────────────────────────────
