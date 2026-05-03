@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' as drift;
 import '../../core/database/app_database.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../core/utils/check_treatment_helper.dart';
+import 'biological_window_profiles.dart';
 import 'trial_ctq_dto.dart';
 
 /// CTQ V1 deterministic evaluator.
@@ -74,6 +75,9 @@ Future<TrialCtqDto> computeTrialCtqDtoV1(
           ..where(
               (c) => c.trialId.equals(trialId) & c.isDeleted.equals(false)))
         .get(),
+    // 8: trial record (for crop field in biological window profile matching)
+    (db.select(db.trials)..where((t) => t.id.equals(trialId)))
+        .getSingleOrNull(),
   ]);
 
   final treatments = results[0] as List<Treatment>;
@@ -84,6 +88,8 @@ Future<TrialCtqDto> computeTrialCtqDtoV1(
   final applications = results[5] as List<TrialApplicationEvent>;
   final assignments = results[6] as List<Assignment>;
   final treatmentComponents = results[7] as List<TreatmentComponent>;
+  final trialRecord = results[8] as Trial?;
+  final trialCrop = trialRecord?.crop;
 
   final analyzablePlots = allPlots.where(isAnalyzablePlot).toList();
   final ratedPlotPks = recordedRatings.map((r) => r.plotPk).toSet();
@@ -117,7 +123,7 @@ Future<TrialCtqDto> computeTrialCtqDtoV1(
       'treatment_identity' => _evalTreatmentIdentity(factor, treatments),
       'rater_consistency' => _evalRaterConsistency(factor, raterSignals),
       'application_timing' => _evalApplicationTiming(
-          factor, applications, treatments, treatmentComponents),
+          factor, applications, treatments, treatmentComponents, trialCrop),
       'rating_window' =>
         _evalRatingWindow(factor, recordedRatings, timingWindowSignals),
       'data_variance' => _evalDataVariance(factor, recordedRatings),
@@ -316,6 +322,7 @@ TrialCtqItemDto _evalApplicationTiming(
   List<TrialApplicationEvent> applications,
   List<Treatment> treatments,
   List<TreatmentComponent> treatmentComponents,
+  String? trialCrop,
 ) {
   if (treatments.isEmpty) {
     return _item(
@@ -355,14 +362,78 @@ TrialCtqItemDto _evalApplicationTiming(
           'Application events exist but BBCH at application has not been recorded. Timing cannot be evaluated.',
     );
   }
+
+  // Step 4: biological window range check.
+  final pesticideCategory = treatmentComponents
+      .firstWhere((c) => c.pesticideCategory != null)
+      .pesticideCategory!;
+
+  // Most recent BBCH event first; worst severity wins across all events.
+  final bbchEvents = applications
+      .where((a) => a.growthStageBbchAtApplication != null)
+      .toList()
+    ..sort((a, b) => b.applicationDate.compareTo(a.applicationDate));
+
+  final profile = matchProfile(trialCrop, pesticideCategory);
+  if (profile == null) {
+    return _item(
+      factor,
+      status: 'satisfied',
+      evidenceSummary:
+          '${applications.length} application record(s) with BBCH data.',
+      reason:
+          'Application timing evidence is present. No window profile is configured for this crop and category combination.',
+    );
+  }
+
+  // Walk events; upgrade the reported BBCH when a worse tier is found.
+  var reportBbch = bbchEvents.first.growthStageBbchAtApplication!;
+  var reportSeverity = _bbchSeverity(reportBbch, profile);
+  for (final e in bbchEvents.skip(1)) {
+    final bbch = e.growthStageBbchAtApplication!;
+    final sev = _bbchSeverity(bbch, profile);
+    if (sev > reportSeverity) {
+      reportBbch = bbch;
+      reportSeverity = sev;
+    }
+  }
+
+  final n = applications.length;
+  if (reportSeverity == 2) {
+    return _item(
+      factor,
+      status: 'review_needed',
+      evidenceSummary: '$n application record(s); BBCH $reportBbch.',
+      reason:
+          'Applied at BBCH $reportBbch. Outside the acceptable application window (${profile.acceptableWindowLabel}) for ${profile.cropLabel} $pesticideCategory. This may affect interpretation of the primary endpoint.',
+    );
+  }
+  if (reportSeverity == 1) {
+    return _item(
+      factor,
+      status: 'review_needed',
+      evidenceSummary: '$n application record(s); BBCH $reportBbch.',
+      reason:
+          'Applied at BBCH $reportBbch. Outside optimal window (${profile.optimalWindowLabel}) but within acceptable range (${profile.acceptableWindowLabel}) for ${profile.cropLabel} $pesticideCategory. Review timing deviation before interpretation.',
+    );
+  }
   return _item(
     factor,
     status: 'satisfied',
-    evidenceSummary:
-        '${applications.length} application record(s) with BBCH data.',
+    evidenceSummary: '$n application record(s); BBCH $reportBbch.',
     reason:
-        'Application timing evidence is present with structured BBCH capture. Window checks will be available once crop profiles are configured.',
+        'Applied at BBCH $reportBbch. Within optimal window (${profile.optimalWindowLabel}) for ${profile.cropLabel} $pesticideCategory.',
   );
+}
+
+int _bbchSeverity(int bbch, BiologicalWindowProfile profile) {
+  if (bbch < profile.acceptableBbchMin || bbch > profile.acceptableBbchMax) {
+    return 2;
+  }
+  if (bbch < profile.optimalBbchMin || bbch > profile.optimalBbchMax) {
+    return 1;
+  }
+  return 0;
 }
 
 /// Upgraded from presence-only: also checks for open timing-window signals.
