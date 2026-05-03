@@ -117,6 +117,14 @@ import 'last_session_store.dart';
 import 'export_guard.dart';
 import 'workspace/workspace_filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../data/repositories/trial_purpose_repository.dart';
+import '../data/repositories/intent_revelation_event_repository.dart';
+import '../data/repositories/ctq_factor_definition_repository.dart';
+import '../data/repositories/protocol_document_reference_repository.dart';
+import '../domain/trial_cognition/trial_purpose_dto.dart';
+import '../domain/trial_cognition/trial_evidence_arc_dto.dart';
+import '../domain/trial_cognition/trial_ctq_dto.dart';
+import '../domain/trial_cognition/mode_c_revelation_model.dart';
 
 /// ARCHITECTURE RULE: Use case return types
 /// New use cases must return domain result types (e.g. SaveRatingResult),
@@ -2127,3 +2135,226 @@ final seTypeProfileByPrefixProvider =
         .getByPrefix(ratingTypePrefix);
   },
 );
+
+// ─── Trial Cognition V1 — repositories ───────────────────────────────────────
+
+final trialPurposeRepositoryProvider = Provider<TrialPurposeRepository>((ref) {
+  return TrialPurposeRepository(ref.watch(databaseProvider));
+});
+
+final intentRevelationEventRepositoryProvider =
+    Provider<IntentRevelationEventRepository>((ref) {
+  return IntentRevelationEventRepository(ref.watch(databaseProvider));
+});
+
+final ctqFactorDefinitionRepositoryProvider =
+    Provider<CtqFactorDefinitionRepository>((ref) {
+  return CtqFactorDefinitionRepository(ref.watch(databaseProvider));
+});
+
+final protocolDocumentReferenceRepositoryProvider =
+    Provider<ProtocolDocumentReferenceRepository>((ref) {
+  return ProtocolDocumentReferenceRepository(ref.watch(databaseProvider));
+});
+
+// ─── Trial Cognition V1 — deterministic providers ────────────────────────────
+
+/// What is this trial trying to prove? Is purpose unknown, partial, or confirmed?
+final trialPurposeProvider =
+    StreamProvider.autoDispose.family<TrialPurposeDto, int>((ref, trialId) {
+  return ref
+      .watch(trialPurposeRepositoryProvider)
+      .watchCurrentTrialPurpose(trialId)
+      .map((purpose) => _computeTrialPurposeDto(trialId, purpose));
+});
+
+/// What evidence exists, what is missing, what are the risk flags?
+final trialEvidenceArcProvider =
+    FutureProvider.autoDispose.family<TrialEvidenceArcDto, int>(
+        (ref, trialId) async {
+  final db = ref.watch(databaseProvider);
+  return _computeTrialEvidenceArc(db, trialId);
+});
+
+/// Deterministic CTQ readiness/evidence status.
+final trialCriticalToQualityProvider =
+    StreamProvider.autoDispose.family<TrialCtqDto, int>((ref, trialId) {
+  final repo = ref.watch(ctqFactorDefinitionRepositoryProvider);
+  return repo.watchCtqFactorsForTrial(trialId).map(
+        (factors) => _computeTrialCtqDto(trialId, factors),
+      );
+});
+
+// ─── Trial Cognition V1 — computation helpers ─────────────────────────────────
+
+TrialPurposeDto _computeTrialPurposeDto(int trialId, TrialPurpose? purpose) {
+  if (purpose == null) {
+    return TrialPurposeDto(
+      trialId: trialId,
+      purposeStatus: 'unknown',
+      missingIntentFields: List.unmodifiable(ModeCQuestionKeys.required),
+      provenanceSummary: 'No purpose captured.',
+      canDriveReadinessClaims: false,
+    );
+  }
+
+  final missing = <String>[
+    if (purpose.claimBeingTested == null) ModeCQuestionKeys.claimBeingTested,
+    if (purpose.trialPurpose == null) ModeCQuestionKeys.trialPurposeContext,
+    if (purpose.primaryEndpoint == null) ModeCQuestionKeys.primaryEndpoint,
+    if (purpose.treatmentRoleSummary == null) ModeCQuestionKeys.treatmentRoles,
+  ];
+
+  final effectiveStatus = () {
+    if (purpose.status == 'confirmed' && missing.isEmpty) return 'confirmed';
+    if (missing.length < ModeCQuestionKeys.required.length) return 'partial';
+    return purpose.status;
+  }();
+
+  final canDrive = effectiveStatus == 'confirmed' && missing.isEmpty;
+
+  final provenance = purpose.confirmedAt != null
+      ? 'Confirmed${purpose.confirmedBy != null ? ' by ${purpose.confirmedBy}' : ''}.'
+      : '${missing.length} required field(s) missing.';
+
+  return TrialPurposeDto(
+    trialId: trialId,
+    purposeStatus: effectiveStatus,
+    claimBeingTested: purpose.claimBeingTested,
+    trialPurpose: purpose.trialPurpose,
+    regulatoryContext: purpose.regulatoryContext,
+    primaryEndpoint: purpose.primaryEndpoint,
+    treatmentRoles: purpose.treatmentRoleSummary,
+    knownInterpretationFactors: purpose.knownInterpretationFactors,
+    missingIntentFields: List.unmodifiable(missing),
+    provenanceSummary: provenance,
+    canDriveReadinessClaims: canDrive,
+  );
+}
+
+Future<TrialEvidenceArcDto> _computeTrialEvidenceArc(
+  AppDatabase db,
+  int trialId,
+) async {
+  final sessions = await (db.select(db.sessions)
+        ..where((s) => s.trialId.equals(trialId)))
+      .get();
+  final sessionIds = sessions.map((s) => s.id).toList();
+
+  final recordedRatings = sessionIds.isEmpty
+      ? 0
+      : await (db.select(db.ratingRecords)
+            ..where(
+              (r) =>
+                  r.trialId.equals(trialId) &
+                  r.resultStatus.equals('RECORDED') &
+                  r.isCurrent.equals(true),
+            ))
+          .get()
+          .then((rows) => rows.length);
+
+  final photos = await (db.select(db.photos)
+        ..where((p) => p.trialId.equals(trialId)))
+      .get();
+
+  final anchors = await (db.select(db.evidenceAnchors)
+        ..where((a) => a.trialId.equals(trialId)))
+      .get();
+
+  final plots = await (db.select(db.plots)
+        ..where(
+          (p) => p.trialId.equals(trialId) & p.isDeleted.equals(false),
+        ))
+      .get();
+  final nonGuardPlots = plots.where((p) => !p.isGuardRow).length;
+
+  final missingItems = <String>[];
+  final evidenceAnchorLabels = <String>[];
+  final riskFlags = <String>[];
+
+  if (sessions.isEmpty) missingItems.add('No rating sessions recorded');
+  if (recordedRatings == 0) missingItems.add('No numeric ratings recorded');
+  if (photos.isEmpty) missingItems.add('No photos attached');
+
+  for (final a in anchors) {
+    evidenceAnchorLabels.add(a.evidenceType);
+  }
+
+  if (nonGuardPlots > 0 && recordedRatings > 0) {
+    final coverage = recordedRatings / nonGuardPlots;
+    if (coverage < 0.5) {
+      riskFlags.add('Low rating coverage (${(coverage * 100).round()}%)');
+    }
+  }
+
+  final String evidenceState;
+  if (sessions.isEmpty && recordedRatings == 0) {
+    evidenceState = 'no_evidence';
+  } else if (recordedRatings == 0) {
+    evidenceState = 'started';
+  } else if (missingItems.isNotEmpty) {
+    evidenceState = 'partial';
+  } else if (riskFlags.isEmpty) {
+    evidenceState = 'sufficient_for_review';
+  } else {
+    evidenceState = 'partial';
+  }
+
+  final actualSummary = sessions.isEmpty
+      ? 'No sessions.'
+      : '${sessions.length} session(s), $recordedRatings rating(s), ${photos.length} photo(s).';
+
+  return TrialEvidenceArcDto(
+    trialId: trialId,
+    evidenceState: evidenceState,
+    plannedEvidenceSummary: '$nonGuardPlots layout plot(s).',
+    actualEvidenceSummary: actualSummary,
+    missingEvidenceItems: List.unmodifiable(missingItems),
+    evidenceAnchors: List.unmodifiable(evidenceAnchorLabels),
+    riskFlags: List.unmodifiable(riskFlags),
+  );
+}
+
+TrialCtqDto _computeTrialCtqDto(
+  int trialId,
+  List<CtqFactorDefinition> factors,
+) {
+  if (factors.isEmpty) {
+    return TrialCtqDto(
+      trialId: trialId,
+      ctqItems: const [],
+      blockerCount: 0,
+      warningCount: 0,
+      reviewCount: 0,
+      satisfiedCount: 0,
+      overallStatus: 'unknown',
+    );
+  }
+
+  // Without live evidence evaluation (requires full evidence pipeline),
+  // all factors default to 'unknown' status at this foundation layer.
+  // A future evidence-evaluation layer will populate actual statuses.
+  final items = factors
+      .map(
+        (f) => TrialCtqItemDto(
+          factorKey: f.factorKey,
+          label: f.factorLabel,
+          importance: f.importance,
+          status: 'unknown',
+          evidenceSummary: 'Not evaluated.',
+          reason: 'Evidence evaluation not yet run.',
+          source: f.source,
+        ),
+      )
+      .toList();
+
+  return TrialCtqDto(
+    trialId: trialId,
+    ctqItems: items,
+    blockerCount: 0,
+    warningCount: 0,
+    reviewCount: 0,
+    satisfiedCount: 0,
+    overallStatus: 'unknown',
+  );
+}

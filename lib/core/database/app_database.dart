@@ -97,6 +97,10 @@ class Trials extends Table {
 
   /// Whether the trial follows Good Experimental Practice guidelines.
   BoolColumn get gepComplianceFlag => boolean().nullable()();
+
+  // Future field-geometry metadata (v78). GPS/satellite work not started.
+  RealColumn get fieldOrientationDegrees => real().nullable()();
+  TextColumn get fieldAnchorType => text().nullable()();
 }
 
 /// Per-trial ARM shell linkage and import metadata (Phase 0b).
@@ -1495,6 +1499,94 @@ class EvidenceAnchors extends Table {
   IntColumn get createdAt => integer()();
 }
 
+/// Versioned trial intent object. Current active version = newest non-superseded row.
+/// status: draft | partial | confirmed | superseded
+/// sourceMode: arm_structure | manual_revelation | protocol_document | mixed
+class TrialPurposes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  IntColumn get version => integer().withDefault(const Constant(1))();
+  TextColumn get status => text().withDefault(const Constant('draft'))();
+  TextColumn get sourceMode =>
+      text().withDefault(const Constant('manual_revelation'))();
+  TextColumn get claimBeingTested => text().nullable()();
+  TextColumn get trialPurpose => text().nullable()();
+  TextColumn get regulatoryContext => text().nullable()();
+  TextColumn get primaryEndpoint => text().nullable()();
+  TextColumn get primaryEndpointRationale => text().nullable()();
+  TextColumn get treatmentRoleSummary => text().nullable()();
+  TextColumn get knownInterpretationFactors => text().nullable()();
+  TextColumn get requiredEvidenceSummary => text().nullable()();
+  TextColumn get readinessCriteriaSummary => text().nullable()();
+  TextColumn get inferredFieldsJson => text().nullable()();
+  DateTimeColumn get confirmedAt => dateTime().nullable()();
+  TextColumn get confirmedBy => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get supersededAt => dateTime().nullable()();
+}
+
+/// Append-only audit trail for Mode C intent capture.
+/// answerState: unknown | captured | confirmed | revised | skipped
+class IntentRevelationEvents extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  IntColumn get trialPurposeId =>
+      integer().references(TrialPurposes, #id).nullable()();
+  TextColumn get touchpoint => text()();
+  TextColumn get questionKey => text()();
+  TextColumn get questionText => text()();
+  TextColumn get answerValue => text().nullable()();
+  TextColumn get answerState =>
+      text().withDefault(const Constant('unknown'))();
+  TextColumn get source => text()();
+  TextColumn get capturedBy => text().nullable()();
+  DateTimeColumn get capturedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt =>
+      dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Critical-to-quality factor definitions for the trial claim.
+/// These are definitions of what matters — not findings.
+class CtqFactorDefinitions extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  IntColumn get trialPurposeId =>
+      integer().references(TrialPurposes, #id)();
+  TextColumn get factorKey => text()();
+  TextColumn get factorLabel => text()();
+  TextColumn get factorType => text()();
+  TextColumn get importance =>
+      text().withDefault(const Constant('standard'))();
+  TextColumn get expectedEvidenceType => text().nullable()();
+  TextColumn get evaluationRuleKey => text().nullable()();
+  TextColumn get description => text().nullable()();
+  TextColumn get source => text()();
+  DateTimeColumn get createdAt =>
+      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get retiredAt => dateTime().nullable()();
+}
+
+/// Future-proof references to protocol/study-plan documents.
+/// No parsing. No LLM. Store references only.
+class ProtocolDocumentReferences extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id)();
+  TextColumn get documentLabel => text()();
+  TextColumn get documentType => text()();
+  TextColumn get storageUri => text().nullable()();
+  TextColumn get externalReference => text().nullable()();
+  TextColumn get source => text()();
+  DateTimeColumn get uploadedAt => dateTime().nullable()();
+  TextColumn get uploadedBy => text().nullable()();
+  DateTimeColumn get createdAt =>
+      dateTime().withDefault(currentDateAndTime)();
+  TextColumn get notes => text().nullable()();
+}
+
 @DriftDatabase(tables: [
   Users,
   Trials,
@@ -1548,6 +1640,11 @@ class EvidenceAnchors extends Table {
   ActionEffects,
   SeTypeCausalProfiles,
   EvidenceAnchors,
+  // Trial Cognition V1 (v78): purpose versioning, Mode C revelation, CTQ factors, protocol docs.
+  TrialPurposes,
+  IntentRevelationEvents,
+  CtqFactorDefinitions,
+  ProtocolDocumentReferences,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -1556,7 +1653,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 77;
+  int get schemaVersion => 78;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -3099,6 +3196,37 @@ BEGIN
   UPDATE signals SET status = NEW.resulting_status WHERE id = NEW.signal_id;
 END
 ''');
+          }
+
+          if (from < 78) {
+            final existingTables = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table'",
+            ).get();
+            final tableNames =
+                existingTables.map((r) => r.read<String>('name')).toSet();
+            if (!tableNames.contains('trial_purposes')) {
+              await m.createTable(trialPurposes);
+            }
+            if (!tableNames.contains('intent_revelation_events')) {
+              await m.createTable(intentRevelationEvents);
+            }
+            if (!tableNames.contains('ctq_factor_definitions')) {
+              await m.createTable(ctqFactorDefinitions);
+            }
+            if (!tableNames.contains('protocol_document_references')) {
+              await m.createTable(protocolDocumentReferences);
+            }
+            final trialCols = await customSelect(
+              "SELECT name FROM pragma_table_info('trials')",
+            ).get();
+            final trialColNames =
+                trialCols.map((r) => r.read<String>('name')).toSet();
+            if (!trialColNames.contains('field_orientation_degrees')) {
+              await m.addColumn(trials, trials.fieldOrientationDegrees);
+            }
+            if (!trialColNames.contains('field_anchor_type')) {
+              await m.addColumn(trials, trials.fieldAnchorType);
+            }
           }
 
           await _createIndexes();

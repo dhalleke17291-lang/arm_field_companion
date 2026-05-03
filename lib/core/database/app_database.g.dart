@@ -1624,6 +1624,18 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
       requiredDuringInsert: false,
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("gep_compliance_flag" IN (0, 1))'));
+  static const VerificationMeta _fieldOrientationDegreesMeta =
+      const VerificationMeta('fieldOrientationDegrees');
+  @override
+  late final GeneratedColumn<double> fieldOrientationDegrees =
+      GeneratedColumn<double>('field_orientation_degrees', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _fieldAnchorTypeMeta =
+      const VerificationMeta('fieldAnchorType');
+  @override
+  late final GeneratedColumn<String> fieldAnchorType = GeneratedColumn<String>(
+      'field_anchor_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1671,7 +1683,9 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
         cultivar,
         rowSpacingCm,
         plantSpacingCm,
-        gepComplianceFlag
+        gepComplianceFlag,
+        fieldOrientationDegrees,
+        fieldAnchorType
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1910,6 +1924,19 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           gepComplianceFlag.isAcceptableOrUnknown(
               data['gep_compliance_flag']!, _gepComplianceFlagMeta));
     }
+    if (data.containsKey('field_orientation_degrees')) {
+      context.handle(
+          _fieldOrientationDegreesMeta,
+          fieldOrientationDegrees.isAcceptableOrUnknown(
+              data['field_orientation_degrees']!,
+              _fieldOrientationDegreesMeta));
+    }
+    if (data.containsKey('field_anchor_type')) {
+      context.handle(
+          _fieldAnchorTypeMeta,
+          fieldAnchorType.isAcceptableOrUnknown(
+              data['field_anchor_type']!, _fieldAnchorTypeMeta));
+    }
     return context;
   }
 
@@ -2011,6 +2038,11 @@ class $TrialsTable extends Trials with TableInfo<$TrialsTable, Trial> {
           DriftSqlType.double, data['${effectivePrefix}plant_spacing_cm']),
       gepComplianceFlag: attachedDatabase.typeMapping.read(
           DriftSqlType.bool, data['${effectivePrefix}gep_compliance_flag']),
+      fieldOrientationDegrees: attachedDatabase.typeMapping.read(
+          DriftSqlType.double,
+          data['${effectivePrefix}field_orientation_degrees']),
+      fieldAnchorType: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}field_anchor_type']),
     );
   }
 
@@ -2090,6 +2122,8 @@ class Trial extends DataClass implements Insertable<Trial> {
 
   /// Whether the trial follows Good Experimental Practice guidelines.
   final bool? gepComplianceFlag;
+  final double? fieldOrientationDegrees;
+  final String? fieldAnchorType;
   const Trial(
       {required this.id,
       required this.name,
@@ -2136,7 +2170,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       this.cultivar,
       this.rowSpacingCm,
       this.plantSpacingCm,
-      this.gepComplianceFlag});
+      this.gepComplianceFlag,
+      this.fieldOrientationDegrees,
+      this.fieldAnchorType});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2262,6 +2298,13 @@ class Trial extends DataClass implements Insertable<Trial> {
     if (!nullToAbsent || gepComplianceFlag != null) {
       map['gep_compliance_flag'] = Variable<bool>(gepComplianceFlag);
     }
+    if (!nullToAbsent || fieldOrientationDegrees != null) {
+      map['field_orientation_degrees'] =
+          Variable<double>(fieldOrientationDegrees);
+    }
+    if (!nullToAbsent || fieldAnchorType != null) {
+      map['field_anchor_type'] = Variable<String>(fieldAnchorType);
+    }
     return map;
   }
 
@@ -2383,6 +2426,12 @@ class Trial extends DataClass implements Insertable<Trial> {
       gepComplianceFlag: gepComplianceFlag == null && nullToAbsent
           ? const Value.absent()
           : Value(gepComplianceFlag),
+      fieldOrientationDegrees: fieldOrientationDegrees == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fieldOrientationDegrees),
+      fieldAnchorType: fieldAnchorType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fieldAnchorType),
     );
   }
 
@@ -2437,6 +2486,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       rowSpacingCm: serializer.fromJson<double?>(json['rowSpacingCm']),
       plantSpacingCm: serializer.fromJson<double?>(json['plantSpacingCm']),
       gepComplianceFlag: serializer.fromJson<bool?>(json['gepComplianceFlag']),
+      fieldOrientationDegrees:
+          serializer.fromJson<double?>(json['fieldOrientationDegrees']),
+      fieldAnchorType: serializer.fromJson<String?>(json['fieldAnchorType']),
     );
   }
   @override
@@ -2489,6 +2541,9 @@ class Trial extends DataClass implements Insertable<Trial> {
       'rowSpacingCm': serializer.toJson<double?>(rowSpacingCm),
       'plantSpacingCm': serializer.toJson<double?>(plantSpacingCm),
       'gepComplianceFlag': serializer.toJson<bool?>(gepComplianceFlag),
+      'fieldOrientationDegrees':
+          serializer.toJson<double?>(fieldOrientationDegrees),
+      'fieldAnchorType': serializer.toJson<String?>(fieldAnchorType),
     };
   }
 
@@ -2538,7 +2593,9 @@ class Trial extends DataClass implements Insertable<Trial> {
           Value<String?> cultivar = const Value.absent(),
           Value<double?> rowSpacingCm = const Value.absent(),
           Value<double?> plantSpacingCm = const Value.absent(),
-          Value<bool?> gepComplianceFlag = const Value.absent()}) =>
+          Value<bool?> gepComplianceFlag = const Value.absent(),
+          Value<double?> fieldOrientationDegrees = const Value.absent(),
+          Value<String?> fieldAnchorType = const Value.absent()}) =>
       Trial(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -2602,6 +2659,12 @@ class Trial extends DataClass implements Insertable<Trial> {
         gepComplianceFlag: gepComplianceFlag.present
             ? gepComplianceFlag.value
             : this.gepComplianceFlag,
+        fieldOrientationDegrees: fieldOrientationDegrees.present
+            ? fieldOrientationDegrees.value
+            : this.fieldOrientationDegrees,
+        fieldAnchorType: fieldAnchorType.present
+            ? fieldAnchorType.value
+            : this.fieldAnchorType,
       );
   Trial copyWithCompanion(TrialsCompanion data) {
     return Trial(
@@ -2684,6 +2747,12 @@ class Trial extends DataClass implements Insertable<Trial> {
       gepComplianceFlag: data.gepComplianceFlag.present
           ? data.gepComplianceFlag.value
           : this.gepComplianceFlag,
+      fieldOrientationDegrees: data.fieldOrientationDegrees.present
+          ? data.fieldOrientationDegrees.value
+          : this.fieldOrientationDegrees,
+      fieldAnchorType: data.fieldAnchorType.present
+          ? data.fieldAnchorType.value
+          : this.fieldAnchorType,
     );
   }
 
@@ -2735,7 +2804,9 @@ class Trial extends DataClass implements Insertable<Trial> {
           ..write('cultivar: $cultivar, ')
           ..write('rowSpacingCm: $rowSpacingCm, ')
           ..write('plantSpacingCm: $plantSpacingCm, ')
-          ..write('gepComplianceFlag: $gepComplianceFlag')
+          ..write('gepComplianceFlag: $gepComplianceFlag, ')
+          ..write('fieldOrientationDegrees: $fieldOrientationDegrees, ')
+          ..write('fieldAnchorType: $fieldAnchorType')
           ..write(')'))
         .toString();
   }
@@ -2787,7 +2858,9 @@ class Trial extends DataClass implements Insertable<Trial> {
         cultivar,
         rowSpacingCm,
         plantSpacingCm,
-        gepComplianceFlag
+        gepComplianceFlag,
+        fieldOrientationDegrees,
+        fieldAnchorType
       ]);
   @override
   bool operator ==(Object other) =>
@@ -2838,7 +2911,9 @@ class Trial extends DataClass implements Insertable<Trial> {
           other.cultivar == this.cultivar &&
           other.rowSpacingCm == this.rowSpacingCm &&
           other.plantSpacingCm == this.plantSpacingCm &&
-          other.gepComplianceFlag == this.gepComplianceFlag);
+          other.gepComplianceFlag == this.gepComplianceFlag &&
+          other.fieldOrientationDegrees == this.fieldOrientationDegrees &&
+          other.fieldAnchorType == this.fieldAnchorType);
 }
 
 class TrialsCompanion extends UpdateCompanion<Trial> {
@@ -2888,6 +2963,8 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
   final Value<double?> rowSpacingCm;
   final Value<double?> plantSpacingCm;
   final Value<bool?> gepComplianceFlag;
+  final Value<double?> fieldOrientationDegrees;
+  final Value<String?> fieldAnchorType;
   const TrialsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -2935,6 +3012,8 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.rowSpacingCm = const Value.absent(),
     this.plantSpacingCm = const Value.absent(),
     this.gepComplianceFlag = const Value.absent(),
+    this.fieldOrientationDegrees = const Value.absent(),
+    this.fieldAnchorType = const Value.absent(),
   });
   TrialsCompanion.insert({
     this.id = const Value.absent(),
@@ -2983,6 +3062,8 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     this.rowSpacingCm = const Value.absent(),
     this.plantSpacingCm = const Value.absent(),
     this.gepComplianceFlag = const Value.absent(),
+    this.fieldOrientationDegrees = const Value.absent(),
+    this.fieldAnchorType = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Trial> custom({
     Expression<int>? id,
@@ -3031,6 +3112,8 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     Expression<double>? rowSpacingCm,
     Expression<double>? plantSpacingCm,
     Expression<bool>? gepComplianceFlag,
+    Expression<double>? fieldOrientationDegrees,
+    Expression<String>? fieldAnchorType,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3079,6 +3162,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       if (rowSpacingCm != null) 'row_spacing_cm': rowSpacingCm,
       if (plantSpacingCm != null) 'plant_spacing_cm': plantSpacingCm,
       if (gepComplianceFlag != null) 'gep_compliance_flag': gepComplianceFlag,
+      if (fieldOrientationDegrees != null)
+        'field_orientation_degrees': fieldOrientationDegrees,
+      if (fieldAnchorType != null) 'field_anchor_type': fieldAnchorType,
     });
   }
 
@@ -3128,7 +3214,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       Value<String?>? cultivar,
       Value<double?>? rowSpacingCm,
       Value<double?>? plantSpacingCm,
-      Value<bool?>? gepComplianceFlag}) {
+      Value<bool?>? gepComplianceFlag,
+      Value<double?>? fieldOrientationDegrees,
+      Value<String?>? fieldAnchorType}) {
     return TrialsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -3176,6 +3264,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
       rowSpacingCm: rowSpacingCm ?? this.rowSpacingCm,
       plantSpacingCm: plantSpacingCm ?? this.plantSpacingCm,
       gepComplianceFlag: gepComplianceFlag ?? this.gepComplianceFlag,
+      fieldOrientationDegrees:
+          fieldOrientationDegrees ?? this.fieldOrientationDegrees,
+      fieldAnchorType: fieldAnchorType ?? this.fieldAnchorType,
     );
   }
 
@@ -3320,6 +3411,13 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
     if (gepComplianceFlag.present) {
       map['gep_compliance_flag'] = Variable<bool>(gepComplianceFlag.value);
     }
+    if (fieldOrientationDegrees.present) {
+      map['field_orientation_degrees'] =
+          Variable<double>(fieldOrientationDegrees.value);
+    }
+    if (fieldAnchorType.present) {
+      map['field_anchor_type'] = Variable<String>(fieldAnchorType.value);
+    }
     return map;
   }
 
@@ -3371,7 +3469,9 @@ class TrialsCompanion extends UpdateCompanion<Trial> {
           ..write('cultivar: $cultivar, ')
           ..write('rowSpacingCm: $rowSpacingCm, ')
           ..write('plantSpacingCm: $plantSpacingCm, ')
-          ..write('gepComplianceFlag: $gepComplianceFlag')
+          ..write('gepComplianceFlag: $gepComplianceFlag, ')
+          ..write('fieldOrientationDegrees: $fieldOrientationDegrees, ')
+          ..write('fieldAnchorType: $fieldAnchorType')
           ..write(')'))
         .toString();
   }
@@ -41699,6 +41799,2920 @@ class EvidenceAnchorsCompanion extends UpdateCompanion<EvidenceAnchor> {
   }
 }
 
+class $TrialPurposesTable extends TrialPurposes
+    with TableInfo<$TrialPurposesTable, TrialPurpose> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrialPurposesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _versionMeta =
+      const VerificationMeta('version');
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+      'version', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('draft'));
+  static const VerificationMeta _sourceModeMeta =
+      const VerificationMeta('sourceMode');
+  @override
+  late final GeneratedColumn<String> sourceMode = GeneratedColumn<String>(
+      'source_mode', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('manual_revelation'));
+  static const VerificationMeta _claimBeingTestedMeta =
+      const VerificationMeta('claimBeingTested');
+  @override
+  late final GeneratedColumn<String> claimBeingTested = GeneratedColumn<String>(
+      'claim_being_tested', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _trialPurposeMeta =
+      const VerificationMeta('trialPurpose');
+  @override
+  late final GeneratedColumn<String> trialPurpose = GeneratedColumn<String>(
+      'trial_purpose', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _regulatoryContextMeta =
+      const VerificationMeta('regulatoryContext');
+  @override
+  late final GeneratedColumn<String> regulatoryContext =
+      GeneratedColumn<String>('regulatory_context', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _primaryEndpointMeta =
+      const VerificationMeta('primaryEndpoint');
+  @override
+  late final GeneratedColumn<String> primaryEndpoint = GeneratedColumn<String>(
+      'primary_endpoint', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _primaryEndpointRationaleMeta =
+      const VerificationMeta('primaryEndpointRationale');
+  @override
+  late final GeneratedColumn<String> primaryEndpointRationale =
+      GeneratedColumn<String>('primary_endpoint_rationale', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _treatmentRoleSummaryMeta =
+      const VerificationMeta('treatmentRoleSummary');
+  @override
+  late final GeneratedColumn<String> treatmentRoleSummary =
+      GeneratedColumn<String>('treatment_role_summary', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _knownInterpretationFactorsMeta =
+      const VerificationMeta('knownInterpretationFactors');
+  @override
+  late final GeneratedColumn<String> knownInterpretationFactors =
+      GeneratedColumn<String>('known_interpretation_factors', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _requiredEvidenceSummaryMeta =
+      const VerificationMeta('requiredEvidenceSummary');
+  @override
+  late final GeneratedColumn<String> requiredEvidenceSummary =
+      GeneratedColumn<String>('required_evidence_summary', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _readinessCriteriaSummaryMeta =
+      const VerificationMeta('readinessCriteriaSummary');
+  @override
+  late final GeneratedColumn<String> readinessCriteriaSummary =
+      GeneratedColumn<String>('readiness_criteria_summary', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _inferredFieldsJsonMeta =
+      const VerificationMeta('inferredFieldsJson');
+  @override
+  late final GeneratedColumn<String> inferredFieldsJson =
+      GeneratedColumn<String>('inferred_fields_json', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _confirmedAtMeta =
+      const VerificationMeta('confirmedAt');
+  @override
+  late final GeneratedColumn<DateTime> confirmedAt = GeneratedColumn<DateTime>(
+      'confirmed_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _confirmedByMeta =
+      const VerificationMeta('confirmedBy');
+  @override
+  late final GeneratedColumn<String> confirmedBy = GeneratedColumn<String>(
+      'confirmed_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _supersededAtMeta =
+      const VerificationMeta('supersededAt');
+  @override
+  late final GeneratedColumn<DateTime> supersededAt = GeneratedColumn<DateTime>(
+      'superseded_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        version,
+        status,
+        sourceMode,
+        claimBeingTested,
+        trialPurpose,
+        regulatoryContext,
+        primaryEndpoint,
+        primaryEndpointRationale,
+        treatmentRoleSummary,
+        knownInterpretationFactors,
+        requiredEvidenceSummary,
+        readinessCriteriaSummary,
+        inferredFieldsJson,
+        confirmedAt,
+        confirmedBy,
+        createdAt,
+        updatedAt,
+        supersededAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trial_purposes';
+  @override
+  VerificationContext validateIntegrity(Insertable<TrialPurpose> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(_versionMeta,
+          version.isAcceptableOrUnknown(data['version']!, _versionMeta));
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('source_mode')) {
+      context.handle(
+          _sourceModeMeta,
+          sourceMode.isAcceptableOrUnknown(
+              data['source_mode']!, _sourceModeMeta));
+    }
+    if (data.containsKey('claim_being_tested')) {
+      context.handle(
+          _claimBeingTestedMeta,
+          claimBeingTested.isAcceptableOrUnknown(
+              data['claim_being_tested']!, _claimBeingTestedMeta));
+    }
+    if (data.containsKey('trial_purpose')) {
+      context.handle(
+          _trialPurposeMeta,
+          trialPurpose.isAcceptableOrUnknown(
+              data['trial_purpose']!, _trialPurposeMeta));
+    }
+    if (data.containsKey('regulatory_context')) {
+      context.handle(
+          _regulatoryContextMeta,
+          regulatoryContext.isAcceptableOrUnknown(
+              data['regulatory_context']!, _regulatoryContextMeta));
+    }
+    if (data.containsKey('primary_endpoint')) {
+      context.handle(
+          _primaryEndpointMeta,
+          primaryEndpoint.isAcceptableOrUnknown(
+              data['primary_endpoint']!, _primaryEndpointMeta));
+    }
+    if (data.containsKey('primary_endpoint_rationale')) {
+      context.handle(
+          _primaryEndpointRationaleMeta,
+          primaryEndpointRationale.isAcceptableOrUnknown(
+              data['primary_endpoint_rationale']!,
+              _primaryEndpointRationaleMeta));
+    }
+    if (data.containsKey('treatment_role_summary')) {
+      context.handle(
+          _treatmentRoleSummaryMeta,
+          treatmentRoleSummary.isAcceptableOrUnknown(
+              data['treatment_role_summary']!, _treatmentRoleSummaryMeta));
+    }
+    if (data.containsKey('known_interpretation_factors')) {
+      context.handle(
+          _knownInterpretationFactorsMeta,
+          knownInterpretationFactors.isAcceptableOrUnknown(
+              data['known_interpretation_factors']!,
+              _knownInterpretationFactorsMeta));
+    }
+    if (data.containsKey('required_evidence_summary')) {
+      context.handle(
+          _requiredEvidenceSummaryMeta,
+          requiredEvidenceSummary.isAcceptableOrUnknown(
+              data['required_evidence_summary']!,
+              _requiredEvidenceSummaryMeta));
+    }
+    if (data.containsKey('readiness_criteria_summary')) {
+      context.handle(
+          _readinessCriteriaSummaryMeta,
+          readinessCriteriaSummary.isAcceptableOrUnknown(
+              data['readiness_criteria_summary']!,
+              _readinessCriteriaSummaryMeta));
+    }
+    if (data.containsKey('inferred_fields_json')) {
+      context.handle(
+          _inferredFieldsJsonMeta,
+          inferredFieldsJson.isAcceptableOrUnknown(
+              data['inferred_fields_json']!, _inferredFieldsJsonMeta));
+    }
+    if (data.containsKey('confirmed_at')) {
+      context.handle(
+          _confirmedAtMeta,
+          confirmedAt.isAcceptableOrUnknown(
+              data['confirmed_at']!, _confirmedAtMeta));
+    }
+    if (data.containsKey('confirmed_by')) {
+      context.handle(
+          _confirmedByMeta,
+          confirmedBy.isAcceptableOrUnknown(
+              data['confirmed_by']!, _confirmedByMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    if (data.containsKey('superseded_at')) {
+      context.handle(
+          _supersededAtMeta,
+          supersededAt.isAcceptableOrUnknown(
+              data['superseded_at']!, _supersededAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TrialPurpose map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrialPurpose(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      version: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}version'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      sourceMode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source_mode'])!,
+      claimBeingTested: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}claim_being_tested']),
+      trialPurpose: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}trial_purpose']),
+      regulatoryContext: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}regulatory_context']),
+      primaryEndpoint: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}primary_endpoint']),
+      primaryEndpointRationale: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}primary_endpoint_rationale']),
+      treatmentRoleSummary: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}treatment_role_summary']),
+      knownInterpretationFactors: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}known_interpretation_factors']),
+      requiredEvidenceSummary: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}required_evidence_summary']),
+      readinessCriteriaSummary: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}readiness_criteria_summary']),
+      inferredFieldsJson: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}inferred_fields_json']),
+      confirmedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}confirmed_at']),
+      confirmedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}confirmed_by']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      supersededAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}superseded_at']),
+    );
+  }
+
+  @override
+  $TrialPurposesTable createAlias(String alias) {
+    return $TrialPurposesTable(attachedDatabase, alias);
+  }
+}
+
+class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
+  final int id;
+  final int trialId;
+  final int version;
+  final String status;
+  final String sourceMode;
+  final String? claimBeingTested;
+  final String? trialPurpose;
+  final String? regulatoryContext;
+  final String? primaryEndpoint;
+  final String? primaryEndpointRationale;
+  final String? treatmentRoleSummary;
+  final String? knownInterpretationFactors;
+  final String? requiredEvidenceSummary;
+  final String? readinessCriteriaSummary;
+  final String? inferredFieldsJson;
+  final DateTime? confirmedAt;
+  final String? confirmedBy;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? supersededAt;
+  const TrialPurpose(
+      {required this.id,
+      required this.trialId,
+      required this.version,
+      required this.status,
+      required this.sourceMode,
+      this.claimBeingTested,
+      this.trialPurpose,
+      this.regulatoryContext,
+      this.primaryEndpoint,
+      this.primaryEndpointRationale,
+      this.treatmentRoleSummary,
+      this.knownInterpretationFactors,
+      this.requiredEvidenceSummary,
+      this.readinessCriteriaSummary,
+      this.inferredFieldsJson,
+      this.confirmedAt,
+      this.confirmedBy,
+      required this.createdAt,
+      required this.updatedAt,
+      this.supersededAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    map['version'] = Variable<int>(version);
+    map['status'] = Variable<String>(status);
+    map['source_mode'] = Variable<String>(sourceMode);
+    if (!nullToAbsent || claimBeingTested != null) {
+      map['claim_being_tested'] = Variable<String>(claimBeingTested);
+    }
+    if (!nullToAbsent || trialPurpose != null) {
+      map['trial_purpose'] = Variable<String>(trialPurpose);
+    }
+    if (!nullToAbsent || regulatoryContext != null) {
+      map['regulatory_context'] = Variable<String>(regulatoryContext);
+    }
+    if (!nullToAbsent || primaryEndpoint != null) {
+      map['primary_endpoint'] = Variable<String>(primaryEndpoint);
+    }
+    if (!nullToAbsent || primaryEndpointRationale != null) {
+      map['primary_endpoint_rationale'] =
+          Variable<String>(primaryEndpointRationale);
+    }
+    if (!nullToAbsent || treatmentRoleSummary != null) {
+      map['treatment_role_summary'] = Variable<String>(treatmentRoleSummary);
+    }
+    if (!nullToAbsent || knownInterpretationFactors != null) {
+      map['known_interpretation_factors'] =
+          Variable<String>(knownInterpretationFactors);
+    }
+    if (!nullToAbsent || requiredEvidenceSummary != null) {
+      map['required_evidence_summary'] =
+          Variable<String>(requiredEvidenceSummary);
+    }
+    if (!nullToAbsent || readinessCriteriaSummary != null) {
+      map['readiness_criteria_summary'] =
+          Variable<String>(readinessCriteriaSummary);
+    }
+    if (!nullToAbsent || inferredFieldsJson != null) {
+      map['inferred_fields_json'] = Variable<String>(inferredFieldsJson);
+    }
+    if (!nullToAbsent || confirmedAt != null) {
+      map['confirmed_at'] = Variable<DateTime>(confirmedAt);
+    }
+    if (!nullToAbsent || confirmedBy != null) {
+      map['confirmed_by'] = Variable<String>(confirmedBy);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || supersededAt != null) {
+      map['superseded_at'] = Variable<DateTime>(supersededAt);
+    }
+    return map;
+  }
+
+  TrialPurposesCompanion toCompanion(bool nullToAbsent) {
+    return TrialPurposesCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      version: Value(version),
+      status: Value(status),
+      sourceMode: Value(sourceMode),
+      claimBeingTested: claimBeingTested == null && nullToAbsent
+          ? const Value.absent()
+          : Value(claimBeingTested),
+      trialPurpose: trialPurpose == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trialPurpose),
+      regulatoryContext: regulatoryContext == null && nullToAbsent
+          ? const Value.absent()
+          : Value(regulatoryContext),
+      primaryEndpoint: primaryEndpoint == null && nullToAbsent
+          ? const Value.absent()
+          : Value(primaryEndpoint),
+      primaryEndpointRationale: primaryEndpointRationale == null && nullToAbsent
+          ? const Value.absent()
+          : Value(primaryEndpointRationale),
+      treatmentRoleSummary: treatmentRoleSummary == null && nullToAbsent
+          ? const Value.absent()
+          : Value(treatmentRoleSummary),
+      knownInterpretationFactors:
+          knownInterpretationFactors == null && nullToAbsent
+              ? const Value.absent()
+              : Value(knownInterpretationFactors),
+      requiredEvidenceSummary: requiredEvidenceSummary == null && nullToAbsent
+          ? const Value.absent()
+          : Value(requiredEvidenceSummary),
+      readinessCriteriaSummary: readinessCriteriaSummary == null && nullToAbsent
+          ? const Value.absent()
+          : Value(readinessCriteriaSummary),
+      inferredFieldsJson: inferredFieldsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inferredFieldsJson),
+      confirmedAt: confirmedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confirmedAt),
+      confirmedBy: confirmedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confirmedBy),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      supersededAt: supersededAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supersededAt),
+    );
+  }
+
+  factory TrialPurpose.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrialPurpose(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      version: serializer.fromJson<int>(json['version']),
+      status: serializer.fromJson<String>(json['status']),
+      sourceMode: serializer.fromJson<String>(json['sourceMode']),
+      claimBeingTested: serializer.fromJson<String?>(json['claimBeingTested']),
+      trialPurpose: serializer.fromJson<String?>(json['trialPurpose']),
+      regulatoryContext:
+          serializer.fromJson<String?>(json['regulatoryContext']),
+      primaryEndpoint: serializer.fromJson<String?>(json['primaryEndpoint']),
+      primaryEndpointRationale:
+          serializer.fromJson<String?>(json['primaryEndpointRationale']),
+      treatmentRoleSummary:
+          serializer.fromJson<String?>(json['treatmentRoleSummary']),
+      knownInterpretationFactors:
+          serializer.fromJson<String?>(json['knownInterpretationFactors']),
+      requiredEvidenceSummary:
+          serializer.fromJson<String?>(json['requiredEvidenceSummary']),
+      readinessCriteriaSummary:
+          serializer.fromJson<String?>(json['readinessCriteriaSummary']),
+      inferredFieldsJson:
+          serializer.fromJson<String?>(json['inferredFieldsJson']),
+      confirmedAt: serializer.fromJson<DateTime?>(json['confirmedAt']),
+      confirmedBy: serializer.fromJson<String?>(json['confirmedBy']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      supersededAt: serializer.fromJson<DateTime?>(json['supersededAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'version': serializer.toJson<int>(version),
+      'status': serializer.toJson<String>(status),
+      'sourceMode': serializer.toJson<String>(sourceMode),
+      'claimBeingTested': serializer.toJson<String?>(claimBeingTested),
+      'trialPurpose': serializer.toJson<String?>(trialPurpose),
+      'regulatoryContext': serializer.toJson<String?>(regulatoryContext),
+      'primaryEndpoint': serializer.toJson<String?>(primaryEndpoint),
+      'primaryEndpointRationale':
+          serializer.toJson<String?>(primaryEndpointRationale),
+      'treatmentRoleSummary': serializer.toJson<String?>(treatmentRoleSummary),
+      'knownInterpretationFactors':
+          serializer.toJson<String?>(knownInterpretationFactors),
+      'requiredEvidenceSummary':
+          serializer.toJson<String?>(requiredEvidenceSummary),
+      'readinessCriteriaSummary':
+          serializer.toJson<String?>(readinessCriteriaSummary),
+      'inferredFieldsJson': serializer.toJson<String?>(inferredFieldsJson),
+      'confirmedAt': serializer.toJson<DateTime?>(confirmedAt),
+      'confirmedBy': serializer.toJson<String?>(confirmedBy),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'supersededAt': serializer.toJson<DateTime?>(supersededAt),
+    };
+  }
+
+  TrialPurpose copyWith(
+          {int? id,
+          int? trialId,
+          int? version,
+          String? status,
+          String? sourceMode,
+          Value<String?> claimBeingTested = const Value.absent(),
+          Value<String?> trialPurpose = const Value.absent(),
+          Value<String?> regulatoryContext = const Value.absent(),
+          Value<String?> primaryEndpoint = const Value.absent(),
+          Value<String?> primaryEndpointRationale = const Value.absent(),
+          Value<String?> treatmentRoleSummary = const Value.absent(),
+          Value<String?> knownInterpretationFactors = const Value.absent(),
+          Value<String?> requiredEvidenceSummary = const Value.absent(),
+          Value<String?> readinessCriteriaSummary = const Value.absent(),
+          Value<String?> inferredFieldsJson = const Value.absent(),
+          Value<DateTime?> confirmedAt = const Value.absent(),
+          Value<String?> confirmedBy = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt,
+          Value<DateTime?> supersededAt = const Value.absent()}) =>
+      TrialPurpose(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        version: version ?? this.version,
+        status: status ?? this.status,
+        sourceMode: sourceMode ?? this.sourceMode,
+        claimBeingTested: claimBeingTested.present
+            ? claimBeingTested.value
+            : this.claimBeingTested,
+        trialPurpose:
+            trialPurpose.present ? trialPurpose.value : this.trialPurpose,
+        regulatoryContext: regulatoryContext.present
+            ? regulatoryContext.value
+            : this.regulatoryContext,
+        primaryEndpoint: primaryEndpoint.present
+            ? primaryEndpoint.value
+            : this.primaryEndpoint,
+        primaryEndpointRationale: primaryEndpointRationale.present
+            ? primaryEndpointRationale.value
+            : this.primaryEndpointRationale,
+        treatmentRoleSummary: treatmentRoleSummary.present
+            ? treatmentRoleSummary.value
+            : this.treatmentRoleSummary,
+        knownInterpretationFactors: knownInterpretationFactors.present
+            ? knownInterpretationFactors.value
+            : this.knownInterpretationFactors,
+        requiredEvidenceSummary: requiredEvidenceSummary.present
+            ? requiredEvidenceSummary.value
+            : this.requiredEvidenceSummary,
+        readinessCriteriaSummary: readinessCriteriaSummary.present
+            ? readinessCriteriaSummary.value
+            : this.readinessCriteriaSummary,
+        inferredFieldsJson: inferredFieldsJson.present
+            ? inferredFieldsJson.value
+            : this.inferredFieldsJson,
+        confirmedAt: confirmedAt.present ? confirmedAt.value : this.confirmedAt,
+        confirmedBy: confirmedBy.present ? confirmedBy.value : this.confirmedBy,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        supersededAt:
+            supersededAt.present ? supersededAt.value : this.supersededAt,
+      );
+  TrialPurpose copyWithCompanion(TrialPurposesCompanion data) {
+    return TrialPurpose(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      version: data.version.present ? data.version.value : this.version,
+      status: data.status.present ? data.status.value : this.status,
+      sourceMode:
+          data.sourceMode.present ? data.sourceMode.value : this.sourceMode,
+      claimBeingTested: data.claimBeingTested.present
+          ? data.claimBeingTested.value
+          : this.claimBeingTested,
+      trialPurpose: data.trialPurpose.present
+          ? data.trialPurpose.value
+          : this.trialPurpose,
+      regulatoryContext: data.regulatoryContext.present
+          ? data.regulatoryContext.value
+          : this.regulatoryContext,
+      primaryEndpoint: data.primaryEndpoint.present
+          ? data.primaryEndpoint.value
+          : this.primaryEndpoint,
+      primaryEndpointRationale: data.primaryEndpointRationale.present
+          ? data.primaryEndpointRationale.value
+          : this.primaryEndpointRationale,
+      treatmentRoleSummary: data.treatmentRoleSummary.present
+          ? data.treatmentRoleSummary.value
+          : this.treatmentRoleSummary,
+      knownInterpretationFactors: data.knownInterpretationFactors.present
+          ? data.knownInterpretationFactors.value
+          : this.knownInterpretationFactors,
+      requiredEvidenceSummary: data.requiredEvidenceSummary.present
+          ? data.requiredEvidenceSummary.value
+          : this.requiredEvidenceSummary,
+      readinessCriteriaSummary: data.readinessCriteriaSummary.present
+          ? data.readinessCriteriaSummary.value
+          : this.readinessCriteriaSummary,
+      inferredFieldsJson: data.inferredFieldsJson.present
+          ? data.inferredFieldsJson.value
+          : this.inferredFieldsJson,
+      confirmedAt:
+          data.confirmedAt.present ? data.confirmedAt.value : this.confirmedAt,
+      confirmedBy:
+          data.confirmedBy.present ? data.confirmedBy.value : this.confirmedBy,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      supersededAt: data.supersededAt.present
+          ? data.supersededAt.value
+          : this.supersededAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialPurpose(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('version: $version, ')
+          ..write('status: $status, ')
+          ..write('sourceMode: $sourceMode, ')
+          ..write('claimBeingTested: $claimBeingTested, ')
+          ..write('trialPurpose: $trialPurpose, ')
+          ..write('regulatoryContext: $regulatoryContext, ')
+          ..write('primaryEndpoint: $primaryEndpoint, ')
+          ..write('primaryEndpointRationale: $primaryEndpointRationale, ')
+          ..write('treatmentRoleSummary: $treatmentRoleSummary, ')
+          ..write('knownInterpretationFactors: $knownInterpretationFactors, ')
+          ..write('requiredEvidenceSummary: $requiredEvidenceSummary, ')
+          ..write('readinessCriteriaSummary: $readinessCriteriaSummary, ')
+          ..write('inferredFieldsJson: $inferredFieldsJson, ')
+          ..write('confirmedAt: $confirmedAt, ')
+          ..write('confirmedBy: $confirmedBy, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('supersededAt: $supersededAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      version,
+      status,
+      sourceMode,
+      claimBeingTested,
+      trialPurpose,
+      regulatoryContext,
+      primaryEndpoint,
+      primaryEndpointRationale,
+      treatmentRoleSummary,
+      knownInterpretationFactors,
+      requiredEvidenceSummary,
+      readinessCriteriaSummary,
+      inferredFieldsJson,
+      confirmedAt,
+      confirmedBy,
+      createdAt,
+      updatedAt,
+      supersededAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrialPurpose &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.version == this.version &&
+          other.status == this.status &&
+          other.sourceMode == this.sourceMode &&
+          other.claimBeingTested == this.claimBeingTested &&
+          other.trialPurpose == this.trialPurpose &&
+          other.regulatoryContext == this.regulatoryContext &&
+          other.primaryEndpoint == this.primaryEndpoint &&
+          other.primaryEndpointRationale == this.primaryEndpointRationale &&
+          other.treatmentRoleSummary == this.treatmentRoleSummary &&
+          other.knownInterpretationFactors == this.knownInterpretationFactors &&
+          other.requiredEvidenceSummary == this.requiredEvidenceSummary &&
+          other.readinessCriteriaSummary == this.readinessCriteriaSummary &&
+          other.inferredFieldsJson == this.inferredFieldsJson &&
+          other.confirmedAt == this.confirmedAt &&
+          other.confirmedBy == this.confirmedBy &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.supersededAt == this.supersededAt);
+}
+
+class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<int> version;
+  final Value<String> status;
+  final Value<String> sourceMode;
+  final Value<String?> claimBeingTested;
+  final Value<String?> trialPurpose;
+  final Value<String?> regulatoryContext;
+  final Value<String?> primaryEndpoint;
+  final Value<String?> primaryEndpointRationale;
+  final Value<String?> treatmentRoleSummary;
+  final Value<String?> knownInterpretationFactors;
+  final Value<String?> requiredEvidenceSummary;
+  final Value<String?> readinessCriteriaSummary;
+  final Value<String?> inferredFieldsJson;
+  final Value<DateTime?> confirmedAt;
+  final Value<String?> confirmedBy;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> supersededAt;
+  const TrialPurposesCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.version = const Value.absent(),
+    this.status = const Value.absent(),
+    this.sourceMode = const Value.absent(),
+    this.claimBeingTested = const Value.absent(),
+    this.trialPurpose = const Value.absent(),
+    this.regulatoryContext = const Value.absent(),
+    this.primaryEndpoint = const Value.absent(),
+    this.primaryEndpointRationale = const Value.absent(),
+    this.treatmentRoleSummary = const Value.absent(),
+    this.knownInterpretationFactors = const Value.absent(),
+    this.requiredEvidenceSummary = const Value.absent(),
+    this.readinessCriteriaSummary = const Value.absent(),
+    this.inferredFieldsJson = const Value.absent(),
+    this.confirmedAt = const Value.absent(),
+    this.confirmedBy = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.supersededAt = const Value.absent(),
+  });
+  TrialPurposesCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    this.version = const Value.absent(),
+    this.status = const Value.absent(),
+    this.sourceMode = const Value.absent(),
+    this.claimBeingTested = const Value.absent(),
+    this.trialPurpose = const Value.absent(),
+    this.regulatoryContext = const Value.absent(),
+    this.primaryEndpoint = const Value.absent(),
+    this.primaryEndpointRationale = const Value.absent(),
+    this.treatmentRoleSummary = const Value.absent(),
+    this.knownInterpretationFactors = const Value.absent(),
+    this.requiredEvidenceSummary = const Value.absent(),
+    this.readinessCriteriaSummary = const Value.absent(),
+    this.inferredFieldsJson = const Value.absent(),
+    this.confirmedAt = const Value.absent(),
+    this.confirmedBy = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.supersededAt = const Value.absent(),
+  }) : trialId = Value(trialId);
+  static Insertable<TrialPurpose> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<int>? version,
+    Expression<String>? status,
+    Expression<String>? sourceMode,
+    Expression<String>? claimBeingTested,
+    Expression<String>? trialPurpose,
+    Expression<String>? regulatoryContext,
+    Expression<String>? primaryEndpoint,
+    Expression<String>? primaryEndpointRationale,
+    Expression<String>? treatmentRoleSummary,
+    Expression<String>? knownInterpretationFactors,
+    Expression<String>? requiredEvidenceSummary,
+    Expression<String>? readinessCriteriaSummary,
+    Expression<String>? inferredFieldsJson,
+    Expression<DateTime>? confirmedAt,
+    Expression<String>? confirmedBy,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? supersededAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (version != null) 'version': version,
+      if (status != null) 'status': status,
+      if (sourceMode != null) 'source_mode': sourceMode,
+      if (claimBeingTested != null) 'claim_being_tested': claimBeingTested,
+      if (trialPurpose != null) 'trial_purpose': trialPurpose,
+      if (regulatoryContext != null) 'regulatory_context': regulatoryContext,
+      if (primaryEndpoint != null) 'primary_endpoint': primaryEndpoint,
+      if (primaryEndpointRationale != null)
+        'primary_endpoint_rationale': primaryEndpointRationale,
+      if (treatmentRoleSummary != null)
+        'treatment_role_summary': treatmentRoleSummary,
+      if (knownInterpretationFactors != null)
+        'known_interpretation_factors': knownInterpretationFactors,
+      if (requiredEvidenceSummary != null)
+        'required_evidence_summary': requiredEvidenceSummary,
+      if (readinessCriteriaSummary != null)
+        'readiness_criteria_summary': readinessCriteriaSummary,
+      if (inferredFieldsJson != null)
+        'inferred_fields_json': inferredFieldsJson,
+      if (confirmedAt != null) 'confirmed_at': confirmedAt,
+      if (confirmedBy != null) 'confirmed_by': confirmedBy,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (supersededAt != null) 'superseded_at': supersededAt,
+    });
+  }
+
+  TrialPurposesCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<int>? version,
+      Value<String>? status,
+      Value<String>? sourceMode,
+      Value<String?>? claimBeingTested,
+      Value<String?>? trialPurpose,
+      Value<String?>? regulatoryContext,
+      Value<String?>? primaryEndpoint,
+      Value<String?>? primaryEndpointRationale,
+      Value<String?>? treatmentRoleSummary,
+      Value<String?>? knownInterpretationFactors,
+      Value<String?>? requiredEvidenceSummary,
+      Value<String?>? readinessCriteriaSummary,
+      Value<String?>? inferredFieldsJson,
+      Value<DateTime?>? confirmedAt,
+      Value<String?>? confirmedBy,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<DateTime?>? supersededAt}) {
+    return TrialPurposesCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      version: version ?? this.version,
+      status: status ?? this.status,
+      sourceMode: sourceMode ?? this.sourceMode,
+      claimBeingTested: claimBeingTested ?? this.claimBeingTested,
+      trialPurpose: trialPurpose ?? this.trialPurpose,
+      regulatoryContext: regulatoryContext ?? this.regulatoryContext,
+      primaryEndpoint: primaryEndpoint ?? this.primaryEndpoint,
+      primaryEndpointRationale:
+          primaryEndpointRationale ?? this.primaryEndpointRationale,
+      treatmentRoleSummary: treatmentRoleSummary ?? this.treatmentRoleSummary,
+      knownInterpretationFactors:
+          knownInterpretationFactors ?? this.knownInterpretationFactors,
+      requiredEvidenceSummary:
+          requiredEvidenceSummary ?? this.requiredEvidenceSummary,
+      readinessCriteriaSummary:
+          readinessCriteriaSummary ?? this.readinessCriteriaSummary,
+      inferredFieldsJson: inferredFieldsJson ?? this.inferredFieldsJson,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
+      confirmedBy: confirmedBy ?? this.confirmedBy,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      supersededAt: supersededAt ?? this.supersededAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (sourceMode.present) {
+      map['source_mode'] = Variable<String>(sourceMode.value);
+    }
+    if (claimBeingTested.present) {
+      map['claim_being_tested'] = Variable<String>(claimBeingTested.value);
+    }
+    if (trialPurpose.present) {
+      map['trial_purpose'] = Variable<String>(trialPurpose.value);
+    }
+    if (regulatoryContext.present) {
+      map['regulatory_context'] = Variable<String>(regulatoryContext.value);
+    }
+    if (primaryEndpoint.present) {
+      map['primary_endpoint'] = Variable<String>(primaryEndpoint.value);
+    }
+    if (primaryEndpointRationale.present) {
+      map['primary_endpoint_rationale'] =
+          Variable<String>(primaryEndpointRationale.value);
+    }
+    if (treatmentRoleSummary.present) {
+      map['treatment_role_summary'] =
+          Variable<String>(treatmentRoleSummary.value);
+    }
+    if (knownInterpretationFactors.present) {
+      map['known_interpretation_factors'] =
+          Variable<String>(knownInterpretationFactors.value);
+    }
+    if (requiredEvidenceSummary.present) {
+      map['required_evidence_summary'] =
+          Variable<String>(requiredEvidenceSummary.value);
+    }
+    if (readinessCriteriaSummary.present) {
+      map['readiness_criteria_summary'] =
+          Variable<String>(readinessCriteriaSummary.value);
+    }
+    if (inferredFieldsJson.present) {
+      map['inferred_fields_json'] = Variable<String>(inferredFieldsJson.value);
+    }
+    if (confirmedAt.present) {
+      map['confirmed_at'] = Variable<DateTime>(confirmedAt.value);
+    }
+    if (confirmedBy.present) {
+      map['confirmed_by'] = Variable<String>(confirmedBy.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (supersededAt.present) {
+      map['superseded_at'] = Variable<DateTime>(supersededAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialPurposesCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('version: $version, ')
+          ..write('status: $status, ')
+          ..write('sourceMode: $sourceMode, ')
+          ..write('claimBeingTested: $claimBeingTested, ')
+          ..write('trialPurpose: $trialPurpose, ')
+          ..write('regulatoryContext: $regulatoryContext, ')
+          ..write('primaryEndpoint: $primaryEndpoint, ')
+          ..write('primaryEndpointRationale: $primaryEndpointRationale, ')
+          ..write('treatmentRoleSummary: $treatmentRoleSummary, ')
+          ..write('knownInterpretationFactors: $knownInterpretationFactors, ')
+          ..write('requiredEvidenceSummary: $requiredEvidenceSummary, ')
+          ..write('readinessCriteriaSummary: $readinessCriteriaSummary, ')
+          ..write('inferredFieldsJson: $inferredFieldsJson, ')
+          ..write('confirmedAt: $confirmedAt, ')
+          ..write('confirmedBy: $confirmedBy, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('supersededAt: $supersededAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $IntentRevelationEventsTable extends IntentRevelationEvents
+    with TableInfo<$IntentRevelationEventsTable, IntentRevelationEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $IntentRevelationEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _trialPurposeIdMeta =
+      const VerificationMeta('trialPurposeId');
+  @override
+  late final GeneratedColumn<int> trialPurposeId = GeneratedColumn<int>(
+      'trial_purpose_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trial_purposes (id)'));
+  static const VerificationMeta _touchpointMeta =
+      const VerificationMeta('touchpoint');
+  @override
+  late final GeneratedColumn<String> touchpoint = GeneratedColumn<String>(
+      'touchpoint', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _questionKeyMeta =
+      const VerificationMeta('questionKey');
+  @override
+  late final GeneratedColumn<String> questionKey = GeneratedColumn<String>(
+      'question_key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _questionTextMeta =
+      const VerificationMeta('questionText');
+  @override
+  late final GeneratedColumn<String> questionText = GeneratedColumn<String>(
+      'question_text', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _answerValueMeta =
+      const VerificationMeta('answerValue');
+  @override
+  late final GeneratedColumn<String> answerValue = GeneratedColumn<String>(
+      'answer_value', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _answerStateMeta =
+      const VerificationMeta('answerState');
+  @override
+  late final GeneratedColumn<String> answerState = GeneratedColumn<String>(
+      'answer_state', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('unknown'));
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _capturedByMeta =
+      const VerificationMeta('capturedBy');
+  @override
+  late final GeneratedColumn<String> capturedBy = GeneratedColumn<String>(
+      'captured_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _capturedAtMeta =
+      const VerificationMeta('capturedAt');
+  @override
+  late final GeneratedColumn<DateTime> capturedAt = GeneratedColumn<DateTime>(
+      'captured_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        trialPurposeId,
+        touchpoint,
+        questionKey,
+        questionText,
+        answerValue,
+        answerState,
+        source,
+        capturedBy,
+        capturedAt,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'intent_revelation_events';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<IntentRevelationEvent> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('trial_purpose_id')) {
+      context.handle(
+          _trialPurposeIdMeta,
+          trialPurposeId.isAcceptableOrUnknown(
+              data['trial_purpose_id']!, _trialPurposeIdMeta));
+    }
+    if (data.containsKey('touchpoint')) {
+      context.handle(
+          _touchpointMeta,
+          touchpoint.isAcceptableOrUnknown(
+              data['touchpoint']!, _touchpointMeta));
+    } else if (isInserting) {
+      context.missing(_touchpointMeta);
+    }
+    if (data.containsKey('question_key')) {
+      context.handle(
+          _questionKeyMeta,
+          questionKey.isAcceptableOrUnknown(
+              data['question_key']!, _questionKeyMeta));
+    } else if (isInserting) {
+      context.missing(_questionKeyMeta);
+    }
+    if (data.containsKey('question_text')) {
+      context.handle(
+          _questionTextMeta,
+          questionText.isAcceptableOrUnknown(
+              data['question_text']!, _questionTextMeta));
+    } else if (isInserting) {
+      context.missing(_questionTextMeta);
+    }
+    if (data.containsKey('answer_value')) {
+      context.handle(
+          _answerValueMeta,
+          answerValue.isAcceptableOrUnknown(
+              data['answer_value']!, _answerValueMeta));
+    }
+    if (data.containsKey('answer_state')) {
+      context.handle(
+          _answerStateMeta,
+          answerState.isAcceptableOrUnknown(
+              data['answer_state']!, _answerStateMeta));
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('captured_by')) {
+      context.handle(
+          _capturedByMeta,
+          capturedBy.isAcceptableOrUnknown(
+              data['captured_by']!, _capturedByMeta));
+    }
+    if (data.containsKey('captured_at')) {
+      context.handle(
+          _capturedAtMeta,
+          capturedAt.isAcceptableOrUnknown(
+              data['captured_at']!, _capturedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  IntentRevelationEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return IntentRevelationEvent(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      trialPurposeId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_purpose_id']),
+      touchpoint: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}touchpoint'])!,
+      questionKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}question_key'])!,
+      questionText: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}question_text'])!,
+      answerValue: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}answer_value']),
+      answerState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}answer_state'])!,
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
+      capturedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}captured_by']),
+      capturedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}captured_at'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $IntentRevelationEventsTable createAlias(String alias) {
+    return $IntentRevelationEventsTable(attachedDatabase, alias);
+  }
+}
+
+class IntentRevelationEvent extends DataClass
+    implements Insertable<IntentRevelationEvent> {
+  final int id;
+  final int trialId;
+  final int? trialPurposeId;
+  final String touchpoint;
+  final String questionKey;
+  final String questionText;
+  final String? answerValue;
+  final String answerState;
+  final String source;
+  final String? capturedBy;
+  final DateTime capturedAt;
+  final DateTime createdAt;
+  const IntentRevelationEvent(
+      {required this.id,
+      required this.trialId,
+      this.trialPurposeId,
+      required this.touchpoint,
+      required this.questionKey,
+      required this.questionText,
+      this.answerValue,
+      required this.answerState,
+      required this.source,
+      this.capturedBy,
+      required this.capturedAt,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    if (!nullToAbsent || trialPurposeId != null) {
+      map['trial_purpose_id'] = Variable<int>(trialPurposeId);
+    }
+    map['touchpoint'] = Variable<String>(touchpoint);
+    map['question_key'] = Variable<String>(questionKey);
+    map['question_text'] = Variable<String>(questionText);
+    if (!nullToAbsent || answerValue != null) {
+      map['answer_value'] = Variable<String>(answerValue);
+    }
+    map['answer_state'] = Variable<String>(answerState);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || capturedBy != null) {
+      map['captured_by'] = Variable<String>(capturedBy);
+    }
+    map['captured_at'] = Variable<DateTime>(capturedAt);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  IntentRevelationEventsCompanion toCompanion(bool nullToAbsent) {
+    return IntentRevelationEventsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      trialPurposeId: trialPurposeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trialPurposeId),
+      touchpoint: Value(touchpoint),
+      questionKey: Value(questionKey),
+      questionText: Value(questionText),
+      answerValue: answerValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(answerValue),
+      answerState: Value(answerState),
+      source: Value(source),
+      capturedBy: capturedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(capturedBy),
+      capturedAt: Value(capturedAt),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory IntentRevelationEvent.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return IntentRevelationEvent(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      trialPurposeId: serializer.fromJson<int?>(json['trialPurposeId']),
+      touchpoint: serializer.fromJson<String>(json['touchpoint']),
+      questionKey: serializer.fromJson<String>(json['questionKey']),
+      questionText: serializer.fromJson<String>(json['questionText']),
+      answerValue: serializer.fromJson<String?>(json['answerValue']),
+      answerState: serializer.fromJson<String>(json['answerState']),
+      source: serializer.fromJson<String>(json['source']),
+      capturedBy: serializer.fromJson<String?>(json['capturedBy']),
+      capturedAt: serializer.fromJson<DateTime>(json['capturedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'trialPurposeId': serializer.toJson<int?>(trialPurposeId),
+      'touchpoint': serializer.toJson<String>(touchpoint),
+      'questionKey': serializer.toJson<String>(questionKey),
+      'questionText': serializer.toJson<String>(questionText),
+      'answerValue': serializer.toJson<String?>(answerValue),
+      'answerState': serializer.toJson<String>(answerState),
+      'source': serializer.toJson<String>(source),
+      'capturedBy': serializer.toJson<String?>(capturedBy),
+      'capturedAt': serializer.toJson<DateTime>(capturedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  IntentRevelationEvent copyWith(
+          {int? id,
+          int? trialId,
+          Value<int?> trialPurposeId = const Value.absent(),
+          String? touchpoint,
+          String? questionKey,
+          String? questionText,
+          Value<String?> answerValue = const Value.absent(),
+          String? answerState,
+          String? source,
+          Value<String?> capturedBy = const Value.absent(),
+          DateTime? capturedAt,
+          DateTime? createdAt}) =>
+      IntentRevelationEvent(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        trialPurposeId:
+            trialPurposeId.present ? trialPurposeId.value : this.trialPurposeId,
+        touchpoint: touchpoint ?? this.touchpoint,
+        questionKey: questionKey ?? this.questionKey,
+        questionText: questionText ?? this.questionText,
+        answerValue: answerValue.present ? answerValue.value : this.answerValue,
+        answerState: answerState ?? this.answerState,
+        source: source ?? this.source,
+        capturedBy: capturedBy.present ? capturedBy.value : this.capturedBy,
+        capturedAt: capturedAt ?? this.capturedAt,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  IntentRevelationEvent copyWithCompanion(
+      IntentRevelationEventsCompanion data) {
+    return IntentRevelationEvent(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      trialPurposeId: data.trialPurposeId.present
+          ? data.trialPurposeId.value
+          : this.trialPurposeId,
+      touchpoint:
+          data.touchpoint.present ? data.touchpoint.value : this.touchpoint,
+      questionKey:
+          data.questionKey.present ? data.questionKey.value : this.questionKey,
+      questionText: data.questionText.present
+          ? data.questionText.value
+          : this.questionText,
+      answerValue:
+          data.answerValue.present ? data.answerValue.value : this.answerValue,
+      answerState:
+          data.answerState.present ? data.answerState.value : this.answerState,
+      source: data.source.present ? data.source.value : this.source,
+      capturedBy:
+          data.capturedBy.present ? data.capturedBy.value : this.capturedBy,
+      capturedAt:
+          data.capturedAt.present ? data.capturedAt.value : this.capturedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IntentRevelationEvent(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('trialPurposeId: $trialPurposeId, ')
+          ..write('touchpoint: $touchpoint, ')
+          ..write('questionKey: $questionKey, ')
+          ..write('questionText: $questionText, ')
+          ..write('answerValue: $answerValue, ')
+          ..write('answerState: $answerState, ')
+          ..write('source: $source, ')
+          ..write('capturedBy: $capturedBy, ')
+          ..write('capturedAt: $capturedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      trialPurposeId,
+      touchpoint,
+      questionKey,
+      questionText,
+      answerValue,
+      answerState,
+      source,
+      capturedBy,
+      capturedAt,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is IntentRevelationEvent &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.trialPurposeId == this.trialPurposeId &&
+          other.touchpoint == this.touchpoint &&
+          other.questionKey == this.questionKey &&
+          other.questionText == this.questionText &&
+          other.answerValue == this.answerValue &&
+          other.answerState == this.answerState &&
+          other.source == this.source &&
+          other.capturedBy == this.capturedBy &&
+          other.capturedAt == this.capturedAt &&
+          other.createdAt == this.createdAt);
+}
+
+class IntentRevelationEventsCompanion
+    extends UpdateCompanion<IntentRevelationEvent> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<int?> trialPurposeId;
+  final Value<String> touchpoint;
+  final Value<String> questionKey;
+  final Value<String> questionText;
+  final Value<String?> answerValue;
+  final Value<String> answerState;
+  final Value<String> source;
+  final Value<String?> capturedBy;
+  final Value<DateTime> capturedAt;
+  final Value<DateTime> createdAt;
+  const IntentRevelationEventsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.trialPurposeId = const Value.absent(),
+    this.touchpoint = const Value.absent(),
+    this.questionKey = const Value.absent(),
+    this.questionText = const Value.absent(),
+    this.answerValue = const Value.absent(),
+    this.answerState = const Value.absent(),
+    this.source = const Value.absent(),
+    this.capturedBy = const Value.absent(),
+    this.capturedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  IntentRevelationEventsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    this.trialPurposeId = const Value.absent(),
+    required String touchpoint,
+    required String questionKey,
+    required String questionText,
+    this.answerValue = const Value.absent(),
+    this.answerState = const Value.absent(),
+    required String source,
+    this.capturedBy = const Value.absent(),
+    this.capturedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  })  : trialId = Value(trialId),
+        touchpoint = Value(touchpoint),
+        questionKey = Value(questionKey),
+        questionText = Value(questionText),
+        source = Value(source);
+  static Insertable<IntentRevelationEvent> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<int>? trialPurposeId,
+    Expression<String>? touchpoint,
+    Expression<String>? questionKey,
+    Expression<String>? questionText,
+    Expression<String>? answerValue,
+    Expression<String>? answerState,
+    Expression<String>? source,
+    Expression<String>? capturedBy,
+    Expression<DateTime>? capturedAt,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (trialPurposeId != null) 'trial_purpose_id': trialPurposeId,
+      if (touchpoint != null) 'touchpoint': touchpoint,
+      if (questionKey != null) 'question_key': questionKey,
+      if (questionText != null) 'question_text': questionText,
+      if (answerValue != null) 'answer_value': answerValue,
+      if (answerState != null) 'answer_state': answerState,
+      if (source != null) 'source': source,
+      if (capturedBy != null) 'captured_by': capturedBy,
+      if (capturedAt != null) 'captured_at': capturedAt,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  IntentRevelationEventsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<int?>? trialPurposeId,
+      Value<String>? touchpoint,
+      Value<String>? questionKey,
+      Value<String>? questionText,
+      Value<String?>? answerValue,
+      Value<String>? answerState,
+      Value<String>? source,
+      Value<String?>? capturedBy,
+      Value<DateTime>? capturedAt,
+      Value<DateTime>? createdAt}) {
+    return IntentRevelationEventsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      trialPurposeId: trialPurposeId ?? this.trialPurposeId,
+      touchpoint: touchpoint ?? this.touchpoint,
+      questionKey: questionKey ?? this.questionKey,
+      questionText: questionText ?? this.questionText,
+      answerValue: answerValue ?? this.answerValue,
+      answerState: answerState ?? this.answerState,
+      source: source ?? this.source,
+      capturedBy: capturedBy ?? this.capturedBy,
+      capturedAt: capturedAt ?? this.capturedAt,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (trialPurposeId.present) {
+      map['trial_purpose_id'] = Variable<int>(trialPurposeId.value);
+    }
+    if (touchpoint.present) {
+      map['touchpoint'] = Variable<String>(touchpoint.value);
+    }
+    if (questionKey.present) {
+      map['question_key'] = Variable<String>(questionKey.value);
+    }
+    if (questionText.present) {
+      map['question_text'] = Variable<String>(questionText.value);
+    }
+    if (answerValue.present) {
+      map['answer_value'] = Variable<String>(answerValue.value);
+    }
+    if (answerState.present) {
+      map['answer_state'] = Variable<String>(answerState.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (capturedBy.present) {
+      map['captured_by'] = Variable<String>(capturedBy.value);
+    }
+    if (capturedAt.present) {
+      map['captured_at'] = Variable<DateTime>(capturedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('IntentRevelationEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('trialPurposeId: $trialPurposeId, ')
+          ..write('touchpoint: $touchpoint, ')
+          ..write('questionKey: $questionKey, ')
+          ..write('questionText: $questionText, ')
+          ..write('answerValue: $answerValue, ')
+          ..write('answerState: $answerState, ')
+          ..write('source: $source, ')
+          ..write('capturedBy: $capturedBy, ')
+          ..write('capturedAt: $capturedAt, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CtqFactorDefinitionsTable extends CtqFactorDefinitions
+    with TableInfo<$CtqFactorDefinitionsTable, CtqFactorDefinition> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CtqFactorDefinitionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _trialPurposeIdMeta =
+      const VerificationMeta('trialPurposeId');
+  @override
+  late final GeneratedColumn<int> trialPurposeId = GeneratedColumn<int>(
+      'trial_purpose_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trial_purposes (id)'));
+  static const VerificationMeta _factorKeyMeta =
+      const VerificationMeta('factorKey');
+  @override
+  late final GeneratedColumn<String> factorKey = GeneratedColumn<String>(
+      'factor_key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _factorLabelMeta =
+      const VerificationMeta('factorLabel');
+  @override
+  late final GeneratedColumn<String> factorLabel = GeneratedColumn<String>(
+      'factor_label', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _factorTypeMeta =
+      const VerificationMeta('factorType');
+  @override
+  late final GeneratedColumn<String> factorType = GeneratedColumn<String>(
+      'factor_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _importanceMeta =
+      const VerificationMeta('importance');
+  @override
+  late final GeneratedColumn<String> importance = GeneratedColumn<String>(
+      'importance', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('standard'));
+  static const VerificationMeta _expectedEvidenceTypeMeta =
+      const VerificationMeta('expectedEvidenceType');
+  @override
+  late final GeneratedColumn<String> expectedEvidenceType =
+      GeneratedColumn<String>('expected_evidence_type', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _evaluationRuleKeyMeta =
+      const VerificationMeta('evaluationRuleKey');
+  @override
+  late final GeneratedColumn<String> evaluationRuleKey =
+      GeneratedColumn<String>('evaluation_rule_key', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+      'description', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _retiredAtMeta =
+      const VerificationMeta('retiredAt');
+  @override
+  late final GeneratedColumn<DateTime> retiredAt = GeneratedColumn<DateTime>(
+      'retired_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        trialPurposeId,
+        factorKey,
+        factorLabel,
+        factorType,
+        importance,
+        expectedEvidenceType,
+        evaluationRuleKey,
+        description,
+        source,
+        createdAt,
+        updatedAt,
+        retiredAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ctq_factor_definitions';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<CtqFactorDefinition> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('trial_purpose_id')) {
+      context.handle(
+          _trialPurposeIdMeta,
+          trialPurposeId.isAcceptableOrUnknown(
+              data['trial_purpose_id']!, _trialPurposeIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialPurposeIdMeta);
+    }
+    if (data.containsKey('factor_key')) {
+      context.handle(_factorKeyMeta,
+          factorKey.isAcceptableOrUnknown(data['factor_key']!, _factorKeyMeta));
+    } else if (isInserting) {
+      context.missing(_factorKeyMeta);
+    }
+    if (data.containsKey('factor_label')) {
+      context.handle(
+          _factorLabelMeta,
+          factorLabel.isAcceptableOrUnknown(
+              data['factor_label']!, _factorLabelMeta));
+    } else if (isInserting) {
+      context.missing(_factorLabelMeta);
+    }
+    if (data.containsKey('factor_type')) {
+      context.handle(
+          _factorTypeMeta,
+          factorType.isAcceptableOrUnknown(
+              data['factor_type']!, _factorTypeMeta));
+    } else if (isInserting) {
+      context.missing(_factorTypeMeta);
+    }
+    if (data.containsKey('importance')) {
+      context.handle(
+          _importanceMeta,
+          importance.isAcceptableOrUnknown(
+              data['importance']!, _importanceMeta));
+    }
+    if (data.containsKey('expected_evidence_type')) {
+      context.handle(
+          _expectedEvidenceTypeMeta,
+          expectedEvidenceType.isAcceptableOrUnknown(
+              data['expected_evidence_type']!, _expectedEvidenceTypeMeta));
+    }
+    if (data.containsKey('evaluation_rule_key')) {
+      context.handle(
+          _evaluationRuleKeyMeta,
+          evaluationRuleKey.isAcceptableOrUnknown(
+              data['evaluation_rule_key']!, _evaluationRuleKeyMeta));
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    if (data.containsKey('retired_at')) {
+      context.handle(_retiredAtMeta,
+          retiredAt.isAcceptableOrUnknown(data['retired_at']!, _retiredAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CtqFactorDefinition map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CtqFactorDefinition(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      trialPurposeId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_purpose_id'])!,
+      factorKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}factor_key'])!,
+      factorLabel: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}factor_label'])!,
+      factorType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}factor_type'])!,
+      importance: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}importance'])!,
+      expectedEvidenceType: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}expected_evidence_type']),
+      evaluationRuleKey: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}evaluation_rule_key']),
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description']),
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      retiredAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}retired_at']),
+    );
+  }
+
+  @override
+  $CtqFactorDefinitionsTable createAlias(String alias) {
+    return $CtqFactorDefinitionsTable(attachedDatabase, alias);
+  }
+}
+
+class CtqFactorDefinition extends DataClass
+    implements Insertable<CtqFactorDefinition> {
+  final int id;
+  final int trialId;
+  final int trialPurposeId;
+  final String factorKey;
+  final String factorLabel;
+  final String factorType;
+  final String importance;
+  final String? expectedEvidenceType;
+  final String? evaluationRuleKey;
+  final String? description;
+  final String source;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? retiredAt;
+  const CtqFactorDefinition(
+      {required this.id,
+      required this.trialId,
+      required this.trialPurposeId,
+      required this.factorKey,
+      required this.factorLabel,
+      required this.factorType,
+      required this.importance,
+      this.expectedEvidenceType,
+      this.evaluationRuleKey,
+      this.description,
+      required this.source,
+      required this.createdAt,
+      required this.updatedAt,
+      this.retiredAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    map['trial_purpose_id'] = Variable<int>(trialPurposeId);
+    map['factor_key'] = Variable<String>(factorKey);
+    map['factor_label'] = Variable<String>(factorLabel);
+    map['factor_type'] = Variable<String>(factorType);
+    map['importance'] = Variable<String>(importance);
+    if (!nullToAbsent || expectedEvidenceType != null) {
+      map['expected_evidence_type'] = Variable<String>(expectedEvidenceType);
+    }
+    if (!nullToAbsent || evaluationRuleKey != null) {
+      map['evaluation_rule_key'] = Variable<String>(evaluationRuleKey);
+    }
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['source'] = Variable<String>(source);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || retiredAt != null) {
+      map['retired_at'] = Variable<DateTime>(retiredAt);
+    }
+    return map;
+  }
+
+  CtqFactorDefinitionsCompanion toCompanion(bool nullToAbsent) {
+    return CtqFactorDefinitionsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      trialPurposeId: Value(trialPurposeId),
+      factorKey: Value(factorKey),
+      factorLabel: Value(factorLabel),
+      factorType: Value(factorType),
+      importance: Value(importance),
+      expectedEvidenceType: expectedEvidenceType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expectedEvidenceType),
+      evaluationRuleKey: evaluationRuleKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(evaluationRuleKey),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      source: Value(source),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      retiredAt: retiredAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(retiredAt),
+    );
+  }
+
+  factory CtqFactorDefinition.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CtqFactorDefinition(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      trialPurposeId: serializer.fromJson<int>(json['trialPurposeId']),
+      factorKey: serializer.fromJson<String>(json['factorKey']),
+      factorLabel: serializer.fromJson<String>(json['factorLabel']),
+      factorType: serializer.fromJson<String>(json['factorType']),
+      importance: serializer.fromJson<String>(json['importance']),
+      expectedEvidenceType:
+          serializer.fromJson<String?>(json['expectedEvidenceType']),
+      evaluationRuleKey:
+          serializer.fromJson<String?>(json['evaluationRuleKey']),
+      description: serializer.fromJson<String?>(json['description']),
+      source: serializer.fromJson<String>(json['source']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      retiredAt: serializer.fromJson<DateTime?>(json['retiredAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'trialPurposeId': serializer.toJson<int>(trialPurposeId),
+      'factorKey': serializer.toJson<String>(factorKey),
+      'factorLabel': serializer.toJson<String>(factorLabel),
+      'factorType': serializer.toJson<String>(factorType),
+      'importance': serializer.toJson<String>(importance),
+      'expectedEvidenceType': serializer.toJson<String?>(expectedEvidenceType),
+      'evaluationRuleKey': serializer.toJson<String?>(evaluationRuleKey),
+      'description': serializer.toJson<String?>(description),
+      'source': serializer.toJson<String>(source),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'retiredAt': serializer.toJson<DateTime?>(retiredAt),
+    };
+  }
+
+  CtqFactorDefinition copyWith(
+          {int? id,
+          int? trialId,
+          int? trialPurposeId,
+          String? factorKey,
+          String? factorLabel,
+          String? factorType,
+          String? importance,
+          Value<String?> expectedEvidenceType = const Value.absent(),
+          Value<String?> evaluationRuleKey = const Value.absent(),
+          Value<String?> description = const Value.absent(),
+          String? source,
+          DateTime? createdAt,
+          DateTime? updatedAt,
+          Value<DateTime?> retiredAt = const Value.absent()}) =>
+      CtqFactorDefinition(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        trialPurposeId: trialPurposeId ?? this.trialPurposeId,
+        factorKey: factorKey ?? this.factorKey,
+        factorLabel: factorLabel ?? this.factorLabel,
+        factorType: factorType ?? this.factorType,
+        importance: importance ?? this.importance,
+        expectedEvidenceType: expectedEvidenceType.present
+            ? expectedEvidenceType.value
+            : this.expectedEvidenceType,
+        evaluationRuleKey: evaluationRuleKey.present
+            ? evaluationRuleKey.value
+            : this.evaluationRuleKey,
+        description: description.present ? description.value : this.description,
+        source: source ?? this.source,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        retiredAt: retiredAt.present ? retiredAt.value : this.retiredAt,
+      );
+  CtqFactorDefinition copyWithCompanion(CtqFactorDefinitionsCompanion data) {
+    return CtqFactorDefinition(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      trialPurposeId: data.trialPurposeId.present
+          ? data.trialPurposeId.value
+          : this.trialPurposeId,
+      factorKey: data.factorKey.present ? data.factorKey.value : this.factorKey,
+      factorLabel:
+          data.factorLabel.present ? data.factorLabel.value : this.factorLabel,
+      factorType:
+          data.factorType.present ? data.factorType.value : this.factorType,
+      importance:
+          data.importance.present ? data.importance.value : this.importance,
+      expectedEvidenceType: data.expectedEvidenceType.present
+          ? data.expectedEvidenceType.value
+          : this.expectedEvidenceType,
+      evaluationRuleKey: data.evaluationRuleKey.present
+          ? data.evaluationRuleKey.value
+          : this.evaluationRuleKey,
+      description:
+          data.description.present ? data.description.value : this.description,
+      source: data.source.present ? data.source.value : this.source,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      retiredAt: data.retiredAt.present ? data.retiredAt.value : this.retiredAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CtqFactorDefinition(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('trialPurposeId: $trialPurposeId, ')
+          ..write('factorKey: $factorKey, ')
+          ..write('factorLabel: $factorLabel, ')
+          ..write('factorType: $factorType, ')
+          ..write('importance: $importance, ')
+          ..write('expectedEvidenceType: $expectedEvidenceType, ')
+          ..write('evaluationRuleKey: $evaluationRuleKey, ')
+          ..write('description: $description, ')
+          ..write('source: $source, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('retiredAt: $retiredAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      trialPurposeId,
+      factorKey,
+      factorLabel,
+      factorType,
+      importance,
+      expectedEvidenceType,
+      evaluationRuleKey,
+      description,
+      source,
+      createdAt,
+      updatedAt,
+      retiredAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CtqFactorDefinition &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.trialPurposeId == this.trialPurposeId &&
+          other.factorKey == this.factorKey &&
+          other.factorLabel == this.factorLabel &&
+          other.factorType == this.factorType &&
+          other.importance == this.importance &&
+          other.expectedEvidenceType == this.expectedEvidenceType &&
+          other.evaluationRuleKey == this.evaluationRuleKey &&
+          other.description == this.description &&
+          other.source == this.source &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.retiredAt == this.retiredAt);
+}
+
+class CtqFactorDefinitionsCompanion
+    extends UpdateCompanion<CtqFactorDefinition> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<int> trialPurposeId;
+  final Value<String> factorKey;
+  final Value<String> factorLabel;
+  final Value<String> factorType;
+  final Value<String> importance;
+  final Value<String?> expectedEvidenceType;
+  final Value<String?> evaluationRuleKey;
+  final Value<String?> description;
+  final Value<String> source;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> retiredAt;
+  const CtqFactorDefinitionsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.trialPurposeId = const Value.absent(),
+    this.factorKey = const Value.absent(),
+    this.factorLabel = const Value.absent(),
+    this.factorType = const Value.absent(),
+    this.importance = const Value.absent(),
+    this.expectedEvidenceType = const Value.absent(),
+    this.evaluationRuleKey = const Value.absent(),
+    this.description = const Value.absent(),
+    this.source = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.retiredAt = const Value.absent(),
+  });
+  CtqFactorDefinitionsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    required int trialPurposeId,
+    required String factorKey,
+    required String factorLabel,
+    required String factorType,
+    this.importance = const Value.absent(),
+    this.expectedEvidenceType = const Value.absent(),
+    this.evaluationRuleKey = const Value.absent(),
+    this.description = const Value.absent(),
+    required String source,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.retiredAt = const Value.absent(),
+  })  : trialId = Value(trialId),
+        trialPurposeId = Value(trialPurposeId),
+        factorKey = Value(factorKey),
+        factorLabel = Value(factorLabel),
+        factorType = Value(factorType),
+        source = Value(source);
+  static Insertable<CtqFactorDefinition> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<int>? trialPurposeId,
+    Expression<String>? factorKey,
+    Expression<String>? factorLabel,
+    Expression<String>? factorType,
+    Expression<String>? importance,
+    Expression<String>? expectedEvidenceType,
+    Expression<String>? evaluationRuleKey,
+    Expression<String>? description,
+    Expression<String>? source,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? retiredAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (trialPurposeId != null) 'trial_purpose_id': trialPurposeId,
+      if (factorKey != null) 'factor_key': factorKey,
+      if (factorLabel != null) 'factor_label': factorLabel,
+      if (factorType != null) 'factor_type': factorType,
+      if (importance != null) 'importance': importance,
+      if (expectedEvidenceType != null)
+        'expected_evidence_type': expectedEvidenceType,
+      if (evaluationRuleKey != null) 'evaluation_rule_key': evaluationRuleKey,
+      if (description != null) 'description': description,
+      if (source != null) 'source': source,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (retiredAt != null) 'retired_at': retiredAt,
+    });
+  }
+
+  CtqFactorDefinitionsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<int>? trialPurposeId,
+      Value<String>? factorKey,
+      Value<String>? factorLabel,
+      Value<String>? factorType,
+      Value<String>? importance,
+      Value<String?>? expectedEvidenceType,
+      Value<String?>? evaluationRuleKey,
+      Value<String?>? description,
+      Value<String>? source,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt,
+      Value<DateTime?>? retiredAt}) {
+    return CtqFactorDefinitionsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      trialPurposeId: trialPurposeId ?? this.trialPurposeId,
+      factorKey: factorKey ?? this.factorKey,
+      factorLabel: factorLabel ?? this.factorLabel,
+      factorType: factorType ?? this.factorType,
+      importance: importance ?? this.importance,
+      expectedEvidenceType: expectedEvidenceType ?? this.expectedEvidenceType,
+      evaluationRuleKey: evaluationRuleKey ?? this.evaluationRuleKey,
+      description: description ?? this.description,
+      source: source ?? this.source,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      retiredAt: retiredAt ?? this.retiredAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (trialPurposeId.present) {
+      map['trial_purpose_id'] = Variable<int>(trialPurposeId.value);
+    }
+    if (factorKey.present) {
+      map['factor_key'] = Variable<String>(factorKey.value);
+    }
+    if (factorLabel.present) {
+      map['factor_label'] = Variable<String>(factorLabel.value);
+    }
+    if (factorType.present) {
+      map['factor_type'] = Variable<String>(factorType.value);
+    }
+    if (importance.present) {
+      map['importance'] = Variable<String>(importance.value);
+    }
+    if (expectedEvidenceType.present) {
+      map['expected_evidence_type'] =
+          Variable<String>(expectedEvidenceType.value);
+    }
+    if (evaluationRuleKey.present) {
+      map['evaluation_rule_key'] = Variable<String>(evaluationRuleKey.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (retiredAt.present) {
+      map['retired_at'] = Variable<DateTime>(retiredAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CtqFactorDefinitionsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('trialPurposeId: $trialPurposeId, ')
+          ..write('factorKey: $factorKey, ')
+          ..write('factorLabel: $factorLabel, ')
+          ..write('factorType: $factorType, ')
+          ..write('importance: $importance, ')
+          ..write('expectedEvidenceType: $expectedEvidenceType, ')
+          ..write('evaluationRuleKey: $evaluationRuleKey, ')
+          ..write('description: $description, ')
+          ..write('source: $source, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('retiredAt: $retiredAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ProtocolDocumentReferencesTable extends ProtocolDocumentReferences
+    with
+        TableInfo<$ProtocolDocumentReferencesTable, ProtocolDocumentReference> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProtocolDocumentReferencesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trials (id)'));
+  static const VerificationMeta _documentLabelMeta =
+      const VerificationMeta('documentLabel');
+  @override
+  late final GeneratedColumn<String> documentLabel = GeneratedColumn<String>(
+      'document_label', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _documentTypeMeta =
+      const VerificationMeta('documentType');
+  @override
+  late final GeneratedColumn<String> documentType = GeneratedColumn<String>(
+      'document_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _storageUriMeta =
+      const VerificationMeta('storageUri');
+  @override
+  late final GeneratedColumn<String> storageUri = GeneratedColumn<String>(
+      'storage_uri', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _externalReferenceMeta =
+      const VerificationMeta('externalReference');
+  @override
+  late final GeneratedColumn<String> externalReference =
+      GeneratedColumn<String>('external_reference', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+      'source', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _uploadedAtMeta =
+      const VerificationMeta('uploadedAt');
+  @override
+  late final GeneratedColumn<DateTime> uploadedAt = GeneratedColumn<DateTime>(
+      'uploaded_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _uploadedByMeta =
+      const VerificationMeta('uploadedBy');
+  @override
+  late final GeneratedColumn<String> uploadedBy = GeneratedColumn<String>(
+      'uploaded_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        documentLabel,
+        documentType,
+        storageUri,
+        externalReference,
+        source,
+        uploadedAt,
+        uploadedBy,
+        createdAt,
+        notes
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'protocol_document_references';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<ProtocolDocumentReference> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('document_label')) {
+      context.handle(
+          _documentLabelMeta,
+          documentLabel.isAcceptableOrUnknown(
+              data['document_label']!, _documentLabelMeta));
+    } else if (isInserting) {
+      context.missing(_documentLabelMeta);
+    }
+    if (data.containsKey('document_type')) {
+      context.handle(
+          _documentTypeMeta,
+          documentType.isAcceptableOrUnknown(
+              data['document_type']!, _documentTypeMeta));
+    } else if (isInserting) {
+      context.missing(_documentTypeMeta);
+    }
+    if (data.containsKey('storage_uri')) {
+      context.handle(
+          _storageUriMeta,
+          storageUri.isAcceptableOrUnknown(
+              data['storage_uri']!, _storageUriMeta));
+    }
+    if (data.containsKey('external_reference')) {
+      context.handle(
+          _externalReferenceMeta,
+          externalReference.isAcceptableOrUnknown(
+              data['external_reference']!, _externalReferenceMeta));
+    }
+    if (data.containsKey('source')) {
+      context.handle(_sourceMeta,
+          source.isAcceptableOrUnknown(data['source']!, _sourceMeta));
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('uploaded_at')) {
+      context.handle(
+          _uploadedAtMeta,
+          uploadedAt.isAcceptableOrUnknown(
+              data['uploaded_at']!, _uploadedAtMeta));
+    }
+    if (data.containsKey('uploaded_by')) {
+      context.handle(
+          _uploadedByMeta,
+          uploadedBy.isAcceptableOrUnknown(
+              data['uploaded_by']!, _uploadedByMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProtocolDocumentReference map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProtocolDocumentReference(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      documentLabel: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}document_label'])!,
+      documentType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}document_type'])!,
+      storageUri: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}storage_uri']),
+      externalReference: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}external_reference']),
+      source: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source'])!,
+      uploadedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}uploaded_at']),
+      uploadedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}uploaded_by']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+    );
+  }
+
+  @override
+  $ProtocolDocumentReferencesTable createAlias(String alias) {
+    return $ProtocolDocumentReferencesTable(attachedDatabase, alias);
+  }
+}
+
+class ProtocolDocumentReference extends DataClass
+    implements Insertable<ProtocolDocumentReference> {
+  final int id;
+  final int trialId;
+  final String documentLabel;
+  final String documentType;
+  final String? storageUri;
+  final String? externalReference;
+  final String source;
+  final DateTime? uploadedAt;
+  final String? uploadedBy;
+  final DateTime createdAt;
+  final String? notes;
+  const ProtocolDocumentReference(
+      {required this.id,
+      required this.trialId,
+      required this.documentLabel,
+      required this.documentType,
+      this.storageUri,
+      this.externalReference,
+      required this.source,
+      this.uploadedAt,
+      this.uploadedBy,
+      required this.createdAt,
+      this.notes});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    map['document_label'] = Variable<String>(documentLabel);
+    map['document_type'] = Variable<String>(documentType);
+    if (!nullToAbsent || storageUri != null) {
+      map['storage_uri'] = Variable<String>(storageUri);
+    }
+    if (!nullToAbsent || externalReference != null) {
+      map['external_reference'] = Variable<String>(externalReference);
+    }
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || uploadedAt != null) {
+      map['uploaded_at'] = Variable<DateTime>(uploadedAt);
+    }
+    if (!nullToAbsent || uploadedBy != null) {
+      map['uploaded_by'] = Variable<String>(uploadedBy);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    return map;
+  }
+
+  ProtocolDocumentReferencesCompanion toCompanion(bool nullToAbsent) {
+    return ProtocolDocumentReferencesCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      documentLabel: Value(documentLabel),
+      documentType: Value(documentType),
+      storageUri: storageUri == null && nullToAbsent
+          ? const Value.absent()
+          : Value(storageUri),
+      externalReference: externalReference == null && nullToAbsent
+          ? const Value.absent()
+          : Value(externalReference),
+      source: Value(source),
+      uploadedAt: uploadedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(uploadedAt),
+      uploadedBy: uploadedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(uploadedBy),
+      createdAt: Value(createdAt),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+    );
+  }
+
+  factory ProtocolDocumentReference.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProtocolDocumentReference(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      documentLabel: serializer.fromJson<String>(json['documentLabel']),
+      documentType: serializer.fromJson<String>(json['documentType']),
+      storageUri: serializer.fromJson<String?>(json['storageUri']),
+      externalReference:
+          serializer.fromJson<String?>(json['externalReference']),
+      source: serializer.fromJson<String>(json['source']),
+      uploadedAt: serializer.fromJson<DateTime?>(json['uploadedAt']),
+      uploadedBy: serializer.fromJson<String?>(json['uploadedBy']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      notes: serializer.fromJson<String?>(json['notes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'documentLabel': serializer.toJson<String>(documentLabel),
+      'documentType': serializer.toJson<String>(documentType),
+      'storageUri': serializer.toJson<String?>(storageUri),
+      'externalReference': serializer.toJson<String?>(externalReference),
+      'source': serializer.toJson<String>(source),
+      'uploadedAt': serializer.toJson<DateTime?>(uploadedAt),
+      'uploadedBy': serializer.toJson<String?>(uploadedBy),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'notes': serializer.toJson<String?>(notes),
+    };
+  }
+
+  ProtocolDocumentReference copyWith(
+          {int? id,
+          int? trialId,
+          String? documentLabel,
+          String? documentType,
+          Value<String?> storageUri = const Value.absent(),
+          Value<String?> externalReference = const Value.absent(),
+          String? source,
+          Value<DateTime?> uploadedAt = const Value.absent(),
+          Value<String?> uploadedBy = const Value.absent(),
+          DateTime? createdAt,
+          Value<String?> notes = const Value.absent()}) =>
+      ProtocolDocumentReference(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        documentLabel: documentLabel ?? this.documentLabel,
+        documentType: documentType ?? this.documentType,
+        storageUri: storageUri.present ? storageUri.value : this.storageUri,
+        externalReference: externalReference.present
+            ? externalReference.value
+            : this.externalReference,
+        source: source ?? this.source,
+        uploadedAt: uploadedAt.present ? uploadedAt.value : this.uploadedAt,
+        uploadedBy: uploadedBy.present ? uploadedBy.value : this.uploadedBy,
+        createdAt: createdAt ?? this.createdAt,
+        notes: notes.present ? notes.value : this.notes,
+      );
+  ProtocolDocumentReference copyWithCompanion(
+      ProtocolDocumentReferencesCompanion data) {
+    return ProtocolDocumentReference(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      documentLabel: data.documentLabel.present
+          ? data.documentLabel.value
+          : this.documentLabel,
+      documentType: data.documentType.present
+          ? data.documentType.value
+          : this.documentType,
+      storageUri:
+          data.storageUri.present ? data.storageUri.value : this.storageUri,
+      externalReference: data.externalReference.present
+          ? data.externalReference.value
+          : this.externalReference,
+      source: data.source.present ? data.source.value : this.source,
+      uploadedAt:
+          data.uploadedAt.present ? data.uploadedAt.value : this.uploadedAt,
+      uploadedBy:
+          data.uploadedBy.present ? data.uploadedBy.value : this.uploadedBy,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      notes: data.notes.present ? data.notes.value : this.notes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProtocolDocumentReference(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('documentLabel: $documentLabel, ')
+          ..write('documentType: $documentType, ')
+          ..write('storageUri: $storageUri, ')
+          ..write('externalReference: $externalReference, ')
+          ..write('source: $source, ')
+          ..write('uploadedAt: $uploadedAt, ')
+          ..write('uploadedBy: $uploadedBy, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      documentLabel,
+      documentType,
+      storageUri,
+      externalReference,
+      source,
+      uploadedAt,
+      uploadedBy,
+      createdAt,
+      notes);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProtocolDocumentReference &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.documentLabel == this.documentLabel &&
+          other.documentType == this.documentType &&
+          other.storageUri == this.storageUri &&
+          other.externalReference == this.externalReference &&
+          other.source == this.source &&
+          other.uploadedAt == this.uploadedAt &&
+          other.uploadedBy == this.uploadedBy &&
+          other.createdAt == this.createdAt &&
+          other.notes == this.notes);
+}
+
+class ProtocolDocumentReferencesCompanion
+    extends UpdateCompanion<ProtocolDocumentReference> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<String> documentLabel;
+  final Value<String> documentType;
+  final Value<String?> storageUri;
+  final Value<String?> externalReference;
+  final Value<String> source;
+  final Value<DateTime?> uploadedAt;
+  final Value<String?> uploadedBy;
+  final Value<DateTime> createdAt;
+  final Value<String?> notes;
+  const ProtocolDocumentReferencesCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.documentLabel = const Value.absent(),
+    this.documentType = const Value.absent(),
+    this.storageUri = const Value.absent(),
+    this.externalReference = const Value.absent(),
+    this.source = const Value.absent(),
+    this.uploadedAt = const Value.absent(),
+    this.uploadedBy = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.notes = const Value.absent(),
+  });
+  ProtocolDocumentReferencesCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    required String documentLabel,
+    required String documentType,
+    this.storageUri = const Value.absent(),
+    this.externalReference = const Value.absent(),
+    required String source,
+    this.uploadedAt = const Value.absent(),
+    this.uploadedBy = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.notes = const Value.absent(),
+  })  : trialId = Value(trialId),
+        documentLabel = Value(documentLabel),
+        documentType = Value(documentType),
+        source = Value(source);
+  static Insertable<ProtocolDocumentReference> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<String>? documentLabel,
+    Expression<String>? documentType,
+    Expression<String>? storageUri,
+    Expression<String>? externalReference,
+    Expression<String>? source,
+    Expression<DateTime>? uploadedAt,
+    Expression<String>? uploadedBy,
+    Expression<DateTime>? createdAt,
+    Expression<String>? notes,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (documentLabel != null) 'document_label': documentLabel,
+      if (documentType != null) 'document_type': documentType,
+      if (storageUri != null) 'storage_uri': storageUri,
+      if (externalReference != null) 'external_reference': externalReference,
+      if (source != null) 'source': source,
+      if (uploadedAt != null) 'uploaded_at': uploadedAt,
+      if (uploadedBy != null) 'uploaded_by': uploadedBy,
+      if (createdAt != null) 'created_at': createdAt,
+      if (notes != null) 'notes': notes,
+    });
+  }
+
+  ProtocolDocumentReferencesCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<String>? documentLabel,
+      Value<String>? documentType,
+      Value<String?>? storageUri,
+      Value<String?>? externalReference,
+      Value<String>? source,
+      Value<DateTime?>? uploadedAt,
+      Value<String?>? uploadedBy,
+      Value<DateTime>? createdAt,
+      Value<String?>? notes}) {
+    return ProtocolDocumentReferencesCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      documentLabel: documentLabel ?? this.documentLabel,
+      documentType: documentType ?? this.documentType,
+      storageUri: storageUri ?? this.storageUri,
+      externalReference: externalReference ?? this.externalReference,
+      source: source ?? this.source,
+      uploadedAt: uploadedAt ?? this.uploadedAt,
+      uploadedBy: uploadedBy ?? this.uploadedBy,
+      createdAt: createdAt ?? this.createdAt,
+      notes: notes ?? this.notes,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (documentLabel.present) {
+      map['document_label'] = Variable<String>(documentLabel.value);
+    }
+    if (documentType.present) {
+      map['document_type'] = Variable<String>(documentType.value);
+    }
+    if (storageUri.present) {
+      map['storage_uri'] = Variable<String>(storageUri.value);
+    }
+    if (externalReference.present) {
+      map['external_reference'] = Variable<String>(externalReference.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (uploadedAt.present) {
+      map['uploaded_at'] = Variable<DateTime>(uploadedAt.value);
+    }
+    if (uploadedBy.present) {
+      map['uploaded_by'] = Variable<String>(uploadedBy.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProtocolDocumentReferencesCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('documentLabel: $documentLabel, ')
+          ..write('documentType: $documentType, ')
+          ..write('storageUri: $storageUri, ')
+          ..write('externalReference: $externalReference, ')
+          ..write('source: $source, ')
+          ..write('uploadedAt: $uploadedAt, ')
+          ..write('uploadedBy: $uploadedBy, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -41778,6 +44792,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $SeTypeCausalProfilesTable(this);
   late final $EvidenceAnchorsTable evidenceAnchors =
       $EvidenceAnchorsTable(this);
+  late final $TrialPurposesTable trialPurposes = $TrialPurposesTable(this);
+  late final $IntentRevelationEventsTable intentRevelationEvents =
+      $IntentRevelationEventsTable(this);
+  late final $CtqFactorDefinitionsTable ctqFactorDefinitions =
+      $CtqFactorDefinitionsTable(this);
+  late final $ProtocolDocumentReferencesTable protocolDocumentReferences =
+      $ProtocolDocumentReferencesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -41831,7 +44852,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         signalDecisionEvents,
         actionEffects,
         seTypeCausalProfiles,
-        evidenceAnchors
+        evidenceAnchors,
+        trialPurposes,
+        intentRevelationEvents,
+        ctqFactorDefinitions,
+        protocolDocumentReferences
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -42638,6 +45663,8 @@ typedef $$TrialsTableCreateCompanionBuilder = TrialsCompanion Function({
   Value<double?> rowSpacingCm,
   Value<double?> plantSpacingCm,
   Value<bool?> gepComplianceFlag,
+  Value<double?> fieldOrientationDegrees,
+  Value<String?> fieldAnchorType,
 });
 typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<int> id,
@@ -42686,6 +45713,8 @@ typedef $$TrialsTableUpdateCompanionBuilder = TrialsCompanion Function({
   Value<double?> rowSpacingCm,
   Value<double?> plantSpacingCm,
   Value<bool?> gepComplianceFlag,
+  Value<double?> fieldOrientationDegrees,
+  Value<String?> fieldAnchorType,
 });
 
 class $$TrialsTableTableManager extends RootTableManager<
@@ -42751,6 +45780,8 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<double?> rowSpacingCm = const Value.absent(),
             Value<double?> plantSpacingCm = const Value.absent(),
             Value<bool?> gepComplianceFlag = const Value.absent(),
+            Value<double?> fieldOrientationDegrees = const Value.absent(),
+            Value<String?> fieldAnchorType = const Value.absent(),
           }) =>
               TrialsCompanion(
             id: id,
@@ -42799,6 +45830,8 @@ class $$TrialsTableTableManager extends RootTableManager<
             rowSpacingCm: rowSpacingCm,
             plantSpacingCm: plantSpacingCm,
             gepComplianceFlag: gepComplianceFlag,
+            fieldOrientationDegrees: fieldOrientationDegrees,
+            fieldAnchorType: fieldAnchorType,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -42847,6 +45880,8 @@ class $$TrialsTableTableManager extends RootTableManager<
             Value<double?> rowSpacingCm = const Value.absent(),
             Value<double?> plantSpacingCm = const Value.absent(),
             Value<bool?> gepComplianceFlag = const Value.absent(),
+            Value<double?> fieldOrientationDegrees = const Value.absent(),
+            Value<String?> fieldAnchorType = const Value.absent(),
           }) =>
               TrialsCompanion.insert(
             id: id,
@@ -42895,6 +45930,8 @@ class $$TrialsTableTableManager extends RootTableManager<
             rowSpacingCm: rowSpacingCm,
             plantSpacingCm: plantSpacingCm,
             gepComplianceFlag: gepComplianceFlag,
+            fieldOrientationDegrees: fieldOrientationDegrees,
+            fieldAnchorType: fieldAnchorType,
           ),
         ));
 }
@@ -43124,6 +46161,16 @@ class $$TrialsTableFilterComposer
 
   ColumnFilters<bool> get gepComplianceFlag => $state.composableBuilder(
       column: $state.table.gepComplianceFlag,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get fieldOrientationDegrees => $state.composableBuilder(
+      column: $state.table.fieldOrientationDegrees,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get fieldAnchorType => $state.composableBuilder(
+      column: $state.table.fieldAnchorType,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -43598,6 +46645,74 @@ class $$TrialsTableFilterComposer
                     $state.db.evidenceAnchors, joinBuilder, parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter trialPurposesRefs(
+      ComposableFilter Function($$TrialPurposesTableFilterComposer f) f) {
+    final $$TrialPurposesTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $state.db.trialPurposes,
+        getReferencedColumn: (t) => t.trialId,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialPurposesTableFilterComposer(ComposerState($state.db,
+                $state.db.trialPurposes, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter intentRevelationEventsRefs(
+      ComposableFilter Function($$IntentRevelationEventsTableFilterComposer f)
+          f) {
+    final $$IntentRevelationEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.intentRevelationEvents,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$IntentRevelationEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.intentRevelationEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter ctqFactorDefinitionsRefs(
+      ComposableFilter Function($$CtqFactorDefinitionsTableFilterComposer f)
+          f) {
+    final $$CtqFactorDefinitionsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ctqFactorDefinitions,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$CtqFactorDefinitionsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ctqFactorDefinitions,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter protocolDocumentReferencesRefs(
+      ComposableFilter Function(
+              $$ProtocolDocumentReferencesTableFilterComposer f)
+          f) {
+    final $$ProtocolDocumentReferencesTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.protocolDocumentReferences,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$ProtocolDocumentReferencesTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.protocolDocumentReferences,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$TrialsTableOrderingComposer
@@ -43825,6 +46940,17 @@ class $$TrialsTableOrderingComposer
 
   ColumnOrderings<bool> get gepComplianceFlag => $state.composableBuilder(
       column: $state.table.gepComplianceFlag,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get fieldOrientationDegrees =>
+      $state.composableBuilder(
+          column: $state.table.fieldOrientationDegrees,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get fieldAnchorType => $state.composableBuilder(
+      column: $state.table.fieldAnchorType,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -60506,6 +63632,1218 @@ class $$EvidenceAnchorsTableOrderingComposer
   }
 }
 
+typedef $$TrialPurposesTableCreateCompanionBuilder = TrialPurposesCompanion
+    Function({
+  Value<int> id,
+  required int trialId,
+  Value<int> version,
+  Value<String> status,
+  Value<String> sourceMode,
+  Value<String?> claimBeingTested,
+  Value<String?> trialPurpose,
+  Value<String?> regulatoryContext,
+  Value<String?> primaryEndpoint,
+  Value<String?> primaryEndpointRationale,
+  Value<String?> treatmentRoleSummary,
+  Value<String?> knownInterpretationFactors,
+  Value<String?> requiredEvidenceSummary,
+  Value<String?> readinessCriteriaSummary,
+  Value<String?> inferredFieldsJson,
+  Value<DateTime?> confirmedAt,
+  Value<String?> confirmedBy,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<DateTime?> supersededAt,
+});
+typedef $$TrialPurposesTableUpdateCompanionBuilder = TrialPurposesCompanion
+    Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<int> version,
+  Value<String> status,
+  Value<String> sourceMode,
+  Value<String?> claimBeingTested,
+  Value<String?> trialPurpose,
+  Value<String?> regulatoryContext,
+  Value<String?> primaryEndpoint,
+  Value<String?> primaryEndpointRationale,
+  Value<String?> treatmentRoleSummary,
+  Value<String?> knownInterpretationFactors,
+  Value<String?> requiredEvidenceSummary,
+  Value<String?> readinessCriteriaSummary,
+  Value<String?> inferredFieldsJson,
+  Value<DateTime?> confirmedAt,
+  Value<String?> confirmedBy,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<DateTime?> supersededAt,
+});
+
+class $$TrialPurposesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $TrialPurposesTable,
+    TrialPurpose,
+    $$TrialPurposesTableFilterComposer,
+    $$TrialPurposesTableOrderingComposer,
+    $$TrialPurposesTableCreateCompanionBuilder,
+    $$TrialPurposesTableUpdateCompanionBuilder> {
+  $$TrialPurposesTableTableManager(_$AppDatabase db, $TrialPurposesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$TrialPurposesTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$TrialPurposesTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<int> version = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String> sourceMode = const Value.absent(),
+            Value<String?> claimBeingTested = const Value.absent(),
+            Value<String?> trialPurpose = const Value.absent(),
+            Value<String?> regulatoryContext = const Value.absent(),
+            Value<String?> primaryEndpoint = const Value.absent(),
+            Value<String?> primaryEndpointRationale = const Value.absent(),
+            Value<String?> treatmentRoleSummary = const Value.absent(),
+            Value<String?> knownInterpretationFactors = const Value.absent(),
+            Value<String?> requiredEvidenceSummary = const Value.absent(),
+            Value<String?> readinessCriteriaSummary = const Value.absent(),
+            Value<String?> inferredFieldsJson = const Value.absent(),
+            Value<DateTime?> confirmedAt = const Value.absent(),
+            Value<String?> confirmedBy = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<DateTime?> supersededAt = const Value.absent(),
+          }) =>
+              TrialPurposesCompanion(
+            id: id,
+            trialId: trialId,
+            version: version,
+            status: status,
+            sourceMode: sourceMode,
+            claimBeingTested: claimBeingTested,
+            trialPurpose: trialPurpose,
+            regulatoryContext: regulatoryContext,
+            primaryEndpoint: primaryEndpoint,
+            primaryEndpointRationale: primaryEndpointRationale,
+            treatmentRoleSummary: treatmentRoleSummary,
+            knownInterpretationFactors: knownInterpretationFactors,
+            requiredEvidenceSummary: requiredEvidenceSummary,
+            readinessCriteriaSummary: readinessCriteriaSummary,
+            inferredFieldsJson: inferredFieldsJson,
+            confirmedAt: confirmedAt,
+            confirmedBy: confirmedBy,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            supersededAt: supersededAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            Value<int> version = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String> sourceMode = const Value.absent(),
+            Value<String?> claimBeingTested = const Value.absent(),
+            Value<String?> trialPurpose = const Value.absent(),
+            Value<String?> regulatoryContext = const Value.absent(),
+            Value<String?> primaryEndpoint = const Value.absent(),
+            Value<String?> primaryEndpointRationale = const Value.absent(),
+            Value<String?> treatmentRoleSummary = const Value.absent(),
+            Value<String?> knownInterpretationFactors = const Value.absent(),
+            Value<String?> requiredEvidenceSummary = const Value.absent(),
+            Value<String?> readinessCriteriaSummary = const Value.absent(),
+            Value<String?> inferredFieldsJson = const Value.absent(),
+            Value<DateTime?> confirmedAt = const Value.absent(),
+            Value<String?> confirmedBy = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<DateTime?> supersededAt = const Value.absent(),
+          }) =>
+              TrialPurposesCompanion.insert(
+            id: id,
+            trialId: trialId,
+            version: version,
+            status: status,
+            sourceMode: sourceMode,
+            claimBeingTested: claimBeingTested,
+            trialPurpose: trialPurpose,
+            regulatoryContext: regulatoryContext,
+            primaryEndpoint: primaryEndpoint,
+            primaryEndpointRationale: primaryEndpointRationale,
+            treatmentRoleSummary: treatmentRoleSummary,
+            knownInterpretationFactors: knownInterpretationFactors,
+            requiredEvidenceSummary: requiredEvidenceSummary,
+            readinessCriteriaSummary: readinessCriteriaSummary,
+            inferredFieldsJson: inferredFieldsJson,
+            confirmedAt: confirmedAt,
+            confirmedBy: confirmedBy,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            supersededAt: supersededAt,
+          ),
+        ));
+}
+
+class $$TrialPurposesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $TrialPurposesTable> {
+  $$TrialPurposesTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get version => $state.composableBuilder(
+      column: $state.table.version,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get sourceMode => $state.composableBuilder(
+      column: $state.table.sourceMode,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get claimBeingTested => $state.composableBuilder(
+      column: $state.table.claimBeingTested,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get trialPurpose => $state.composableBuilder(
+      column: $state.table.trialPurpose,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get regulatoryContext => $state.composableBuilder(
+      column: $state.table.regulatoryContext,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get primaryEndpoint => $state.composableBuilder(
+      column: $state.table.primaryEndpoint,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get primaryEndpointRationale =>
+      $state.composableBuilder(
+          column: $state.table.primaryEndpointRationale,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get treatmentRoleSummary => $state.composableBuilder(
+      column: $state.table.treatmentRoleSummary,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get knownInterpretationFactors =>
+      $state.composableBuilder(
+          column: $state.table.knownInterpretationFactors,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get requiredEvidenceSummary => $state.composableBuilder(
+      column: $state.table.requiredEvidenceSummary,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get readinessCriteriaSummary =>
+      $state.composableBuilder(
+          column: $state.table.readinessCriteriaSummary,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get inferredFieldsJson => $state.composableBuilder(
+      column: $state.table.inferredFieldsJson,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get confirmedAt => $state.composableBuilder(
+      column: $state.table.confirmedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get confirmedBy => $state.composableBuilder(
+      column: $state.table.confirmedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get supersededAt => $state.composableBuilder(
+      column: $state.table.supersededAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  ComposableFilter intentRevelationEventsRefs(
+      ComposableFilter Function($$IntentRevelationEventsTableFilterComposer f)
+          f) {
+    final $$IntentRevelationEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.intentRevelationEvents,
+            getReferencedColumn: (t) => t.trialPurposeId,
+            builder: (joinBuilder, parentComposers) =>
+                $$IntentRevelationEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.intentRevelationEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter ctqFactorDefinitionsRefs(
+      ComposableFilter Function($$CtqFactorDefinitionsTableFilterComposer f)
+          f) {
+    final $$CtqFactorDefinitionsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ctqFactorDefinitions,
+            getReferencedColumn: (t) => t.trialPurposeId,
+            builder: (joinBuilder, parentComposers) =>
+                $$CtqFactorDefinitionsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ctqFactorDefinitions,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+}
+
+class $$TrialPurposesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $TrialPurposesTable> {
+  $$TrialPurposesTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get version => $state.composableBuilder(
+      column: $state.table.version,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get sourceMode => $state.composableBuilder(
+      column: $state.table.sourceMode,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get claimBeingTested => $state.composableBuilder(
+      column: $state.table.claimBeingTested,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get trialPurpose => $state.composableBuilder(
+      column: $state.table.trialPurpose,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get regulatoryContext => $state.composableBuilder(
+      column: $state.table.regulatoryContext,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get primaryEndpoint => $state.composableBuilder(
+      column: $state.table.primaryEndpoint,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get primaryEndpointRationale =>
+      $state.composableBuilder(
+          column: $state.table.primaryEndpointRationale,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get treatmentRoleSummary => $state.composableBuilder(
+      column: $state.table.treatmentRoleSummary,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get knownInterpretationFactors =>
+      $state.composableBuilder(
+          column: $state.table.knownInterpretationFactors,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get requiredEvidenceSummary =>
+      $state.composableBuilder(
+          column: $state.table.requiredEvidenceSummary,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get readinessCriteriaSummary =>
+      $state.composableBuilder(
+          column: $state.table.readinessCriteriaSummary,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get inferredFieldsJson => $state.composableBuilder(
+      column: $state.table.inferredFieldsJson,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get confirmedAt => $state.composableBuilder(
+      column: $state.table.confirmedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get confirmedBy => $state.composableBuilder(
+      column: $state.table.confirmedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get supersededAt => $state.composableBuilder(
+      column: $state.table.supersededAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$IntentRevelationEventsTableCreateCompanionBuilder
+    = IntentRevelationEventsCompanion Function({
+  Value<int> id,
+  required int trialId,
+  Value<int?> trialPurposeId,
+  required String touchpoint,
+  required String questionKey,
+  required String questionText,
+  Value<String?> answerValue,
+  Value<String> answerState,
+  required String source,
+  Value<String?> capturedBy,
+  Value<DateTime> capturedAt,
+  Value<DateTime> createdAt,
+});
+typedef $$IntentRevelationEventsTableUpdateCompanionBuilder
+    = IntentRevelationEventsCompanion Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<int?> trialPurposeId,
+  Value<String> touchpoint,
+  Value<String> questionKey,
+  Value<String> questionText,
+  Value<String?> answerValue,
+  Value<String> answerState,
+  Value<String> source,
+  Value<String?> capturedBy,
+  Value<DateTime> capturedAt,
+  Value<DateTime> createdAt,
+});
+
+class $$IntentRevelationEventsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $IntentRevelationEventsTable,
+    IntentRevelationEvent,
+    $$IntentRevelationEventsTableFilterComposer,
+    $$IntentRevelationEventsTableOrderingComposer,
+    $$IntentRevelationEventsTableCreateCompanionBuilder,
+    $$IntentRevelationEventsTableUpdateCompanionBuilder> {
+  $$IntentRevelationEventsTableTableManager(
+      _$AppDatabase db, $IntentRevelationEventsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$IntentRevelationEventsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$IntentRevelationEventsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<int?> trialPurposeId = const Value.absent(),
+            Value<String> touchpoint = const Value.absent(),
+            Value<String> questionKey = const Value.absent(),
+            Value<String> questionText = const Value.absent(),
+            Value<String?> answerValue = const Value.absent(),
+            Value<String> answerState = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<String?> capturedBy = const Value.absent(),
+            Value<DateTime> capturedAt = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              IntentRevelationEventsCompanion(
+            id: id,
+            trialId: trialId,
+            trialPurposeId: trialPurposeId,
+            touchpoint: touchpoint,
+            questionKey: questionKey,
+            questionText: questionText,
+            answerValue: answerValue,
+            answerState: answerState,
+            source: source,
+            capturedBy: capturedBy,
+            capturedAt: capturedAt,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            Value<int?> trialPurposeId = const Value.absent(),
+            required String touchpoint,
+            required String questionKey,
+            required String questionText,
+            Value<String?> answerValue = const Value.absent(),
+            Value<String> answerState = const Value.absent(),
+            required String source,
+            Value<String?> capturedBy = const Value.absent(),
+            Value<DateTime> capturedAt = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              IntentRevelationEventsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            trialPurposeId: trialPurposeId,
+            touchpoint: touchpoint,
+            questionKey: questionKey,
+            questionText: questionText,
+            answerValue: answerValue,
+            answerState: answerState,
+            source: source,
+            capturedBy: capturedBy,
+            capturedAt: capturedAt,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$IntentRevelationEventsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $IntentRevelationEventsTable> {
+  $$IntentRevelationEventsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get touchpoint => $state.composableBuilder(
+      column: $state.table.touchpoint,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get questionKey => $state.composableBuilder(
+      column: $state.table.questionKey,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get questionText => $state.composableBuilder(
+      column: $state.table.questionText,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get answerValue => $state.composableBuilder(
+      column: $state.table.answerValue,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get answerState => $state.composableBuilder(
+      column: $state.table.answerState,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get capturedBy => $state.composableBuilder(
+      column: $state.table.capturedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get capturedAt => $state.composableBuilder(
+      column: $state.table.capturedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialPurposesTableFilterComposer get trialPurposeId {
+    final $$TrialPurposesTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialPurposeId,
+        referencedTable: $state.db.trialPurposes,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialPurposesTableFilterComposer(ComposerState($state.db,
+                $state.db.trialPurposes, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$IntentRevelationEventsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $IntentRevelationEventsTable> {
+  $$IntentRevelationEventsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get touchpoint => $state.composableBuilder(
+      column: $state.table.touchpoint,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get questionKey => $state.composableBuilder(
+      column: $state.table.questionKey,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get questionText => $state.composableBuilder(
+      column: $state.table.questionText,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get answerValue => $state.composableBuilder(
+      column: $state.table.answerValue,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get answerState => $state.composableBuilder(
+      column: $state.table.answerState,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get capturedBy => $state.composableBuilder(
+      column: $state.table.capturedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get capturedAt => $state.composableBuilder(
+      column: $state.table.capturedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialPurposesTableOrderingComposer get trialPurposeId {
+    final $$TrialPurposesTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialPurposeId,
+            referencedTable: $state.db.trialPurposes,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialPurposesTableOrderingComposer(ComposerState($state.db,
+                    $state.db.trialPurposes, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$CtqFactorDefinitionsTableCreateCompanionBuilder
+    = CtqFactorDefinitionsCompanion Function({
+  Value<int> id,
+  required int trialId,
+  required int trialPurposeId,
+  required String factorKey,
+  required String factorLabel,
+  required String factorType,
+  Value<String> importance,
+  Value<String?> expectedEvidenceType,
+  Value<String?> evaluationRuleKey,
+  Value<String?> description,
+  required String source,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<DateTime?> retiredAt,
+});
+typedef $$CtqFactorDefinitionsTableUpdateCompanionBuilder
+    = CtqFactorDefinitionsCompanion Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<int> trialPurposeId,
+  Value<String> factorKey,
+  Value<String> factorLabel,
+  Value<String> factorType,
+  Value<String> importance,
+  Value<String?> expectedEvidenceType,
+  Value<String?> evaluationRuleKey,
+  Value<String?> description,
+  Value<String> source,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+  Value<DateTime?> retiredAt,
+});
+
+class $$CtqFactorDefinitionsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $CtqFactorDefinitionsTable,
+    CtqFactorDefinition,
+    $$CtqFactorDefinitionsTableFilterComposer,
+    $$CtqFactorDefinitionsTableOrderingComposer,
+    $$CtqFactorDefinitionsTableCreateCompanionBuilder,
+    $$CtqFactorDefinitionsTableUpdateCompanionBuilder> {
+  $$CtqFactorDefinitionsTableTableManager(
+      _$AppDatabase db, $CtqFactorDefinitionsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$CtqFactorDefinitionsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$CtqFactorDefinitionsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<int> trialPurposeId = const Value.absent(),
+            Value<String> factorKey = const Value.absent(),
+            Value<String> factorLabel = const Value.absent(),
+            Value<String> factorType = const Value.absent(),
+            Value<String> importance = const Value.absent(),
+            Value<String?> expectedEvidenceType = const Value.absent(),
+            Value<String?> evaluationRuleKey = const Value.absent(),
+            Value<String?> description = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<DateTime?> retiredAt = const Value.absent(),
+          }) =>
+              CtqFactorDefinitionsCompanion(
+            id: id,
+            trialId: trialId,
+            trialPurposeId: trialPurposeId,
+            factorKey: factorKey,
+            factorLabel: factorLabel,
+            factorType: factorType,
+            importance: importance,
+            expectedEvidenceType: expectedEvidenceType,
+            evaluationRuleKey: evaluationRuleKey,
+            description: description,
+            source: source,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            retiredAt: retiredAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            required int trialPurposeId,
+            required String factorKey,
+            required String factorLabel,
+            required String factorType,
+            Value<String> importance = const Value.absent(),
+            Value<String?> expectedEvidenceType = const Value.absent(),
+            Value<String?> evaluationRuleKey = const Value.absent(),
+            Value<String?> description = const Value.absent(),
+            required String source,
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<DateTime?> retiredAt = const Value.absent(),
+          }) =>
+              CtqFactorDefinitionsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            trialPurposeId: trialPurposeId,
+            factorKey: factorKey,
+            factorLabel: factorLabel,
+            factorType: factorType,
+            importance: importance,
+            expectedEvidenceType: expectedEvidenceType,
+            evaluationRuleKey: evaluationRuleKey,
+            description: description,
+            source: source,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            retiredAt: retiredAt,
+          ),
+        ));
+}
+
+class $$CtqFactorDefinitionsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $CtqFactorDefinitionsTable> {
+  $$CtqFactorDefinitionsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get factorKey => $state.composableBuilder(
+      column: $state.table.factorKey,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get factorLabel => $state.composableBuilder(
+      column: $state.table.factorLabel,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get factorType => $state.composableBuilder(
+      column: $state.table.factorType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get importance => $state.composableBuilder(
+      column: $state.table.importance,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get expectedEvidenceType => $state.composableBuilder(
+      column: $state.table.expectedEvidenceType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get evaluationRuleKey => $state.composableBuilder(
+      column: $state.table.evaluationRuleKey,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get description => $state.composableBuilder(
+      column: $state.table.description,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get retiredAt => $state.composableBuilder(
+      column: $state.table.retiredAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialPurposesTableFilterComposer get trialPurposeId {
+    final $$TrialPurposesTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialPurposeId,
+        referencedTable: $state.db.trialPurposes,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialPurposesTableFilterComposer(ComposerState($state.db,
+                $state.db.trialPurposes, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$CtqFactorDefinitionsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $CtqFactorDefinitionsTable> {
+  $$CtqFactorDefinitionsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get factorKey => $state.composableBuilder(
+      column: $state.table.factorKey,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get factorLabel => $state.composableBuilder(
+      column: $state.table.factorLabel,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get factorType => $state.composableBuilder(
+      column: $state.table.factorType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get importance => $state.composableBuilder(
+      column: $state.table.importance,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get expectedEvidenceType => $state.composableBuilder(
+      column: $state.table.expectedEvidenceType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get evaluationRuleKey => $state.composableBuilder(
+      column: $state.table.evaluationRuleKey,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get description => $state.composableBuilder(
+      column: $state.table.description,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get updatedAt => $state.composableBuilder(
+      column: $state.table.updatedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get retiredAt => $state.composableBuilder(
+      column: $state.table.retiredAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialPurposesTableOrderingComposer get trialPurposeId {
+    final $$TrialPurposesTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialPurposeId,
+            referencedTable: $state.db.trialPurposes,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialPurposesTableOrderingComposer(ComposerState($state.db,
+                    $state.db.trialPurposes, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$ProtocolDocumentReferencesTableCreateCompanionBuilder
+    = ProtocolDocumentReferencesCompanion Function({
+  Value<int> id,
+  required int trialId,
+  required String documentLabel,
+  required String documentType,
+  Value<String?> storageUri,
+  Value<String?> externalReference,
+  required String source,
+  Value<DateTime?> uploadedAt,
+  Value<String?> uploadedBy,
+  Value<DateTime> createdAt,
+  Value<String?> notes,
+});
+typedef $$ProtocolDocumentReferencesTableUpdateCompanionBuilder
+    = ProtocolDocumentReferencesCompanion Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<String> documentLabel,
+  Value<String> documentType,
+  Value<String?> storageUri,
+  Value<String?> externalReference,
+  Value<String> source,
+  Value<DateTime?> uploadedAt,
+  Value<String?> uploadedBy,
+  Value<DateTime> createdAt,
+  Value<String?> notes,
+});
+
+class $$ProtocolDocumentReferencesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ProtocolDocumentReferencesTable,
+    ProtocolDocumentReference,
+    $$ProtocolDocumentReferencesTableFilterComposer,
+    $$ProtocolDocumentReferencesTableOrderingComposer,
+    $$ProtocolDocumentReferencesTableCreateCompanionBuilder,
+    $$ProtocolDocumentReferencesTableUpdateCompanionBuilder> {
+  $$ProtocolDocumentReferencesTableTableManager(
+      _$AppDatabase db, $ProtocolDocumentReferencesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$ProtocolDocumentReferencesTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$ProtocolDocumentReferencesTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<String> documentLabel = const Value.absent(),
+            Value<String> documentType = const Value.absent(),
+            Value<String?> storageUri = const Value.absent(),
+            Value<String?> externalReference = const Value.absent(),
+            Value<String> source = const Value.absent(),
+            Value<DateTime?> uploadedAt = const Value.absent(),
+            Value<String?> uploadedBy = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+          }) =>
+              ProtocolDocumentReferencesCompanion(
+            id: id,
+            trialId: trialId,
+            documentLabel: documentLabel,
+            documentType: documentType,
+            storageUri: storageUri,
+            externalReference: externalReference,
+            source: source,
+            uploadedAt: uploadedAt,
+            uploadedBy: uploadedBy,
+            createdAt: createdAt,
+            notes: notes,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            required String documentLabel,
+            required String documentType,
+            Value<String?> storageUri = const Value.absent(),
+            Value<String?> externalReference = const Value.absent(),
+            required String source,
+            Value<DateTime?> uploadedAt = const Value.absent(),
+            Value<String?> uploadedBy = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+          }) =>
+              ProtocolDocumentReferencesCompanion.insert(
+            id: id,
+            trialId: trialId,
+            documentLabel: documentLabel,
+            documentType: documentType,
+            storageUri: storageUri,
+            externalReference: externalReference,
+            source: source,
+            uploadedAt: uploadedAt,
+            uploadedBy: uploadedBy,
+            createdAt: createdAt,
+            notes: notes,
+          ),
+        ));
+}
+
+class $$ProtocolDocumentReferencesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $ProtocolDocumentReferencesTable> {
+  $$ProtocolDocumentReferencesTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get documentLabel => $state.composableBuilder(
+      column: $state.table.documentLabel,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get documentType => $state.composableBuilder(
+      column: $state.table.documentType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get storageUri => $state.composableBuilder(
+      column: $state.table.storageUri,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get externalReference => $state.composableBuilder(
+      column: $state.table.externalReference,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get uploadedAt => $state.composableBuilder(
+      column: $state.table.uploadedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get uploadedBy => $state.composableBuilder(
+      column: $state.table.uploadedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$ProtocolDocumentReferencesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $ProtocolDocumentReferencesTable> {
+  $$ProtocolDocumentReferencesTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get documentLabel => $state.composableBuilder(
+      column: $state.table.documentLabel,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get documentType => $state.composableBuilder(
+      column: $state.table.documentType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get storageUri => $state.composableBuilder(
+      column: $state.table.storageUri,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get externalReference => $state.composableBuilder(
+      column: $state.table.externalReference,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get source => $state.composableBuilder(
+      column: $state.table.source,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get uploadedAt => $state.composableBuilder(
+      column: $state.table.uploadedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get uploadedBy => $state.composableBuilder(
+      column: $state.table.uploadedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<DateTime> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get notes => $state.composableBuilder(
+      column: $state.table.notes,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -60613,4 +64951,15 @@ class $AppDatabaseManager {
       $$SeTypeCausalProfilesTableTableManager(_db, _db.seTypeCausalProfiles);
   $$EvidenceAnchorsTableTableManager get evidenceAnchors =>
       $$EvidenceAnchorsTableTableManager(_db, _db.evidenceAnchors);
+  $$TrialPurposesTableTableManager get trialPurposes =>
+      $$TrialPurposesTableTableManager(_db, _db.trialPurposes);
+  $$IntentRevelationEventsTableTableManager get intentRevelationEvents =>
+      $$IntentRevelationEventsTableTableManager(
+          _db, _db.intentRevelationEvents);
+  $$CtqFactorDefinitionsTableTableManager get ctqFactorDefinitions =>
+      $$CtqFactorDefinitionsTableTableManager(_db, _db.ctqFactorDefinitions);
+  $$ProtocolDocumentReferencesTableTableManager
+      get protocolDocumentReferences =>
+          $$ProtocolDocumentReferencesTableTableManager(
+              _db, _db.protocolDocumentReferences);
 }

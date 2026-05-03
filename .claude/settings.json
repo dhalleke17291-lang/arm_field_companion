@@ -41,7 +41,18 @@
       "Bash(grep -n \"completeness_dashboard\\\\|CompletenesDashboard\\\\|Completeness\" /Users/parminder/Desktop/arm_field_companion/lib/features/**/*.dart)",
       "Read(//Users/parminder/Library/Logs/DiagnosticReports/**)",
       "Bash(find lib *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git tag *)",
+      "Bash(awk -F: '$2 >= 4335 && $2 <= 4560')",
+      "Bash(awk 'NR>=4335 && NR<=4560' /Users/parminder/Desktop/arm_field_companion/lib/features/trials/trial_detail_screen.dart)",
+      "Bash(awk -F: '$2 >= 220 && $2 <= 4560')",
+      "Bash(awk 'NR>=220 && NR<=4560 && /^class / || /^}$/' /Users/parminder/Desktop/arm_field_companion/lib/features/trials/trial_detail_screen.dart)",
+      "Bash(awk 'NR>=220 && NR<=4560 && /^class |^}$/ {print NR\": \"$0}' /Users/parminder/Desktop/arm_field_companion/lib/features/trials/trial_detail_screen.dart)",
+      "Bash(awk 'NR>=2827 && NR<=4560 && /^class |^}$/ {print NR\": \"$0}' /Users/parminder/Desktop/arm_field_companion/lib/features/trials/trial_detail_screen.dart)",
+      "Bash(git merge feature/four-layer-architecture --no-ff -m 'merge: field record trust layer + Phase A schema cleanup *)",
+      "Bash(git merge feature/four-layer-architecture --no-ff -m 'fix: evidence completeness language and insight display polish *)",
+      "Bash(git merge *)",
+      "Bash(grep -n 'get.*Repository\\\\|Dao\\\\|get [a-z].*$AppDatabase' /Users/parminder/Desktop/arm_field_companion/lib/core/database/app_database.dart)"
     ],
     "additionalDirectories": [
       "/Users/parminder/Desktop/arm_field_companion/lib/features/arm_import/usecases"
