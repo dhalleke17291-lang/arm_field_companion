@@ -45,6 +45,7 @@ abstract class ModeCTouchpoints {
       'first_application_or_operation';
   static const String preFirstRating = 'pre_first_rating';
   static const String preExportReview = 'pre_export_review';
+  static const String manualOverview = 'manual_overview';
 }
 
 /// Answer state constants for intent_revelation_events.answerState.
