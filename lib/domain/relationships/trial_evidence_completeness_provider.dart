@@ -81,8 +81,11 @@ final trialEvidenceCompletenessProvider =
     (db.select(db.photos)
           ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(false)))
         .get(),
-    // 5: trial row — needed for studyType
-    (db.select(db.trials)..where((t) => t.id.equals(trialId))).getSingleOrNull(),
+    // 5: non-deleted treatments — count drives applications relevance
+    (db.select(db.treatments)
+          ..where(
+              (t) => t.trialId.equals(trialId) & t.isDeleted.equals(false)))
+        .get(),
   ]);
 
   final sessions = baseResults[0] as List<Session>;
@@ -90,7 +93,7 @@ final trialEvidenceCompletenessProvider =
   final seedingEventsList = baseResults[2] as List<SeedingEvent>;
   final applications = baseResults[3] as List<TrialApplicationEvent>;
   final photos = baseResults[4] as List<Photo>;
-  final trial = baseResults[5] as Trial?;
+  final treatmentCount = (baseResults[5] as List<Treatment>).length;
 
   final sessionIds = sessions.map((s) => s.id).toList();
   final analyzablePlots = allPlots.where(isAnalyzablePlot).toList();
@@ -203,12 +206,9 @@ final trialEvidenceCompletenessProvider =
   );
 
   // ── Dimension 4: Treatment applications (relevant or notRequired) ─────────
-  const applicationStudyTypes = {'HERBICIDE', 'FUNGICIDE', 'INSECTICIDE'};
-  final appRelevance =
-      (trial?.studyType != null &&
-              applicationStudyTypes.contains(trial!.studyType))
-          ? DimensionRelevance.relevant
-          : DimensionRelevance.notRequired;
+  final appRelevance = treatmentCount > 0
+      ? DimensionRelevance.relevant
+      : DimensionRelevance.notRequired;
   final appCount = applications.length;
   final appState = appCount > 0
       ? EvidenceCompletenessState.complete
@@ -312,7 +312,7 @@ final trialEvidenceCompletenessProvider =
 
   final incompleteDimLabels = relevantDims
       .where((d) => d.state != EvidenceCompletenessState.complete)
-      .map((d) => d.label)
+      .map((d) => d.summary)
       .toList();
   final summaryText =
       incompleteDimLabels.isEmpty ? 'complete' : incompleteDimLabels.join(' · ');

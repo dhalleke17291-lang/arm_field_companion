@@ -80,6 +80,15 @@ Future<int> _createRating(
       );
 }
 
+Future<int> _createTreatment(AppDatabase db, int trialId) =>
+    db.into(db.treatments).insert(
+          TreatmentsCompanion.insert(
+            trialId: trialId,
+            code: 'T1',
+            name: 'Treatment 1',
+          ),
+        );
+
 Future<void> _createApplication(AppDatabase db, int trialId) =>
     db.into(db.trialApplicationEvents).insert(
           TrialApplicationEventsCompanion.insert(
@@ -318,7 +327,7 @@ void main() {
   // ── Dimension 4: Treatment applications ──────────────────────────────────
 
   group('treatment applications — relevance gating', () {
-    test('notRequired when studyType is null', () async {
+    test('notRequired when trial has no treatments', () async {
       final trialId = await _createTrial(db);
 
       final result = await _run(container, trialId);
@@ -329,8 +338,8 @@ void main() {
       expect(dim.isActionable, false);
     });
 
-    test('notRequired when studyType is EFFICACY', () async {
-      final trialId = await _createTrial(db, studyType: 'EFFICACY');
+    test('notRequired when trial has no treatments regardless of studyType', () async {
+      final trialId = await _createTrial(db, studyType: 'HERBICIDE');
 
       final result = await _run(container, trialId);
       final dim =
@@ -339,8 +348,9 @@ void main() {
       expect(dim.relevance, DimensionRelevance.notRequired);
     });
 
-    test('relevant when studyType is HERBICIDE', () async {
-      final trialId = await _createTrial(db, studyType: 'HERBICIDE');
+    test('relevant when trial has at least one treatment', () async {
+      final trialId = await _createTrial(db);
+      await _createTreatment(db, trialId);
 
       final result = await _run(container, trialId);
       final dim =
@@ -349,18 +359,9 @@ void main() {
       expect(dim.relevance, DimensionRelevance.relevant);
     });
 
-    test('relevant when studyType is FUNGICIDE', () async {
-      final trialId = await _createTrial(db, studyType: 'FUNGICIDE');
-
-      final result = await _run(container, trialId);
-      final dim =
-          result.dimensions.firstWhere((d) => d.id == 'treatment_applications');
-
-      expect(dim.relevance, DimensionRelevance.relevant);
-    });
-
-    test('relevant when studyType is INSECTICIDE', () async {
-      final trialId = await _createTrial(db, studyType: 'INSECTICIDE');
+    test('relevant regardless of studyType when treatments exist', () async {
+      final trialId = await _createTrial(db, studyType: 'EFFICACY');
+      await _createTreatment(db, trialId);
 
       final result = await _run(container, trialId);
       final dim =
@@ -370,7 +371,8 @@ void main() {
     });
 
     test('incomplete when relevant and no applications exist', () async {
-      final trialId = await _createTrial(db, studyType: 'HERBICIDE');
+      final trialId = await _createTrial(db);
+      await _createTreatment(db, trialId);
 
       final result = await _run(container, trialId);
       final dim =
@@ -382,7 +384,8 @@ void main() {
     });
 
     test('complete when relevant and application exists', () async {
-      final trialId = await _createTrial(db, studyType: 'HERBICIDE');
+      final trialId = await _createTrial(db);
+      await _createTreatment(db, trialId);
       await _createApplication(db, trialId);
 
       final result = await _run(container, trialId);
@@ -606,14 +609,13 @@ void main() {
       expect(result.summaryText, 'complete');
     });
 
-    test('lists incomplete/partial dim labels separated by " · "', () async {
-      // Only rating_coverage is touched (incomplete), everything else untouched
+    test('lists incomplete/partial dim summary strings separated by " · "', () async {
       final trialId = await _createTrial(db);
 
       final result = await _run(container, trialId);
 
-      // All relevant dims are incomplete — summaryText contains all their labels
-      expect(result.summaryText, contains('Rating coverage'));
+      // All relevant dims are incomplete — summaryText contains their summary strings
+      expect(result.summaryText, contains('No plots rated'));
       expect(result.summaryText, contains(' · '));
     });
   });
