@@ -39,6 +39,7 @@ import 'tabs/treatments_tab.dart';
 import 'tabs/seeding_tab.dart';
 import 'tabs/plots_tab.dart';
 import 'tabs/photos_tab.dart';
+import 'tabs/trial_intent_sheet.dart';
 import 'tabs/timeline_tab.dart';
 import 'trial_data_screen.dart';
 import 'trial_setup_screen.dart';
@@ -1049,6 +1050,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               builder: (_) => TrialDataScreen(trial: trial),
             ),
           );
+        } else if (value == 'trial_intent') {
+          showTrialIntentSheet(context, ref, trial: trial);
         } else if (value == 'delete_trial') {
           _confirmAndSoftDeleteTrial(context, trial);
         }
@@ -1057,6 +1060,10 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         const PopupMenuItem<String>(
           value: 'activity',
           child: Text('Activity'),
+        ),
+        const PopupMenuItem<String>(
+          value: 'trial_intent',
+          child: Text('Trial intent'),
         ),
         const PopupMenuItem<String>(
           value: 'delete_trial',
@@ -2330,6 +2337,8 @@ class _OverviewTabBody extends ConsumerWidget {
           ),
           // 2b — Read-only execution summary (divergences + evidence coverage).
           _ExecutionSummaryCard(trial: trial),
+          // 2c — Trial intent status (Mode C).
+          _TrialIntentCard(trial: trial),
           // 3 — Physical structure & progress (incl. whole-trial %).
           _OverviewPlotSummary(trial: trial),
           // 4 — Location / metadata.
@@ -2426,6 +2435,60 @@ class _ExecutionSummaryRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _TrialIntentCard extends ConsumerWidget {
+  const _TrialIntentCard({required this.trial});
+
+  final Trial trial;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final purposeAsync = ref.watch(trialPurposeProvider(trial.id));
+
+    return purposeAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (dto) {
+        final statusLabel = switch (dto.purposeStatus) {
+          'confirmed' => 'Confirmed',
+          'partial' => 'Partial — ${dto.missingIntentFields.length} field(s) missing',
+          _ => 'Not captured',
+        };
+
+        return _OverviewDashboardCard(
+          title: 'Trial Intent',
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  statusLabel,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () =>
+                    showTrialIntentSheet(context, ref, trial: trial),
+                style: TextButton.styleFrom(
+                  minimumSize: Size.zero,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  dto.isConfirmed ? 'Review' : 'Capture intent',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
