@@ -291,6 +291,75 @@ void main() {
       expect(health.detail, isNot(contains('2 leading:')));
     });
 
+    test('zero-delta treatment trends are suppressed', () async {
+      // Seed a trial where every session has the same fixed rating value (50)
+      // for every plot → firstMean == lastMean → delta == 0 → no trend rows.
+      const fixedValue = 50;
+      final headers = <String>['Plot No.', 'trt', 'reps', 'WEED1 1-Jul-26 CONTRO %'];
+      final csvRows = <String>[headers.join(',')];
+      var plotNum = 101;
+      for (var rep = 1; rep <= 3; rep++) {
+        for (var trt = 1; trt <= 3; trt++) {
+          csvRows.add('$plotNum,$trt,$rep,$fixedValue');
+          plotNum++;
+        }
+      }
+      final r = await stressArmImportUseCase(db)
+          .execute(csvRows.join('\n'), sourceFileName: 'zero_delta.csv');
+      expect(r.success, isTrue);
+      final trialId = r.trialId!;
+      final importSessionId = r.importSessionId!;
+      await SessionRepository(db).closeSession(importSessionId);
+
+      final treatments = await TreatmentRepository(db, AssignmentRepository(db))
+          .getTreatmentsForTrial(trialId);
+      final plots = await PlotRepository(db).getPlotsForTrial(trialId);
+      final importRatings = await RatingRepository(db)
+          .getCurrentRatingsForSession(importSessionId);
+      final assessmentIds =
+          importRatings.map((rr) => rr.assessmentId).toSet().toList();
+      final saveUseCase = SaveRatingUseCase(
+        RatingRepository(db),
+        RatingIntegrityGuard(
+          PlotRepository(db),
+          SessionRepository(db),
+          TreatmentRepository(db, AssignmentRepository(db)),
+        ),
+      );
+
+      final session2 = await SessionRepository(db).createSession(
+        trialId: trialId,
+        name: 'Session 2',
+        sessionDateLocal: await sessionDateLocalValidForTrial(db, trialId),
+        assessmentIds: assessmentIds,
+      );
+      for (final plot in plots) {
+        for (final aid in assessmentIds) {
+          await saveUseCase.execute(SaveRatingInput(
+            trialId: trialId,
+            plotPk: plot.id,
+            assessmentId: aid,
+            sessionId: session2.id,
+            resultStatus: 'RECORDED',
+            numericValue: fixedValue.toDouble(),
+            textValue: null,
+            isSessionClosed: false,
+          ));
+        }
+      }
+      await SessionRepository(db).closeSession(session2.id);
+
+      final insights = await service.computeInsights(
+        trialId: trialId,
+        treatments: treatments,
+      );
+
+      final trends =
+          insights.where((i) => i.type == InsightType.treatmentTrend).toList();
+      expect(trends, isEmpty,
+          reason: 'zero-delta trends must not be rendered');
+    });
+
     test('treatment trends appear with 2+ sessions', () async {
       final seed = await seedTrial(
         treatmentCount: 3,

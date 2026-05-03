@@ -487,6 +487,7 @@ class TrialIntelligenceService {
       if (sessionMeans.length < kMinSessionsForTrend) continue;
 
       final delta = lastMean! - firstMean!;
+      if (delta == 0) continue;
       final sign = delta >= 0 ? '+' : '';
       final fromDate = _fmtSessionDate(firstSession?.sessionDateLocal);
       final toDate = _fmtSessionDate(lastSession?.sessionDateLocal);

@@ -2214,6 +2214,18 @@ class _TrialInsightsCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 8),
+              Text(
+                'All insights here are exploratory. Labels like '
+                '"Developing" describe how much history the row has — not '
+                'that a trend is proven. Formal inference stays outside the app.',
+                style: TextStyle(
+                  fontSize: 10,
+                  height: 1.35,
+                  color:
+                      AppDesignTokens.secondaryText.withValues(alpha: 0.88),
+                ),
+              ),
+              const SizedBox(height: 8),
               const Divider(height: 1, color: AppDesignTokens.borderCrisp),
               ..._buildGroupedInsights(insights),
               if (hasTrends) ...[
@@ -2227,18 +2239,6 @@ class _TrialInsightsCard extends ConsumerWidget {
                   ),
                 ),
               ],
-              const SizedBox(height: 8),
-              Text(
-                'All insights here are exploratory. Labels like '
-                '"Developing" describe how much history the row has — not '
-                'that a trend is proven. Formal inference stays outside the app.',
-                style: TextStyle(
-                  fontSize: 10,
-                  height: 1.35,
-                  color:
-                      AppDesignTokens.secondaryText.withValues(alpha: 0.88),
-                ),
-              ),
             ],
           ),
         );
