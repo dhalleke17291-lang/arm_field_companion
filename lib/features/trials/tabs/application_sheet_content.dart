@@ -16,6 +16,21 @@ import '../../../core/providers.dart';
 import '../../../core/units/unit_switch_mixin.dart';
 import '../../../data/repositories/application_product_repository.dart';
 
+/// Parses a BBCH integer from a text-field string. Returns null for empty or unparseable input.
+int? parseBbch(String text) {
+  final t = text.trim();
+  if (t.isEmpty) return null;
+  return int.tryParse(t);
+}
+
+/// Validates a BBCH text-field value. Returns an error message or null if valid.
+String? validateBbch(String? text) {
+  if (text == null || text.trim().isEmpty) return null;
+  final v = parseBbch(text);
+  if (v == null || v < 0 || v > 99) return 'Enter a value between 0 and 99';
+  return null;
+}
+
 /// Five-section add/edit application bottom sheet content.
 class ApplicationSheetContent extends ConsumerStatefulWidget {
   const ApplicationSheetContent({
@@ -106,6 +121,7 @@ class _ApplicationSheetContentState
   late String _soilDepthUnit;
 
   late final TextEditingController _growthStageController;
+  late final TextEditingController _growthStageBbchController;
   late final TextEditingController _notesController;
   late Set<String> _selectedPlotLabels;
 
@@ -234,6 +250,8 @@ class _ApplicationSheetContentState
 
     _growthStageController =
         TextEditingController(text: e?.growthStageCode ?? '');
+    _growthStageBbchController = TextEditingController(
+        text: e?.growthStageBbchAtApplication?.toString() ?? '');
     _notesController = TextEditingController(text: e?.notes ?? '');
     _selectedPlotLabels =
         e?.plotsTreated != null && e!.plotsTreated!.trim().isNotEmpty
@@ -442,6 +460,7 @@ class _ApplicationSheetContentState
     _soilTempController.dispose();
     _soilDepthController.dispose();
     _growthStageController.dispose();
+    _growthStageBbchController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -598,6 +617,9 @@ class _ApplicationSheetContentState
     final phV = validateOptionalPh(
         'Spray solution pH', _parseDouble(_spraySolutionPhController.text));
     if (phV != null) return phV;
+
+    final bbchErr = validateBbch(_growthStageBbchController.text);
+    if (bbchErr != null) return bbchErr;
 
     return null;
   }
@@ -813,6 +835,8 @@ class _ApplicationSheetContentState
         soilDepth: drift.Value(_parseDouble(_soilDepthController.text)),
         soilDepthUnit: drift.Value(_soilDepthUnit),
         growthStageCode: drift.Value(_trim(_growthStageController.text)),
+        growthStageBbchAtApplication:
+            drift.Value(parseBbch(_growthStageBbchController.text)),
         plotsTreated: drift.Value(plotsTreatedStr),
         notes: drift.Value(_trim(_notesController.text)),
         startedAt: drift.Value(DateTime.now().toUtc()),
@@ -857,6 +881,8 @@ class _ApplicationSheetContentState
       soilDepth: drift.Value(_parseDouble(_soilDepthController.text)),
       soilDepthUnit: drift.Value(_soilDepthUnit),
       growthStageCode: drift.Value(_trim(_growthStageController.text)),
+      growthStageBbchAtApplication:
+          drift.Value(parseBbch(_growthStageBbchController.text)),
       plotsTreated: drift.Value(plotsTreatedStr),
       notes: drift.Value(_trim(_notesController.text)),
     );
@@ -1858,6 +1884,17 @@ class _ApplicationSheetContentState
                 decoration:
                     FormStyles.inputDecoration(hintText: 'Growth stage / BBCH'),
                 keyboardType: TextInputType.text,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _growthStageBbchController,
+                readOnly: _isConfirmed,
+                decoration: FormStyles.inputDecoration(
+                  labelText: 'BBCH at application',
+                  hintText: 'e.g. 32',
+                ),
+                keyboardType: TextInputType.number,
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),

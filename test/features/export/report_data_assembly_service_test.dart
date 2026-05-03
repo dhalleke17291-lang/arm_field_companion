@@ -282,6 +282,7 @@ class MockTreatmentRepository implements TreatmentRepository {
     double? labelRate,
     String? labelRateUnit,
     bool? isTestProduct,
+    String? pesticideCategory,
   }) async =>
       throw UnimplementedError();
 
@@ -332,6 +333,7 @@ class MockTreatmentRepository implements TreatmentRepository {
       double? labelRate,
       String? labelRateUnit,
       bool? isTestProduct,
+      String? pesticideCategory,
       int? performedByUserId,
       String? performedBy}) async =>
       throw UnimplementedError();

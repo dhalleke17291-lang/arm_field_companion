@@ -82,6 +82,10 @@ String _componentOneLine(TreatmentComponent c, {ArmTreatmentMetadataData? aam}) 
     final formType = aam.formType;
     if (formType != null && formType.isNotEmpty) parts.add(formType);
   } else {
+    final cat = c.pesticideCategory?.trim();
+    if (cat != null && cat.isNotEmpty) {
+      parts.add(_pesticideCategories[cat] ?? cat);
+    }
     final ft = c.formulationType?.trim();
     if (ft != null && ft.isNotEmpty) parts.add(ft);
   }
@@ -122,6 +126,17 @@ const List<String> _formulationTypes = [
   'CS',
   'Other',
 ];
+
+const Map<String, String> _pesticideCategories = {
+  'herbicide': 'Herbicide',
+  'fungicide': 'Fungicide',
+  'insecticide': 'Insecticide',
+  'biological': 'Biological',
+  'fertilizer': 'Fertilizer',
+  'variety': 'Variety',
+  'adjuvant': 'Adjuvant',
+  'other': 'Other',
+};
 
 void _pushTreatmentsFullScreen(BuildContext context, Trial trial) {
   Navigator.push<void>(
@@ -963,6 +978,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet>
   final _labelRateController = TextEditingController();
   String _rateUnit = _componentRateUnits.first;
   String? _formulationType;
+  String? _pesticideCategory;
   String _aiConcentrationUnit = 'g/L';
   String _labelRateUnit = 'g ai/ha';
   bool _isTestProduct = false;
@@ -989,6 +1005,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet>
       _registrationNumberController.text = e.registrationNumber ?? '';
       _eppoController.text = e.eppoCode ?? '';
       _formulationType = e.formulationType;
+      _pesticideCategory = e.pesticideCategory;
       _aiNameController.text = e.activeIngredientName ?? '';
       if (e.aiConcentration != null) {
         _aiConcentrationController.text =
@@ -1130,6 +1147,22 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet>
                       DropdownMenuItem<String?>(value: s, child: Text(s))),
                 ],
                 onChanged: (v) => setState(() => _formulationType = v),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                key: ValueKey('sheet_pestcat_$_pesticideCategory'),
+                initialValue: _pesticideCategory,
+                decoration: FormStyles.inputDecoration(
+                  labelText: 'Pesticide category',
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(
+                      value: null, child: Text('—')),
+                  ..._pesticideCategories.entries.map((e) =>
+                      DropdownMenuItem<String?>(
+                          value: e.key, child: Text(e.value))),
+                ],
+                onChanged: (v) => setState(() => _pesticideCategory = v),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -1368,6 +1401,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet>
                                         ? _labelRateUnit
                                         : null,
                                 isTestProduct: _isTestProduct,
+                                pesticideCategory: _pesticideCategory,
                                 performedByUserId: userId,
                               );
                               if (!context.mounted) return;
@@ -1420,6 +1454,7 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
   late final TextEditingController registrationNumberController;
   late final TextEditingController eppoController;
   String? formulationType;
+  String? pesticideCategory;
 
   @override
   void initState() {
@@ -1533,6 +1568,21 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
             onChanged: (v) => setState(() => formulationType = v),
           ),
           const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            key: ValueKey('dialog_pestcat_$pesticideCategory'),
+            initialValue: pesticideCategory,
+            decoration: FormStyles.inputDecoration(
+              labelText: 'Pesticide category',
+            ),
+            items: [
+              const DropdownMenuItem<String?>(value: null, child: Text('—')),
+              ..._pesticideCategories.entries.map((e) =>
+                  DropdownMenuItem<String?>(
+                      value: e.key, child: Text(e.value))),
+            ],
+            onChanged: (v) => setState(() => pesticideCategory = v),
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: activeIngredientPctController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -1624,6 +1674,7 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
                       eppoCode: eppoController.text.trim().isEmpty
                           ? null
                           : eppoController.text.trim(),
+                      pesticideCategory: pesticideCategory,
                       performedByUserId: userId,
                     );
                     if (!context.mounted) return;

@@ -254,6 +254,7 @@ class TreatmentRepository {
     double? labelRate,
     String? labelRateUnit,
     bool? isTestProduct,
+    String? pesticideCategory,
     int? performedByUserId,
     String? performedBy,
   }) async {
@@ -282,6 +283,7 @@ class TreatmentRepository {
     diff('eppoCode', old.eppoCode, eppoCode);
     diff('activeIngredientName', old.activeIngredientName, activeIngredientName);
     diff('isTestProduct', old.isTestProduct, isTestProduct);
+    diff('pesticideCategory', old.pesticideCategory, pesticideCategory);
 
     await _db.transaction(() async {
       await (_db.update(_db.treatmentComponents)
@@ -321,6 +323,9 @@ class TreatmentRepository {
             labelRateUnit != null ? Value(labelRateUnit) : const Value.absent(),
         isTestProduct:
             isTestProduct != null ? Value(isTestProduct) : const Value.absent(),
+        pesticideCategory: pesticideCategory != null
+            ? Value(pesticideCategory)
+            : const Value.absent(),
         lastEditedByUserId: Value(performedByUserId),
         lastEditedAt: Value(DateTime.now()),
       ));
@@ -449,6 +454,7 @@ class TreatmentRepository {
     double? labelRate,
     String? labelRateUnit,
     bool? isTestProduct,
+    String? pesticideCategory,
   }) async {
     await assertCanEditProtocolForTrialId(_db, trialId);
     return _db.transaction(() async {
@@ -473,6 +479,7 @@ class TreatmentRepository {
               labelRate: Value(labelRate),
               labelRateUnit: Value(labelRateUnit),
               isTestProduct: Value(isTestProduct ?? false),
+              pesticideCategory: Value(pesticideCategory),
               lastEditedByUserId: Value(performedByUserId),
               lastEditedAt: Value(DateTime.now()),
             ),
