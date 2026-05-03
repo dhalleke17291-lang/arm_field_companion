@@ -415,26 +415,43 @@ class _CtqBody extends StatelessWidget {
           ...attentionItems.map(
             (item) => Padding(
               padding: const EdgeInsets.only(top: 3),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      '· ${item.label}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppDesignTokens.secondaryText,
-                        height: 1.4,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '· ${item.label}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppDesignTokens.secondaryText,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        _statusLabel(item.status),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: _statusColor(item.status),
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (item.reason.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8, top: 2),
+                      child: Text(
+                        item.reason,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppDesignTokens.secondaryText,
+                          height: 1.4,
+                        ),
                       ),
                     ),
-                  ),
-                  Text(
-                    _statusLabel(item.status),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: _statusColor(item.status),
-                      height: 1.4,
-                    ),
-                  ),
                 ],
               ),
             ),
