@@ -1,6 +1,7 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/data/repositories/ctq_factor_definition_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_purpose_repository.dart';
+import 'package:arm_field_companion/domain/trial_cognition/biological_window_profiles.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_ctq_dto.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_ctq_evaluator.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
@@ -40,6 +41,21 @@ void main() {
       trialPurposeId: ctx.purposeId,
     );
     return ctx;
+  }
+
+  Future<({int trialId, int purposeId})> makeSeededTrialWithCrop(
+      String crop) async {
+    final trialId = await trialRepo.createTrial(
+      name: 'T${DateTime.now().microsecondsSinceEpoch}',
+      crop: crop,
+    );
+    final purposeId =
+        await purposeRepo.createInitialTrialPurpose(trialId: trialId);
+    await ctqRepo.seedDefaultCtqFactorsForPurpose(
+      trialId: trialId,
+      trialPurposeId: purposeId,
+    );
+    return (trialId: trialId, purposeId: purposeId);
   }
 
   Future<int> makePlot(int trialId, {bool isGuard = false, int? treatmentId}) =>
@@ -111,11 +127,15 @@ void main() {
         ),
       );
 
-  Future<void> makeApplicationWithBbch(int trialId, {int? bbch}) =>
+  Future<void> makeApplicationWithBbch(
+    int trialId, {
+    int? bbch,
+    DateTime? date,
+  }) =>
       db.into(db.trialApplicationEvents).insert(
         TrialApplicationEventsCompanion.insert(
           trialId: trialId,
-          applicationDate: DateTime(2026, 4, 1),
+          applicationDate: date ?? DateTime(2026, 4, 1),
           growthStageBbchAtApplication: Value(bbch),
         ),
       );
@@ -566,6 +586,7 @@ void main() {
 
     test('AT-4: events exist, pesticideCategory set, BBCH present → satisfied',
         () async {
+      // No crop on trial → matchProfile returns null → no-profile satisfied.
       final ctx = await makeSeededTrial();
       final trtId = await makeTreatment(ctx.trialId);
       await makeTreatmentComponent(ctx.trialId, trtId,
@@ -575,7 +596,7 @@ void main() {
       expect(factorItem(dto, 'application_timing')?.status, 'satisfied');
       expect(
         factorItem(dto, 'application_timing')?.reason,
-        contains('structured BBCH capture'),
+        contains('No window profile is configured'),
       );
     });
 
@@ -601,6 +622,124 @@ void main() {
       await makeApplicationWithBbch(ctx.trialId); // BBCH null
       final dto = await evaluate(ctx.trialId);
       expect(factorItem(dto, 'application_timing')?.status, 'review_needed');
+    });
+  });
+
+  // ── matchProfile unit tests (pure function, no DB) ───────────────────────
+
+  group('BWP: matchProfile unit tests', () {
+    test('BWP-1: wheat + herbicide → wheat herbicide profile', () {
+      final p = matchProfile('wheat', 'herbicide');
+      expect(p, isA<BiologicalWindowProfile>());
+      expect(p!.cropKey, 'wheat');
+      expect(p.pesticideCategory, 'herbicide');
+      expect(p.optimalBbchMin, 12);
+      expect(p.optimalBbchMax, 30);
+    });
+
+    test('BWP-2: Spring wheat + herbicide → wheat herbicide via alias', () {
+      final p = matchProfile('Spring wheat', 'herbicide');
+      expect(p, isA<BiologicalWindowProfile>());
+      expect(p!.cropKey, 'wheat');
+      expect(p.pesticideCategory, 'herbicide');
+    });
+
+    test('BWP-3: canola + fungicide → canola fungicide profile', () {
+      final p = matchProfile('canola', 'fungicide');
+      expect(p, isA<BiologicalWindowProfile>());
+      expect(p!.cropKey, 'canola');
+      expect(p.pesticideCategory, 'fungicide');
+      expect(p.optimalBbchMin, 62);
+    });
+
+    test('BWP-4: unknown crop → null', () {
+      expect(matchProfile('maize', 'herbicide'), equals(null));
+    });
+
+    test('BWP-5: unknown category → null', () {
+      expect(matchProfile('wheat', 'nematicide'), equals(null));
+    });
+  });
+
+  // ── biological window range check integration tests ───────────────────────
+
+  group('BWP: application_timing window range checks', () {
+    test('BWP-6: BBCH within optimal → satisfied with optimal reason',
+        () async {
+      final ctx = await makeSeededTrialWithCrop('wheat');
+      final trtId = await makeTreatment(ctx.trialId);
+      await makeTreatmentComponent(ctx.trialId, trtId,
+          pesticideCategory: 'fungicide');
+      await makeApplicationWithBbch(ctx.trialId, bbch: 63); // optimal 61–65
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'satisfied');
+      expect(factorItem(dto, 'application_timing')?.reason,
+          contains('Within optimal window'));
+      expect(factorItem(dto, 'application_timing')?.reason,
+          contains('BBCH 63'));
+    });
+
+    test(
+        'BWP-7: BBCH outside optimal but within acceptable → review_needed with deviation reason',
+        () async {
+      final ctx = await makeSeededTrialWithCrop('wheat');
+      final trtId = await makeTreatment(ctx.trialId);
+      await makeTreatmentComponent(ctx.trialId, trtId,
+          pesticideCategory: 'fungicide');
+      await makeApplicationWithBbch(ctx.trialId,
+          bbch: 45); // acceptable 37–69, outside optimal 61–65
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'review_needed');
+      expect(factorItem(dto, 'application_timing')?.reason,
+          contains('Outside optimal window'));
+      expect(factorItem(dto, 'application_timing')?.reason,
+          contains('BBCH 45'));
+    });
+
+    test('BWP-8: BBCH outside acceptable → review_needed with outside-window reason',
+        () async {
+      final ctx = await makeSeededTrialWithCrop('wheat');
+      final trtId = await makeTreatment(ctx.trialId);
+      await makeTreatmentComponent(ctx.trialId, trtId,
+          pesticideCategory: 'fungicide');
+      await makeApplicationWithBbch(ctx.trialId,
+          bbch: 75); // outside acceptable 37–69
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'review_needed');
+      expect(factorItem(dto, 'application_timing')?.reason,
+          contains('Outside the acceptable application window'));
+      expect(factorItem(dto, 'application_timing')?.reason,
+          contains('BBCH 75'));
+    });
+
+    test('BWP-9: no profile for crop/category → satisfied with no-profile reason',
+        () async {
+      final ctx = await makeSeededTrialWithCrop('barley');
+      final trtId = await makeTreatment(ctx.trialId);
+      await makeTreatmentComponent(ctx.trialId, trtId,
+          pesticideCategory: 'fungicide');
+      await makeApplicationWithBbch(ctx.trialId, bbch: 59);
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'satisfied');
+      expect(factorItem(dto, 'application_timing')?.reason,
+          contains('No window profile is configured'));
+    });
+
+    test('BWP-10: multiple events — worst BBCH reported', () async {
+      final ctx = await makeSeededTrialWithCrop('wheat');
+      final trtId = await makeTreatment(ctx.trialId);
+      await makeTreatmentComponent(ctx.trialId, trtId,
+          pesticideCategory: 'herbicide');
+      // Older event: BBCH 50 — outside acceptable 12–45
+      await makeApplicationWithBbch(ctx.trialId,
+          bbch: 50, date: DateTime(2026, 4, 1));
+      // Most recent event: BBCH 20 — within optimal 12–30
+      await makeApplicationWithBbch(ctx.trialId,
+          bbch: 20, date: DateTime(2026, 4, 2));
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'review_needed');
+      expect(factorItem(dto, 'application_timing')?.reason,
+          contains('BBCH 50'));
     });
   });
 
