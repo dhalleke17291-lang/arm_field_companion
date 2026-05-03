@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart' as drift;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -10,6 +12,7 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
 import '../../../core/plot_display.dart';
+import '../../../core/application_state.dart';
 import '../../../core/application_event_numeric_rules.dart';
 import '../../../core/field_operation_date_rules.dart';
 import '../../../core/providers.dart';
@@ -29,6 +32,28 @@ String? validateBbch(String? text) {
   final v = parseBbch(text);
   if (v == null || v < 0 || v > 99) return 'Enter a value between 0 and 99';
   return null;
+}
+
+String? _trimSheetText(String? s) =>
+    s == null || s.trim().isEmpty ? null : s.trim();
+
+/// Whether "Coverage & timing" starts expanded — mirrors [_ApplicationSheetContentState] initState.
+bool computeApplicationCoverageTimingInitiallyExpanded(
+  TrialApplicationEvent? event,
+) {
+  if (event == null) return false;
+  final plotsSplit = event.plotsTreated != null &&
+          event.plotsTreated!.trim().isNotEmpty
+      ? event.plotsTreated!
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toSet()
+      : <String>{};
+  return _trimSheetText(event.growthStageCode) != null ||
+      plotsSplit.isNotEmpty ||
+      _trimSheetText(event.notes) != null ||
+      event.growthStageBbchAtApplication != null;
 }
 
 /// Five-section add/edit application bottom sheet content.
@@ -122,6 +147,8 @@ class _ApplicationSheetContentState
 
   late final TextEditingController _growthStageController;
   late final TextEditingController _growthStageBbchController;
+  late final FocusNode _growthStageFocusNode;
+  late final FocusNode _bbchFocusNode;
   late final TextEditingController _notesController;
   late Set<String> _selectedPlotLabels;
 
@@ -139,12 +166,14 @@ class _ApplicationSheetContentState
     return t.isEmpty ? null : double.tryParse(t);
   }
 
+  /// Match [ApplicationRepository] ALCOA+ lock semantics (pending is editable).
   bool get _isConfirmed {
     final e = widget.existing;
     if (e == null) return false;
     return e.appliedAt != null ||
-        e.status == 'applied' ||
-        e.status == 'complete';
+        e.status == kAppStatusApplied ||
+        e.status ==
+            'complete'; // legacy / non-canonical rows; aligns with repo layer
   }
 
   String _confirmedDateLabel() {
@@ -157,6 +186,23 @@ class _ApplicationSheetContentState
   @override
   void initState() {
     super.initState();
+    _growthStageFocusNode = FocusNode();
+    _bbchFocusNode = FocusNode();
+    _attachBbchFocusDebugListeners();
+    if (kDebugMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        debugPrint(
+          '[ApplicationSheet BOOT] '
+          '_isConfirmed=$_isConfirmed '
+          'existing.status=${widget.existing?.status} '
+          'appliedAt=${widget.existing?.appliedAt} '
+          'growth/ro=$_isConfirmed bbch/ro=$_isConfirmed '
+          'bbch.canReq=${_bbchFocusNode.canRequestFocus}',
+        );
+      });
+    }
+
     final e = widget.existing;
     _date = e?.applicationDate.toLocal() ?? DateTime.now();
     _timeStr = e?.applicationTime;
@@ -261,9 +307,7 @@ class _ApplicationSheetContentState
                 .where((s) => s.isNotEmpty)
                 .toSet()
             : {};
-    _initialExpandedCoverage = _trim(e?.growthStageCode) != null ||
-        _selectedPlotLabels.isNotEmpty ||
-        _trim(e?.notes) != null;
+    _initialExpandedCoverage = computeApplicationCoverageTimingInitiallyExpanded(e);
 
     if (_isConfirmed &&
         e != null &&
@@ -286,6 +330,27 @@ class _ApplicationSheetContentState
         );
       });
     }
+  }
+
+  void _attachBbchFocusDebugListeners() {
+    if (!kDebugMode) return;
+
+    void log(String slot, FocusNode n) {
+      n.addListener(() {
+        debugPrint(
+          '[ApplicationSheet focus #$slot] hasFocus=${n.hasFocus} '
+          'primary=${FocusManager.instance.primaryFocus?.debugLabel}',
+        );
+      });
+    }
+
+    log('growth', _growthStageFocusNode);
+    log('bbch', _bbchFocusNode);
+  }
+
+  void _requestKeyboardFor(FocusNode node) {
+    node.requestFocus();
+    unawaited(SystemChannels.textInput.invokeMethod('TextInput.show'));
   }
 
   void _disposeProductRows() {
@@ -461,6 +526,8 @@ class _ApplicationSheetContentState
     _soilDepthController.dispose();
     _growthStageController.dispose();
     _growthStageBbchController.dispose();
+    _growthStageFocusNode.dispose();
+    _bbchFocusNode.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -911,6 +978,7 @@ class _ApplicationSheetContentState
       customFooter: _buildApplicationSheetFooter(context),
       body: ListView(
         controller: widget.scrollController,
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
         padding: const EdgeInsets.fromLTRB(
           FormStyles.formSheetHorizontalPadding,
           0,
@@ -1880,21 +1948,47 @@ class _ApplicationSheetContentState
             children: [
               TextFormField(
                 controller: _growthStageController,
+                focusNode: _growthStageFocusNode,
                 readOnly: _isConfirmed,
+                enableInteractiveSelection: !_isConfirmed,
                 decoration:
                     FormStyles.inputDecoration(hintText: 'Growth stage / BBCH'),
                 keyboardType: TextInputType.text,
+                onTap: _isConfirmed
+                    ? null
+                    : () {
+                        if (kDebugMode) {
+                          debugPrint(
+                            '[ApplicationSheet onTap growth] '
+                            'prePrimary=${FocusManager.instance.primaryFocus?.debugLabel}',
+                          );
+                        }
+                        _requestKeyboardFor(_growthStageFocusNode);
+                      },
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _growthStageBbchController,
+                focusNode: _bbchFocusNode,
                 readOnly: _isConfirmed,
+                enableInteractiveSelection: !_isConfirmed,
                 decoration: FormStyles.inputDecoration(
                   labelText: 'BBCH at application',
                   hintText: 'e.g. 32',
                 ),
                 keyboardType: TextInputType.number,
+                onTap: _isConfirmed
+                    ? null
+                    : () {
+                        if (kDebugMode) {
+                          debugPrint(
+                            '[ApplicationSheet onTap bbch] '
+                            'prePrimary=${FocusManager.instance.primaryFocus?.debugLabel}',
+                          );
+                        }
+                        _requestKeyboardFor(_bbchFocusNode);
+                      },
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),

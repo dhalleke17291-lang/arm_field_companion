@@ -4,6 +4,23 @@ import 'package:drift/drift.dart';
 import '../../core/database/app_database.dart';
 import '../../core/trial_state.dart';
 import 'assignment_repository.dart';
+import '../../core/protocol_edit_blocked_exception.dart';
+
+const Set<String> kComponentAnnotationFields = {
+  'pesticideCategory',
+  'formulationType',
+  'activeIngredientName',
+  'aiConcentration',
+  'aiConcentrationUnit',
+  'manufacturer',
+  'registrationNumber',
+  'eppoCode',
+  'applicationTiming',
+  'labelRate',
+  'labelRateUnit',
+  'sortOrder',
+  'isTestProduct',
+};
 
 class TreatmentRepository {
   final AppDatabase _db;
@@ -76,6 +93,13 @@ class TreatmentRepository {
               c.treatmentId.equals(treatmentId) & c.isDeleted.equals(false))
           ..orderBy([(c) => OrderingTerm.asc(c.sortOrder)]))
         .get();
+  }
+
+  Future<TreatmentComponent?> getComponentById(int componentId) {
+    return (_db.select(_db.treatmentComponents)
+          ..where(
+              (c) => c.id.equals(componentId) & c.isDeleted.equals(false)))
+        .getSingleOrNull();
   }
 
   /// Looks up the trialId for a treatment by id.
@@ -262,12 +286,12 @@ class TreatmentRepository {
           ..where((c) => c.id.equals(componentId) & c.isDeleted.equals(false)))
         .getSingleOrNull();
     if (old == null) return;
-    await assertCanEditProtocolForTrialId(_db, old.trialId);
 
-    // Build field-level diff for audit metadata.
+    final changedFields = <String>{};
     final changes = <Map<String, dynamic>>[];
     void diff(String field, dynamic oldVal, dynamic newVal) {
       if (newVal != null && newVal != oldVal) {
+        changedFields.add(field);
         changes.add({'field': field, 'old': oldVal, 'new': newVal});
       }
     }
@@ -284,6 +308,33 @@ class TreatmentRepository {
     diff('activeIngredientName', old.activeIngredientName, activeIngredientName);
     diff('isTestProduct', old.isTestProduct, isTestProduct);
     diff('pesticideCategory', old.pesticideCategory, pesticideCategory);
+
+    // Graduated lock: annotation-only changes bypass the protocol lock.
+    try {
+      await assertCanEditProtocolForTrialId(_db, old.trialId);
+    } on ProtocolEditBlockedException {
+      if (changedFields.every((f) => kComponentAnnotationFields.contains(f))) {
+        return updateComponentAnnotationsOnly(
+          componentId: componentId,
+          pesticideCategory: pesticideCategory,
+          formulationType: formulationType,
+          activeIngredientName: activeIngredientName,
+          aiConcentration: aiConcentration,
+          aiConcentrationUnit: aiConcentrationUnit,
+          manufacturer: manufacturer,
+          registrationNumber: registrationNumber,
+          eppoCode: eppoCode,
+          applicationTiming: applicationTiming,
+          labelRate: labelRate,
+          labelRateUnit: labelRateUnit,
+          sortOrder: sortOrder,
+          isTestProduct: isTestProduct,
+          performedByUserId: performedByUserId,
+          performedBy: performedBy,
+        );
+      }
+      rethrow;
+    }
 
     await _db.transaction(() async {
       await (_db.update(_db.treatmentComponents)
@@ -343,6 +394,106 @@ class TreatmentRepository {
                 'treatment_id': old.treatmentId,
                 'trial_id': old.trialId,
                 'changes': changes,
+              })),
+            ),
+          );
+    });
+  }
+
+  Future<void> updateComponentAnnotationsOnly({
+    required int componentId,
+    String? pesticideCategory,
+    String? formulationType,
+    String? activeIngredientName,
+    double? aiConcentration,
+    String? aiConcentrationUnit,
+    String? manufacturer,
+    String? registrationNumber,
+    String? eppoCode,
+    String? applicationTiming,
+    double? labelRate,
+    String? labelRateUnit,
+    int? sortOrder,
+    bool? isTestProduct,
+    int? performedByUserId,
+    String? performedBy,
+  }) async {
+    final old = await (_db.select(_db.treatmentComponents)
+          ..where((c) => c.id.equals(componentId) & c.isDeleted.equals(false)))
+        .getSingleOrNull();
+    if (old == null) return;
+
+    final changes = <Map<String, dynamic>>[];
+    void diff(String field, dynamic oldVal, dynamic newVal) {
+      if (newVal != null && newVal != oldVal) {
+        changes.add({'field': field, 'old': oldVal, 'new': newVal});
+      }
+    }
+
+    diff('pesticideCategory', old.pesticideCategory, pesticideCategory);
+    diff('formulationType', old.formulationType, formulationType);
+    diff('activeIngredientName', old.activeIngredientName, activeIngredientName);
+    diff('aiConcentration', old.aiConcentration, aiConcentration);
+    diff('aiConcentrationUnit', old.aiConcentrationUnit, aiConcentrationUnit);
+    diff('manufacturer', old.manufacturer, manufacturer);
+    diff('registrationNumber', old.registrationNumber, registrationNumber);
+    diff('eppoCode', old.eppoCode, eppoCode);
+    diff('applicationTiming', old.applicationTiming, applicationTiming);
+    diff('labelRate', old.labelRate, labelRate);
+    diff('labelRateUnit', old.labelRateUnit, labelRateUnit);
+    diff('isTestProduct', old.isTestProduct, isTestProduct);
+
+    await _db.transaction(() async {
+      await (_db.update(_db.treatmentComponents)
+            ..where((c) => c.id.equals(componentId)))
+          .write(TreatmentComponentsCompanion(
+        pesticideCategory: pesticideCategory != null
+            ? Value(pesticideCategory)
+            : const Value.absent(),
+        formulationType: formulationType != null
+            ? Value(formulationType)
+            : const Value.absent(),
+        activeIngredientName: activeIngredientName != null
+            ? Value(activeIngredientName)
+            : const Value.absent(),
+        aiConcentration: aiConcentration != null
+            ? Value(aiConcentration)
+            : const Value.absent(),
+        aiConcentrationUnit: aiConcentrationUnit != null
+            ? Value(aiConcentrationUnit)
+            : const Value.absent(),
+        manufacturer:
+            manufacturer != null ? Value(manufacturer) : const Value.absent(),
+        registrationNumber: registrationNumber != null
+            ? Value(registrationNumber)
+            : const Value.absent(),
+        eppoCode: eppoCode != null ? Value(eppoCode) : const Value.absent(),
+        applicationTiming: applicationTiming != null
+            ? Value(applicationTiming)
+            : const Value.absent(),
+        labelRate: labelRate != null ? Value(labelRate) : const Value.absent(),
+        labelRateUnit:
+            labelRateUnit != null ? Value(labelRateUnit) : const Value.absent(),
+        sortOrder: sortOrder != null ? Value(sortOrder) : const Value.absent(),
+        isTestProduct:
+            isTestProduct != null ? Value(isTestProduct) : const Value.absent(),
+        lastEditedByUserId: Value(performedByUserId),
+        lastEditedAt: Value(DateTime.now()),
+      ));
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(old.trialId),
+              eventType: 'TREATMENT_COMPONENT_UPDATED',
+              description: 'Treatment component updated: ${old.productName}',
+              performedBy: Value(performedBy),
+              performedByUserId: Value(performedByUserId),
+              metadata: Value(jsonEncode({
+                'component_id': componentId,
+                'treatment_id': old.treatmentId,
+                'trial_id': old.trialId,
+                'changes': changes,
+                'annotation_only': true,
               })),
             ),
           );

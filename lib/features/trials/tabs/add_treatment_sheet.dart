@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/form_styles.dart';
+import '../../../core/protocol_edit_blocked_exception.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/app_draggable_modal_sheet.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
@@ -95,20 +96,28 @@ class _AddTreatmentSheetBodyState extends ConsumerState<_AddTreatmentSheetBody> 
     }
     final userId = await ref.read(currentUserIdProvider.future);
     final repo = ref.read(treatmentRepositoryProvider);
-    await repo.insertTreatment(
-      trialId: widget.trial.id,
-      code: _codeController.text.trim(),
-      name: _nameController.text.trim(),
-      description: _descController.text.trim().isEmpty
-          ? null
-          : _descController.text.trim(),
-      treatmentType: _treatmentType,
-      timingCode: _timingCode,
-      eppoCode: _eppoController.text.trim().isEmpty
-          ? null
-          : _eppoController.text.trim(),
-      performedByUserId: userId,
-    );
+    try {
+      await repo.insertTreatment(
+        trialId: widget.trial.id,
+        code: _codeController.text.trim(),
+        name: _nameController.text.trim(),
+        description: _descController.text.trim().isEmpty
+            ? null
+            : _descController.text.trim(),
+        treatmentType: _treatmentType,
+        timingCode: _timingCode,
+        eppoCode: _eppoController.text.trim().isEmpty
+            ? null
+            : _eppoController.text.trim(),
+        performedByUserId: userId,
+      );
+    } on ProtocolEditBlockedException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+      return;
+    }
     ref.invalidate(treatmentsForTrialProvider(widget.trial.id));
     if (mounted) widget.onDone();
   }

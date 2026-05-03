@@ -12,6 +12,7 @@ import '../../../core/widgets/app_dialog.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
 import '../../../shared/widgets/app_empty_state.dart';
+import '../../../core/protocol_edit_blocked_exception.dart';
 import 'add_treatment_sheet.dart';
 
 /// Builds a single-line formula string for a treatment from its components (paper-protocol style).
@@ -361,8 +362,8 @@ class TreatmentsTab extends ConsumerWidget {
                 onEdit: () => _showEditTreatmentDialog(context, ref, trial, t),
                 onDelete: () =>
                     _showDeleteTreatmentDialog(context, ref, trial, t),
-                onOpenComponentSheet: (existing) =>
-                    _showAddComponentSheet(context, ref, t, existing: existing),
+                onOpenComponentSheet: (existing, restricted) =>
+                    _showAddComponentSheet(context, ref, t, existing: existing, restrictedMode: restricted),
                 onOpenSheet: () => _showTreatmentComponents(context, ref, t),
               );
             },
@@ -393,6 +394,7 @@ class TreatmentsTab extends ConsumerWidget {
     WidgetRef ref,
     Treatment treatment, {
     TreatmentComponent? existing,
+    bool restrictedMode = false,
   }) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -405,6 +407,7 @@ class TreatmentsTab extends ConsumerWidget {
         treatment: treatment,
         ref: ref,
         existingComponent: existing,
+        restrictedMode: restrictedMode,
         onSaved: () {
           ref.invalidate(treatmentComponentsForTreatmentProvider(treatment.id));
           ref.invalidate(treatmentComponentsCountForTrialProvider(trial.id));
@@ -635,7 +638,7 @@ class _TreatmentCompactCard extends ConsumerStatefulWidget {
   final bool trialIsArmLinked;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final Future<void> Function(TreatmentComponent? existing)
+  final Future<void> Function(TreatmentComponent? existing, bool restrictedMode)
       onOpenComponentSheet;
   final VoidCallback onOpenSheet;
 
@@ -823,7 +826,7 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (!widget.locked)
+                if (!widget.locked || !widget.trialIsArmLinked)
                   PopupMenuButton<String>(
                     icon: const Icon(
                       Icons.more_vert,
@@ -837,7 +840,9 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
                     ),
                     onSelected: (value) async {
                       if (value == 'edit') {
-                        await widget.onOpenComponentSheet(c);
+                        await widget.onOpenComponentSheet(c, false);
+                      } else if (value == 'metadata') {
+                        await widget.onOpenComponentSheet(c, true);
                       } else if (value == 'delete') {
                         final ok = await showDialog<bool>(
                           context: context,
@@ -868,10 +873,17 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
                         }
                       }
                     },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      PopupMenuItem(value: 'delete', child: Text('Delete')),
-                    ],
+                    itemBuilder: (context) => widget.locked
+                        ? const [
+                            PopupMenuItem(
+                                value: 'metadata',
+                                child: Text('Edit metadata')),
+                          ]
+                        : const [
+                            PopupMenuItem(value: 'edit', child: Text('Edit')),
+                            PopupMenuItem(
+                                value: 'delete', child: Text('Delete')),
+                          ],
                   ),
               ],
             ),
@@ -921,7 +933,7 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
                     minWidth: 40,
                     minHeight: 40,
                   ),
-                  onPressed: () => widget.onOpenComponentSheet(null),
+                  onPressed: () => widget.onOpenComponentSheet(null, false),
                 ),
               _treatmentOverflowMenu(context),
             ],
@@ -948,6 +960,7 @@ class _AddComponentBottomSheet extends StatefulWidget {
   final WidgetRef ref;
   final VoidCallback onSaved;
   final TreatmentComponent? existingComponent;
+  final bool restrictedMode;
 
   const _AddComponentBottomSheet({
     required this.trial,
@@ -955,6 +968,7 @@ class _AddComponentBottomSheet extends StatefulWidget {
     required this.ref,
     required this.onSaved,
     this.existingComponent,
+    this.restrictedMode = false,
   });
 
   @override
@@ -1071,6 +1085,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet>
               const SizedBox(height: 16),
               TextField(
                 controller: _productController,
+                readOnly: widget.restrictedMode,
                 decoration: FormStyles.inputDecoration(
                   labelText: 'Component Name *',
                 ),
@@ -1102,6 +1117,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet>
                     flex: 2,
                     child: TextFormField(
                       controller: _rateController,
+                      readOnly: widget.restrictedMode,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       inputFormatters: [
@@ -1122,13 +1138,15 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet>
                           .map(
                               (u) => DropdownMenuItem(value: u, child: Text(u)))
                           .toList(),
-                      onChanged: (v) => switchUnit(
-                        controller: _rateController,
-                        currentUnit: _rateUnit,
-                        newUnit: v ?? _componentRateUnits.first,
-                        applyUnit: (u) =>
-                            _rateUnit = u ?? _componentRateUnits.first,
-                      ),
+                      onChanged: widget.restrictedMode
+                          ? null
+                          : (v) => switchUnit(
+                                controller: _rateController,
+                                currentUnit: _rateUnit,
+                                newUnit: v ?? _componentRateUnits.first,
+                                applyUnit: (u) =>
+                                    _rateUnit = u ?? _componentRateUnits.first,
+                              ),
                     ),
                   ),
                 ],
@@ -1345,68 +1363,124 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet>
                               final repo =
                                   widget.ref.read(treatmentRepositoryProvider);
                               final existing = widget.existingComponent;
-                              if (existing != null) {
-                                await _deleteTreatmentComponent(
-                                    widget.ref, existing.id);
+                              if (widget.restrictedMode && existing != null) {
+                                await repo.updateComponentAnnotationsOnly(
+                                  componentId: existing.id,
+                                  pesticideCategory: _pesticideCategory,
+                                  formulationType: _formulationType,
+                                  activeIngredientName:
+                                      _aiNameController.text.trim().isEmpty
+                                          ? null
+                                          : _aiNameController.text.trim(),
+                                  aiConcentration: double.tryParse(
+                                      _aiConcentrationController.text.trim()),
+                                  aiConcentrationUnit:
+                                      _aiConcentrationController.text
+                                              .trim()
+                                              .isNotEmpty
+                                          ? _aiConcentrationUnit
+                                          : null,
+                                  manufacturer: _manufacturerController.text
+                                          .trim()
+                                          .isEmpty
+                                      ? null
+                                      : _manufacturerController.text.trim(),
+                                  registrationNumber:
+                                      _registrationNumberController.text
+                                              .trim()
+                                              .isEmpty
+                                          ? null
+                                          : _registrationNumberController.text
+                                              .trim(),
+                                  eppoCode: _eppoController.text.trim().isEmpty
+                                      ? null
+                                      : _eppoController.text.trim(),
+                                  applicationTiming: _formulationController.text
+                                          .trim()
+                                          .isEmpty
+                                      ? null
+                                      : _formulationController.text.trim(),
+                                  labelRate: double.tryParse(
+                                      _labelRateController.text.trim()),
+                                  labelRateUnit:
+                                      _labelRateController.text.trim().isNotEmpty
+                                          ? _labelRateUnit
+                                          : null,
+                                  isTestProduct: _isTestProduct,
+                                  performedByUserId: userId,
+                                );
+                              } else {
+                                if (existing != null) {
+                                  await _deleteTreatmentComponent(
+                                      widget.ref, existing.id);
+                                }
+                                await repo.insertComponent(
+                                  treatmentId: widget.treatment.id,
+                                  trialId: widget.trial.id,
+                                  productName: name,
+                                  rate: double.tryParse(_rateController.text
+                                      .trim()
+                                      .replaceAll(',', '.')),
+                                  rateUnit: _rateUnit,
+                                  applicationTiming: _formulationController.text
+                                          .trim()
+                                          .isEmpty
+                                      ? null
+                                      : _formulationController.text.trim(),
+                                  notes: _notesController.text.trim().isEmpty
+                                      ? null
+                                      : _notesController.text.trim(),
+                                  sortOrder: existing?.sortOrder ?? 0,
+                                  activeIngredientPct:
+                                      _parseActiveIngredientPct(),
+                                  formulationType: _formulationType,
+                                  manufacturer: _manufacturerController.text
+                                          .trim()
+                                          .isEmpty
+                                      ? null
+                                      : _manufacturerController.text.trim(),
+                                  registrationNumber:
+                                      _registrationNumberController.text
+                                              .trim()
+                                              .isEmpty
+                                          ? null
+                                          : _registrationNumberController.text
+                                              .trim(),
+                                  eppoCode: _eppoController.text.trim().isEmpty
+                                      ? null
+                                      : _eppoController.text.trim(),
+                                  activeIngredientName:
+                                      _aiNameController.text.trim().isEmpty
+                                          ? null
+                                          : _aiNameController.text.trim(),
+                                  aiConcentration: double.tryParse(
+                                      _aiConcentrationController.text.trim()),
+                                  aiConcentrationUnit:
+                                      _aiConcentrationController.text
+                                              .trim()
+                                              .isNotEmpty
+                                          ? _aiConcentrationUnit
+                                          : null,
+                                  labelRate: double.tryParse(
+                                      _labelRateController.text.trim()),
+                                  labelRateUnit: _labelRateController.text
+                                          .trim()
+                                          .isNotEmpty
+                                      ? _labelRateUnit
+                                      : null,
+                                  isTestProduct: _isTestProduct,
+                                  pesticideCategory: _pesticideCategory,
+                                  performedByUserId: userId,
+                                );
                               }
-                              await repo.insertComponent(
-                                treatmentId: widget.treatment.id,
-                                trialId: widget.trial.id,
-                                productName: name,
-                                rate: double.tryParse(_rateController.text
-                                    .trim()
-                                    .replaceAll(',', '.')),
-                                rateUnit: _rateUnit,
-                                applicationTiming:
-                                    _formulationController.text.trim().isEmpty
-                                        ? null
-                                        : _formulationController.text.trim(),
-                                notes: _notesController.text.trim().isEmpty
-                                    ? null
-                                    : _notesController.text.trim(),
-                                sortOrder: existing?.sortOrder ?? 0,
-                                activeIngredientPct:
-                                    _parseActiveIngredientPct(),
-                                formulationType: _formulationType,
-                                manufacturer:
-                                    _manufacturerController.text.trim().isEmpty
-                                        ? null
-                                        : _manufacturerController.text.trim(),
-                                registrationNumber:
-                                    _registrationNumberController.text
-                                            .trim()
-                                            .isEmpty
-                                        ? null
-                                        : _registrationNumberController.text
-                                            .trim(),
-                                eppoCode: _eppoController.text.trim().isEmpty
-                                    ? null
-                                    : _eppoController.text.trim(),
-                                activeIngredientName:
-                                    _aiNameController.text.trim().isEmpty
-                                        ? null
-                                        : _aiNameController.text.trim(),
-                                aiConcentration: double.tryParse(
-                                    _aiConcentrationController.text.trim()),
-                                aiConcentrationUnit: _aiConcentrationController
-                                        .text
-                                        .trim()
-                                        .isNotEmpty
-                                    ? _aiConcentrationUnit
-                                    : null,
-                                labelRate: double.tryParse(
-                                    _labelRateController.text.trim()),
-                                labelRateUnit:
-                                    _labelRateController.text.trim().isNotEmpty
-                                        ? _labelRateUnit
-                                        : null,
-                                isTestProduct: _isTestProduct,
-                                pesticideCategory: _pesticideCategory,
-                                performedByUserId: userId,
-                              );
                               if (!context.mounted) return;
                               widget.onSaved();
                               Navigator.pop(context);
+                            } on ProtocolEditBlockedException catch (e) {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(e.message)),
+                              );
                             } finally {
                               if (mounted) {
                                 setState(() => _isSaving = false);
@@ -1680,6 +1754,11 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
                     if (!context.mounted) return;
                     Navigator.pop(context);
                     await widget.onSaved();
+                  } on ProtocolEditBlockedException catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.message)),
+                    );
                   } finally {
                     if (mounted) {
                       setState(() => _isSaving = false);

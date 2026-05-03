@@ -337,6 +337,31 @@ class MockTreatmentRepository implements TreatmentRepository {
       int? performedByUserId,
       String? performedBy}) async =>
       throw UnimplementedError();
+
+  @override
+  Future<TreatmentComponent?> getComponentById(int componentId) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> updateComponentAnnotationsOnly({
+    required int componentId,
+    String? pesticideCategory,
+    String? formulationType,
+    String? activeIngredientName,
+    double? aiConcentration,
+    String? aiConcentrationUnit,
+    String? manufacturer,
+    String? registrationNumber,
+    String? eppoCode,
+    String? applicationTiming,
+    double? labelRate,
+    String? labelRateUnit,
+    int? sortOrder,
+    bool? isTestProduct,
+    int? performedByUserId,
+    String? performedBy,
+  }) async =>
+      throw UnimplementedError();
 }
 
 class MockApplicationRepository implements ApplicationRepository {
