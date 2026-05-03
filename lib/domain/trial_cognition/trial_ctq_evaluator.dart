@@ -69,6 +69,11 @@ Future<TrialCtqDto> computeTrialCtqDtoV1(
     (db.select(db.assignments)
           ..where((a) => a.trialId.equals(trialId)))
         .get(),
+    // 7: treatment components (for pesticideCategory check)
+    (db.select(db.treatmentComponents)
+          ..where(
+              (c) => c.trialId.equals(trialId) & c.isDeleted.equals(false)))
+        .get(),
   ]);
 
   final treatments = results[0] as List<Treatment>;
@@ -78,6 +83,7 @@ Future<TrialCtqDto> computeTrialCtqDtoV1(
   final openSignals = results[4] as List<Signal>;
   final applications = results[5] as List<TrialApplicationEvent>;
   final assignments = results[6] as List<Assignment>;
+  final treatmentComponents = results[7] as List<TreatmentComponent>;
 
   final analyzablePlots = allPlots.where(isAnalyzablePlot).toList();
   final ratedPlotPks = recordedRatings.map((r) => r.plotPk).toSet();
@@ -110,8 +116,8 @@ Future<TrialCtqDto> computeTrialCtqDtoV1(
         _evalGpsEvidence(factor, recordedRatings, gpsCount),
       'treatment_identity' => _evalTreatmentIdentity(factor, treatments),
       'rater_consistency' => _evalRaterConsistency(factor, raterSignals),
-      'application_timing' =>
-        _evalApplicationTiming(factor, applications, treatments),
+      'application_timing' => _evalApplicationTiming(
+          factor, applications, treatments, treatmentComponents),
       'rating_window' =>
         _evalRatingWindow(factor, recordedRatings, timingWindowSignals),
       'data_variance' => _evalDataVariance(factor, recordedRatings),
@@ -309,6 +315,7 @@ TrialCtqItemDto _evalApplicationTiming(
   CtqFactorDefinition factor,
   List<TrialApplicationEvent> applications,
   List<Treatment> treatments,
+  List<TreatmentComponent> treatmentComponents,
 ) {
   if (treatments.isEmpty) {
     return _item(
@@ -318,19 +325,43 @@ TrialCtqItemDto _evalApplicationTiming(
       reason: 'Application timing cannot be evaluated without treatments.',
     );
   }
-  if (applications.isNotEmpty) {
+  if (applications.isEmpty) {
+    return _item(
+      factor,
+      status: 'missing',
+      evidenceSummary: 'No applications recorded.',
+      reason: 'No application events have been recorded.',
+    );
+  }
+  final hasCategorySet =
+      treatmentComponents.any((c) => c.pesticideCategory != null);
+  if (!hasCategorySet) {
     return _item(
       factor,
       status: 'satisfied',
       evidenceSummary: '${applications.length} application record(s).',
-      reason: 'Application records exist for this trial.',
+      reason: 'Application events are present.',
+    );
+  }
+  final hasBbch =
+      applications.any((a) => a.growthStageBbchAtApplication != null);
+  if (!hasBbch) {
+    return _item(
+      factor,
+      status: 'review_needed',
+      evidenceSummary:
+          '${applications.length} application record(s); BBCH not captured.',
+      reason:
+          'Application events exist but BBCH at application has not been recorded. Timing cannot be evaluated.',
     );
   }
   return _item(
     factor,
-    status: 'missing',
-    evidenceSummary: 'No applications recorded.',
-    reason: 'No application records have been recorded.',
+    status: 'satisfied',
+    evidenceSummary:
+        '${applications.length} application record(s) with BBCH data.',
+    reason:
+        'Application timing evidence is present with structured BBCH capture. Window checks will be available once crop profiles are configured.',
   );
 }
 
