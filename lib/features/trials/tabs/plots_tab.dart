@@ -18,6 +18,7 @@ import '../standalone/standalone_generate_plot_layout_sheet.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../shared/widgets/app_card.dart';
 import '../../../shared/widgets/app_empty_state.dart';
+import '../../../core/utils/check_treatment_helper.dart';
 import '../plot_layout_model.dart';
 import '../../plots/plot_detail_screen.dart';
 
@@ -206,6 +207,74 @@ Color _heatMapTextColor(Color cellColor) =>
         : Colors.white;
 
 bool _isLowSpread(double min, double max) => max - min < _kHeatMapMinSpread;
+
+/// Builds a treatment-level application state map from canonical event stream.
+///
+/// Keys are treatment_id. Values: 'applied' if any event has status='applied',
+/// otherwise 'pending' if any event exists. Absent key means no events at all.
+Map<int, String> buildTreatmentAppState(
+    List<TrialApplicationEvent> events) {
+  final result = <int, String>{};
+  for (final e in events) {
+    final tid = e.treatmentId;
+    if (tid == null) continue;
+    if (e.status == 'applied') {
+      result[tid] = 'applied';
+    } else if (result[tid] != 'applied') {
+      result[tid] = 'pending';
+    }
+  }
+  return result;
+}
+
+/// Horizontal scrolling filter chips for the Apps layer.
+///
+/// "All" deselects any active filter. Each treatment chip shows its code and
+/// a status indicator (✓ applied, ⏱ pending, — no event, blank for CHK).
+/// Selecting an already-selected chip reverts to "All".
+Widget _buildAppTreatmentFilterChips({
+  required List<Treatment> treatments,
+  required Map<int, String> treatmentAppState,
+  required int? selectedId,
+  required void Function(int?) onChanged,
+}) {
+  return SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+    child: Row(
+      children: [
+        FilterChip(
+          label: const Text('All'),
+          selected: selectedId == null,
+          onSelected: (_) => onChanged(null),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+        ),
+        ...treatments.map((t) {
+          final state = treatmentAppState[t.id];
+          final indicator = state == 'applied'
+              ? ' ✓'
+              : state == 'pending'
+                  ? ' ⏱'
+                  : isCheckTreatment(t)
+                      ? ''
+                      : ' —';
+          return Padding(
+            padding: const EdgeInsets.only(left: 6),
+            child: FilterChip(
+              label: Text('${t.code}$indicator'),
+              selected: selectedId == t.id,
+              onSelected: (_) =>
+                  onChanged(selectedId == t.id ? null : t.id),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            ),
+          );
+        }),
+      ],
+    ),
+  );
+}
 
 /// Explains how many layout plots have a numeric rating for the selected
 /// assessment—important when the session is incomplete so "—" is not mistaken
@@ -2075,6 +2144,7 @@ class _TrialPlotsWorkingSurfaceState
   }
 
   _LayoutLayer _layoutLayer = _LayoutLayer.treatments;
+  int? _selectedAppTreatmentId;
   ApplicationEvent? _selectedAppEvent;
   Session? _selectedRatingSession;
   bool _heatMapEnabled = false;
@@ -2207,6 +2277,7 @@ class _TrialPlotsWorkingSurfaceState
     required List<Assignment> assignmentsList,
     required List<TrialApplicationEvent> applicationsList,
   }) {
+    final treatmentAppState = buildTreatmentAppState(applicationsList);
     final trialIsArmLinked = _armTrialIsLinked(ref);
     final displayPlots = _plotsVisibleInPlotsTab(plots);
     final plotAssignmentsLocked =
@@ -2249,6 +2320,14 @@ class _TrialPlotsWorkingSurfaceState
         if (_plotLayoutHintDismissed == false) _buildPanZoomHint(context),
         if (_layoutLayer == _LayoutLayer.applications)
           _buildAppEventSelectorForDetails(context, ref),
+        if (_layoutLayer == _LayoutLayer.applications && treatments.isNotEmpty)
+          _buildAppTreatmentFilterChips(
+            treatments: treatments,
+            treatmentAppState: treatmentAppState,
+            selectedId: _selectedAppTreatmentId,
+            onChanged: (id) =>
+                setState(() => _selectedAppTreatmentId = id),
+          ),
       ],
     ];
     final toolbarColumn = Column(
@@ -2390,18 +2469,6 @@ class _TrialPlotsWorkingSurfaceState
                       final plotIdToTreatmentIdMap = {
                         for (var a in assignmentsList) a.plotId: a.treatmentId
                       };
-                      final treatmentIdsWithApp = applicationsList
-                          .map((e) => e.treatmentId)
-                          .whereType<int>()
-                          .toSet();
-                      final plotPksWithTrialApplication = <int>{};
-                      for (final p in plots) {
-                        final tid =
-                            plotIdToTreatmentIdMap[p.id] ?? p.treatmentId;
-                        if (tid != null && treatmentIdsWithApp.contains(tid)) {
-                          plotPksWithTrialApplication.add(p.id);
-                        }
-                      }
                       final scheme = Theme.of(context).colorScheme;
                       final gridW = _layoutGridWidth ?? gridContentWidth;
                       final gridH = _layoutGridHeight ?? (viewportHeight * 0.5);
@@ -2437,8 +2504,9 @@ class _TrialPlotsWorkingSurfaceState
                                     trial: widget.trial,
                                     layer: _layoutLayer,
                                     appPlotRecords: _appPlotRecords,
-                                    plotPksWithTrialApplication:
-                                        plotPksWithTrialApplication,
+                                    treatmentAppState: treatmentAppState,
+                                    selectedAppTreatmentId:
+                                        _selectedAppTreatmentId,
                                     plotIdToTreatmentId: plotIdToTreatmentIdMap,
                                     onLongPressPlot: plotAssignmentsLocked
                                         ? null
@@ -2581,7 +2649,12 @@ class _TrialPlotsWorkingSurfaceState
               icon: Icon(Icons.bar_chart, size: 14)),
         ],
         selected: {_layoutLayer},
-        onSelectionChanged: (val) => setState(() => _layoutLayer = val.first),
+        onSelectionChanged: (val) => setState(() {
+          _layoutLayer = val.first;
+          if (_layoutLayer != _LayoutLayer.applications) {
+            _selectedAppTreatmentId = null;
+          }
+        }),
       ),
     );
   }
@@ -3661,8 +3734,13 @@ class _PlotLayoutGrid extends StatelessWidget {
   final _LayoutLayer layer;
   final List<ApplicationPlotRecord> appPlotRecords;
 
-  /// For Applications layer v1: plot ids whose assigned treatment has at least one application event.
-  final Set<int>? plotPksWithTrialApplication;
+  /// Treatment-level application state for Apps layer.
+  /// Keys are treatment_id, values are 'applied' | 'pending'. Absent = no events.
+  final Map<int, String>? treatmentAppState;
+
+  /// When non-null, all plots whose effective treatment differs from this id
+  /// are rendered at 15 % opacity so the selected treatment stands out.
+  final int? selectedAppTreatmentId;
   final Map<int, int?>? plotIdToTreatmentId;
   final void Function(Plot plot)? onLongPressPlot;
 
@@ -3673,7 +3751,8 @@ class _PlotLayoutGrid extends StatelessWidget {
     required this.trial,
     required this.layer,
     required this.appPlotRecords,
-    this.plotPksWithTrialApplication,
+    this.treatmentAppState,
+    this.selectedAppTreatmentId,
     this.plotIdToTreatmentId,
     this.onLongPressPlot,
   });
@@ -3714,19 +3793,27 @@ class _PlotLayoutGrid extends StatelessWidget {
       return Theme.of(context).colorScheme.surfaceContainerHighest;
     }
     if (layer == _LayoutLayer.applications) {
-      // v1 model: green = treatment has application, grey = unassigned, else treatment color.
-      if (plotPksWithTrialApplication != null) {
+      if (treatmentAppState != null) {
         if (effectiveTid == null) return AppDesignTokens.unassignedColor;
-        if (plotPksWithTrialApplication!.contains(plot.id)) {
-          return AppDesignTokens.appliedColor;
+        final idx = treatments.indexWhere((t) => t.id == effectiveTid);
+        if (idx < 0) return AppDesignTokens.unassignedColor;
+        final base = AppDesignTokens.treatmentPalette[
+            idx % AppDesignTokens.treatmentPalette.length];
+        // Filter chip: dim plots not belonging to the selected treatment.
+        if (selectedAppTreatmentId != null &&
+            effectiveTid != selectedAppTreatmentId) {
+          return base.withValues(alpha: 0.15);
         }
-        final treatmentIndex =
-            treatments.indexWhere((t) => t.id == effectiveTid);
-        return treatmentIndex >= 0
-            ? AppDesignTokens.treatmentPalette[
-                treatmentIndex % AppDesignTokens.treatmentPalette.length]
-            : AppDesignTokens.unassignedColor;
+        final state = treatmentAppState![effectiveTid];
+        final treatment = treatments[idx];
+        // CHK / untreated controls: no application expected — show full color.
+        if (state == null && isCheckTreatment(treatment)) return base;
+        if (state == 'applied') return base;
+        if (state == 'pending') return base.withValues(alpha: 0.60);
+        // no event
+        return base.withValues(alpha: 0.25);
       }
+      // Legacy: plot-record path (appPlotRecords).
       final record =
           appPlotRecords.where((r) => r.plotPk == plot.id).firstOrNull;
       if (record == null) return AppDesignTokens.noRecordColor;
@@ -3765,7 +3852,7 @@ class _PlotLayoutGrid extends StatelessWidget {
                       runSpacing: 8,
                       alignment: WrapAlignment.start,
                       crossAxisAlignment: WrapCrossAlignment.center,
-                      children: plotPksWithTrialApplication != null
+                      children: treatmentAppState != null
                           ? [
                               ConstrainedBox(
                                 constraints:
@@ -3781,8 +3868,17 @@ class _PlotLayoutGrid extends StatelessWidget {
                                     const BoxConstraints(maxWidth: 150),
                                 child: _legendChip(
                                   context,
+                                  const Color(0xFFEF9F27),
+                                  'Pending',
+                                ),
+                              ),
+                              ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 150),
+                                child: _legendChip(
+                                  context,
                                   AppDesignTokens.unassignedColor,
-                                  'Unassigned',
+                                  'No event',
                                 ),
                               ),
                             ]
@@ -3861,6 +3957,18 @@ class _PlotLayoutGrid extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// Badge label for a plot in Apps layer. Returns 'applied', 'pending', or null.
+  /// Always null when not in Apps layer, for guard/unassigned plots, or for CHK.
+  String? _appBadgeFor(Plot plot, Map<int, int?>? idMap) {
+    if (layer != _LayoutLayer.applications) return null;
+    if (treatmentAppState == null) return null;
+    final tid = idMap?[plot.id] ?? plot.treatmentId;
+    if (tid == null) return null;
+    final idx = treatments.indexWhere((t) => t.id == tid);
+    if (idx >= 0 && isCheckTreatment(treatments[idx])) return null;
+    return treatmentAppState![tid];
   }
 
   static const double _tileSpacing = 6.0;
@@ -3961,6 +4069,8 @@ class _PlotLayoutGrid extends StatelessWidget {
                                   onLongPress: onLongPressPlot != null
                                       ? () => onLongPressPlot!(repRow.plots[i])
                                       : null,
+                                  appLayerBadge: _appBadgeFor(
+                                      repRow.plots[i], plotIdToTreatmentId),
                                 ),
                               ),
                             ],
@@ -4035,6 +4145,9 @@ class _PlotGridTile extends StatefulWidget {
   final String? displayLabel;
   final VoidCallback? onLongPress;
 
+  /// Apps layer badge: 'applied' | 'pending' | null (no badge).
+  final String? appLayerBadge;
+
   const _PlotGridTile({
     required this.plot,
     required this.treatmentMap,
@@ -4044,6 +4157,7 @@ class _PlotGridTile extends StatefulWidget {
     this.treatmentIdOverride,
     this.displayLabel,
     this.onLongPress,
+    this.appLayerBadge,
   });
 
   @override
@@ -4071,75 +4185,115 @@ class _PlotGridTileState extends State<_PlotGridTile> {
         : Colors.white.withValues(alpha: 0.2);
     final scheme = Theme.of(context).colorScheme;
     final pressedBorderColor = scheme.primary.withValues(alpha: 0.55);
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: widget.tileColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: _pressed ? pressedBorderColor : borderColor,
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: _pressed ? 0.2 : 0.12),
+                blurRadius: _pressed ? 8 : 4,
+                offset: Offset(0, _pressed ? 3 : 2),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onHighlightChanged: (highlighted) {
+                setState(() => _pressed = highlighted);
+              },
+              onLongPress: widget.onLongPress,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      PlotDetailScreen(trial: widget.trial, plot: plot),
+                ),
+              ),
+              splashColor: Colors.white.withValues(alpha: 0.2),
+              highlightColor: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+                width: double.infinity,
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: labelColor,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                        letterSpacing: 0.3,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                    ),
+                    Text(
+                      treatment != null
+                          ? treatment.code
+                          : (effectiveTid != null ? '(removed)' : ''),
+                      style: TextStyle(
+                        color: subColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (widget.appLayerBadge != null)
+          Positioned(
+            top: 3,
+            right: 3,
+            child: _AppBadge(status: widget.appLayerBadge!),
+          ),
+      ],
+    );
+  }
+}
+
+/// Small badge shown in the top-right corner of a grid tile for the Apps layer.
+class _AppBadge extends StatelessWidget {
+  const _AppBadge({required this.status});
+
+  /// 'applied' → green checkmark · 'pending' → amber clock.
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final isApplied = status == 'applied';
     return Container(
+      width: 14,
+      height: 14,
       decoration: BoxDecoration(
-        color: widget.tileColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: _pressed ? pressedBorderColor : borderColor,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: _pressed ? 0.2 : 0.12),
-            blurRadius: _pressed ? 8 : 4,
-            offset: Offset(0, _pressed ? 3 : 2),
-          ),
-        ],
+        color: isApplied
+            ? AppDesignTokens.appliedColor
+            : const Color(0xFFEF9F27),
+        shape: BoxShape.circle,
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onHighlightChanged: (highlighted) {
-            setState(() => _pressed = highlighted);
-          },
-          onLongPress: widget.onLongPress,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => PlotDetailScreen(trial: widget.trial, plot: plot),
-            ),
-          ),
-          splashColor: Colors.white.withValues(alpha: 0.2),
-          highlightColor: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
-            width: double.infinity,
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: labelColor,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13,
-                    letterSpacing: 0.3,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  textAlign: TextAlign.center,
-                ),
-                Text(
-                  treatment != null
-                      ? treatment.code
-                      : (effectiveTid != null ? '(removed)' : ''),
-                  style: TextStyle(
-                    color: subColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
+      child: Icon(
+        isApplied ? Icons.check : Icons.schedule,
+        size: 9,
+        color: Colors.white,
       ),
     );
   }
@@ -4172,6 +4326,7 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
           true;
 
   late _LayoutLayer _layoutLayer;
+  int? _selectedAppTreatmentId;
   ApplicationEvent? _selectedAppEvent;
   Session? _selectedRatingSession;
   bool _heatMapEnabled = false;
@@ -4400,12 +4555,25 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                             icon: Icon(Icons.bar_chart, size: 14)),
                       ],
                       selected: {_layoutLayer},
-                      onSelectionChanged: (val) =>
-                          setState(() => _layoutLayer = val.first),
+                      onSelectionChanged: (val) => setState(() {
+                        if (val.first != _LayoutLayer.applications) {
+                          _selectedAppTreatmentId = null;
+                        }
+                        _layoutLayer = val.first;
+                      }),
                     ),
                   ),
                   if (_layoutLayer == _LayoutLayer.applications)
                     _buildAppEventSelector(context, ref),
+                  if (_layoutLayer == _LayoutLayer.applications)
+                    _buildAppTreatmentFilterChips(
+                      treatments: treatments,
+                      treatmentAppState:
+                          buildTreatmentAppState(trialApplicationsAsync.value ?? []),
+                      selectedId: _selectedAppTreatmentId,
+                      onChanged: (id) =>
+                          setState(() => _selectedAppTreatmentId = id),
+                    ),
                 ],
               );
               return Column(
@@ -4481,21 +4649,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                                   totalGridWidth > viewportWidth
                                       ? totalGridWidth
                                       : viewportWidth;
-                              final applicationsList =
-                                  trialApplicationsAsync.value ?? [];
-                              final treatmentIdsWithApp = applicationsList
-                                  .map((e) => e.treatmentId)
-                                  .whereType<int>()
-                                  .toSet();
-                              final plotPksWithTrialApplication = <int>{};
-                              for (final p in displayPlots) {
-                                final tid =
-                                    plotIdToTreatmentId[p.id] ?? p.treatmentId;
-                                if (tid != null &&
-                                    treatmentIdsWithApp.contains(tid)) {
-                                  plotPksWithTrialApplication.add(p.id);
-                                }
-                              }
+                              final treatmentAppState = buildTreatmentAppState(
+                                  trialApplicationsAsync.value ?? []);
                               return ClipRect(
                                 child: Stack(
                                   children: [
@@ -4522,8 +4677,9 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                                             trial: widget.trial,
                                             layer: _layoutLayer,
                                             appPlotRecords: _appPlotRecords,
-                                            plotPksWithTrialApplication:
-                                                plotPksWithTrialApplication,
+                                            treatmentAppState: treatmentAppState,
+                                            selectedAppTreatmentId:
+                                                _selectedAppTreatmentId,
                                             plotIdToTreatmentId:
                                                 plotIdToTreatmentId,
                                             onLongPressPlot:
