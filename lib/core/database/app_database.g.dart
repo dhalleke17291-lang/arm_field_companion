@@ -4282,6 +4282,12 @@ class $TreatmentComponentsTable extends TreatmentComponents
       defaultConstraints: GeneratedColumn.constraintIsAlways(
           'CHECK ("is_test_product" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _pesticideCategoryMeta =
+      const VerificationMeta('pesticideCategory');
+  @override
+  late final GeneratedColumn<String> pesticideCategory =
+      GeneratedColumn<String>('pesticide_category', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _isDeletedMeta =
       const VerificationMeta('isDeleted');
   @override
@@ -4341,6 +4347,7 @@ class $TreatmentComponentsTable extends TreatmentComponents
         labelRate,
         labelRateUnit,
         isTestProduct,
+        pesticideCategory,
         isDeleted,
         deletedAt,
         deletedBy,
@@ -4466,6 +4473,12 @@ class $TreatmentComponentsTable extends TreatmentComponents
           isTestProduct.isAcceptableOrUnknown(
               data['is_test_product']!, _isTestProductMeta));
     }
+    if (data.containsKey('pesticide_category')) {
+      context.handle(
+          _pesticideCategoryMeta,
+          pesticideCategory.isAcceptableOrUnknown(
+              data['pesticide_category']!, _pesticideCategoryMeta));
+    }
     if (data.containsKey('is_deleted')) {
       context.handle(_isDeletedMeta,
           isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
@@ -4540,6 +4553,8 @@ class $TreatmentComponentsTable extends TreatmentComponents
           .read(DriftSqlType.string, data['${effectivePrefix}label_rate_unit']),
       isTestProduct: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_test_product'])!,
+      pesticideCategory: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}pesticide_category']),
       isDeleted: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted'])!,
       deletedAt: attachedDatabase.typeMapping
@@ -4589,6 +4604,9 @@ class TreatmentComponent extends DataClass
 
   /// Distinguishes test product from reference standard.
   final bool isTestProduct;
+
+  /// Structured treatment category (herbicide, fungicide, insecticide, biological, variety, fertiliser, other).
+  final String? pesticideCategory;
   final bool isDeleted;
   final DateTime? deletedAt;
   final String? deletedBy;
@@ -4615,6 +4633,7 @@ class TreatmentComponent extends DataClass
       this.labelRate,
       this.labelRateUnit,
       required this.isTestProduct,
+      this.pesticideCategory,
       required this.isDeleted,
       this.deletedAt,
       this.deletedBy,
@@ -4671,6 +4690,9 @@ class TreatmentComponent extends DataClass
       map['label_rate_unit'] = Variable<String>(labelRateUnit);
     }
     map['is_test_product'] = Variable<bool>(isTestProduct);
+    if (!nullToAbsent || pesticideCategory != null) {
+      map['pesticide_category'] = Variable<String>(pesticideCategory);
+    }
     map['is_deleted'] = Variable<bool>(isDeleted);
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<DateTime>(deletedAt);
@@ -4734,6 +4756,9 @@ class TreatmentComponent extends DataClass
           ? const Value.absent()
           : Value(labelRateUnit),
       isTestProduct: Value(isTestProduct),
+      pesticideCategory: pesticideCategory == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pesticideCategory),
       isDeleted: Value(isDeleted),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
@@ -4779,6 +4804,8 @@ class TreatmentComponent extends DataClass
       labelRate: serializer.fromJson<double?>(json['labelRate']),
       labelRateUnit: serializer.fromJson<String?>(json['labelRateUnit']),
       isTestProduct: serializer.fromJson<bool>(json['isTestProduct']),
+      pesticideCategory:
+          serializer.fromJson<String?>(json['pesticideCategory']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
       deletedBy: serializer.fromJson<String?>(json['deletedBy']),
@@ -4810,6 +4837,7 @@ class TreatmentComponent extends DataClass
       'labelRate': serializer.toJson<double?>(labelRate),
       'labelRateUnit': serializer.toJson<String?>(labelRateUnit),
       'isTestProduct': serializer.toJson<bool>(isTestProduct),
+      'pesticideCategory': serializer.toJson<String?>(pesticideCategory),
       'isDeleted': serializer.toJson<bool>(isDeleted),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
       'deletedBy': serializer.toJson<String?>(deletedBy),
@@ -4839,6 +4867,7 @@ class TreatmentComponent extends DataClass
           Value<double?> labelRate = const Value.absent(),
           Value<String?> labelRateUnit = const Value.absent(),
           bool? isTestProduct,
+          Value<String?> pesticideCategory = const Value.absent(),
           bool? isDeleted,
           Value<DateTime?> deletedAt = const Value.absent(),
           Value<String?> deletedBy = const Value.absent(),
@@ -4881,6 +4910,9 @@ class TreatmentComponent extends DataClass
         labelRateUnit:
             labelRateUnit.present ? labelRateUnit.value : this.labelRateUnit,
         isTestProduct: isTestProduct ?? this.isTestProduct,
+        pesticideCategory: pesticideCategory.present
+            ? pesticideCategory.value
+            : this.pesticideCategory,
         isDeleted: isDeleted ?? this.isDeleted,
         deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
         deletedBy: deletedBy.present ? deletedBy.value : this.deletedBy,
@@ -4934,6 +4966,9 @@ class TreatmentComponent extends DataClass
       isTestProduct: data.isTestProduct.present
           ? data.isTestProduct.value
           : this.isTestProduct,
+      pesticideCategory: data.pesticideCategory.present
+          ? data.pesticideCategory.value
+          : this.pesticideCategory,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       deletedBy: data.deletedBy.present ? data.deletedBy.value : this.deletedBy,
@@ -4969,6 +5004,7 @@ class TreatmentComponent extends DataClass
           ..write('labelRate: $labelRate, ')
           ..write('labelRateUnit: $labelRateUnit, ')
           ..write('isTestProduct: $isTestProduct, ')
+          ..write('pesticideCategory: $pesticideCategory, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy, ')
@@ -5000,6 +5036,7 @@ class TreatmentComponent extends DataClass
         labelRate,
         labelRateUnit,
         isTestProduct,
+        pesticideCategory,
         isDeleted,
         deletedAt,
         deletedBy,
@@ -5030,6 +5067,7 @@ class TreatmentComponent extends DataClass
           other.labelRate == this.labelRate &&
           other.labelRateUnit == this.labelRateUnit &&
           other.isTestProduct == this.isTestProduct &&
+          other.pesticideCategory == this.pesticideCategory &&
           other.isDeleted == this.isDeleted &&
           other.deletedAt == this.deletedAt &&
           other.deletedBy == this.deletedBy &&
@@ -5058,6 +5096,7 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
   final Value<double?> labelRate;
   final Value<String?> labelRateUnit;
   final Value<bool> isTestProduct;
+  final Value<String?> pesticideCategory;
   final Value<bool> isDeleted;
   final Value<DateTime?> deletedAt;
   final Value<String?> deletedBy;
@@ -5084,6 +5123,7 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     this.labelRate = const Value.absent(),
     this.labelRateUnit = const Value.absent(),
     this.isTestProduct = const Value.absent(),
+    this.pesticideCategory = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
@@ -5111,6 +5151,7 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     this.labelRate = const Value.absent(),
     this.labelRateUnit = const Value.absent(),
     this.isTestProduct = const Value.absent(),
+    this.pesticideCategory = const Value.absent(),
     this.isDeleted = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.deletedBy = const Value.absent(),
@@ -5140,6 +5181,7 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     Expression<double>? labelRate,
     Expression<String>? labelRateUnit,
     Expression<bool>? isTestProduct,
+    Expression<String>? pesticideCategory,
     Expression<bool>? isDeleted,
     Expression<DateTime>? deletedAt,
     Expression<String>? deletedBy,
@@ -5170,6 +5212,7 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       if (labelRate != null) 'label_rate': labelRate,
       if (labelRateUnit != null) 'label_rate_unit': labelRateUnit,
       if (isTestProduct != null) 'is_test_product': isTestProduct,
+      if (pesticideCategory != null) 'pesticide_category': pesticideCategory,
       if (isDeleted != null) 'is_deleted': isDeleted,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (deletedBy != null) 'deleted_by': deletedBy,
@@ -5200,6 +5243,7 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       Value<double?>? labelRate,
       Value<String?>? labelRateUnit,
       Value<bool>? isTestProduct,
+      Value<String?>? pesticideCategory,
       Value<bool>? isDeleted,
       Value<DateTime?>? deletedAt,
       Value<String?>? deletedBy,
@@ -5226,6 +5270,7 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
       labelRate: labelRate ?? this.labelRate,
       labelRateUnit: labelRateUnit ?? this.labelRateUnit,
       isTestProduct: isTestProduct ?? this.isTestProduct,
+      pesticideCategory: pesticideCategory ?? this.pesticideCategory,
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
@@ -5300,6 +5345,9 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
     if (isTestProduct.present) {
       map['is_test_product'] = Variable<bool>(isTestProduct.value);
     }
+    if (pesticideCategory.present) {
+      map['pesticide_category'] = Variable<String>(pesticideCategory.value);
+    }
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
     }
@@ -5341,6 +5389,7 @@ class TreatmentComponentsCompanion extends UpdateCompanion<TreatmentComponent> {
           ..write('labelRate: $labelRate, ')
           ..write('labelRateUnit: $labelRateUnit, ')
           ..write('isTestProduct: $isTestProduct, ')
+          ..write('pesticideCategory: $pesticideCategory, ')
           ..write('isDeleted: $isDeleted, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('deletedBy: $deletedBy, ')
@@ -22050,6 +22099,13 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
   late final GeneratedColumn<DateTime> locationCapturedAt =
       GeneratedColumn<DateTime>('location_captured_at', aliasedName, true,
           type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _growthStageBbchAtApplicationMeta =
+      const VerificationMeta('growthStageBbchAtApplication');
+  @override
+  late final GeneratedColumn<int> growthStageBbchAtApplication =
+      GeneratedColumn<int>(
+          'growth_stage_bbch_at_application', aliasedName, true,
+          type: DriftSqlType.int, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -22107,7 +22163,8 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
         totalAreaSprayedHa,
         capturedLatitude,
         capturedLongitude,
-        locationCapturedAt
+        locationCapturedAt,
+        growthStageBbchAtApplication
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -22431,6 +22488,13 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
           locationCapturedAt.isAcceptableOrUnknown(
               data['location_captured_at']!, _locationCapturedAtMeta));
     }
+    if (data.containsKey('growth_stage_bbch_at_application')) {
+      context.handle(
+          _growthStageBbchAtApplicationMeta,
+          growthStageBbchAtApplication.isAcceptableOrUnknown(
+              data['growth_stage_bbch_at_application']!,
+              _growthStageBbchAtApplicationMeta));
+    }
     return context;
   }
 
@@ -22554,6 +22618,9 @@ class $TrialApplicationEventsTable extends TrialApplicationEvents
       locationCapturedAt: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime,
           data['${effectivePrefix}location_captured_at']),
+      growthStageBbchAtApplication: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}growth_stage_bbch_at_application']),
     );
   }
 
@@ -22625,6 +22692,9 @@ class TrialApplicationEvent extends DataClass
   final double? capturedLatitude;
   final double? capturedLongitude;
   final DateTime? locationCapturedAt;
+
+  /// Structured BBCH integer at application time. Coexists with [growthStageCode].
+  final int? growthStageBbchAtApplication;
   const TrialApplicationEvent(
       {required this.id,
       required this.trialId,
@@ -22681,7 +22751,8 @@ class TrialApplicationEvent extends DataClass
       this.totalAreaSprayedHa,
       this.capturedLatitude,
       this.capturedLongitude,
-      this.locationCapturedAt});
+      this.locationCapturedAt,
+      this.growthStageBbchAtApplication});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -22843,6 +22914,10 @@ class TrialApplicationEvent extends DataClass
     if (!nullToAbsent || locationCapturedAt != null) {
       map['location_captured_at'] = Variable<DateTime>(locationCapturedAt);
     }
+    if (!nullToAbsent || growthStageBbchAtApplication != null) {
+      map['growth_stage_bbch_at_application'] =
+          Variable<int>(growthStageBbchAtApplication);
+    }
     return map;
   }
 
@@ -23003,6 +23078,10 @@ class TrialApplicationEvent extends DataClass
       locationCapturedAt: locationCapturedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(locationCapturedAt),
+      growthStageBbchAtApplication:
+          growthStageBbchAtApplication == null && nullToAbsent
+              ? const Value.absent()
+              : Value(growthStageBbchAtApplication),
     );
   }
 
@@ -23073,6 +23152,8 @@ class TrialApplicationEvent extends DataClass
           serializer.fromJson<double?>(json['capturedLongitude']),
       locationCapturedAt:
           serializer.fromJson<DateTime?>(json['locationCapturedAt']),
+      growthStageBbchAtApplication:
+          serializer.fromJson<int?>(json['growthStageBbchAtApplication']),
     );
   }
   @override
@@ -23136,6 +23217,8 @@ class TrialApplicationEvent extends DataClass
       'capturedLatitude': serializer.toJson<double?>(capturedLatitude),
       'capturedLongitude': serializer.toJson<double?>(capturedLongitude),
       'locationCapturedAt': serializer.toJson<DateTime?>(locationCapturedAt),
+      'growthStageBbchAtApplication':
+          serializer.toJson<int?>(growthStageBbchAtApplication),
     };
   }
 
@@ -23195,7 +23278,8 @@ class TrialApplicationEvent extends DataClass
           Value<double?> totalAreaSprayedHa = const Value.absent(),
           Value<double?> capturedLatitude = const Value.absent(),
           Value<double?> capturedLongitude = const Value.absent(),
-          Value<DateTime?> locationCapturedAt = const Value.absent()}) =>
+          Value<DateTime?> locationCapturedAt = const Value.absent(),
+          Value<int?> growthStageBbchAtApplication = const Value.absent()}) =>
       TrialApplicationEvent(
         id: id ?? this.id,
         trialId: trialId ?? this.trialId,
@@ -23303,6 +23387,9 @@ class TrialApplicationEvent extends DataClass
         locationCapturedAt: locationCapturedAt.present
             ? locationCapturedAt.value
             : this.locationCapturedAt,
+        growthStageBbchAtApplication: growthStageBbchAtApplication.present
+            ? growthStageBbchAtApplication.value
+            : this.growthStageBbchAtApplication,
       );
   TrialApplicationEvent copyWithCompanion(
       TrialApplicationEventsCompanion data) {
@@ -23438,6 +23525,9 @@ class TrialApplicationEvent extends DataClass
       locationCapturedAt: data.locationCapturedAt.present
           ? data.locationCapturedAt.value
           : this.locationCapturedAt,
+      growthStageBbchAtApplication: data.growthStageBbchAtApplication.present
+          ? data.growthStageBbchAtApplication.value
+          : this.growthStageBbchAtApplication,
     );
   }
 
@@ -23499,7 +23589,8 @@ class TrialApplicationEvent extends DataClass
           ..write('totalAreaSprayedHa: $totalAreaSprayedHa, ')
           ..write('capturedLatitude: $capturedLatitude, ')
           ..write('capturedLongitude: $capturedLongitude, ')
-          ..write('locationCapturedAt: $locationCapturedAt')
+          ..write('locationCapturedAt: $locationCapturedAt, ')
+          ..write('growthStageBbchAtApplication: $growthStageBbchAtApplication')
           ..write(')'))
         .toString();
   }
@@ -23561,7 +23652,8 @@ class TrialApplicationEvent extends DataClass
         totalAreaSprayedHa,
         capturedLatitude,
         capturedLongitude,
-        locationCapturedAt
+        locationCapturedAt,
+        growthStageBbchAtApplication
       ]);
   @override
   bool operator ==(Object other) =>
@@ -23622,7 +23714,9 @@ class TrialApplicationEvent extends DataClass
           other.totalAreaSprayedHa == this.totalAreaSprayedHa &&
           other.capturedLatitude == this.capturedLatitude &&
           other.capturedLongitude == this.capturedLongitude &&
-          other.locationCapturedAt == this.locationCapturedAt);
+          other.locationCapturedAt == this.locationCapturedAt &&
+          other.growthStageBbchAtApplication ==
+              this.growthStageBbchAtApplication);
 }
 
 class TrialApplicationEventsCompanion
@@ -23683,6 +23777,7 @@ class TrialApplicationEventsCompanion
   final Value<double?> capturedLatitude;
   final Value<double?> capturedLongitude;
   final Value<DateTime?> locationCapturedAt;
+  final Value<int?> growthStageBbchAtApplication;
   final Value<int> rowid;
   const TrialApplicationEventsCompanion({
     this.id = const Value.absent(),
@@ -23741,6 +23836,7 @@ class TrialApplicationEventsCompanion
     this.capturedLatitude = const Value.absent(),
     this.capturedLongitude = const Value.absent(),
     this.locationCapturedAt = const Value.absent(),
+    this.growthStageBbchAtApplication = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TrialApplicationEventsCompanion.insert({
@@ -23800,6 +23896,7 @@ class TrialApplicationEventsCompanion
     this.capturedLatitude = const Value.absent(),
     this.capturedLongitude = const Value.absent(),
     this.locationCapturedAt = const Value.absent(),
+    this.growthStageBbchAtApplication = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : trialId = Value(trialId),
         applicationDate = Value(applicationDate);
@@ -23860,6 +23957,7 @@ class TrialApplicationEventsCompanion
     Expression<double>? capturedLatitude,
     Expression<double>? capturedLongitude,
     Expression<DateTime>? locationCapturedAt,
+    Expression<int>? growthStageBbchAtApplication,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -23923,6 +24021,8 @@ class TrialApplicationEventsCompanion
       if (capturedLongitude != null) 'captured_longitude': capturedLongitude,
       if (locationCapturedAt != null)
         'location_captured_at': locationCapturedAt,
+      if (growthStageBbchAtApplication != null)
+        'growth_stage_bbch_at_application': growthStageBbchAtApplication,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -23984,6 +24084,7 @@ class TrialApplicationEventsCompanion
       Value<double?>? capturedLatitude,
       Value<double?>? capturedLongitude,
       Value<DateTime?>? locationCapturedAt,
+      Value<int?>? growthStageBbchAtApplication,
       Value<int>? rowid}) {
     return TrialApplicationEventsCompanion(
       id: id ?? this.id,
@@ -24042,6 +24143,8 @@ class TrialApplicationEventsCompanion
       capturedLatitude: capturedLatitude ?? this.capturedLatitude,
       capturedLongitude: capturedLongitude ?? this.capturedLongitude,
       locationCapturedAt: locationCapturedAt ?? this.locationCapturedAt,
+      growthStageBbchAtApplication:
+          growthStageBbchAtApplication ?? this.growthStageBbchAtApplication,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -24219,6 +24322,10 @@ class TrialApplicationEventsCompanion
       map['location_captured_at'] =
           Variable<DateTime>(locationCapturedAt.value);
     }
+    if (growthStageBbchAtApplication.present) {
+      map['growth_stage_bbch_at_application'] =
+          Variable<int>(growthStageBbchAtApplication.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -24284,6 +24391,8 @@ class TrialApplicationEventsCompanion
           ..write('capturedLatitude: $capturedLatitude, ')
           ..write('capturedLongitude: $capturedLongitude, ')
           ..write('locationCapturedAt: $locationCapturedAt, ')
+          ..write(
+              'growthStageBbchAtApplication: $growthStageBbchAtApplication, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -47344,6 +47453,7 @@ typedef $$TreatmentComponentsTableCreateCompanionBuilder
   Value<double?> labelRate,
   Value<String?> labelRateUnit,
   Value<bool> isTestProduct,
+  Value<String?> pesticideCategory,
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
@@ -47372,6 +47482,7 @@ typedef $$TreatmentComponentsTableUpdateCompanionBuilder
   Value<double?> labelRate,
   Value<String?> labelRateUnit,
   Value<bool> isTestProduct,
+  Value<String?> pesticideCategory,
   Value<bool> isDeleted,
   Value<DateTime?> deletedAt,
   Value<String?> deletedBy,
@@ -47417,6 +47528,7 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             Value<double?> labelRate = const Value.absent(),
             Value<String?> labelRateUnit = const Value.absent(),
             Value<bool> isTestProduct = const Value.absent(),
+            Value<String?> pesticideCategory = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
@@ -47444,6 +47556,7 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             labelRate: labelRate,
             labelRateUnit: labelRateUnit,
             isTestProduct: isTestProduct,
+            pesticideCategory: pesticideCategory,
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
@@ -47471,6 +47584,7 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             Value<double?> labelRate = const Value.absent(),
             Value<String?> labelRateUnit = const Value.absent(),
             Value<bool> isTestProduct = const Value.absent(),
+            Value<String?> pesticideCategory = const Value.absent(),
             Value<bool> isDeleted = const Value.absent(),
             Value<DateTime?> deletedAt = const Value.absent(),
             Value<String?> deletedBy = const Value.absent(),
@@ -47498,6 +47612,7 @@ class $$TreatmentComponentsTableTableManager extends RootTableManager<
             labelRate: labelRate,
             labelRateUnit: labelRateUnit,
             isTestProduct: isTestProduct,
+            pesticideCategory: pesticideCategory,
             isDeleted: isDeleted,
             deletedAt: deletedAt,
             deletedBy: deletedBy,
@@ -47597,6 +47712,11 @@ class $$TreatmentComponentsTableFilterComposer
 
   ColumnFilters<bool> get isTestProduct => $state.composableBuilder(
       column: $state.table.isTestProduct,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get pesticideCategory => $state.composableBuilder(
+      column: $state.table.pesticideCategory,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -47747,6 +47867,11 @@ class $$TreatmentComponentsTableOrderingComposer
 
   ColumnOrderings<bool> get isTestProduct => $state.composableBuilder(
       column: $state.table.isTestProduct,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get pesticideCategory => $state.composableBuilder(
+      column: $state.table.pesticideCategory,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -55532,6 +55657,7 @@ typedef $$TrialApplicationEventsTableCreateCompanionBuilder
   Value<double?> capturedLatitude,
   Value<double?> capturedLongitude,
   Value<DateTime?> locationCapturedAt,
+  Value<int?> growthStageBbchAtApplication,
   Value<int> rowid,
 });
 typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
@@ -55592,6 +55718,7 @@ typedef $$TrialApplicationEventsTableUpdateCompanionBuilder
   Value<double?> capturedLatitude,
   Value<double?> capturedLongitude,
   Value<DateTime?> locationCapturedAt,
+  Value<int?> growthStageBbchAtApplication,
   Value<int> rowid,
 });
 
@@ -55669,6 +55796,7 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<double?> capturedLatitude = const Value.absent(),
             Value<double?> capturedLongitude = const Value.absent(),
             Value<DateTime?> locationCapturedAt = const Value.absent(),
+            Value<int?> growthStageBbchAtApplication = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TrialApplicationEventsCompanion(
@@ -55728,6 +55856,7 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             capturedLatitude: capturedLatitude,
             capturedLongitude: capturedLongitude,
             locationCapturedAt: locationCapturedAt,
+            growthStageBbchAtApplication: growthStageBbchAtApplication,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -55787,6 +55916,7 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             Value<double?> capturedLatitude = const Value.absent(),
             Value<double?> capturedLongitude = const Value.absent(),
             Value<DateTime?> locationCapturedAt = const Value.absent(),
+            Value<int?> growthStageBbchAtApplication = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               TrialApplicationEventsCompanion.insert(
@@ -55846,6 +55976,7 @@ class $$TrialApplicationEventsTableTableManager extends RootTableManager<
             capturedLatitude: capturedLatitude,
             capturedLongitude: capturedLongitude,
             locationCapturedAt: locationCapturedAt,
+            growthStageBbchAtApplication: growthStageBbchAtApplication,
             rowid: rowid,
           ),
         ));
@@ -56118,6 +56249,12 @@ class $$TrialApplicationEventsTableFilterComposer
       column: $state.table.locationCapturedAt,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get growthStageBbchAtApplication =>
+      $state.composableBuilder(
+          column: $state.table.growthStageBbchAtApplication,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
 
   $$TrialsTableFilterComposer get trialId {
     final $$TrialsTableFilterComposer composer = $state.composerBuilder(
@@ -56475,6 +56612,12 @@ class $$TrialApplicationEventsTableOrderingComposer
       column: $state.table.locationCapturedAt,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get growthStageBbchAtApplication => $state
+      .composableBuilder(
+          column: $state.table.growthStageBbchAtApplication,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
 
   $$TrialsTableOrderingComposer get trialId {
     final $$TrialsTableOrderingComposer composer = $state.composerBuilder(

@@ -226,9 +226,15 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     int index,
   ) {
     final isPending = e.status == 'pending';
-    final label = e.growthStageCode?.trim().isNotEmpty == true
-        ? e.growthStageCode!.trim()
-        : 'Application ${index + 1}';
+    final hasStageCode = e.growthStageCode?.trim().isNotEmpty == true;
+    final hasBbch = e.growthStageBbchAtApplication != null;
+    final label = hasStageCode
+        ? (hasBbch
+            ? '${e.growthStageCode!.trim()} (BBCH ${e.growthStageBbchAtApplication})'
+            : e.growthStageCode!.trim())
+        : (hasBbch
+            ? 'BBCH ${e.growthStageBbchAtApplication}'
+            : 'Application ${index + 1}');
     final plannedDateStr = DateFormat('MMM d, yyyy').format(e.applicationDate);
     final productsAsync =
         ref.watch(trialApplicationProductsForEventProvider(e.id));

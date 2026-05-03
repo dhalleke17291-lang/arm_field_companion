@@ -206,6 +206,9 @@ class TreatmentComponents extends Table {
   BoolColumn get isTestProduct =>
       boolean().withDefault(const Constant(false))();
 
+  /// Structured treatment category (herbicide, fungicide, insecticide, biological, variety, fertiliser, other).
+  TextColumn get pesticideCategory => text().nullable()();
+
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   DateTimeColumn get deletedAt => dateTime().nullable()();
   TextColumn get deletedBy => text().nullable()();
@@ -766,6 +769,9 @@ class TrialApplicationEvents extends Table {
   RealColumn get capturedLatitude => real().nullable()();
   RealColumn get capturedLongitude => real().nullable()();
   DateTimeColumn get locationCapturedAt => dateTime().nullable()();
+
+  /// Structured BBCH integer at application time. Coexists with [growthStageCode].
+  IntColumn get growthStageBbchAtApplication => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -1653,7 +1659,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 78;
+  int get schemaVersion => 79;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -3226,6 +3232,32 @@ END
             }
             if (!trialColNames.contains('field_anchor_type')) {
               await m.addColumn(trials, trials.fieldAnchorType);
+            }
+          }
+
+          if (from < 79) {
+            final taeColsRaw = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_application_events')",
+            ).get();
+            final taeCols =
+                taeColsRaw.map((r) => r.read<String>('name')).toSet();
+            if (!taeCols.contains('growth_stage_bbch_at_application')) {
+              await m.addColumn(
+                trialApplicationEvents,
+                trialApplicationEvents.growthStageBbchAtApplication,
+              );
+            }
+
+            final tcColsRaw = await customSelect(
+              "SELECT name FROM pragma_table_info('treatment_components')",
+            ).get();
+            final tcCols =
+                tcColsRaw.map((r) => r.read<String>('name')).toSet();
+            if (!tcCols.contains('pesticide_category')) {
+              await m.addColumn(
+                treatmentComponents,
+                treatmentComponents.pesticideCategory,
+              );
             }
           }
 

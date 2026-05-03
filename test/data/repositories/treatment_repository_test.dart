@@ -491,4 +491,58 @@ void main() {
       expect(rateChange['new'], 200.0);
     });
   });
+
+  // ─── pesticideCategory ─────────────────────────────────────────────────────
+
+  group('pesticideCategory', () {
+    test('11 — insertComponent saves pesticideCategory when provided', () async {
+      final trialId = await createTrial();
+      final trtId = await repo.insertTreatment(
+          trialId: trialId, code: '1', name: 'T1');
+      final compId = await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'Roundup',
+        pesticideCategory: 'herbicide',
+      );
+      final comps = await repo.getComponentsForTreatment(trtId);
+      expect(comps.length, 1);
+      expect(comps[0].id, compId);
+      expect(comps[0].pesticideCategory, 'herbicide');
+    });
+
+    test('12 — insertComponent saves null pesticideCategory when absent', () async {
+      final trialId = await createTrial();
+      final trtId = await repo.insertTreatment(
+          trialId: trialId, code: '1', name: 'T1');
+      final compId = await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'ProductX',
+      );
+      final comps = await repo.getComponentsForTreatment(trtId);
+      expect(comps.length, 1);
+      expect(comps[0].id, compId);
+      expect(comps[0].pesticideCategory, isNull);
+    });
+
+    test('13 — updateComponent saves pesticideCategory correctly', () async {
+      final trialId = await createTrial();
+      final trtId = await repo.insertTreatment(
+          trialId: trialId, code: '1', name: 'T1');
+      final compId = await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'ProductY',
+      );
+      await repo.updateComponent(
+        compId,
+        pesticideCategory: 'fungicide',
+        performedBy: 'tester',
+      );
+      final comps = await repo.getComponentsForTreatment(trtId);
+      expect(comps.length, 1);
+      expect(comps[0].pesticideCategory, 'fungicide');
+    });
+  });
 }
