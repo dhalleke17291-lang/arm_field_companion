@@ -409,61 +409,30 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
     );
   }
 
-  Future<void> _closeSession({bool force = false}) async {
-    // Weather soft prompt — ask before closing if no weather recorded
-    if (!force) {
-      final weatherRepo = ref.read(weatherSnapshotRepositoryProvider);
-      final snap = await weatherRepo.getWeatherSnapshotForParent(
-        kWeatherParentTypeRatingSession,
-        widget.session.id,
-      );
-      if (snap == null && mounted) {
-        final addWeather = await showDialog<bool>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Add weather conditions?'),
-            content: const Text(
-              'No weather recorded for this session. Adding weather '
-              'improves your evidence report score.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Skip'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Add Weather'),
-              ),
-            ],
-          ),
-        );
-        if (addWeather == true && mounted) {
-          await showWeatherCaptureBottomSheet(
-            context,
-            trial: widget.trial,
-            session: widget.session,
-          );
-        }
-        if (!mounted) return;
-      }
+  Future<void> _closeSession() async {
+    // Weather fetch needed for the diagnostic's weatherCaptured indicator.
+    final weatherRepo = ref.read(weatherSnapshotRepositoryProvider);
+    final snap = await weatherRepo.getWeatherSnapshotForParent(
+      kWeatherParentTypeRatingSession,
+      widget.session.id,
+    );
+    if (!mounted) return;
 
-      // Crop injury prompt — ask before closing if not yet recorded
-      final liveSession =
-          ref.read(sessionByIdProvider(widget.session.id)).valueOrNull ??
-              widget.session;
-      if (liveSession.cropInjuryStatus == null && mounted) {
-        final result = await _showCropInjuryPrompt();
-        if (result != null && mounted) {
-          await ref.read(sessionRepositoryProvider).updateSessionCropInjury(
-                widget.session.id,
-                status: result.status,
-                notes: result.notes,
-              );
-          ref.invalidate(sessionByIdProvider(widget.session.id));
-        }
-        if (!mounted) return;
+    // Crop injury prompt — ask before closing if not yet recorded.
+    final liveSession =
+        ref.read(sessionByIdProvider(widget.session.id)).valueOrNull ??
+            widget.session;
+    if (liveSession.cropInjuryStatus == null && mounted) {
+      final result = await _showCropInjuryPrompt();
+      if (result != null && mounted) {
+        await ref.read(sessionRepositoryProvider).updateSessionCropInjury(
+              widget.session.id,
+              status: result.status,
+              notes: result.notes,
+            );
+        ref.invalidate(sessionByIdProvider(widget.session.id));
       }
+      if (!mounted) return;
     }
 
     // Fire session-close writers before surfacing the diagnostic.
@@ -474,7 +443,14 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
       sessionId: widget.session.id,
     );
 
-    // Diagnostic step — surfaces open signals before close.
+    // Evaluate policy before showing the sheet — awaited so the sheet
+    // has complete information from the first frame.
+    if (!mounted) return;
+    final policyResult = await ref
+        .read(evaluateSessionClosePolicyUseCaseProvider)
+        .execute(sessionId: widget.session.id, trialId: widget.trial.id);
+
+    // Diagnostic step — surfaces evidence completeness and open signals.
     if (!mounted) return;
     var proceedAfterDiagnostic = false;
     await showModalBottomSheet<void>(
@@ -483,6 +459,10 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
       builder: (ctx) => SessionCloseDiagnostic(
         sessionId: widget.session.id,
         trialId: widget.trial.id,
+        session: widget.session,
+        attentionSummary: policyResult.attentionSummary,
+        weatherCaptured: snap != null,
+        policyDecision: policyResult.decision,
         onAllClear: () {
           proceedAfterDiagnostic = true;
           Navigator.of(ctx).pop();
@@ -490,6 +470,15 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         onProceedAnyway: () {
           proceedAfterDiagnostic = true;
           Navigator.of(ctx).pop();
+        },
+        onWeatherCapture: () async {
+          Navigator.of(ctx).pop();
+          await showWeatherCaptureBottomSheet(
+            context,
+            trial: widget.trial,
+            session: widget.session,
+          );
+          if (mounted) _closeSession();
         },
       ),
     );
@@ -504,7 +493,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         trialId: widget.trial.id,
         raterName: widget.session.raterName,
         closedByUserId: userId,
-        forceClose: force,
+        forceClose: true,
       );
       if (!mounted) return;
       final scheme = Theme.of(context).colorScheme;
@@ -524,12 +513,6 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         _checkBackupReminder();
         ref.read(autoBackupServiceProvider).performAutoBackup();
         _queueWeatherBackfillIfNeeded();
-      }
-      // If warnings blocked the close, offer force close
-      if (!result.success &&
-          result.errorMessage != null &&
-          result.errorMessage!.contains('warnings')) {
-        _showForceCloseDialog();
       }
     } finally {
       if (mounted) setState(() => _isClosing = false);
@@ -635,30 +618,6 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
     );
   }
 
-  void _showForceCloseDialog() {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Close anyway?'),
-        content: const Text(
-          'There are warnings but no blockers. Close the session anyway?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _closeSession(force: true);
-            },
-            child: const Text('Close Session'),
-          ),
-        ],
-      ),
-    );
-  }
 
   Future<void> _offerShareSummary() async {
     if (!mounted) return;

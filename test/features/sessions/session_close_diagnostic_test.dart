@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/domain/signals/signal_providers.dart';
 import 'package:arm_field_companion/domain/signals/signal_repository.dart';
+import 'package:arm_field_companion/features/sessions/domain/session_close_attention_summary.dart';
+import 'package:arm_field_companion/features/sessions/domain/session_close_policy_result.dart';
 import 'package:arm_field_companion/features/sessions/widgets/session_close_diagnostic.dart';
 
 // ---------------------------------------------------------------------------
@@ -35,11 +37,35 @@ Signal _signal({
   );
 }
 
+Session _makeSession({int? cropStageBbch}) => Session(
+      id: 1,
+      trialId: 1,
+      name: 'S1',
+      startedAt: DateTime(2026),
+      sessionDateLocal: '2026-05-01',
+      status: 'open',
+      isDeleted: false,
+      cropStageBbch: cropStageBbch,
+    );
+
 Widget _wrap({
   required List<Signal> signals,
   required VoidCallback onAllClear,
   required VoidCallback onProceedAnyway,
   int sessionId = 1,
+  Session? session,
+  SessionCloseAttentionSummary attentionSummary = const SessionCloseAttentionSummary(
+    totalPlots: 5,
+    ratedPlots: 5,
+    unratedPlots: 0,
+    flaggedPlots: 0,
+    issuesPlots: 0,
+    editedPlots: 0,
+  ),
+  bool weatherCaptured = true,
+  SessionClosePolicyDecision policyDecision =
+      SessionClosePolicyDecision.proceedToClose,
+  VoidCallback? onWeatherCapture,
 }) {
   return ProviderScope(
     overrides: [
@@ -52,8 +78,13 @@ Widget _wrap({
         body: SessionCloseDiagnostic(
           sessionId: sessionId,
           trialId: 1,
+          session: session ?? _makeSession(),
+          attentionSummary: attentionSummary,
+          weatherCaptured: weatherCaptured,
+          policyDecision: policyDecision,
           onAllClear: onAllClear,
           onProceedAnyway: onProceedAnyway,
+          onWeatherCapture: onWeatherCapture ?? () {},
         ),
       ),
     ),
@@ -312,6 +343,163 @@ void main() {
       // called so the decision events table stays empty.
       final events = await db.select(db.signalDecisionEvents).get();
       expect(events, isEmpty);
+    });
+
+    testWidgets(
+        '9 — explicit all-clear: no signals + unrated=0 + weather + proceedToClose → onAllClear',
+        (tester) async {
+      var allClearCalled = false;
+
+      await tester.pumpWidget(_wrap(
+        signals: [],
+        attentionSummary: const SessionCloseAttentionSummary(
+          totalPlots: 4,
+          ratedPlots: 4,
+          unratedPlots: 0,
+          flaggedPlots: 0,
+          issuesPlots: 0,
+          editedPlots: 0,
+        ),
+        weatherCaptured: true,
+        policyDecision: SessionClosePolicyDecision.proceedToClose,
+        onAllClear: () => allClearCalled = true,
+        onProceedAnyway: () {},
+      ));
+      await tester.pumpAndSettle();
+
+      expect(allClearCalled, isTrue);
+      expect(find.text('Before you leave'), findsNothing);
+    });
+
+    testWidgets(
+        '10 — unrated plots > 0 → sheet shown despite no signals',
+        (tester) async {
+      var allClearCalled = false;
+
+      await tester.pumpWidget(_wrap(
+        signals: [],
+        attentionSummary: const SessionCloseAttentionSummary(
+          totalPlots: 5,
+          ratedPlots: 3,
+          unratedPlots: 2,
+          flaggedPlots: 0,
+          issuesPlots: 0,
+          editedPlots: 0,
+        ),
+        onAllClear: () => allClearCalled = true,
+        onProceedAnyway: () {},
+      ));
+      await tester.pumpAndSettle();
+
+      expect(allClearCalled, isFalse);
+      expect(find.text('Before you leave'), findsOneWidget);
+      expect(find.text('2 plots unrated'), findsOneWidget);
+    });
+
+    testWidgets(
+        '11 — weather not captured → sheet shown, warning row visible',
+        (tester) async {
+      var allClearCalled = false;
+
+      await tester.pumpWidget(_wrap(
+        signals: [],
+        weatherCaptured: false,
+        onAllClear: () => allClearCalled = true,
+        onProceedAnyway: () {},
+      ));
+      await tester.pumpAndSettle();
+
+      expect(allClearCalled, isFalse);
+      expect(find.text('Before you leave'), findsOneWidget);
+      expect(
+        find.text('Weather not captured — add before closing'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        '12 — policyDecision == warnBeforeClose → sheet shown with warning panel',
+        (tester) async {
+      var allClearCalled = false;
+
+      await tester.pumpWidget(_wrap(
+        signals: [],
+        policyDecision: SessionClosePolicyDecision.warnBeforeClose,
+        onAllClear: () => allClearCalled = true,
+        onProceedAnyway: () {},
+      ));
+      await tester.pumpAndSettle();
+
+      expect(allClearCalled, isFalse);
+      expect(find.text('Before you leave'), findsOneWidget);
+      expect(
+        find.text('Some items need attention before closing.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        '13 — BBCH row: null → not recorded; non-null → recorded (stage N)',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        signals: [_signal(id: 1, severity: 'critical')],
+        session: _makeSession(cropStageBbch: null),
+        onAllClear: () {},
+        onProceedAnyway: () {},
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Growth stage (BBCH) not recorded'), findsOneWidget);
+
+      await tester.pumpWidget(_wrap(
+        signals: [_signal(id: 1, severity: 'critical')],
+        session: _makeSession(cropStageBbch: 65),
+        onAllClear: () {},
+        onProceedAnyway: () {},
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Growth stage recorded (BBCH 65)'), findsOneWidget);
+    });
+
+    testWidgets(
+        '14 — amended/flagged rows hidden at zero, shown when non-zero',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        signals: [_signal(id: 1, severity: 'critical')],
+        attentionSummary: const SessionCloseAttentionSummary(
+          totalPlots: 5,
+          ratedPlots: 5,
+          unratedPlots: 0,
+          flaggedPlots: 0,
+          issuesPlots: 0,
+          editedPlots: 0,
+        ),
+        onAllClear: () {},
+        onProceedAnyway: () {},
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('0 amended'), findsNothing);
+      expect(find.text('0 flagged'), findsNothing);
+
+      await tester.pumpWidget(_wrap(
+        signals: [_signal(id: 1, severity: 'critical')],
+        attentionSummary: const SessionCloseAttentionSummary(
+          totalPlots: 5,
+          ratedPlots: 5,
+          unratedPlots: 0,
+          flaggedPlots: 1,
+          issuesPlots: 0,
+          editedPlots: 2,
+        ),
+        onAllClear: () {},
+        onProceedAnyway: () {},
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 amended'), findsOneWidget);
+      expect(find.text('1 flagged'), findsOneWidget);
     });
   });
 }

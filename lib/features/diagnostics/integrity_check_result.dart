@@ -10,6 +10,7 @@ class IntegrityIssue {
   final int count;
   final String? detail;
   final IntegritySeverity severity;
+  final bool isRepairable;
 
   const IntegrityIssue({
     required this.code,
@@ -17,6 +18,7 @@ class IntegrityIssue {
     required this.count,
     this.detail,
     this.severity = IntegritySeverity.warning,
+    this.isRepairable = false,
   });
 }
 

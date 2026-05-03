@@ -62,7 +62,7 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 76);
+    expect(db.schemaVersion, 77);
 
     final names = await _tableNames(db);
     expect(names, contains(_kApplicationSlots));
@@ -192,6 +192,148 @@ void main() {
       expect(prefixes, containsAll({'CONTRO', 'PHYGEN'}));
       expect(profiles.length, 2, reason: 'INSERT OR IGNORE must not produce duplicate seed rows');
     });
+
+  group('v77 schema fixes: DROP converted_yield, COALESCE index, sync trigger', () {
+    /// Reverts a v77 DB back to a v76-like state so the migration can be re-run.
+    Future<void> simulateV76(AppDatabase db) async {
+      await db.customStatement(
+          'ALTER TABLE yield_details ADD COLUMN converted_yield REAL');
+      await db.customStatement('DROP INDEX IF EXISTS idx_rating_current');
+      await db.customStatement(
+          'CREATE UNIQUE INDEX idx_rating_current ON rating_records'
+          '(trial_id, plot_pk, assessment_id, session_id, sub_unit_id)'
+          ' WHERE is_current = 1');
+      await db.customStatement('DROP TRIGGER IF EXISTS sync_signal_status');
+    }
+
+    test(
+      'onUpgrade v76 → v77: converted_yield absent, COALESCE index present, '
+      'trigger fires on signal_decision_events insert',
+      () async {
+        final dbFile = File(p.join(docsPath, 'v77_upgrade.db'));
+
+        // Fresh install at v77 — then revert schema to simulate a v76 device.
+        var db =
+            AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+        await _tableNames(db);
+        await simulateV76(db);
+        await db.close();
+        _setUserVersion(dbFile.path, 76);
+
+        // Reopen: Drift sees user_version 76, runs onUpgrade(m, 76, 77).
+        db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+        addTearDown(db.close);
+
+        // ── (a) converted_yield must be absent ──────────────────────────────
+        final cols = await db
+            .customSelect(
+                "SELECT name FROM pragma_table_info('yield_details')")
+            .get();
+        expect(cols.map((r) => r.read<String>('name')),
+            isNot(contains('converted_yield')));
+
+        // ── (b) idx_rating_current must use the COALESCE expression ────────
+        final idxRow = await db
+            .customSelect(
+                "SELECT sql FROM sqlite_master WHERE type='index' AND name='idx_rating_current'")
+            .getSingleOrNull();
+        final idxSql = idxRow?.read<String>('sql') ?? '';
+        expect(idxSql, contains('COALESCE'),
+            reason: 'index must use COALESCE(sub_unit_id, -1)');
+        expect(idxSql, isNot(contains(', sub_unit_id)')),
+            reason: 'bare sub_unit_id form must be replaced');
+
+        // ── (c) sync_signal_status trigger must exist and fire ──────────────
+        final trigRow = await db
+            .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='trigger' AND name='sync_signal_status'")
+            .getSingleOrNull();
+        expect(trigRow, isNotNull,
+            reason: 'sync_signal_status trigger must be created by v77 migration');
+
+        // Insert the minimal rows needed to exercise the trigger.
+        await db.customStatement(
+            "INSERT INTO trials (name, workspace_type, region) "
+            "VALUES ('v77 trigger test', 'efficacy', 'eppo_eu')");
+        final trialId = (await db
+                .customSelect('SELECT last_insert_rowid() AS id')
+                .get())
+            .first
+            .read<int>('id');
+
+        final now = DateTime.now().millisecondsSinceEpoch;
+        await db.customStatement(
+            'INSERT INTO signals (trial_id, signal_type, moment, severity, '
+            'raised_at, reference_context, consequence_text, created_at) '
+            "VALUES ($trialId, 'scale_violation', 1, 'review', $now, '{}', 'test', $now)");
+        final sigId = (await db
+                .customSelect('SELECT last_insert_rowid() AS id')
+                .get())
+            .first
+            .read<int>('id');
+
+        // Insert directly — bypasses SignalRepository.recordDecisionEvent()
+        // to confirm the trigger (not app code) updates signals.status.
+        await db.customStatement(
+            'INSERT INTO signal_decision_events '
+            '(signal_id, event_type, occurred_at, resulting_status, created_at) '
+            "VALUES ($sigId, 'expire', $now, 'expired', $now)");
+
+        final sigRow = await db
+            .customSelect('SELECT status FROM signals WHERE id = $sigId')
+            .getSingleOrNull();
+        expect(sigRow?.read<String>('status'), 'expired',
+            reason: 'trigger must update signals.status to resulting_status');
+      },
+    );
+
+    test(
+      'v77 migration is idempotent — applying twice produces identical schema',
+      () async {
+        final dbFile = File(p.join(docsPath, 'v77_idempotent.db'));
+
+        Future<void> assertV77State(AppDatabase db) async {
+          final cols = await db
+              .customSelect(
+                  "SELECT name FROM pragma_table_info('yield_details')")
+              .get();
+          expect(cols.map((r) => r.read<String>('name')),
+              isNot(contains('converted_yield')));
+
+          final idxRow = await db
+              .customSelect(
+                  "SELECT sql FROM sqlite_master WHERE type='index' AND name='idx_rating_current'")
+              .getSingleOrNull();
+          expect(idxRow?.read<String>('sql') ?? '', contains('COALESCE'));
+
+          final trigRow = await db
+              .customSelect(
+                  "SELECT name FROM sqlite_master WHERE type='trigger' AND name='sync_signal_status'")
+              .getSingleOrNull();
+          expect(trigRow, isNotNull);
+        }
+
+        // ── First migration run ─────────────────────────────────────────────
+        var db =
+            AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+        await _tableNames(db);
+        await simulateV76(db);
+        await db.close();
+        _setUserVersion(dbFile.path, 76);
+
+        db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+        await assertV77State(db); // first run: correct
+        await simulateV76(db);    // reset to v76 for second run
+        await db.close();
+        _setUserVersion(dbFile.path, 76);
+
+        // ── Second migration run ────────────────────────────────────────────
+        db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+        addTearDown(db.close);
+        await assertV77State(db); // second run: identical outcome, no errors
+      },
+    );
+  });
 
   group('v75 data-repair migration: trials.status advance', () {
     test(

@@ -261,18 +261,19 @@ void main() {
     });
 
     test('counts GPS, confidence, and timestamp coverage', () async {
-      final p = await plot('101', rep: 1);
+      final p1 = await plot('101', rep: 1);
+      final p2 = await plot('102', rep: 1);
       final a = await assessment('A');
       final s = await session('S1');
       // First rating: full provenance
-      await rating(p, a, s,
+      await rating(p1, a, s,
           value: 80,
           lat: 51.0,
           lng: -1.0,
           confidence: 'certain',
           ratingTime: '09:30');
-      // Second rating: no provenance
-      await rating(p, a, s, value: 75);
+      // Second rating: no provenance (different plot → different unique key)
+      await rating(p2, a, s, value: 75);
 
       final data = await svc.assembleForTrial(trial);
       expect(data.integrity.ratingsWithGps, 1);

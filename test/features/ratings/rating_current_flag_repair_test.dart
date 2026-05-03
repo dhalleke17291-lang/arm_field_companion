@@ -1,10 +1,11 @@
 // Tests for RatingRepository.repairCurrentFlagsForExport and the export-gate
 // repair that runs inside ExportRepository before every export read.
 //
-// Both tests insert duplicate is_current=true rows for the same logical key
-// directly into the DB (bypassing the normal save path which enforces
-// uniqueness) to simulate flag drift that can accumulate from interrupted
-// writes.
+// Two tests insert duplicate is_current=true rows for the same logical key to
+// simulate flag drift that could exist on databases upgraded from pre-v77
+// schemas. The v77 COALESCE unique index prevents this via normal INSERT, so
+// the setup temporarily replaces it with the old null-hole form to allow the
+// corrupt state to be constructed.
 
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/diagnostics/diagnostic_finding.dart';
@@ -64,6 +65,17 @@ Future<int> _insertRating(
       );
 }
 
+/// Replaces the v77 COALESCE unique index with the legacy null-hole form so
+/// that duplicate is_current=true rows can be inserted for the same key.
+/// Used only in tests that need to simulate pre-v77 flag drift.
+Future<void> _useNullHoleIndex(AppDatabase db) async {
+  await db.customStatement('DROP INDEX IF EXISTS idx_rating_current');
+  await db.customStatement(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_rating_current ON rating_records'
+      '(trial_id, plot_pk, assessment_id, session_id, sub_unit_id)'
+      ' WHERE is_current = 1');
+}
+
 void main() {
   late AppDatabase db;
 
@@ -80,6 +92,7 @@ void main() {
       'returns a DiagnosticFinding when duplicate is_current flags are corrected',
       () async {
         final fix = await _insertFixture(db);
+        await _useNullHoleIndex(db);
 
         // Two is_current=true rows for the same logical key — simulates drift.
         await _insertRating(db,
@@ -124,6 +137,7 @@ void main() {
       'export contains exactly one row per group after is_current flag repair',
       () async {
         final fix = await _insertFixture(db);
+        await _useNullHoleIndex(db);
 
         // Two is_current=true rows for the same logical key.
         await _insertRating(db,

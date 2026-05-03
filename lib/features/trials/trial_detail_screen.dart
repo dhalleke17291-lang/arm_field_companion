@@ -59,6 +59,8 @@ import '../../domain/relationships/protocol_divergence_provider.dart';
 import '../../domain/relationships/evidence_anchors_provider.dart';
 import '../sessions/session_close_signal_writers.dart';
 import '../sessions/widgets/session_close_diagnostic.dart';
+import '../weather/weather_capture_form.dart';
+import '../../data/repositories/weather_snapshot_repository.dart';
 
 /// Key for persisting that the trial module hub one-time scroll hint was seen or dismissed.
 const String _kTrialHubHintDismissedKey = 'trial_module_hub_hint_dismissed';
@@ -4472,8 +4474,14 @@ class SessionsView extends ConsumerWidget {
 
     if (!context.mounted) return;
 
-    // Show signal diagnostic before final close. onAllClear / "Close session"
-    // both proceed; "Review plots" cancels close.
+    final snap = await ref
+        .read(weatherSnapshotRepositoryProvider)
+        .getWeatherSnapshotForParent(kWeatherParentTypeRatingSession, session.id);
+
+    if (!context.mounted) return;
+
+    // Show evidence completeness + signal diagnostic before final close.
+    // onAllClear / "Close session" both proceed; "Review plots" cancels.
     var proceedAfterDiagnostic = false;
     await showModalBottomSheet<void>(
       context: context,
@@ -4481,6 +4489,10 @@ class SessionsView extends ConsumerWidget {
       builder: (ctx) => SessionCloseDiagnostic(
         sessionId: session.id,
         trialId: trial.id,
+        session: session,
+        attentionSummary: policy.attentionSummary,
+        weatherCaptured: snap != null,
+        policyDecision: policy.decision,
         onAllClear: () {
           proceedAfterDiagnostic = true;
           Navigator.of(ctx).pop();
@@ -4488,6 +4500,15 @@ class SessionsView extends ConsumerWidget {
         onProceedAnyway: () {
           proceedAfterDiagnostic = true;
           Navigator.of(ctx).pop();
+        },
+        onWeatherCapture: () async {
+          Navigator.of(ctx).pop();
+          await showWeatherCaptureBottomSheet(
+            context,
+            trial: trial,
+            session: session,
+          );
+          if (context.mounted) _confirmCloseSession(context, ref, session);
         },
       ),
     );
