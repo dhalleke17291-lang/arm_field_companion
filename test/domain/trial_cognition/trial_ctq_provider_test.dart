@@ -2,46 +2,11 @@ import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/data/repositories/ctq_factor_definition_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_purpose_repository.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_ctq_dto.dart';
+import 'package:arm_field_companion/domain/trial_cognition/trial_ctq_evaluator.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
+import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-// Mirrors _computeTrialCtqDto from providers.dart.
-TrialCtqDto computeCtqDto(int trialId, List<CtqFactorDefinition> factors) {
-  if (factors.isEmpty) {
-    return TrialCtqDto(
-      trialId: trialId,
-      ctqItems: const [],
-      blockerCount: 0,
-      warningCount: 0,
-      reviewCount: 0,
-      satisfiedCount: 0,
-      overallStatus: 'unknown',
-    );
-  }
-  final items = factors
-      .map(
-        (f) => TrialCtqItemDto(
-          factorKey: f.factorKey,
-          label: f.factorLabel,
-          importance: f.importance,
-          status: 'unknown',
-          evidenceSummary: 'Not evaluated.',
-          reason: 'Evidence evaluation not yet run.',
-          source: f.source,
-        ),
-      )
-      .toList();
-  return TrialCtqDto(
-    trialId: trialId,
-    ctqItems: items,
-    blockerCount: 0,
-    warningCount: 0,
-    reviewCount: 0,
-    satisfiedCount: 0,
-    overallStatus: 'unknown',
-  );
-}
 
 void main() {
   late AppDatabase db;
@@ -58,6 +23,8 @@ void main() {
 
   tearDown(() async => db.close());
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
   Future<({int trialId, int purposeId})> makeTrialAndPurpose() async {
     final trialId =
         await trialRepo.createTrial(name: 'T${DateTime.now().microsecondsSinceEpoch}');
@@ -66,31 +33,318 @@ void main() {
     return (trialId: trialId, purposeId: purposeId);
   }
 
-  test('returns unknown overall status when no factors defined', () async {
-    final ctx = await makeTrialAndPurpose();
-    final factors = await ctqRepo.watchCtqFactorsForTrial(ctx.trialId).first;
-    final dto = computeCtqDto(ctx.trialId, factors);
-    expect(dto.overallStatus, 'unknown');
-    expect(dto.ctqItems, isEmpty);
-    expect(dto.blockerCount, 0);
-  });
-
-  test('returns unknown item statuses for all seeded factors (foundation layer)', () async {
+  Future<({int trialId, int purposeId})> makeSeededTrial() async {
     final ctx = await makeTrialAndPurpose();
     await ctqRepo.seedDefaultCtqFactorsForPurpose(
       trialId: ctx.trialId,
       trialPurposeId: ctx.purposeId,
     );
-    final factors = await ctqRepo.watchCtqFactorsForTrial(ctx.trialId).first;
-    final dto = computeCtqDto(ctx.trialId, factors);
-    expect(dto.ctqItems.length, kCtqDefaultFactorKeys.length);
-    expect(dto.ctqItems.every((i) => i.status == 'unknown'), true);
+    return ctx;
+  }
+
+  Future<int> makePlot(int trialId, {bool isGuard = false}) =>
+      db.into(db.plots).insert(PlotsCompanion.insert(
+        trialId: trialId,
+        plotId: 'P${DateTime.now().microsecondsSinceEpoch}',
+        isGuardRow: Value(isGuard),
+      ));
+
+  Future<int> makeSession(int trialId) =>
+      db.into(db.sessions).insert(SessionsCompanion.insert(
+        trialId: trialId,
+        name: 'S1',
+        sessionDateLocal: '2026-04-01',
+      ));
+
+  Future<int> makeAssessment(int trialId) =>
+      db.into(db.assessments).insert(
+        AssessmentsCompanion.insert(trialId: trialId, name: 'A1'),
+      );
+
+  Future<void> makeRating(
+    int trialId,
+    int plotPk,
+    int sessionId,
+    int assessmentId, {
+    double? lat,
+    double? lng,
+  }) =>
+      db.into(db.ratingRecords).insert(RatingRecordsCompanion.insert(
+        trialId: trialId,
+        plotPk: plotPk,
+        sessionId: sessionId,
+        assessmentId: assessmentId,
+        capturedLatitude: Value(lat),
+        capturedLongitude: Value(lng),
+      ));
+
+  Future<void> makePhoto(int trialId, int plotPk, int sessionId) =>
+      db.into(db.photos).insert(PhotosCompanion.insert(
+        trialId: trialId,
+        plotPk: plotPk,
+        sessionId: sessionId,
+        filePath: '/fake/photo.jpg',
+      ));
+
+  Future<int> makeTreatment(int trialId) =>
+      db.into(db.treatments).insert(TreatmentsCompanion.insert(
+        trialId: trialId,
+        code: 'TRT_A',
+        name: 'Treatment A',
+      ));
+
+  Future<void> makeApplication(int trialId) =>
+      db.into(db.trialApplicationEvents).insert(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: DateTime(2026, 4, 1),
+        ),
+      );
+
+  Future<void> makeSignal(
+    int trialId, {
+    required String type,
+    required String severity,
+    String status = 'open',
+  }) =>
+      db.into(db.signals).insert(SignalsCompanion.insert(
+        trialId: trialId,
+        signalType: type,
+        moment: 1,
+        severity: severity,
+        raisedAt: 0,
+        referenceContext: '{}',
+        consequenceText: 'Test signal.',
+        status: Value(status),
+        createdAt: 0,
+      ));
+
+  Future<TrialCtqDto> evaluate(int trialId) async {
+    final factors = await ctqRepo.watchCtqFactorsForTrial(trialId).first;
+    return computeTrialCtqDtoV1(db, trialId, factors);
+  }
+
+  TrialCtqItemDto? factorItem(TrialCtqDto dto, String key) =>
+      dto.ctqItems.where((i) => i.factorKey == key).firstOrNull;
+
+  // ── Tests ─────────────────────────────────────────────────────────────────
+
+  test('1: empty trial with no factors returns unknown without crashing',
+      () async {
+    final ctx = await makeTrialAndPurpose();
+    final dto = await evaluate(ctx.trialId);
     expect(dto.overallStatus, 'unknown');
+    expect(dto.ctqItems, isEmpty);
+    expect(dto.blockerCount, 0);
+    expect(dto.warningCount, 0);
+    expect(dto.reviewCount, 0);
     expect(dto.satisfiedCount, 0);
   });
 
-  test('missing/satisfied/review_needed are representable via TrialCtqItemDto', () {
-    const item = TrialCtqItemDto(
+  test(
+      '2: seeded trial with one plot but no evidence — evaluable factors show missing/unknown',
+      () async {
+    final ctx = await makeSeededTrial();
+    await makePlot(ctx.trialId); // analyzable plot → plot_completeness evaluable
+    final dto = await evaluate(ctx.trialId);
+
+    expect(dto.ctqItems.length, kCtqDefaultFactorKeys.length);
+    // evidence-missing factors
+    expect(factorItem(dto, 'photo_evidence')?.status, 'missing');
+    expect(factorItem(dto, 'treatment_identity')?.status, 'missing');
+    expect(factorItem(dto, 'plot_completeness')?.status, 'missing');
+    expect(factorItem(dto, 'rating_window')?.status, 'missing');
+    // no ratings → GPS cannot be evaluated
+    expect(factorItem(dto, 'gps_evidence')?.status, 'unknown');
+    // no treatments → application_timing cannot be evaluated
+    expect(factorItem(dto, 'application_timing')?.status, 'unknown');
+    // no rater signals → consistency unknown
+    expect(factorItem(dto, 'rater_consistency')?.status, 'unknown');
+    // intentionally unknown
+    expect(factorItem(dto, 'disease_pressure')?.status, 'unknown');
+    expect(factorItem(dto, 'crop_stage')?.status, 'unknown');
+    expect(factorItem(dto, 'rainfall_after_application')?.status, 'unknown');
+  });
+
+  test('3: treatment_identity is satisfied when treatments exist', () async {
+    final ctx = await makeSeededTrial();
+    await makeTreatment(ctx.trialId);
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'treatment_identity')?.status, 'satisfied');
+    expect(dto.satisfiedCount, greaterThanOrEqualTo(1));
+  });
+
+  test('4: treatment_identity is missing when no treatments exist', () async {
+    final ctx = await makeSeededTrial();
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'treatment_identity')?.status, 'missing');
+    expect(dto.warningCount, greaterThanOrEqualTo(1));
+  });
+
+  test('5: photo_evidence is satisfied when a photo exists', () async {
+    final ctx = await makeSeededTrial();
+    final plotPk = await makePlot(ctx.trialId);
+    final sessionId = await makeSession(ctx.trialId);
+    await makePhoto(ctx.trialId, plotPk, sessionId);
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'photo_evidence')?.status, 'satisfied');
+  });
+
+  test('6: gps_evidence is satisfied when a rating with GPS coordinates exists',
+      () async {
+    final ctx = await makeSeededTrial();
+    final plotPk = await makePlot(ctx.trialId);
+    final sessionId = await makeSession(ctx.trialId);
+    final assessmentId = await makeAssessment(ctx.trialId);
+    await makeRating(ctx.trialId, plotPk, sessionId, assessmentId,
+        lat: 51.5074, lng: -0.1278);
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'gps_evidence')?.status, 'satisfied');
+  });
+
+  group('7: plot_completeness', () {
+    test('missing when analyzable plots exist but no ratings', () async {
+      final ctx = await makeSeededTrial();
+      await makePlot(ctx.trialId);
+      await makePlot(ctx.trialId);
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'plot_completeness')?.status, 'missing');
+    });
+
+    test('review_needed when only some plots are rated', () async {
+      final ctx = await makeSeededTrial();
+      final p1 = await makePlot(ctx.trialId);
+      await makePlot(ctx.trialId); // second plot, unrated
+      final sessionId = await makeSession(ctx.trialId);
+      final assessmentId = await makeAssessment(ctx.trialId);
+      await makeRating(ctx.trialId, p1, sessionId, assessmentId);
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'plot_completeness')?.status, 'review_needed');
+    });
+
+    test('satisfied when all analyzable plots have recorded ratings', () async {
+      final ctx = await makeSeededTrial();
+      final p1 = await makePlot(ctx.trialId);
+      final sessionId = await makeSession(ctx.trialId);
+      final assessmentId = await makeAssessment(ctx.trialId);
+      await makeRating(ctx.trialId, p1, sessionId, assessmentId);
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'plot_completeness')?.status, 'satisfied');
+    });
+
+    test('unknown when no analyzable plots are defined', () async {
+      final ctx = await makeSeededTrial();
+      // no plots inserted → cannot evaluate
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'plot_completeness')?.status, 'unknown');
+    });
+
+    test('guard-only plots are not counted as analyzable', () async {
+      final ctx = await makeSeededTrial();
+      await makePlot(ctx.trialId, isGuard: true); // guard row only
+      final dto = await evaluate(ctx.trialId);
+      // no analyzable plots → unknown
+      expect(factorItem(dto, 'plot_completeness')?.status, 'unknown');
+    });
+  });
+
+  test('8: open critical signal causes review_needed overall', () async {
+    final ctx = await makeSeededTrial();
+    await makeSignal(ctx.trialId,
+        type: 'scale_violation', severity: 'critical');
+    final dto = await evaluate(ctx.trialId);
+    expect(dto.overallStatus, 'review_needed');
+  });
+
+  test('8b: open rater_drift signal marks rater_consistency as review_needed',
+      () async {
+    final ctx = await makeSeededTrial();
+    await makeSignal(ctx.trialId, type: 'rater_drift', severity: 'review');
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'rater_consistency')?.status, 'review_needed');
+    expect(dto.reviewCount, greaterThanOrEqualTo(1));
+  });
+
+  test('8c: critical rater_drift signal marks rater_consistency as blocked',
+      () async {
+    final ctx = await makeSeededTrial();
+    await makeSignal(ctx.trialId, type: 'rater_drift', severity: 'critical');
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'rater_consistency')?.status, 'blocked');
+    expect(dto.blockerCount, greaterThanOrEqualTo(1));
+  });
+
+  test('8d: resolved rater_drift signal does not affect rater_consistency',
+      () async {
+    final ctx = await makeSeededTrial();
+    await makeSignal(ctx.trialId,
+        type: 'rater_drift', severity: 'review', status: 'resolved');
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'rater_consistency')?.status, 'unknown');
+  });
+
+  test('9: protocol_divergence signal causes review_needed overall', () async {
+    final ctx = await makeSeededTrial();
+    await makeSignal(ctx.trialId,
+        type: 'protocol_divergence', severity: 'review');
+    final dto = await evaluate(ctx.trialId);
+    expect(dto.overallStatus, 'review_needed');
+  });
+
+  test('10: disease_pressure remains unknown', () async {
+    final ctx = await makeSeededTrial();
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'disease_pressure')?.status, 'unknown');
+  });
+
+  test('11: crop_stage remains unknown', () async {
+    final ctx = await makeSeededTrial();
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'crop_stage')?.status, 'unknown');
+  });
+
+  test('12: rainfall_after_application remains unknown', () async {
+    final ctx = await makeSeededTrial();
+    final dto = await evaluate(ctx.trialId);
+    expect(factorItem(dto, 'rainfall_after_application')?.status, 'unknown');
+  });
+
+  test(
+      '13: overallStatus is ready_for_review when all evaluated factors are satisfied and no issues',
+      () async {
+    final ctx = await makeSeededTrial();
+    final plotPk = await makePlot(ctx.trialId);
+    final sessionId = await makeSession(ctx.trialId);
+    final assessmentId = await makeAssessment(ctx.trialId);
+    // rating with GPS → satisfies plot_completeness, rating_window, gps_evidence
+    await makeRating(ctx.trialId, plotPk, sessionId, assessmentId,
+        lat: 51.5074, lng: -0.1278);
+    // photo → satisfies photo_evidence
+    await makePhoto(ctx.trialId, plotPk, sessionId);
+    // treatment + application → satisfies treatment_identity, application_timing
+    await makeTreatment(ctx.trialId);
+    await makeApplication(ctx.trialId);
+
+    final dto = await evaluate(ctx.trialId);
+
+    expect(factorItem(dto, 'plot_completeness')?.status, 'satisfied');
+    expect(factorItem(dto, 'photo_evidence')?.status, 'satisfied');
+    expect(factorItem(dto, 'gps_evidence')?.status, 'satisfied');
+    expect(factorItem(dto, 'treatment_identity')?.status, 'satisfied');
+    expect(factorItem(dto, 'rating_window')?.status, 'satisfied');
+    expect(factorItem(dto, 'application_timing')?.status, 'satisfied');
+    expect(factorItem(dto, 'rater_consistency')?.status, 'unknown');
+    expect(dto.overallStatus, 'ready_for_review');
+    expect(dto.blockerCount, 0);
+    expect(dto.warningCount, 0);
+    expect(dto.reviewCount, 0);
+  });
+
+  // ── DTO structure (pure model, no DB) ─────────────────────────────────────
+
+  test('missing/satisfied/review_needed are representable via TrialCtqItemDto',
+      () {
+    const missing = TrialCtqItemDto(
       factorKey: 'plot_completeness',
       label: 'Plot Completeness',
       importance: 'critical',
@@ -99,9 +353,9 @@ void main() {
       reason: 'No ratings recorded.',
       source: 'system',
     );
-    expect(item.isBlocked, false);
-    expect(item.isSatisfied, false);
-    expect(item.needsReview, false);
+    expect(missing.isBlocked, false);
+    expect(missing.isSatisfied, false);
+    expect(missing.needsReview, false);
 
     const satisfied = TrialCtqItemDto(
       factorKey: 'plot_completeness',
@@ -113,5 +367,17 @@ void main() {
       source: 'system',
     );
     expect(satisfied.isSatisfied, true);
+
+    const blocked = TrialCtqItemDto(
+      factorKey: 'rater_consistency',
+      label: 'Rater Consistency',
+      importance: 'standard',
+      status: 'blocked',
+      evidenceSummary: '1 open rater signal(s).',
+      reason: 'Open rater signals require review.',
+      source: 'system',
+    );
+    expect(blocked.isBlocked, true);
+    expect(blocked.needsReview, false);
   });
 }

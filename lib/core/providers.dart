@@ -124,6 +124,7 @@ import '../data/repositories/protocol_document_reference_repository.dart';
 import '../domain/trial_cognition/trial_purpose_dto.dart';
 import '../domain/trial_cognition/trial_evidence_arc_dto.dart';
 import '../domain/trial_cognition/trial_ctq_dto.dart';
+import '../domain/trial_cognition/trial_ctq_evaluator.dart';
 import '../domain/trial_cognition/mode_c_revelation_model.dart';
 
 /// ARCHITECTURE RULE: Use case return types
@@ -2178,11 +2179,11 @@ final trialEvidenceArcProvider =
 
 /// Deterministic CTQ readiness/evidence status.
 final trialCriticalToQualityProvider =
-    StreamProvider.autoDispose.family<TrialCtqDto, int>((ref, trialId) {
+    FutureProvider.autoDispose.family<TrialCtqDto, int>((ref, trialId) async {
+  final db = ref.watch(databaseProvider);
   final repo = ref.watch(ctqFactorDefinitionRepositoryProvider);
-  return repo.watchCtqFactorsForTrial(trialId).map(
-        (factors) => _computeTrialCtqDto(trialId, factors),
-      );
+  final factors = await repo.watchCtqFactorsForTrial(trialId).first;
+  return computeTrialCtqDtoV1(db, trialId, factors);
 });
 
 // ─── Trial Cognition V1 — computation helpers ─────────────────────────────────
@@ -2315,46 +2316,3 @@ Future<TrialEvidenceArcDto> _computeTrialEvidenceArc(
   );
 }
 
-TrialCtqDto _computeTrialCtqDto(
-  int trialId,
-  List<CtqFactorDefinition> factors,
-) {
-  if (factors.isEmpty) {
-    return TrialCtqDto(
-      trialId: trialId,
-      ctqItems: const [],
-      blockerCount: 0,
-      warningCount: 0,
-      reviewCount: 0,
-      satisfiedCount: 0,
-      overallStatus: 'unknown',
-    );
-  }
-
-  // Without live evidence evaluation (requires full evidence pipeline),
-  // all factors default to 'unknown' status at this foundation layer.
-  // A future evidence-evaluation layer will populate actual statuses.
-  final items = factors
-      .map(
-        (f) => TrialCtqItemDto(
-          factorKey: f.factorKey,
-          label: f.factorLabel,
-          importance: f.importance,
-          status: 'unknown',
-          evidenceSummary: 'Not evaluated.',
-          reason: 'Evidence evaluation not yet run.',
-          source: f.source,
-        ),
-      )
-      .toList();
-
-  return TrialCtqDto(
-    trialId: trialId,
-    ctqItems: items,
-    blockerCount: 0,
-    warningCount: 0,
-    reviewCount: 0,
-    satisfiedCount: 0,
-    overallStatus: 'unknown',
-  );
-}
