@@ -252,6 +252,109 @@ void main() {
   });
 
   // 9 — getIntentRevelationEventsForPurpose returns only events for that purpose
+  // 11 — watchCtqFactorsForPurpose returns only factors for the given purpose
+  test('watchCtqFactorsForPurpose returns only factors for that purpose id',
+      () async {
+    final trialId = await makeTrial();
+
+    final purposeIdA = await purposeRepo.createInitialTrialPurpose(
+      trialId: trialId,
+      claimBeingTested: 'Claim A',
+    );
+    final purposeIdB = await purposeRepo.createInitialTrialPurpose(
+      trialId: trialId,
+      claimBeingTested: 'Claim B',
+    );
+
+    await ctqRepo.seedDefaultCtqFactorsForPurpose(
+      trialId: trialId,
+      trialPurposeId: purposeIdA,
+    );
+    await ctqRepo.seedDefaultCtqFactorsForPurpose(
+      trialId: trialId,
+      trialPurposeId: purposeIdB,
+    );
+
+    final forA = await ctqRepo.watchCtqFactorsForPurpose(purposeIdA).first;
+    final forB = await ctqRepo.watchCtqFactorsForPurpose(purposeIdB).first;
+
+    expect(forA, hasLength(kCtqDefaultFactorKeys.length));
+    expect(forB, hasLength(kCtqDefaultFactorKeys.length));
+    expect(forA.every((f) => f.trialPurposeId == purposeIdA), isTrue);
+    expect(forB.every((f) => f.trialPurposeId == purposeIdB), isTrue);
+  });
+
+  // 12 — re-confirm (versioning) seeds new purpose factors without
+  //      contaminating the current-purpose view with old-purpose factors
+  test(
+      'after purpose versioning, watchCtqFactorsForPurpose for new purpose '
+      'returns exactly 10 factors with no duplication from old purpose',
+      () async {
+    final trialId = await makeTrial();
+
+    // First confirm — version 1
+    final v1Id = await purposeRepo.createInitialTrialPurpose(
+      trialId: trialId,
+      claimBeingTested: 'Original claim',
+      trialPurpose: 'Registration',
+      primaryEndpoint: 'DISEASE_SEV',
+      treatmentRoleSummary: 'T1=check, T2=product',
+    );
+    await purposeRepo.confirmTrialPurpose(v1Id, confirmedBy: 'researcher');
+    await ctqRepo.seedDefaultCtqFactorsForPurpose(
+        trialId: trialId, trialPurposeId: v1Id);
+
+    // Re-confirm — version 2
+    final v1 = await purposeRepo.getCurrentTrialPurpose(trialId);
+    final v2Id = await purposeRepo.createNewTrialPurposeVersion(
+      v1!,
+      TrialPurposesCompanion.insert(
+        trialId: trialId,
+        claimBeingTested: const Value('Revised claim'),
+        trialPurpose: const Value('Registration'),
+        primaryEndpoint: const Value('DISEASE_SEV'),
+        treatmentRoleSummary: const Value('T1=check, T2=product'),
+      ),
+    );
+    await purposeRepo.confirmTrialPurpose(v2Id, confirmedBy: 'researcher');
+    await ctqRepo.seedDefaultCtqFactorsForPurpose(
+        trialId: trialId, trialPurposeId: v2Id);
+
+    final forV2 = await ctqRepo.watchCtqFactorsForPurpose(v2Id).first;
+    expect(forV2, hasLength(kCtqDefaultFactorKeys.length),
+        reason: 'Current purpose should have exactly 10 factors, not 20');
+    expect(forV2.every((f) => f.trialPurposeId == v2Id), isTrue,
+        reason: 'No old-purpose factors should appear in the new-purpose view');
+  });
+
+  // 13 — current purpose resolution yields non-empty factors post-seed
+  test(
+      'after seed, watchCtqFactorsForPurpose for current purpose returns '
+      'non-empty factors enabling real CTQ evaluation',
+      () async {
+    final trialId = await makeTrial();
+    final purposeId = await purposeRepo.createInitialTrialPurpose(
+      trialId: trialId,
+      claimBeingTested: 'Efficacy claim',
+    );
+    await purposeRepo.confirmTrialPurpose(purposeId,
+        confirmedBy: 'researcher');
+    await ctqRepo.seedDefaultCtqFactorsForPurpose(
+        trialId: trialId, trialPurposeId: purposeId);
+
+    final current = await purposeRepo.getCurrentTrialPurpose(trialId);
+    final factors =
+        await ctqRepo.watchCtqFactorsForPurpose(current!.id).first;
+
+    expect(factors, isNotEmpty,
+        reason: 'Factors must be non-empty for evaluator to run');
+    expect(
+      factors.map((f) => f.factorKey),
+      containsAll(kCtqDefaultFactorKeys),
+    );
+  });
+
+  // 9 — getIntentRevelationEventsForPurpose returns only events for that purpose
   test('getIntentRevelationEventsForPurpose scopes to correct purpose id',
       () async {
     final trialId = await makeTrial();

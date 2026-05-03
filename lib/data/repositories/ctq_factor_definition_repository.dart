@@ -43,6 +43,20 @@ class CtqFactorDefinitionRepository {
         .watch();
   }
 
+  /// Returns factors scoped to a single purpose version. Use this instead of
+  /// [watchCtqFactorsForTrial] when evaluating the current purpose to avoid
+  /// mixing factors from superseded purpose versions.
+  Stream<List<CtqFactorDefinition>> watchCtqFactorsForPurpose(
+      int trialPurposeId) {
+    return (_db.select(_db.ctqFactorDefinitions)
+          ..where(
+            (f) =>
+                f.trialPurposeId.equals(trialPurposeId) & f.retiredAt.isNull(),
+          )
+          ..orderBy([(f) => OrderingTerm.asc(f.createdAt)]))
+        .watch();
+  }
+
   Future<int> addCtqFactorDefinition({
     required int trialId,
     required int trialPurposeId,
