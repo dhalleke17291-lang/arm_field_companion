@@ -191,6 +191,22 @@ class _PurposeBody extends StatelessWidget {
   final TrialPurposeDto dto;
   final VoidCallback onCta;
 
+  static String _statusLabel(String status) => switch (status) {
+        'confirmed' => 'Confirmed',
+        'partial' => 'In progress',
+        'draft' => 'Draft',
+        _ => '',
+      };
+
+  static String _fieldLabel(String key) => switch (key) {
+        'claim_being_tested' => 'Claim being tested',
+        'trial_purpose_context' => 'Trial purpose',
+        'primary_endpoint' => 'Primary endpoint',
+        'treatment_roles' => 'Treatment roles',
+        'known_interpretation_factors' => 'Interpretation factors',
+        _ => key,
+      };
+
   @override
   Widget build(BuildContext context) {
     if (dto.isUnknown) {
@@ -211,9 +227,22 @@ class _PurposeBody extends StatelessWidget {
     }
 
     final claim = dto.claimBeingTested;
+    final statusLabel = _statusLabel(dto.purposeStatus);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (statusLabel.isNotEmpty) ...[
+          Text(
+            statusLabel,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.4,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 2),
+        ],
         if (claim != null && claim.isNotEmpty)
           Text(
             claim,
@@ -223,23 +252,11 @@ class _PurposeBody extends StatelessWidget {
               color: AppDesignTokens.primaryText,
               height: 1.4,
             ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          )
-        else
-          Text(
-            dto.isConfirmed ? 'Confirmed.' : 'In progress.',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppDesignTokens.primaryText,
-            ),
           ),
         if (dto.isPartial && dto.missingIntentFields.isNotEmpty) ...[
           const SizedBox(height: AppDesignTokens.spacing4),
           Text(
-            '${dto.missingIntentFields.length} '
-            'field${dto.missingIntentFields.length == 1 ? '' : 's'} incomplete.',
+            'Missing: ${dto.missingIntentFields.map(_fieldLabel).join(', ')}',
             style: const TextStyle(
               fontSize: 12,
               color: AppDesignTokens.secondaryText,
@@ -355,10 +372,10 @@ class _CtqBody extends StatelessWidget {
   final TrialCtqDto dto;
 
   static String _overallLabel(String status) => switch (status) {
-        'unknown' => 'Not yet evaluated.',
-        'incomplete' => 'Incomplete — evidence gaps remain.',
-        'review_needed' => 'Needs review before export.',
-        'ready_for_review' => 'Ready for review.',
+        'unknown' => 'Not yet evaluated',
+        'incomplete' => 'Needs evidence',
+        'review_needed' => 'Needs review',
+        'ready_for_review' => 'Ready for review',
         _ => status,
       };
 
@@ -383,9 +400,7 @@ class _CtqBody extends StatelessWidget {
             color: _overallColor(dto.overallStatus),
           ),
         ),
-        if (dto.blockerCount > 0 ||
-            dto.warningCount > 0 ||
-            dto.reviewCount > 0) ...[
+        if (dto.overallStatus != 'unknown') ...[
           const SizedBox(height: AppDesignTokens.spacing4),
           Text(
             _countSummary(dto),
@@ -400,15 +415,27 @@ class _CtqBody extends StatelessWidget {
           ...attentionItems.map(
             (item) => Padding(
               padding: const EdgeInsets.only(top: 3),
-              child: Text(
-                '· ${item.label}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: item.isBlocked
-                      ? AppDesignTokens.warningFg
-                      : AppDesignTokens.secondaryText,
-                  height: 1.4,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '· ${item.label}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppDesignTokens.secondaryText,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    _statusLabel(item.status),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: _statusColor(item.status),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -418,21 +445,54 @@ class _CtqBody extends StatelessWidget {
   }
 
   static String _countSummary(TrialCtqDto dto) {
+    if (dto.blockerCount == 0 && dto.reviewCount == 0 && dto.warningCount == 0) {
+      return 'No checks need attention';
+    }
     final parts = <String>[];
-    if (dto.blockerCount > 0) parts.add('${dto.blockerCount} blocked');
-    if (dto.reviewCount > 0) parts.add('${dto.reviewCount} need review');
-    if (dto.warningCount > 0) parts.add('${dto.warningCount} incomplete');
+    if (dto.blockerCount > 0) {
+      final n = dto.blockerCount;
+      parts.add('$n check${n == 1 ? '' : 's'} blocked');
+    }
+    if (dto.reviewCount > 0) {
+      final n = dto.reviewCount;
+      parts.add('$n check${n == 1 ? '' : 's'} need${n == 1 ? 's' : ''} review');
+    }
+    if (dto.warningCount > 0) {
+      final n = dto.warningCount;
+      parts.add('$n check${n == 1 ? '' : 's'} need${n == 1 ? 's' : ''} evidence');
+    }
     return parts.join(' · ');
   }
 
+  static String _statusLabel(String status) => switch (status) {
+        'blocked' => 'Blocked',
+        'review_needed' => 'Needs review',
+        'missing' => 'Missing',
+        'satisfied' => 'Satisfied',
+        'unknown' => '—',
+        _ => status,
+      };
+
+  static Color _statusColor(String status) => switch (status) {
+        'missing' || 'blocked' => AppDesignTokens.warningFg,
+        'review_needed' => AppDesignTokens.flagColor,
+        'satisfied' => AppDesignTokens.successFg,
+        _ => AppDesignTokens.secondaryText,
+      };
+
   static List<TrialCtqItemDto> _topAttentionItems(TrialCtqDto dto) {
-    final blocked =
-        dto.ctqItems.where((i) => i.status == 'blocked').toList();
-    final review =
-        dto.ctqItems.where((i) => i.status == 'review_needed').toList();
-    final missing =
-        dto.ctqItems.where((i) => i.status == 'missing').toList();
-    return [...blocked, ...review, ...missing].take(5).toList();
+    const actionable = {'blocked', 'review_needed', 'missing'};
+    int rank(String status) => switch (status) {
+          'blocked' => 0,
+          'review_needed' => 1,
+          'missing' => 2,
+          _ => 3,
+        };
+    final filtered = dto.ctqItems
+        .where((item) => actionable.contains(item.status))
+        .toList()
+      ..sort((a, b) => rank(a.status).compareTo(rank(b.status)));
+    return filtered.take(5).toList();
   }
 }
 

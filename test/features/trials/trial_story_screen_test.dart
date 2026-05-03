@@ -324,7 +324,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Fungicide efficacy on wheat.'), findsOneWidget);
-      expect(find.textContaining('2 fields incomplete'), findsOneWidget);
+      expect(find.text('In progress'), findsOneWidget);
+      expect(find.textContaining('Missing:'), findsOneWidget);
       expect(find.text('Review intent →'), findsOneWidget);
     });
 
@@ -436,7 +437,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Not yet evaluated.'), findsOneWidget);
+      expect(find.text('Not yet evaluated'), findsOneWidget);
     });
 
     testWidgets('review_needed with counts → shows count summary',
@@ -467,10 +468,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Needs review before export.'), findsOneWidget);
-      expect(find.textContaining('1 blocked'), findsOneWidget);
-      expect(find.textContaining('2 need review'), findsOneWidget);
-      expect(find.textContaining('3 incomplete'), findsOneWidget);
+      expect(find.text('Needs review'), findsOneWidget);
+      expect(find.textContaining('1 check blocked'), findsOneWidget);
+      expect(find.textContaining('2 checks need review'), findsOneWidget);
+      expect(find.textContaining('3 checks need evidence'), findsOneWidget);
     });
 
     testWidgets(
@@ -549,7 +550,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Ready for review.'), findsOneWidget);
+      expect(find.text('Ready for review'), findsOneWidget);
+      expect(find.text('No checks need attention'), findsOneWidget);
     });
   });
 }

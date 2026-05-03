@@ -207,6 +207,10 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
         trialPurposeId: newId,
       );
 
+      ref.invalidate(trialPurposeProvider(widget.trial.id));
+      ref.invalidate(trialEvidenceArcProvider(widget.trial.id));
+      ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
+
       for (var i = 0; i < _totalQuestions; i++) {
         if (_controllers[i].text.trim().isNotEmpty) {
           await _writeEvent(
@@ -388,10 +392,22 @@ class _QuestionPage extends StatelessWidget {
                   keyboardType: TextInputType.multiline,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: FormStyles.inputDecoration(
-                    hintText: 'Type your answer here…',
+                    hintText: questionIndex == 0
+                        ? 'e.g. Compare herbicide treatments against the untreated check for weed control.'
+                        : 'Type your answer here…',
                   ),
                   style: theme.textTheme.bodyMedium,
                 ),
+                if (questionIndex == 0) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'It shows how well the treatments separate, and what the baseline comparison is.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppDesignTokens.secondaryText,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

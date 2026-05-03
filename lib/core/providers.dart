@@ -2178,11 +2178,28 @@ final trialEvidenceArcProvider =
 });
 
 /// Deterministic CTQ readiness/evidence status.
+/// Factors are scoped to the current (non-superseded) purpose version so that
+/// re-confirms never mix factors from old purpose rows.
 final trialCriticalToQualityProvider =
     FutureProvider.autoDispose.family<TrialCtqDto, int>((ref, trialId) async {
   final db = ref.watch(databaseProvider);
-  final repo = ref.watch(ctqFactorDefinitionRepositoryProvider);
-  final factors = await repo.watchCtqFactorsForTrial(trialId).first;
+  final ctqRepo = ref.watch(ctqFactorDefinitionRepositoryProvider);
+  final purposeRepo = ref.watch(trialPurposeRepositoryProvider);
+
+  final currentPurpose = await purposeRepo.getCurrentTrialPurpose(trialId);
+  if (currentPurpose == null) {
+    return TrialCtqDto(
+      trialId: trialId,
+      ctqItems: const [],
+      blockerCount: 0,
+      warningCount: 0,
+      reviewCount: 0,
+      satisfiedCount: 0,
+      overallStatus: 'unknown',
+    );
+  }
+  final factors =
+      await ctqRepo.watchCtqFactorsForPurpose(currentPurpose.id).first;
   return computeTrialCtqDtoV1(db, trialId, factors);
 });
 
@@ -2301,9 +2318,13 @@ Future<TrialEvidenceArcDto> _computeTrialEvidenceArc(
     evidenceState = 'partial';
   }
 
+  String pl(int n, String singular, String plural) =>
+      '$n ${n == 1 ? singular : plural}';
   final actualSummary = sessions.isEmpty
       ? 'No sessions.'
-      : '${sessions.length} session(s), $recordedRatings rating(s), ${photos.length} photo(s).';
+      : '${pl(sessions.length, 'session', 'sessions')} · '
+          '${pl(recordedRatings, 'rating', 'ratings')} · '
+          '${photos.isEmpty ? 'no photos' : pl(photos.length, 'photo', 'photos')}';
 
   return TrialEvidenceArcDto(
     trialId: trialId,
