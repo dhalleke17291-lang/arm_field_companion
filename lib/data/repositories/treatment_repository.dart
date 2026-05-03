@@ -608,6 +608,174 @@ class TreatmentRepository {
     String? pesticideCategory,
   }) async {
     await assertCanEditProtocolForTrialId(_db, trialId);
+    return _writeComponent(
+      treatmentId: treatmentId,
+      trialId: trialId,
+      productName: productName,
+      rate: rate,
+      rateUnit: rateUnit,
+      applicationTiming: applicationTiming,
+      notes: notes,
+      sortOrder: sortOrder,
+      activeIngredientPct: activeIngredientPct,
+      formulationType: formulationType,
+      manufacturer: manufacturer,
+      registrationNumber: registrationNumber,
+      eppoCode: eppoCode,
+      performedByUserId: performedByUserId,
+      performedBy: performedBy,
+      activeIngredientName: activeIngredientName,
+      aiConcentration: aiConcentration,
+      aiConcentrationUnit: aiConcentrationUnit,
+      labelRate: labelRate,
+      labelRateUnit: labelRateUnit,
+      isTestProduct: isTestProduct,
+      pesticideCategory: pesticideCategory,
+      firstComponentBypass: false,
+    );
+  }
+
+  /// Inserts a component, bypassing the structural lock when the treatment
+  /// has zero existing components ("filling missing data" — ALCOA+ allowed).
+  ///
+  /// Routing:
+  /// - Treatment already has at least one non-deleted component →
+  ///   delegates to [insertComponent] (full structural lock applies).
+  /// - Treatment has zero components → checks ARM-linked and
+  ///   closed/archived only, then writes with audit
+  ///   `first_component: true`.
+  Future<int> insertFirstComponent({
+    required int treatmentId,
+    required int trialId,
+    required String productName,
+    double? rate,
+    String? rateUnit,
+    String? applicationTiming,
+    String? notes,
+    int sortOrder = 0,
+    double? activeIngredientPct,
+    String? formulationType,
+    String? manufacturer,
+    String? registrationNumber,
+    String? eppoCode,
+    int? performedByUserId,
+    String? performedBy,
+    String? activeIngredientName,
+    double? aiConcentration,
+    String? aiConcentrationUnit,
+    double? labelRate,
+    String? labelRateUnit,
+    bool? isTestProduct,
+    String? pesticideCategory,
+  }) async {
+    final existing = await (_db.select(_db.treatmentComponents)
+          ..where((c) =>
+              c.treatmentId.equals(treatmentId) & c.isDeleted.equals(false))
+          ..limit(1))
+        .getSingleOrNull();
+    if (existing != null) {
+      return insertComponent(
+        treatmentId: treatmentId,
+        trialId: trialId,
+        productName: productName,
+        rate: rate,
+        rateUnit: rateUnit,
+        applicationTiming: applicationTiming,
+        notes: notes,
+        sortOrder: sortOrder,
+        activeIngredientPct: activeIngredientPct,
+        formulationType: formulationType,
+        manufacturer: manufacturer,
+        registrationNumber: registrationNumber,
+        eppoCode: eppoCode,
+        performedByUserId: performedByUserId,
+        performedBy: performedBy,
+        activeIngredientName: activeIngredientName,
+        aiConcentration: aiConcentration,
+        aiConcentrationUnit: aiConcentrationUnit,
+        labelRate: labelRate,
+        labelRateUnit: labelRateUnit,
+        isTestProduct: isTestProduct,
+        pesticideCategory: pesticideCategory,
+      );
+    }
+    await _assertCanFillMissingDataForTrialId(trialId);
+    return _writeComponent(
+      treatmentId: treatmentId,
+      trialId: trialId,
+      productName: productName,
+      rate: rate,
+      rateUnit: rateUnit,
+      applicationTiming: applicationTiming,
+      notes: notes,
+      sortOrder: sortOrder,
+      activeIngredientPct: activeIngredientPct,
+      formulationType: formulationType,
+      manufacturer: manufacturer,
+      registrationNumber: registrationNumber,
+      eppoCode: eppoCode,
+      performedByUserId: performedByUserId,
+      performedBy: performedBy,
+      activeIngredientName: activeIngredientName,
+      aiConcentration: aiConcentration,
+      aiConcentrationUnit: aiConcentrationUnit,
+      labelRate: labelRate,
+      labelRateUnit: labelRateUnit,
+      isTestProduct: isTestProduct,
+      pesticideCategory: pesticideCategory,
+      firstComponentBypass: true,
+    );
+  }
+
+  /// Partial protocol check: blocks ARM-linked and closed/archived trials,
+  /// allows trials that are otherwise locked due to session data or active
+  /// status. Used by the first-component fill-missing-data path.
+  Future<void> _assertCanFillMissingDataForTrialId(int trialId) async {
+    final trial = await loadTrialForProtocolCheck(_db, trialId);
+    if (trial == null) {
+      throw StateError('Trial $trialId not found');
+    }
+    final trialIsArmLinked = await loadTrialIsArmLinked(_db, trialId);
+    if (trialIsArmLinked) {
+      throw ProtocolEditBlockedException(
+        protocolEditBlockedMessage(trial, trialIsArmLinked: true),
+      );
+    }
+    if (trial.status == kTrialStatusClosed ||
+        trial.status == kTrialStatusArchived) {
+      throw ProtocolEditBlockedException(
+        protocolEditBlockedMessage(trial, trialIsArmLinked: false),
+      );
+    }
+  }
+
+  /// Common writer for both `insertComponent` and `insertFirstComponent`.
+  /// Callers handle their own protocol checks before calling this.
+  Future<int> _writeComponent({
+    required int treatmentId,
+    required int trialId,
+    required String productName,
+    required bool firstComponentBypass,
+    double? rate,
+    String? rateUnit,
+    String? applicationTiming,
+    String? notes,
+    int sortOrder = 0,
+    double? activeIngredientPct,
+    String? formulationType,
+    String? manufacturer,
+    String? registrationNumber,
+    String? eppoCode,
+    int? performedByUserId,
+    String? performedBy,
+    String? activeIngredientName,
+    double? aiConcentration,
+    String? aiConcentrationUnit,
+    double? labelRate,
+    String? labelRateUnit,
+    bool? isTestProduct,
+    String? pesticideCategory,
+  }) {
     return _db.transaction(() async {
       final id = await _db.into(_db.treatmentComponents).insert(
             TreatmentComponentsCompanion.insert(
@@ -635,22 +803,23 @@ class TreatmentRepository {
               lastEditedAt: Value(DateTime.now()),
             ),
           );
+      final metadata = <String, dynamic>{
+        'component_id': id,
+        'treatment_id': treatmentId,
+        'trial_id': trialId,
+        'product_name': productName,
+        'rate': rate,
+        'rate_unit': rateUnit,
+      };
+      if (firstComponentBypass) metadata['first_component'] = true;
       await _db.into(_db.auditEvents).insert(
             AuditEventsCompanion.insert(
               trialId: Value(trialId),
               eventType: 'TREATMENT_COMPONENT_ADDED',
-              description:
-                  'Treatment component added: $productName',
+              description: 'Treatment component added: $productName',
               performedBy: Value(performedBy),
               performedByUserId: Value(performedByUserId),
-              metadata: Value(jsonEncode({
-                'component_id': id,
-                'treatment_id': treatmentId,
-                'trial_id': trialId,
-                'product_name': productName,
-                'rate': rate,
-                'rate_unit': rateUnit,
-              })),
+              metadata: Value(jsonEncode(metadata)),
             ),
           );
       return id;

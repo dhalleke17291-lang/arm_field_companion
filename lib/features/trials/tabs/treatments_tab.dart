@@ -1414,7 +1414,7 @@ class _AddComponentBottomSheetState extends State<_AddComponentBottomSheet>
                                   await _deleteTreatmentComponent(
                                       widget.ref, existing.id);
                                 }
-                                await repo.insertComponent(
+                                await repo.insertFirstComponent(
                                   treatmentId: widget.treatment.id,
                                   trialId: widget.trial.id,
                                   productName: name,
@@ -1721,7 +1721,7 @@ class _AddComponentDialogState extends State<_AddComponentDialog> {
                     final userId =
                         await widget.ref.read(currentUserIdProvider.future);
                     final repo = widget.ref.read(treatmentRepositoryProvider);
-                    await repo.insertComponent(
+                    await repo.insertFirstComponent(
                       treatmentId: widget.treatment.id,
                       trialId: widget.trial.id,
                       productName: productController.text.trim(),

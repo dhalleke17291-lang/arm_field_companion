@@ -547,6 +547,131 @@ void main() {
     });
   });
 
+  // ─── First-component fill on locked trials (FCF) ──────────────────────────
+
+  group('insertFirstComponent', () {
+    Future<int> insertTreatmentOnTrial(int trialId) =>
+        repo.insertTreatment(trialId: trialId, code: '1', name: 'T1');
+
+    test(
+        'FCF-1: zero components on locked (active) trial → succeeds via bypass',
+        () async {
+      final trialId = await createTrial();
+      final trtId = await insertTreatmentOnTrial(trialId);
+      await trialRepo.updateTrialStatus(trialId, kTrialStatusActive);
+
+      final compId = await repo.insertFirstComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'Roundup',
+        pesticideCategory: 'herbicide',
+      );
+
+      final comps = await repo.getComponentsForTreatment(trtId);
+      expect(comps.length, 1);
+      expect(comps[0].id, compId);
+      expect(comps[0].pesticideCategory, 'herbicide');
+    });
+
+    test(
+        'FCF-2: one existing component on locked trial → throws '
+        'ProtocolEditBlockedException', () async {
+      final trialId = await createTrial();
+      final trtId = await insertTreatmentOnTrial(trialId);
+      await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'First',
+      );
+      await trialRepo.updateTrialStatus(trialId, kTrialStatusActive);
+
+      expect(
+        () => repo.insertFirstComponent(
+          treatmentId: trtId,
+          trialId: trialId,
+          productName: 'Second',
+        ),
+        throwsA(isA<ProtocolEditBlockedException>()),
+      );
+    });
+
+    test(
+        'FCF-3: unlocked trial → adds whether components exist or not',
+        () async {
+      final trialId = await createTrial();
+      final trtId = await insertTreatmentOnTrial(trialId);
+
+      // First component (zero existing).
+      await repo.insertFirstComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'A',
+      );
+      // Second component (one existing) — delegates to insertComponent
+      // which succeeds because trial is unlocked.
+      await repo.insertFirstComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'B',
+      );
+
+      final comps = await repo.getComponentsForTreatment(trtId);
+      expect(comps.map((c) => c.productName).toList(), ['A', 'B']);
+    });
+
+    test('FCF-4: bypass path records audit with first_component: true',
+        () async {
+      final trialId = await createTrial();
+      final trtId = await insertTreatmentOnTrial(trialId);
+      await trialRepo.updateTrialStatus(trialId, kTrialStatusActive);
+
+      await repo.insertFirstComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'Roundup',
+        performedBy: 'tester',
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where((a) => a.eventType.equals('TREATMENT_COMPONENT_ADDED')))
+          .get();
+      expect(audits.length, 1);
+      final meta = jsonDecode(audits[0].metadata!) as Map<String, dynamic>;
+      expect(meta['first_component'], true);
+    });
+
+    test('FCF-5: ARM-linked trial rejects insertFirstComponent', () async {
+      final trialId = await createTrial();
+      final trtId = await insertTreatmentOnTrial(trialId);
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
+
+      expect(
+        () => repo.insertFirstComponent(
+          treatmentId: trtId,
+          trialId: trialId,
+          productName: 'Forbidden',
+        ),
+        throwsA(isA<ProtocolEditBlockedException>()),
+      );
+    });
+
+    test('FCF-6: closed trial rejects insertFirstComponent', () async {
+      final trialId = await createTrial();
+      final trtId = await insertTreatmentOnTrial(trialId);
+      await trialRepo.updateTrialStatus(trialId, kTrialStatusClosed);
+
+      expect(
+        () => repo.insertFirstComponent(
+          treatmentId: trtId,
+          trialId: trialId,
+          productName: 'Forbidden',
+        ),
+        throwsA(isA<ProtocolEditBlockedException>()),
+      );
+    });
+  });
+
   // ─── Annotation-only component lock (ACL) ─────────────────────────────────
 
   group('updateComponentAnnotationsOnly', () {

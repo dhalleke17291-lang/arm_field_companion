@@ -287,6 +287,33 @@ class MockTreatmentRepository implements TreatmentRepository {
       throw UnimplementedError();
 
   @override
+  Future<int> insertFirstComponent({
+    required int treatmentId,
+    required int trialId,
+    required String productName,
+    double? rate,
+    String? rateUnit,
+    String? applicationTiming,
+    String? notes,
+    int sortOrder = 0,
+    double? activeIngredientPct,
+    String? formulationType,
+    String? manufacturer,
+    String? registrationNumber,
+    String? eppoCode,
+    int? performedByUserId,
+    String? performedBy,
+    String? activeIngredientName,
+    double? aiConcentration,
+    String? aiConcentrationUnit,
+    double? labelRate,
+    String? labelRateUnit,
+    bool? isTestProduct,
+    String? pesticideCategory,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
   Future<Map<int, int>> insertTreatmentsBulkForNumbers({
     required int trialId,
     required List<int> sortedTrtNumbers,
