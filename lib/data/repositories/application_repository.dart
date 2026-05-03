@@ -5,6 +5,44 @@ import 'package:drift/drift.dart';
 import '../../core/application_state.dart';
 import '../../core/database/app_database.dart';
 import '../../core/field_operation_date_rules.dart';
+import '../../core/protocol_edit_blocked_exception.dart';
+
+const Set<String> kApplicationAnnotationFields = {
+  'growthStageCode',
+  'growthStageBbchAtApplication',
+  'windSpeed',
+  'windDirection',
+  'temperature',
+  'humidity',
+  'cloudCoverPct',
+  'soilMoisture',
+  'soilTemperature',
+  'soilTempUnit',
+  'soilDepth',
+  'soilDepthUnit',
+  'precipitation',
+  'precipitationMm',
+  'conditionsRecordedAt',
+  'equipmentUsed',
+  'applicationMethod',
+  'nozzleType',
+  'nozzleSpacingCm',
+  'operatingPressure',
+  'pressureUnit',
+  'groundSpeed',
+  'speedUnit',
+  'boomHeightCm',
+  'operatorName',
+  'notes',
+  'treatedArea',
+  'treatedAreaUnit',
+  'spraySolutionPh',
+  'adjuvantName',
+  'adjuvantRate',
+  'adjuvantRateUnit',
+  'waterVolume',
+  'waterVolumeUnit',
+};
 
 class ApplicationRepository {
   final AppDatabase _db;
@@ -111,104 +149,22 @@ class ApplicationRepository {
         prior.status == 'complete';
 
     if (isConfirmed) {
-      // ALCOA+ lock: silently ignore execution fields; allow only annotations.
-      final locked = _withLastEditIfUser(
-        TrialApplicationEventsCompanion(
-          operatorName: companion.operatorName,
-          notes: companion.notes,
-          windSpeed: companion.windSpeed,
-          windDirection: companion.windDirection,
-          temperature: companion.temperature,
-          humidity: companion.humidity,
-          cloudCoverPct: companion.cloudCoverPct,
-          soilMoisture: companion.soilMoisture,
-          soilTemperature: companion.soilTemperature,
-          soilTempUnit: companion.soilTempUnit,
-          soilDepth: companion.soilDepth,
-          soilDepthUnit: companion.soilDepthUnit,
-          precipitation: companion.precipitation,
-          precipitationMm: companion.precipitationMm,
-          conditionsRecordedAt: companion.conditionsRecordedAt,
-        ),
-        performedByUserId,
+      final changed = _diffChangedFields(companion, prior);
+      if (changed.isEmpty) return;
+      final structural =
+          changed.where((f) => !kApplicationAnnotationFields.contains(f));
+      if (structural.isNotEmpty) {
+        throw ProtocolEditBlockedException(
+          'Application is confirmed; structural fields cannot be changed: '
+          '${structural.join(', ')}.',
+        );
+      }
+      return updateApplicationAnnotationsOnly(
+        id,
+        companion,
+        performedBy: performedBy,
+        performedByUserId: performedByUserId,
       );
-      final changedFields = <String, dynamic>{};
-      if (locked.operatorName.present &&
-          locked.operatorName.value != prior.operatorName) {
-        changedFields['operatorName'] = locked.operatorName.value;
-      }
-      if (locked.notes.present && locked.notes.value != prior.notes) {
-        changedFields['notes'] = locked.notes.value;
-      }
-      if (locked.windSpeed.present &&
-          locked.windSpeed.value != prior.windSpeed) {
-        changedFields['windSpeed'] = locked.windSpeed.value;
-      }
-      if (locked.windDirection.present &&
-          locked.windDirection.value != prior.windDirection) {
-        changedFields['windDirection'] = locked.windDirection.value;
-      }
-      if (locked.temperature.present &&
-          locked.temperature.value != prior.temperature) {
-        changedFields['temperature'] = locked.temperature.value;
-      }
-      if (locked.humidity.present && locked.humidity.value != prior.humidity) {
-        changedFields['humidity'] = locked.humidity.value;
-      }
-      if (locked.cloudCoverPct.present &&
-          locked.cloudCoverPct.value != prior.cloudCoverPct) {
-        changedFields['cloudCoverPct'] = locked.cloudCoverPct.value;
-      }
-      if (locked.soilMoisture.present &&
-          locked.soilMoisture.value != prior.soilMoisture) {
-        changedFields['soilMoisture'] = locked.soilMoisture.value;
-      }
-      if (locked.soilTemperature.present &&
-          locked.soilTemperature.value != prior.soilTemperature) {
-        changedFields['soilTemperature'] = locked.soilTemperature.value;
-      }
-      if (locked.precipitation.present &&
-          locked.precipitation.value != prior.precipitation) {
-        changedFields['precipitation'] = locked.precipitation.value;
-      }
-      if (locked.precipitationMm.present &&
-          locked.precipitationMm.value != prior.precipitationMm) {
-        changedFields['precipitationMm'] = locked.precipitationMm.value;
-      }
-      if (locked.conditionsRecordedAt.present &&
-          locked.conditionsRecordedAt.value != prior.conditionsRecordedAt) {
-        changedFields['conditionsRecordedAt'] =
-            locked.conditionsRecordedAt.value?.toIso8601String();
-      }
-      await _db.transaction(() async {
-        await (_db.update(_db.trialApplicationEvents)
-              ..where((e) => e.id.equals(id)))
-            .write(locked);
-        if (changedFields.isNotEmpty) {
-          try {
-            await _db.into(_db.auditEvents).insert(
-                  AuditEventsCompanion.insert(
-                    trialId: Value(prior.trialId),
-                    eventType: 'APPLICATION_EVENT_UPDATED',
-                    description: 'Application annotation updated',
-                    performedBy: Value(performedBy),
-                    performedByUserId: Value(performedByUserId),
-                    metadata: Value(jsonEncode({
-                      'trial_application_event_id': id,
-                      'trial_id': prior.trialId,
-                      'changed_fields': changedFields,
-                    })),
-                  ),
-                );
-          } catch (e, st) {
-            log(
-              'APPLICATION_EVENT_UPDATED audit insert failed: $e\n$st',
-              name: 'ApplicationRepository',
-            );
-          }
-        }
-      });
-      return;
     }
 
     final effectiveDate = companion.applicationDate.present
@@ -246,6 +202,66 @@ class ApplicationRepository {
               })),
             ),
           );
+    });
+  }
+
+  /// Writes only annotation fields to a (possibly confirmed) application event.
+  /// Throws [ArgumentError] if any structural column is `.present` on [companion].
+  /// Audit metadata flags `annotation_only: true`.
+  Future<void> updateApplicationAnnotationsOnly(
+    String id,
+    TrialApplicationEventsCompanion companion, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async {
+    final prior = await (_db.select(_db.trialApplicationEvents)
+          ..where((e) => e.id.equals(id)))
+        .getSingleOrNull();
+    if (prior == null) return;
+
+    final present = _presentFields(companion);
+    final structural =
+        present.where((f) => !kApplicationAnnotationFields.contains(f)).toList()
+          ..sort();
+    if (structural.isNotEmpty) {
+      throw ArgumentError(
+        'updateApplicationAnnotationsOnly received structural fields: '
+        '${structural.join(', ')}.',
+      );
+    }
+
+    final changed = _diffChangedFields(companion, prior);
+    if (changed.isEmpty) return;
+
+    final filtered = _onlyAnnotationFields(companion);
+    final write = _withLastEditIfUser(filtered, performedByUserId);
+
+    await _db.transaction(() async {
+      await (_db.update(_db.trialApplicationEvents)
+            ..where((e) => e.id.equals(id)))
+          .write(write);
+      try {
+        await _db.into(_db.auditEvents).insert(
+              AuditEventsCompanion.insert(
+                trialId: Value(prior.trialId),
+                eventType: 'APPLICATION_EVENT_UPDATED',
+                description: 'Application annotation updated',
+                performedBy: Value(performedBy),
+                performedByUserId: Value(performedByUserId),
+                metadata: Value(jsonEncode({
+                  'trial_application_event_id': id,
+                  'trial_id': prior.trialId,
+                  'changed_fields': changed.toList()..sort(),
+                  'annotation_only': true,
+                })),
+              ),
+            );
+      } catch (e, st) {
+        log(
+          'APPLICATION_EVENT_UPDATED audit insert failed: $e\n$st',
+          name: 'ApplicationRepository',
+        );
+      }
     });
   }
 
@@ -412,6 +428,212 @@ class ApplicationRepository {
             ),
           );
     });
+  }
+
+  /// Returns the set of column names where [c] has a `.present` value.
+  /// Internal columns (`id`, `trialId`, `createdAt`, `lastEditedAt`,
+  /// `lastEditedByUserId`) are excluded — they are managed by the repo.
+  Set<String> _presentFields(TrialApplicationEventsCompanion c) {
+    final out = <String>{};
+    if (c.applicationDate.present) out.add('applicationDate');
+    if (c.applicationTime.present) out.add('applicationTime');
+    if (c.treatmentId.present) out.add('treatmentId');
+    if (c.productName.present) out.add('productName');
+    if (c.rate.present) out.add('rate');
+    if (c.rateUnit.present) out.add('rateUnit');
+    if (c.plotsTreated.present) out.add('plotsTreated');
+    if (c.status.present) out.add('status');
+    if (c.appliedAt.present) out.add('appliedAt');
+    if (c.startedAt.present) out.add('startedAt');
+    if (c.completedAt.present) out.add('completedAt');
+    if (c.closedAt.present) out.add('closedAt');
+    if (c.sessionName.present) out.add('sessionName');
+    if (c.totalProductMixed.present) out.add('totalProductMixed');
+    if (c.totalAreaSprayedHa.present) out.add('totalAreaSprayedHa');
+    if (c.capturedLatitude.present) out.add('capturedLatitude');
+    if (c.capturedLongitude.present) out.add('capturedLongitude');
+    if (c.locationCapturedAt.present) out.add('locationCapturedAt');
+    if (c.growthStageCode.present) out.add('growthStageCode');
+    if (c.growthStageBbchAtApplication.present) {
+      out.add('growthStageBbchAtApplication');
+    }
+    if (c.windSpeed.present) out.add('windSpeed');
+    if (c.windDirection.present) out.add('windDirection');
+    if (c.temperature.present) out.add('temperature');
+    if (c.humidity.present) out.add('humidity');
+    if (c.cloudCoverPct.present) out.add('cloudCoverPct');
+    if (c.soilMoisture.present) out.add('soilMoisture');
+    if (c.soilTemperature.present) out.add('soilTemperature');
+    if (c.soilTempUnit.present) out.add('soilTempUnit');
+    if (c.soilDepth.present) out.add('soilDepth');
+    if (c.soilDepthUnit.present) out.add('soilDepthUnit');
+    if (c.precipitation.present) out.add('precipitation');
+    if (c.precipitationMm.present) out.add('precipitationMm');
+    if (c.conditionsRecordedAt.present) out.add('conditionsRecordedAt');
+    if (c.equipmentUsed.present) out.add('equipmentUsed');
+    if (c.applicationMethod.present) out.add('applicationMethod');
+    if (c.nozzleType.present) out.add('nozzleType');
+    if (c.nozzleSpacingCm.present) out.add('nozzleSpacingCm');
+    if (c.operatingPressure.present) out.add('operatingPressure');
+    if (c.pressureUnit.present) out.add('pressureUnit');
+    if (c.groundSpeed.present) out.add('groundSpeed');
+    if (c.speedUnit.present) out.add('speedUnit');
+    if (c.boomHeightCm.present) out.add('boomHeightCm');
+    if (c.operatorName.present) out.add('operatorName');
+    if (c.notes.present) out.add('notes');
+    if (c.treatedArea.present) out.add('treatedArea');
+    if (c.treatedAreaUnit.present) out.add('treatedAreaUnit');
+    if (c.spraySolutionPh.present) out.add('spraySolutionPh');
+    if (c.adjuvantName.present) out.add('adjuvantName');
+    if (c.adjuvantRate.present) out.add('adjuvantRate');
+    if (c.adjuvantRateUnit.present) out.add('adjuvantRateUnit');
+    if (c.waterVolume.present) out.add('waterVolume');
+    if (c.waterVolumeUnit.present) out.add('waterVolumeUnit');
+    return out;
+  }
+
+  /// Returns the set of column names where [c] differs from [prior].
+  Set<String> _diffChangedFields(
+    TrialApplicationEventsCompanion c,
+    TrialApplicationEvent prior,
+  ) {
+    final out = <String>{};
+    bool diff<T>(Value<T> v, T priorVal) =>
+        v.present && v.value != priorVal;
+    if (diff(c.applicationDate, prior.applicationDate)) {
+      out.add('applicationDate');
+    }
+    if (diff(c.applicationTime, prior.applicationTime)) {
+      out.add('applicationTime');
+    }
+    if (diff(c.treatmentId, prior.treatmentId)) out.add('treatmentId');
+    if (diff(c.productName, prior.productName)) out.add('productName');
+    if (diff(c.rate, prior.rate)) out.add('rate');
+    if (diff(c.rateUnit, prior.rateUnit)) out.add('rateUnit');
+    if (diff(c.plotsTreated, prior.plotsTreated)) out.add('plotsTreated');
+    if (diff(c.status, prior.status)) out.add('status');
+    if (diff(c.appliedAt, prior.appliedAt)) out.add('appliedAt');
+    if (diff(c.startedAt, prior.startedAt)) out.add('startedAt');
+    if (diff(c.completedAt, prior.completedAt)) out.add('completedAt');
+    if (diff(c.closedAt, prior.closedAt)) out.add('closedAt');
+    if (diff(c.sessionName, prior.sessionName)) out.add('sessionName');
+    if (diff(c.totalProductMixed, prior.totalProductMixed)) {
+      out.add('totalProductMixed');
+    }
+    if (diff(c.totalAreaSprayedHa, prior.totalAreaSprayedHa)) {
+      out.add('totalAreaSprayedHa');
+    }
+    if (diff(c.capturedLatitude, prior.capturedLatitude)) {
+      out.add('capturedLatitude');
+    }
+    if (diff(c.capturedLongitude, prior.capturedLongitude)) {
+      out.add('capturedLongitude');
+    }
+    if (diff(c.locationCapturedAt, prior.locationCapturedAt)) {
+      out.add('locationCapturedAt');
+    }
+    if (diff(c.growthStageCode, prior.growthStageCode)) {
+      out.add('growthStageCode');
+    }
+    if (diff(c.growthStageBbchAtApplication,
+        prior.growthStageBbchAtApplication)) {
+      out.add('growthStageBbchAtApplication');
+    }
+    if (diff(c.windSpeed, prior.windSpeed)) out.add('windSpeed');
+    if (diff(c.windDirection, prior.windDirection)) out.add('windDirection');
+    if (diff(c.temperature, prior.temperature)) out.add('temperature');
+    if (diff(c.humidity, prior.humidity)) out.add('humidity');
+    if (diff(c.cloudCoverPct, prior.cloudCoverPct)) out.add('cloudCoverPct');
+    if (diff(c.soilMoisture, prior.soilMoisture)) out.add('soilMoisture');
+    if (diff(c.soilTemperature, prior.soilTemperature)) {
+      out.add('soilTemperature');
+    }
+    if (diff(c.soilTempUnit, prior.soilTempUnit)) out.add('soilTempUnit');
+    if (diff(c.soilDepth, prior.soilDepth)) out.add('soilDepth');
+    if (diff(c.soilDepthUnit, prior.soilDepthUnit)) out.add('soilDepthUnit');
+    if (diff(c.precipitation, prior.precipitation)) out.add('precipitation');
+    if (diff(c.precipitationMm, prior.precipitationMm)) {
+      out.add('precipitationMm');
+    }
+    if (diff(c.conditionsRecordedAt, prior.conditionsRecordedAt)) {
+      out.add('conditionsRecordedAt');
+    }
+    if (diff(c.equipmentUsed, prior.equipmentUsed)) out.add('equipmentUsed');
+    if (diff(c.applicationMethod, prior.applicationMethod)) {
+      out.add('applicationMethod');
+    }
+    if (diff(c.nozzleType, prior.nozzleType)) out.add('nozzleType');
+    if (diff(c.nozzleSpacingCm, prior.nozzleSpacingCm)) {
+      out.add('nozzleSpacingCm');
+    }
+    if (diff(c.operatingPressure, prior.operatingPressure)) {
+      out.add('operatingPressure');
+    }
+    if (diff(c.pressureUnit, prior.pressureUnit)) out.add('pressureUnit');
+    if (diff(c.groundSpeed, prior.groundSpeed)) out.add('groundSpeed');
+    if (diff(c.speedUnit, prior.speedUnit)) out.add('speedUnit');
+    if (diff(c.boomHeightCm, prior.boomHeightCm)) out.add('boomHeightCm');
+    if (diff(c.operatorName, prior.operatorName)) out.add('operatorName');
+    if (diff(c.notes, prior.notes)) out.add('notes');
+    if (diff(c.treatedArea, prior.treatedArea)) out.add('treatedArea');
+    if (diff(c.treatedAreaUnit, prior.treatedAreaUnit)) {
+      out.add('treatedAreaUnit');
+    }
+    if (diff(c.spraySolutionPh, prior.spraySolutionPh)) {
+      out.add('spraySolutionPh');
+    }
+    if (diff(c.adjuvantName, prior.adjuvantName)) out.add('adjuvantName');
+    if (diff(c.adjuvantRate, prior.adjuvantRate)) out.add('adjuvantRate');
+    if (diff(c.adjuvantRateUnit, prior.adjuvantRateUnit)) {
+      out.add('adjuvantRateUnit');
+    }
+    if (diff(c.waterVolume, prior.waterVolume)) out.add('waterVolume');
+    if (diff(c.waterVolumeUnit, prior.waterVolumeUnit)) {
+      out.add('waterVolumeUnit');
+    }
+    return out;
+  }
+
+  /// Returns a fresh companion containing only annotation-field values from [c].
+  /// Structural columns are dropped via `Value.absent()`.
+  TrialApplicationEventsCompanion _onlyAnnotationFields(
+      TrialApplicationEventsCompanion c) {
+    return TrialApplicationEventsCompanion(
+      growthStageCode: c.growthStageCode,
+      growthStageBbchAtApplication: c.growthStageBbchAtApplication,
+      windSpeed: c.windSpeed,
+      windDirection: c.windDirection,
+      temperature: c.temperature,
+      humidity: c.humidity,
+      cloudCoverPct: c.cloudCoverPct,
+      soilMoisture: c.soilMoisture,
+      soilTemperature: c.soilTemperature,
+      soilTempUnit: c.soilTempUnit,
+      soilDepth: c.soilDepth,
+      soilDepthUnit: c.soilDepthUnit,
+      precipitation: c.precipitation,
+      precipitationMm: c.precipitationMm,
+      conditionsRecordedAt: c.conditionsRecordedAt,
+      equipmentUsed: c.equipmentUsed,
+      applicationMethod: c.applicationMethod,
+      nozzleType: c.nozzleType,
+      nozzleSpacingCm: c.nozzleSpacingCm,
+      operatingPressure: c.operatingPressure,
+      pressureUnit: c.pressureUnit,
+      groundSpeed: c.groundSpeed,
+      speedUnit: c.speedUnit,
+      boomHeightCm: c.boomHeightCm,
+      operatorName: c.operatorName,
+      notes: c.notes,
+      treatedArea: c.treatedArea,
+      treatedAreaUnit: c.treatedAreaUnit,
+      spraySolutionPh: c.spraySolutionPh,
+      adjuvantName: c.adjuvantName,
+      adjuvantRate: c.adjuvantRate,
+      adjuvantRateUnit: c.adjuvantRateUnit,
+      waterVolume: c.waterVolume,
+      waterVolumeUnit: c.waterVolumeUnit,
+    );
   }
 
   TrialApplicationEventsCompanion _withLastEditIfUser(

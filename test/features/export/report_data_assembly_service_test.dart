@@ -393,6 +393,15 @@ class MockApplicationRepository implements ApplicationRepository {
       throw UnimplementedError();
 
   @override
+  Future<void> updateApplicationAnnotationsOnly(
+    String id,
+    TrialApplicationEventsCompanion companion, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
   Future<void> markApplicationApplied({
     required String id,
     required DateTime appliedAt,
