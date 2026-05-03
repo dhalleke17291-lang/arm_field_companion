@@ -12,6 +12,7 @@ import '../../../core/providers.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../domain/application_deviation.dart';
 import '../../../shared/widgets/app_empty_state.dart';
+import 'application_assistant_screen.dart';
 import 'application_sheet_content.dart';
 
 /// Applications tab for trial detail: list and add/edit application events.
@@ -422,17 +423,33 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (isPending)
-                    FilledButton.tonal(
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(0, 36),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(0, 36),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () =>
+                              _openAssistant(context, ref, e),
+                          child: const Text('Guide'),
                         ),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      onPressed: () => _showApplySheet(context, ref, e),
-                      child: const Text('Apply Now'),
+                        const SizedBox(width: 4),
+                        FilledButton.tonal(
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size(0, 36),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () => _showApplySheet(context, ref, e),
+                          child: const Text('Apply'),
+                        ),
+                      ],
                     )
                   else
                     Expanded(
@@ -501,6 +518,23 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
         ),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  void _openAssistant(
+    BuildContext context,
+    WidgetRef ref,
+    TrialApplicationEvent e,
+  ) {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => ApplicationAssistantScreen(
+          trial: widget.trial,
+          applicationEvent: e,
+          onMarkAsApplied: () => _showApplySheet(context, ref, e),
+        ),
       ),
     );
   }
