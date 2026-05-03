@@ -149,19 +149,22 @@ class ApplicationRepository {
         prior.status == 'complete';
 
     if (isConfirmed) {
-      final changed = _diffChangedFields(companion, prior);
+      final changed = _actuallyChangedFields(companion, prior);
       if (changed.isEmpty) return;
-      final structural =
+      final structuralChanged =
           changed.where((f) => !kApplicationAnnotationFields.contains(f));
-      if (structural.isNotEmpty) {
+      if (structuralChanged.isNotEmpty) {
         throw ProtocolEditBlockedException(
           'Application is confirmed; structural fields cannot be changed: '
-          '${structural.join(', ')}.',
+          '${structuralChanged.join(', ')}.',
         );
       }
+      // Structural columns may be `.present` unchanged (UI mirrors full row);
+      // [updateApplicationAnnotationsOnly] rejects any structural `.present`.
+      final annotationCompanion = _onlyAnnotationFields(companion);
       return updateApplicationAnnotationsOnly(
         id,
-        companion,
+        annotationCompanion,
         performedBy: performedBy,
         performedByUserId: performedByUserId,
       );
@@ -230,7 +233,7 @@ class ApplicationRepository {
       );
     }
 
-    final changed = _diffChangedFields(companion, prior);
+    final changed = _actuallyChangedFields(companion, prior);
     if (changed.isEmpty) return;
 
     final filtered = _onlyAnnotationFields(companion);
@@ -492,14 +495,19 @@ class ApplicationRepository {
     return out;
   }
 
-  /// Returns the set of column names where [c] differs from [prior].
-  Set<String> _diffChangedFields(
-    TrialApplicationEventsCompanion c,
-    TrialApplicationEvent prior,
+  /// Column names whose values in [companion] actually differ from [existing].
+  ///
+  /// `.present` alone is insufficient: callers may rebuild a full companion
+  /// with unchanged structural fields alongside real annotation edits.
+  Set<String> _actuallyChangedFields(
+    TrialApplicationEventsCompanion companion,
+    TrialApplicationEvent existing,
   ) {
     final out = <String>{};
     bool diff<T>(Value<T> v, T priorVal) =>
         v.present && v.value != priorVal;
+    final c = companion;
+    final prior = existing;
     if (diff(c.applicationDate, prior.applicationDate)) {
       out.add('applicationDate');
     }

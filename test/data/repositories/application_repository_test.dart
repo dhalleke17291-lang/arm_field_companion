@@ -1010,5 +1010,85 @@ void main() {
       expect(after.windSpeed, closeTo(12.0, 0.001));
       expect(after.notes, 'post-applied note');
     });
+
+    test(
+      'ACL-A10: confirmed + full structural mirror .present + only BBCH differs → '
+      'delegates, succeeds',
+      () async {
+        final trialId = await createTrial();
+        final id = await createAppliedApp(trialId);
+        final row = (await repo.getApplicationsForTrial(trialId)).first;
+
+        await repo.updateApplication(
+          id,
+          TrialApplicationEventsCompanion(
+            applicationDate: Value(row.applicationDate),
+            applicationTime: Value(row.applicationTime),
+            treatmentId: Value(row.treatmentId),
+            productName: Value(row.productName),
+            rate: Value(row.rate),
+            rateUnit: Value(row.rateUnit),
+            plotsTreated: Value(row.plotsTreated),
+            status: Value(row.status),
+            appliedAt: Value(row.appliedAt),
+            startedAt: Value(row.startedAt),
+            completedAt: Value(row.completedAt),
+            closedAt: Value(row.closedAt),
+            sessionName: Value(row.sessionName),
+            totalProductMixed: Value(row.totalProductMixed),
+            totalAreaSprayedHa: Value(row.totalAreaSprayedHa),
+            capturedLatitude: Value(row.capturedLatitude),
+            capturedLongitude: Value(row.capturedLongitude),
+            locationCapturedAt: Value(row.locationCapturedAt),
+            growthStageBbchAtApplication: const Value(71),
+          ),
+        );
+
+        final after = (await repo.getApplicationsForTrial(trialId)).first;
+        expect(after.growthStageBbchAtApplication, 71);
+        expect(after.applicationDate, row.applicationDate);
+        expect(after.productName, row.productName);
+      },
+    );
+
+    test(
+      'ACL-A11: confirmed + applicationDate.present unchanged + BBCH change → succeeds',
+      () async {
+        final trialId = await createTrial();
+        final id = await createAppliedApp(trialId);
+        final row = (await repo.getApplicationsForTrial(trialId)).first;
+
+        await repo.updateApplication(
+          id,
+          TrialApplicationEventsCompanion(
+            applicationDate: Value(row.applicationDate),
+            growthStageBbchAtApplication: const Value(55),
+          ),
+        );
+
+        final after = (await repo.getApplicationsForTrial(trialId)).first;
+        expect(after.growthStageBbchAtApplication, 55);
+      },
+    );
+
+    test(
+      'ACL-A12: updateApplicationAnnotationsOnly rejects structural .present even '
+      'when value unchanged',
+      () async {
+        final trialId = await createTrial();
+        final id = await createAppliedApp(trialId);
+        final row = (await repo.getApplicationsForTrial(trialId)).first;
+
+        expect(
+          () => repo.updateApplicationAnnotationsOnly(
+            id,
+            TrialApplicationEventsCompanion(
+              applicationDate: Value(row.applicationDate),
+            ),
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
   });
 }
