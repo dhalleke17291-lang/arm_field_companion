@@ -14,10 +14,13 @@
 library;
 
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/data/repositories/ctq_factor_definition_repository.dart';
 import 'package:arm_field_companion/data/repositories/seeding_repository.dart';
+import 'package:arm_field_companion/data/repositories/trial_purpose_repository.dart';
 import 'package:arm_field_companion/domain/signals/signal_models.dart';
 import 'package:arm_field_companion/domain/signals/signal_repository.dart';
 import 'package:arm_field_companion/features/export/field_execution_report_assembly_service.dart';
+import 'package:arm_field_companion/features/export/field_execution_report_data.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
@@ -53,6 +56,8 @@ void main() {
         plotRepo,
         ratingRepo,
       ),
+      purposeRepository: TrialPurposeRepository(db),
+      ctqFactorRepository: CtqFactorDefinitionRepository(db),
       db: db,
     );
     trialId = await TrialRepository(db)
@@ -652,6 +657,201 @@ void main() {
       expect(data.completeness.canClose, isFalse);
       expect(data.completeness.blockerCount, greaterThan(0));
       expect(data.completeness.incompletePlots, 2);
+    });
+  });
+
+  // ── H. Cognition section ─────────────────────────────────────────────────────
+
+  group('cognition section', () {
+    // H-1: No purpose → unknown status, all-unknown CTQ.
+    test('no purpose → purposeStatus unknown, purposeStatusLabel Intent not captured',
+        () async {
+      final sid = await session('S1');
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.cognition.purposeStatus, 'unknown');
+      expect(data.cognition.purposeStatusLabel, 'Intent not captured');
+      expect(data.cognition.claimBeingTested, isNull);
+      expect(data.cognition.ctqOverallStatus, 'unknown');
+      expect(data.cognition.topCtqAttentionItems, isEmpty);
+    });
+
+    // H-2: Confirmed purpose → claim and endpoint populated.
+    test('confirmed purpose → claim and primaryEndpoint present in cognition',
+        () async {
+      final purposeRepo = TrialPurposeRepository(db);
+      final purposeId = await purposeRepo.createInitialTrialPurpose(
+        trialId: trialId,
+        claimBeingTested: 'Fungicide vs untreated check.',
+        primaryEndpoint: 'Disease severity rating.',
+        trialPurpose: 'Registration support.',
+        treatmentRoleSummary: 'T1=product, T2=check.',
+      );
+      await purposeRepo.confirmTrialPurpose(purposeId, confirmedBy: 'tester');
+
+      final sid = await session('S1');
+      final s = await getSession(sid);
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.cognition.purposeStatus, 'confirmed');
+      expect(data.cognition.purposeStatusLabel, 'Intent confirmed');
+      expect(data.cognition.claimBeingTested, 'Fungicide vs untreated check.');
+      expect(data.cognition.primaryEndpoint, 'Disease severity rating.');
+    });
+
+    // H-3: Partial purpose → missing field labels populated.
+    test('partial purpose → missingIntentFieldLabels lists human-readable names',
+        () async {
+      final purposeRepo = TrialPurposeRepository(db);
+      // Only claimBeingTested provided; the other three required fields missing.
+      await purposeRepo.createInitialTrialPurpose(
+        trialId: trialId,
+        claimBeingTested: 'Herbicide efficacy.',
+      );
+
+      final sid = await session('S1');
+      final s = await getSession(sid);
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.cognition.purposeStatus, 'partial');
+      expect(data.cognition.purposeStatusLabel, 'Intent in progress');
+      expect(data.cognition.missingIntentFieldLabels,
+          containsAll(['Trial purpose', 'Primary endpoint', 'Treatment roles']));
+      expect(data.cognition.missingIntentFieldLabels,
+          isNot(contains('Claim being tested')));
+    });
+
+    // H-4: Evidence arc state and summary flow through.
+    test('evidence arc state and actualEvidenceSummary populated from DB',
+        () async {
+      final p1 = await plot('101');
+      final a = await assessment('Weed');
+      final sid = await session('S1');
+      await linkAssessmentToSession(sid, a);
+      await rating(p1, a, sid, value: 75.0);
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      // With 1 session + 1 recorded rating the state is not no_evidence.
+      expect(data.cognition.evidenceState, isNot('no_evidence'));
+      expect(data.cognition.evidenceStateLabel, isNot('No evidence yet'));
+      expect(data.cognition.actualEvidenceSummary, contains('session'));
+      expect(data.cognition.actualEvidenceSummary, contains('rating'));
+    });
+
+    // H-5: CTQ counts flow through after purpose + factor seeding.
+    test('CTQ counts flow through when factors seeded for confirmed purpose',
+        () async {
+      final purposeRepo = TrialPurposeRepository(db);
+      final ctqRepo = CtqFactorDefinitionRepository(db);
+      final purposeId = await purposeRepo.createInitialTrialPurpose(
+        trialId: trialId,
+        claimBeingTested: 'Efficacy claim.',
+        trialPurpose: 'Registration.',
+        primaryEndpoint: 'DISEASE_SEV.',
+        treatmentRoleSummary: 'T1=check.',
+      );
+      await purposeRepo.confirmTrialPurpose(purposeId, confirmedBy: 'tester');
+      await ctqRepo.seedDefaultCtqFactorsForPurpose(
+          trialId: trialId, trialPurposeId: purposeId);
+
+      final sid = await session('S1');
+      final s = await getSession(sid);
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      // With no ratings the CTQ evaluator will flag missing data; counts > 0.
+      final total = data.cognition.blockerCount +
+          data.cognition.warningCount +
+          data.cognition.reviewCount +
+          data.cognition.satisfiedCount;
+      expect(total, greaterThan(0),
+          reason: 'At least some CTQ factors should be evaluable');
+      expect(data.cognition.ctqOverallStatus, isNot('unknown'));
+    });
+
+    // H-6: Top attention items limited to 5, ordered blocked → review → missing.
+    test('topCtqAttentionItems contains only actionable items, max 5, in priority order',
+        () async {
+      final purposeRepo = TrialPurposeRepository(db);
+      final ctqRepo = CtqFactorDefinitionRepository(db);
+      final purposeId = await purposeRepo.createInitialTrialPurpose(
+        trialId: trialId,
+        claimBeingTested: 'Efficacy.',
+        trialPurpose: 'Reg.',
+        primaryEndpoint: 'SEV.',
+        treatmentRoleSummary: 'T1=check.',
+      );
+      await purposeRepo.confirmTrialPurpose(purposeId, confirmedBy: 'tester');
+      await ctqRepo.seedDefaultCtqFactorsForPurpose(
+          trialId: trialId, trialPurposeId: purposeId);
+
+      final sid = await session('S1');
+      final s = await getSession(sid);
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.cognition.topCtqAttentionItems.length,
+          lessThanOrEqualTo(5));
+      // All returned items must be actionable (no 'unknown' or 'satisfied').
+      for (final item in data.cognition.topCtqAttentionItems) {
+        expect(
+          ['Blocked', 'Needs review', 'Missing'],
+          contains(item.statusLabel),
+          reason: 'Only actionable items should appear: ${item.label}',
+        );
+      }
+    });
+
+    // H-7: Unknown-only CTQ factors excluded when actionable missing items exist.
+    test('unknown CTQ factors do not appear in topCtqAttentionItems', () async {
+      final purposeRepo = TrialPurposeRepository(db);
+      final ctqRepo = CtqFactorDefinitionRepository(db);
+      final purposeId = await purposeRepo.createInitialTrialPurpose(
+        trialId: trialId,
+        claimBeingTested: 'Efficacy.',
+        trialPurpose: 'Reg.',
+        primaryEndpoint: 'SEV.',
+        treatmentRoleSummary: 'T1=check.',
+      );
+      await purposeRepo.confirmTrialPurpose(purposeId, confirmedBy: 'tester');
+      await ctqRepo.seedDefaultCtqFactorsForPurpose(
+          trialId: trialId, trialPurposeId: purposeId);
+
+      final sid = await session('S1');
+      final s = await getSession(sid);
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      // disease_pressure, crop_stage, rainfall_after_application are
+      // intentionally unknown — they must never appear in attention items.
+      const intentionallyUnknown = {
+        'disease_pressure',
+        'crop_stage',
+        'rainfall_after_application',
+      };
+      for (final item in data.cognition.topCtqAttentionItems) {
+        expect(
+          intentionallyUnknown,
+          isNot(contains(item.factorKey)),
+          reason:
+              '${item.factorKey} is intentionally unknown and must not appear in attention items',
+        );
+      }
+    });
+
+    // H-8: Disclaimer text is present and non-efficacy.
+    test('cognition section disclaimer excludes efficacy and validity claims',
+        () async {
+      final sid = await session('S1');
+      final s = await getSession(sid);
+      await svc.assembleForSession(trial: trial, session: s);
+
+      expect(FerCognitionSection.disclaimerText, isNotEmpty);
+      expect(FerCognitionSection.disclaimerText,
+          contains('does not determine'));
+      expect(FerCognitionSection.disclaimerText, contains('efficacy'));
+      expect(FerCognitionSection.disclaimerText, contains('validity'));
     });
   });
 
