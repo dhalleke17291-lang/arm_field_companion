@@ -87,4 +87,52 @@ void main() {
     final factors = await repo.watchCtqFactorsForTrial(ctx.trialId).first;
     expect(factors.length, kCtqDefaultFactorKeys.length); // not doubled
   });
+
+  test(
+      'seedDefaultCtqFactorsForPurpose adds missing keys when partially seeded',
+      () async {
+    final ctx = await makeTrialAndPurpose();
+    // Manually insert only one factor to simulate a trial seeded before V1.5.
+    await repo.addCtqFactorDefinition(
+      trialId: ctx.trialId,
+      trialPurposeId: ctx.purposeId,
+      factorKey: 'application_timing',
+      factorLabel: 'Application Timing',
+      factorType: 'operational',
+      source: 'system_default',
+    );
+    // Re-seed: should add the remaining keys without touching the existing row.
+    await repo.seedDefaultCtqFactorsForPurpose(
+      trialId: ctx.trialId,
+      trialPurposeId: ctx.purposeId,
+    );
+    final factors = await repo.watchCtqFactorsForTrial(ctx.trialId).first;
+    expect(factors.length, kCtqDefaultFactorKeys.length);
+    expect(
+      factors.where((f) => f.factorKey == 'application_timing').length,
+      1, // not duplicated
+    );
+  });
+
+  test('data_variance is included in the default seeded factors', () async {
+    final ctx = await makeTrialAndPurpose();
+    await repo.seedDefaultCtqFactorsForPurpose(
+      trialId: ctx.trialId,
+      trialPurposeId: ctx.purposeId,
+    );
+    final factors = await repo.watchCtqFactorsForTrial(ctx.trialId).first;
+    expect(factors.map((f) => f.factorKey), contains('data_variance'));
+  });
+
+  test('untreated_check_pressure is included in the default seeded factors',
+      () async {
+    final ctx = await makeTrialAndPurpose();
+    await repo.seedDefaultCtqFactorsForPurpose(
+      trialId: ctx.trialId,
+      trialPurposeId: ctx.purposeId,
+    );
+    final factors = await repo.watchCtqFactorsForTrial(ctx.trialId).first;
+    expect(
+        factors.map((f) => f.factorKey), contains('untreated_check_pressure'));
+  });
 }

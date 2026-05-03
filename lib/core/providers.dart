@@ -2201,8 +2201,16 @@ final trialCriticalToQualityProvider =
       overallStatus: 'unknown',
     );
   }
-  final factors =
+  var factors =
       await ctqRepo.watchCtqFactorsForPurpose(currentPurpose.id).first;
+  // Re-seed if existing trials are missing newly added default keys.
+  if (factors.length < kCtqDefaultFactorKeys.length) {
+    await ctqRepo.seedDefaultCtqFactorsForPurpose(
+      trialId: trialId,
+      trialPurposeId: currentPurpose.id,
+    );
+    factors = await ctqRepo.watchCtqFactorsForPurpose(currentPurpose.id).first;
+  }
   return computeTrialCtqDtoV1(db, trialId, factors);
 });
 
