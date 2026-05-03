@@ -182,22 +182,28 @@ Widget _buildAddRepGuardsRow(
 
 const double _kHeatMapMinSpread = 5.0;
 
-/// Interpolates a heat map color from blue (low) → yellow (mid) → red (high)
-/// relative to session min/max. When spread < 5 pts, returns mid color
-/// to avoid exaggerating trivial differences.
+/// Interpolates heat map color across a warm thermal ramp (low → high).
+/// When spread < 5 pts, returns a flat neutral surface.
 Color _heatMapColor(double value, double min, double max) {
-  if (max - min < _kHeatMapMinSpread) return AppDesignTokens.heatMapMid;
+  if (max - min < _kHeatMapMinSpread) return AppDesignTokens.sectionHeaderBg;
   final t = ((value - min) / (max - min)).clamp(0.0, 1.0);
-  if (t < 0.5) {
-    final localT = t * 2;
-    return Color.lerp(
-        AppDesignTokens.heatMapLow, AppDesignTokens.heatMapMid, localT)!;
-  } else {
-    final localT = (t - 0.5) * 2;
-    return Color.lerp(
-        AppDesignTokens.heatMapMid, AppDesignTokens.heatMapHigh, localT)!;
-  }
+  const stops = [
+    Color(0xFFF7F1E6),
+    Color(0xFFF2D6A2),
+    Color(0xFFEFB04C),
+    Color(0xFFE67E22),
+    Color(0xFFB7441E),
+  ];
+  final scaled = t * (stops.length - 1);
+  final lo = scaled.floor().clamp(0, stops.length - 2);
+  final hi = lo + 1;
+  return Color.lerp(stops[lo], stops[hi], scaled - lo)!;
 }
+
+Color _heatMapTextColor(Color cellColor) =>
+    cellColor.computeLuminance() > 0.2
+        ? AppDesignTokens.primaryText
+        : Colors.white;
 
 bool _isLowSpread(double min, double max) => max - min < _kHeatMapMinSpread;
 
@@ -550,8 +556,6 @@ class _PlotLayoutRatingsOverlayState
                 );
               }
               final resolvedAssessmentId = _resolveAssessmentId(assessments);
-              final selectedAssessment =
-                  assessments.firstWhere((a) => a.id == resolvedAssessmentId);
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -606,19 +610,6 @@ class _PlotLayoutRatingsOverlayState
                         },
                       ),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-                    child: Text(
-                      'Assessment: ${selectedAssessment.name}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppDesignTokens.secondaryText,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
                     child: Row(
@@ -680,6 +671,16 @@ Widget _buildRatingsGridForAssessment({
   required TransformationController panZoomController,
 }) {
   final ratingsAsync = ref.watch(sessionRatingsProvider(activeSession.id));
+  final treatments =
+      ref.watch(treatmentsForTrialProvider(trial.id)).valueOrNull ?? [];
+  final assignments =
+      ref.watch(assignmentsForTrialProvider(trial.id)).valueOrNull ?? [];
+  final treatmentCodeById = {for (final t in treatments) t.id: t.code};
+  final treatmentNameById = {
+    for (final t in treatments)
+      t.id: t.name.isNotEmpty ? t.name : t.code,
+  };
+  final assignmentByPlot = {for (final a in assignments) a.plotId: a};
 
   return ratingsAsync.when(
     loading: () => const Center(
@@ -719,6 +720,25 @@ Widget _buildRatingsGridForAssessment({
         }
       }
 
+      // Stats for stats row and tap-to-detail delta.
+      final numericVals = ratingByPlot.values
+          .where((r) => r.resultStatus == 'RECORDED' && r.numericValue != null)
+          .map((r) => r.numericValue!)
+          .toList();
+      final statsN = numericVals.length;
+      final totalLayoutPlots = plots.where((p) => !p.isGuardRow).length;
+      double? statMean;
+      double? statCv;
+      if (statsN > 0) {
+        statMean = numericVals.reduce((a, b) => a + b) / statsN;
+        if (statMean != 0) {
+          final variance = numericVals.fold<double>(
+                  0, (sum, x) => sum + pow(x - statMean!, 2)) /
+              statsN;
+          statCv = (sqrt(variance) / statMean.abs()) * 100;
+        }
+      }
+
       // Rep variability insight for amber border
       final insightsAsync = ref.watch(trialInsightsProvider(trial.id));
       final outlierReps = <int>{};
@@ -747,18 +767,37 @@ Widget _buildRatingsGridForAssessment({
       const tileSize = 56.0;
       const tileSpacing = 6.0;
 
-      return InteractiveViewer(
-        key: ValueKey<Object>(Object.hash(activeSession.id, assessmentId)),
-        transformationController: panZoomController,
-        constrained: false,
-        minScale: 0.3,
-        maxScale: 3.0,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (heatMapEnabled && statsN > 0)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              child: Text(
+                'Mean ${statMean!.toStringAsFixed(1)}'
+                ' · Min ${heatMin.round()}'
+                ' · Max ${heatMax.round()}'
+                ' · CV ${statCv != null ? statCv.toStringAsFixed(1) : '—'}%'
+                ' · Rated $statsN/$totalLayoutPlots',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ),
+          Expanded(
+            child: InteractiveViewer(
+              key: ValueKey<Object>(Object.hash(activeSession.id, assessmentId)),
+              transformationController: panZoomController,
+              constrained: false,
+              minScale: 0.3,
+              maxScale: 3.0,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               ...sortedReps.map((rep) {
                 final repPlots = List<Plot>.from(byRep[rep]!);
                 repPlots.sort((a, b) =>
@@ -798,6 +837,13 @@ Widget _buildRatingsGridForAssessment({
                         ...repPlots.map((plot) {
                           final rating = ratingByPlot[plot.id];
                           final count = assessmentCountByPlot[plot.id] ?? 0;
+                          final trtId =
+                              assignmentByPlot[plot.id]?.treatmentId ??
+                                  plot.treatmentId;
+                          final trtCode =
+                              trtId != null ? treatmentCodeById[trtId] : null;
+                          final trtName =
+                              trtId != null ? treatmentNameById[trtId] : null;
 
                           // Heat map mode: gradient color from value
                           final Color cellColor;
@@ -811,7 +857,7 @@ Widget _buildRatingsGridForAssessment({
                                 ? _heatMapColor(val, heatMin, heatMax)
                                 : AppDesignTokens.heatMapEmpty;
                             textColor = val != null
-                                ? Colors.white
+                                ? _heatMapTextColor(cellColor)
                                 : AppDesignTokens.secondaryText;
                             label = val != null ? val.round().toString() : '—';
                           } else {
@@ -822,7 +868,17 @@ Widget _buildRatingsGridForAssessment({
 
                           return Padding(
                             padding: const EdgeInsets.only(right: tileSpacing),
-                            child: Stack(
+                            child: GestureDetector(
+                              onTap: heatMapEnabled
+                                  ? () => _showPlotDetailSheet(
+                                        context,
+                                        plot: plot,
+                                        rating: rating,
+                                        trtName: trtName,
+                                        statMean: statMean,
+                                      )
+                                  : null,
+                              child: Stack(
                               children: [
                                 Container(
                                   width: tileSize,
@@ -855,6 +911,21 @@ Widget _buildRatingsGridForAssessment({
                                                 ),
                                               ),
                                             ),
+                                            // Treatment code top-right
+                                            if (trtCode != null)
+                                              Positioned(
+                                                right: 3,
+                                                top: 2,
+                                                child: Text(
+                                                  trtCode,
+                                                  style: TextStyle(
+                                                    fontSize: 8,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: textColor
+                                                        .withValues(alpha: 0.7),
+                                                  ),
+                                                ),
+                                              ),
                                             // Value centered
                                             Center(
                                               child: Text(
@@ -928,6 +999,7 @@ Widget _buildRatingsGridForAssessment({
                                   ),
                               ],
                             ),
+                            ),
                           );
                         }),
                       ],
@@ -935,144 +1007,300 @@ Widget _buildRatingsGridForAssessment({
                   ),
                 );
               }),
-              if (heatMapEnabled)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, bottom: 8),
-                  child: Text(
-                    _heatMapLayoutCoverageCaption(
-                      plots: plots,
-                      ratingByPlot: ratingByPlot,
-                    ),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontStyle: FontStyle.italic,
-                      color: AppDesignTokens.secondaryText,
-                    ),
-                  ),
+                  ],
                 ),
-              const SizedBox(height: 8),
-              if (heatMapEnabled)
-                DecoratedBox(
-                  decoration: _plotLayoutLegendPanelDecoration(context),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 10),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!hasNumericHeat)
-                          const Text(
-                            'No recorded numeric values for this assessment.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              fontStyle: FontStyle.italic,
-                              color: AppDesignTokens.secondaryText,
-                            ),
-                          )
-                        else if (_isLowSpread(heatMin, heatMax))
-                          Text(
-                            'Low spread — values range ${heatMin.round()}–${heatMax.round()}',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              fontStyle: FontStyle.italic,
-                              color: AppDesignTokens.secondaryText,
-                            ),
-                          )
-                        else
-                          Row(
-                            children: [
-                              Text(
-                                'Low ${heatMin.round()}',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppDesignTokens.secondaryText,
-                                ),
+              ),
+            ),
+          ),
+          if (heatMapEnabled) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: DecoratedBox(
+                decoration: _plotLayoutLegendPanelDecoration(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Heat map scale · numeric value',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppDesignTokens.secondaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      if (!hasNumericHeat)
+                        const Text(
+                          'No recorded numeric values for this assessment.',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontStyle: FontStyle.italic,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        )
+                      else if (_isLowSpread(heatMin, heatMax))
+                        const Text(
+                          'Values within 5 points — low spread',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontStyle: FontStyle.italic,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        )
+                      else ...[
+                        Row(
+                          children: [
+                            Text(
+                              '${heatMin.round()}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppDesignTokens.secondaryText,
                               ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Container(
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(5),
-                                    gradient: const LinearGradient(
-                                      colors: [
-                                        AppDesignTokens.heatMapLow,
-                                        AppDesignTokens.heatMapMid,
-                                        AppDesignTokens.heatMapHigh,
-                                      ],
-                                    ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Container(
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(3),
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFFF7F1E6),
+                                      Color(0xFFB7441E),
+                                    ],
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'High ${heatMax.round()}',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppDesignTokens.secondaryText,
-                                ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${heatMax.round()}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppDesignTokens.secondaryText,
                               ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-                )
-              else
-                DecoratedBox(
-                  decoration: _plotLayoutLegendPanelDecoration(context),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 10,
-                    ),
-                    child: Wrap(
-                      spacing: 14,
-                      runSpacing: 4,
-                      alignment: WrapAlignment.center,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        _ratingOverlayLegendChip(
-                          context,
-                          const Color(0xFF2D5A40),
-                          'Recorded',
+                            ),
+                          ],
                         ),
-                        _ratingOverlayLegendChip(
-                          context,
-                          Colors.grey.shade400,
-                          'Not observed',
-                        ),
-                        _ratingOverlayLegendChip(
-                          context,
-                          const Color(0xFFF59E0B),
-                          'Missing',
-                        ),
-                        _ratingOverlayLegendChip(
-                          context,
-                          const Color(0xFFEA580C),
-                          'Tech issue',
-                        ),
-                        _ratingOverlayLegendChip(
-                          context,
-                          Colors.white,
-                          'No record',
+                        const SizedBox(height: 2),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'low',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppDesignTokens.secondaryText,
+                              ),
+                            ),
+                            Text(
+                              'high',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppDesignTokens.secondaryText,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
-            ],
-          ),
-        ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+              child: Text(
+                _heatMapLayoutCoverageCaption(
+                  plots: plots,
+                  ratingByPlot: ratingByPlot,
+                ),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontStyle: FontStyle.italic,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(12, 2, 12, 8),
+              child: Text(
+                'Tap a plot for details',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontStyle: FontStyle.italic,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ),
+          ],
+          if (!heatMapEnabled)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              child: DecoratedBox(
+                decoration: _plotLayoutLegendPanelDecoration(context),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
+                  ),
+                  child: Wrap(
+                    spacing: 14,
+                    runSpacing: 4,
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _ratingOverlayLegendChip(
+                        context,
+                        const Color(0xFF2D5A40),
+                        'Recorded',
+                      ),
+                      _ratingOverlayLegendChip(
+                        context,
+                        Colors.grey.shade400,
+                        'Not observed',
+                      ),
+                      _ratingOverlayLegendChip(
+                        context,
+                        const Color(0xFFF59E0B),
+                        'Missing',
+                      ),
+                      _ratingOverlayLegendChip(
+                        context,
+                        const Color(0xFFEA580C),
+                        'Tech issue',
+                      ),
+                      _ratingOverlayLegendChip(
+                        context,
+                        Colors.white,
+                        'No record',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       );
     },
   );
 }
+
+void _showPlotDetailSheet(
+  BuildContext context, {
+  required Plot plot,
+  required RatingRecord? rating,
+  required String? trtName,
+  required double? statMean,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (_) => Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Plot ${plot.plotId} · Rep ${plot.rep ?? '?'}',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+          if (trtName != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              trtName,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: AppDesignTokens.borderCrisp),
+          const SizedBox(height: 10),
+          if (rating == null ||
+              rating.resultStatus != 'RECORDED' ||
+              rating.numericValue == null)
+            const Text(
+              'No rating recorded for this session.',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppDesignTokens.secondaryText,
+              ),
+            )
+          else ...[
+            _detailRow('Value', '${rating.numericValue!.round()}'),
+            if (statMean != null)
+              _detailRow(
+                'vs mean',
+                '${(rating.numericValue! - statMean) >= 0 ? '+' : ''}'
+                '${(rating.numericValue! - statMean).toStringAsFixed(1)}',
+              ),
+            _detailRow(
+              'Rater',
+              rating.raterName?.isNotEmpty == true
+                  ? rating.raterName!
+                  : 'Not recorded',
+            ),
+            _detailRow(
+              'Rated at',
+              rating.ratingTime?.isNotEmpty == true
+                  ? rating.ratingTime!
+                  : '—',
+            ),
+            _detailRow(
+              'Confidence',
+              rating.confidence?.isNotEmpty == true
+                  ? rating.confidence!
+                  : '—',
+            ),
+            _detailRow('Status', 'RECORDED'),
+            _detailRow('Amended', rating.amended ? 'Yes' : 'No'),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _detailRow(String label, String value) => Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppDesignTokens.primaryText,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
 
 Widget _buildRatingsOverlay({
   required BuildContext context,
