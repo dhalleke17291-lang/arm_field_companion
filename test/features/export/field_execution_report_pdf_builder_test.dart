@@ -6,6 +6,28 @@ import 'package:arm_field_companion/features/export/field_execution_report_pdf_b
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  // Fully-populated FerCognitionSection with all required fields and safe
+  // defaults. List fields empty, status strings 'unknown'.
+  FerCognitionSection emptyCognition() => const FerCognitionSection(
+        purposeStatus: 'unknown',
+        purposeStatusLabel: 'Intent not captured',
+        claimBeingTested: null,
+        primaryEndpoint: null,
+        missingIntentFields: [],
+        missingIntentFieldLabels: [],
+        evidenceState: 'no_evidence',
+        evidenceStateLabel: 'No evidence yet',
+        actualEvidenceSummary: '',
+        missingEvidenceItems: [],
+        ctqOverallStatus: 'unknown',
+        ctqOverallStatusLabel: 'Not yet evaluated',
+        blockerCount: 0,
+        warningCount: 0,
+        reviewCount: 0,
+        satisfiedCount: 0,
+        topCtqAttentionItems: [],
+      );
+
   // Minimal valid FieldExecutionReportData — all sections populated with
   // empty/zero values. Used to verify the builder renders without throwing.
   FieldExecutionReportData minimal() {
@@ -61,6 +83,7 @@ void main() {
       signals: signals,
       completeness: completeness,
       executionStatement: 'Session "Session 1" rated 0 of 0 plots.',
+      cognition: emptyCognition(),
       generatedAt: DateTime(2026, 4, 1, 8, 0),
     );
   }
@@ -145,6 +168,7 @@ void main() {
         ),
         executionStatement:
             'Session "S-ARM" rated 20 of 20 plots. 1 completeness warning recorded.',
+        cognition: emptyCognition(),
         generatedAt: DateTime(2026, 4, 5, 14, 30),
       );
 
@@ -228,6 +252,7 @@ void main() {
         ),
         executionStatement:
             'Session "S-Signals" rated 8 of 10 plots. 2 open signal(s) recorded.',
+        cognition: emptyCognition(),
         generatedAt: DateTime(2026, 4, 10, 9, 15),
       );
 
@@ -241,6 +266,164 @@ void main() {
       // Verifies the renderer contract: no repositories, no providers injected.
       final builder = FieldExecutionReportPdfBuilder();
       expect(builder, isNotNull);
+    });
+
+    // Constructs a full FieldExecutionReportData with fixed base sections and
+    // the given cognition. Avoids copyWith (not defined on the DTOs).
+    FieldExecutionReportData withCognition(FerCognitionSection cog) =>
+        FieldExecutionReportData(
+          identity: const FerIdentity(
+            trialId: 1,
+            trialName: 'Test Trial',
+            protocolNumber: null,
+            crop: null,
+            location: null,
+            season: null,
+            sessionId: 1,
+            sessionName: 'Session 1',
+            sessionDateLocal: '2026-04-01',
+            sessionStatus: 'open',
+            raterName: null,
+          ),
+          protocolContext: const FerProtocolContext(
+            isArmLinked: false,
+            isArmTrial: false,
+            divergences: [],
+          ),
+          sessionGrid: const FerSessionGrid(
+            dataPlotCount: 0,
+            assessmentCount: 0,
+            rated: 0,
+            unrated: 0,
+            withIssues: 0,
+            edited: 0,
+            flagged: 0,
+          ),
+          evidenceRecord: const FerEvidenceRecord(
+            photoCount: 0,
+            photoIds: [],
+            hasGps: false,
+            hasWeather: false,
+            hasTimestamp: true,
+          ),
+          signals: const FerSignalsSection(openSignals: []),
+          completeness: const FerCompletenessSection(
+            expectedPlots: 0,
+            completedPlots: 0,
+            incompletePlots: 0,
+            canClose: true,
+            blockerCount: 0,
+            warningCount: 0,
+          ),
+          executionStatement: 'Session "Session 1" rated 0 of 0 plots.',
+          cognition: cog,
+          generatedAt: DateTime(2026, 4, 1, 8, 0),
+        );
+
+    // PDF-9: Cognition section with full confirmed-purpose block renders.
+    test('renders cognition section — valid PDF with full cognition block',
+        () async {
+      final data = withCognition(const FerCognitionSection(
+        purposeStatus: 'confirmed',
+        purposeStatusLabel: 'Intent confirmed',
+        claimBeingTested: 'Fungicide vs untreated check.',
+        primaryEndpoint: 'Disease severity rating.',
+        missingIntentFields: [],
+        missingIntentFieldLabels: [],
+        evidenceState: 'sufficient_for_review',
+        evidenceStateLabel: 'Sufficient for review',
+        actualEvidenceSummary: '2 sessions · 96 ratings · no photos',
+        missingEvidenceItems: [],
+        ctqOverallStatus: 'ready_for_review',
+        ctqOverallStatusLabel: 'Ready for review',
+        blockerCount: 0,
+        warningCount: 0,
+        reviewCount: 0,
+        satisfiedCount: 7,
+        topCtqAttentionItems: [],
+      ));
+      final bytes = await FieldExecutionReportPdfBuilder().build(data);
+      expect(bytes.length, greaterThan(100));
+      expect(bytes.sublist(0, 5), equals([0x25, 0x50, 0x44, 0x46, 0x2D]));
+    });
+
+    // PDF-10: Unknown purpose state renders without throwing.
+    test('renders unknown purpose state without throwing', () async {
+      // minimal() already uses emptyCognition() which has purposeStatus='unknown'.
+      final bytes = await FieldExecutionReportPdfBuilder().build(minimal());
+      expect(bytes.length, greaterThan(100));
+    });
+
+    // PDF-11: Confirmed claim, endpoint, and attention items render.
+    test('renders confirmed claim and endpoint without throwing', () async {
+      final data = withCognition(const FerCognitionSection(
+        purposeStatus: 'confirmed',
+        purposeStatusLabel: 'Intent confirmed',
+        claimBeingTested: 'Herbicide weed control vs check.',
+        primaryEndpoint: 'Weed count per plot.',
+        missingIntentFields: [],
+        missingIntentFieldLabels: [],
+        evidenceState: 'partial',
+        evidenceStateLabel: 'Partial evidence',
+        actualEvidenceSummary: '1 session · 48 ratings · no photos',
+        missingEvidenceItems: ['No photos attached'],
+        ctqOverallStatus: 'incomplete',
+        ctqOverallStatusLabel: 'Needs evidence',
+        blockerCount: 0,
+        warningCount: 3,
+        reviewCount: 0,
+        satisfiedCount: 4,
+        topCtqAttentionItems: [
+          FerCognitionAttentionItem(
+            factorKey: 'photo_evidence',
+            label: 'Photo Evidence',
+            statusLabel: 'Missing',
+          ),
+        ],
+      ));
+      final bytes = await FieldExecutionReportPdfBuilder().build(data);
+      expect(bytes.length, greaterThan(100));
+      expect(bytes.sublist(0, 5), equals([0x25, 0x50, 0x44, 0x46, 0x2D]));
+    });
+
+    // PDF-12: Pre-baked 'Needs evidence' label (not raw 'incomplete') renders.
+    test("cognition DTO with 'Needs evidence' label renders without throwing",
+        () async {
+      // The assembly service maps 'incomplete' → 'Needs evidence' before
+      // the DTO reaches the builder. Verify the builder renders it cleanly.
+      final data = withCognition(const FerCognitionSection(
+        purposeStatus: 'unknown',
+        purposeStatusLabel: 'Intent not captured',
+        claimBeingTested: null,
+        primaryEndpoint: null,
+        missingIntentFields: [],
+        missingIntentFieldLabels: [],
+        evidenceState: 'no_evidence',
+        evidenceStateLabel: 'No evidence yet',
+        actualEvidenceSummary: '',
+        missingEvidenceItems: [],
+        ctqOverallStatus: 'incomplete',
+        ctqOverallStatusLabel: 'Needs evidence',
+        blockerCount: 0,
+        warningCount: 2,
+        reviewCount: 0,
+        satisfiedCount: 0,
+        topCtqAttentionItems: [],
+      ));
+      final bytes = await FieldExecutionReportPdfBuilder().build(data);
+      expect(bytes.length, greaterThan(100));
+    });
+
+    // PDF-13: Disclaimer text renders — validated via static const on DTO.
+    test('cognition section disclaimer text is non-empty and non-efficacy',
+        () async {
+      // The disclaimer is a static const on FerCognitionSection; the builder
+      // renders it from there. Validate its content without PDF text extraction.
+      expect(FerCognitionSection.disclaimerText, isNotEmpty);
+      expect(FerCognitionSection.disclaimerText, contains('does not determine'));
+      // Render to confirm no throw.
+      final bytes = await FieldExecutionReportPdfBuilder().build(minimal());
+      expect(bytes.length, greaterThan(100));
     });
   });
 }

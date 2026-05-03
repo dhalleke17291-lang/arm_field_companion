@@ -227,6 +227,100 @@ class FerCompletenessSection {
   final int warningCount;
 }
 
+// ── Section H: Trial cognition — purpose, evidence arc, CTQ ──────────────────
+
+/// One actionable CTQ factor row for the cognition section.
+///
+/// Only blocked / review_needed / missing items are included; the status label
+/// is pre-baked at assembly time so the PDF builder needs no label logic.
+class FerCognitionAttentionItem {
+  const FerCognitionAttentionItem({
+    required this.factorKey,
+    required this.label,
+    required this.statusLabel,
+  });
+
+  final String factorKey;
+  final String label;
+
+  /// Human-readable status, computed by the assembly service.
+  final String statusLabel;
+}
+
+/// Trial-level cognition summary: purpose, evidence arc, and CTQ readiness.
+///
+/// This section is trial-scoped. All other sections of [FieldExecutionReportData]
+/// are session-scoped. Status strings carry pre-computed human labels so the
+/// PDF builder is a pure renderer with no label logic.
+class FerCognitionSection {
+  const FerCognitionSection({
+    required this.purposeStatus,
+    required this.purposeStatusLabel,
+    this.claimBeingTested,
+    this.primaryEndpoint,
+    required this.missingIntentFields,
+    required this.missingIntentFieldLabels,
+    required this.evidenceState,
+    required this.evidenceStateLabel,
+    required this.actualEvidenceSummary,
+    required this.missingEvidenceItems,
+    required this.ctqOverallStatus,
+    required this.ctqOverallStatusLabel,
+    required this.blockerCount,
+    required this.warningCount,
+    required this.reviewCount,
+    required this.satisfiedCount,
+    required this.topCtqAttentionItems,
+  });
+
+  /// Non-efficacy, non-validity disclaimer required on all cognition output.
+  static const String disclaimerText =
+      'This section summarises evidence readiness and review needs. '
+      'It does not determine treatment efficacy or statistical validity.';
+
+  /// Raw purpose status: unknown | draft | partial | confirmed.
+  final String purposeStatus;
+
+  /// Human-readable label, e.g. "Intent confirmed".
+  final String purposeStatusLabel;
+
+  final String? claimBeingTested;
+  final String? primaryEndpoint;
+
+  /// Raw ModeCQuestionKeys for required fields that have no captured answer.
+  final List<String> missingIntentFields;
+
+  /// Human-readable names parallel to [missingIntentFields].
+  final List<String> missingIntentFieldLabels;
+
+  /// Raw evidence state: no_evidence | started | partial | sufficient_for_review
+  /// | export_ready_candidate.
+  final String evidenceState;
+
+  /// Human-readable label, e.g. "No evidence yet".
+  final String evidenceStateLabel;
+
+  /// Narrative summary, e.g. "2 sessions · 96 ratings · no photos".
+  final String actualEvidenceSummary;
+
+  final List<String> missingEvidenceItems;
+
+  /// Raw CTQ overall status: unknown | incomplete | review_needed | ready_for_review.
+  final String ctqOverallStatus;
+
+  /// Human-readable label, e.g. "Needs review".
+  final String ctqOverallStatusLabel;
+
+  final int blockerCount;
+  final int warningCount;
+  final int reviewCount;
+  final int satisfiedCount;
+
+  /// Actionable items only (blocked / review_needed / missing), ranked by
+  /// severity, capped at 5. Does not include unknown / future factors.
+  final List<FerCognitionAttentionItem> topCtqAttentionItems;
+}
+
 // ── Top-level ─────────────────────────────────────────────────────────────────
 
 class FieldExecutionReportData {
@@ -238,6 +332,7 @@ class FieldExecutionReportData {
     required this.signals,
     required this.completeness,
     required this.executionStatement,
+    required this.cognition,
     required this.generatedAt,
   });
 
@@ -250,6 +345,9 @@ class FieldExecutionReportData {
 
   /// Deterministic factual summary generated from the assembled sections.
   final String executionStatement;
+
+  /// Trial-level cognition: purpose, evidence arc, CTQ readiness.
+  final FerCognitionSection cognition;
 
   final DateTime generatedAt;
 }

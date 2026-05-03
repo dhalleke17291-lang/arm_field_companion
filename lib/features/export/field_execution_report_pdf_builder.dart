@@ -56,33 +56,38 @@ class FieldExecutionReportPdfBuilder {
         _identitySection(data.identity),
         pw.SizedBox(height: 16),
 
-        // ── 2. PROTOCOL CONTEXT ──
-        _sectionTitle('2. Protocol Context'),
+        // ── 2. TRIAL PURPOSE & EVIDENCE READINESS ──
+        _sectionTitle('2. Trial Purpose & Evidence Readiness'),
+        _cognitionSection(data.cognition),
+        pw.SizedBox(height: 16),
+
+        // ── 3. PROTOCOL CONTEXT ──
+        _sectionTitle('3. Protocol Context'),
         _protocolSection(data.protocolContext),
         pw.SizedBox(height: 16),
 
-        // ── 3. SESSION GRID ──
-        _sectionTitle('3. Session Grid'),
+        // ── 4. SESSION GRID ──
+        _sectionTitle('4. Session Grid'),
         _sessionGridSection(data.sessionGrid),
         pw.SizedBox(height: 16),
 
-        // ── 4. EVIDENCE RECORD ──
-        _sectionTitle('4. Evidence Record'),
+        // ── 5. EVIDENCE RECORD ──
+        _sectionTitle('5. Evidence Record'),
         _evidenceSection(data.evidenceRecord),
         pw.SizedBox(height: 16),
 
-        // ── 5. SIGNALS ──
-        _sectionTitle('5. Signals'),
+        // ── 6. SIGNALS ──
+        _sectionTitle('6. Signals'),
         _signalsSection(data.signals),
         pw.SizedBox(height: 16),
 
-        // ── 6. COMPLETENESS ──
-        _sectionTitle('6. Completeness'),
+        // ── 7. COMPLETENESS ──
+        _sectionTitle('7. Completeness'),
         _completenessSection(data.completeness),
         pw.SizedBox(height: 16),
 
-        // ── 7. EXECUTION STATEMENT ──
-        _sectionTitle('7. Execution Statement'),
+        // ── 8. EXECUTION STATEMENT ──
+        _sectionTitle('8. Execution Statement'),
         _executionStatementSection(data.executionStatement),
       ],
     ));
@@ -154,7 +159,68 @@ class FieldExecutionReportPdfBuilder {
     ]);
   }
 
-  // ── Section 2: Protocol context ───────────────────────────────────────────
+  // ── Section 2: Trial purpose & evidence readiness ────────────────────────
+
+  pw.Widget _cognitionSection(FerCognitionSection cog) {
+    final widgets = <pw.Widget>[];
+
+    // Purpose sub-block
+    final purposeRows = <List<String>>[
+      ['Purpose', cog.purposeStatusLabel],
+      if (cog.claimBeingTested != null && cog.claimBeingTested!.isNotEmpty)
+        ['Claim', cog.claimBeingTested!],
+      if (cog.primaryEndpoint != null && cog.primaryEndpoint!.isNotEmpty)
+        ['Primary endpoint', cog.primaryEndpoint!],
+      if (cog.missingIntentFieldLabels.isNotEmpty)
+        ['Missing fields', cog.missingIntentFieldLabels.join(', ')],
+    ];
+    widgets.add(_keyValueTable(purposeRows));
+    widgets.add(pw.SizedBox(height: 6));
+
+    // Evidence arc sub-block
+    final evidenceRows = <List<String>>[
+      ['Evidence state', cog.evidenceStateLabel],
+      if (cog.actualEvidenceSummary.isNotEmpty &&
+          cog.actualEvidenceSummary != 'No sessions.')
+        ['Evidence summary', cog.actualEvidenceSummary],
+      if (cog.missingEvidenceItems.isNotEmpty)
+        ['Evidence gaps', cog.missingEvidenceItems.join('; ')],
+    ];
+    widgets.add(_keyValueTable(evidenceRows));
+    widgets.add(pw.SizedBox(height: 6));
+
+    // CTQ sub-block
+    final ctqRows = <List<String>>[
+      ['Critical to quality', cog.ctqOverallStatusLabel],
+    ];
+    final countParts = <String>[];
+    if (cog.blockerCount > 0) countParts.add('${cog.blockerCount} blocked');
+    if (cog.reviewCount > 0) countParts.add('${cog.reviewCount} needs review');
+    if (cog.warningCount > 0) {
+      countParts.add('${cog.warningCount} needs evidence');
+    }
+    if (cog.satisfiedCount > 0) {
+      countParts.add('${cog.satisfiedCount} satisfied');
+    }
+    if (countParts.isNotEmpty) {
+      ctqRows.add(['CTQ checks', countParts.join(' · ')]);
+    }
+    for (final item in cog.topCtqAttentionItems) {
+      ctqRows.add(['  ${item.label}', item.statusLabel]);
+    }
+    widgets.add(_keyValueTable(ctqRows));
+    widgets.add(pw.SizedBox(height: 6));
+
+    // Disclaimer
+    widgets.add(_noteText(FerCognitionSection.disclaimerText));
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: widgets,
+    );
+  }
+
+  // ── Section 3: Protocol context ───────────────────────────────────────────
 
   pw.Widget _protocolSection(FerProtocolContext ctx) {
     if (!ctx.isArmTrial) {

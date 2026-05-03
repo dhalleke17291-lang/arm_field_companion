@@ -2,13 +2,18 @@ import 'package:drift/drift.dart' as drift;
 
 import '../../core/database/app_database.dart';
 import '../../core/plot_analysis_eligibility.dart';
+import '../../data/repositories/ctq_factor_definition_repository.dart';
 import '../../data/repositories/seeding_repository.dart';
+import '../../data/repositories/trial_purpose_repository.dart';
+import '../../domain/signals/signal_repository.dart';
+import '../../domain/trial_cognition/trial_ctq_dto.dart';
+import '../../domain/trial_cognition/trial_ctq_evaluator.dart';
+import '../../domain/trial_cognition/trial_evidence_arc_evaluator.dart';
 import '../../features/plots/plot_repository.dart';
 import '../../features/ratings/rating_repository.dart';
 import '../../features/sessions/domain/session_completeness_report.dart';
 import '../../features/sessions/session_repository.dart';
 import '../../features/sessions/usecases/compute_session_completeness_usecase.dart';
-import '../../domain/signals/signal_repository.dart';
 import 'field_execution_report_data.dart';
 
 /// Assembles [FieldExecutionReportData] for a single session from existing
@@ -25,6 +30,8 @@ class FieldExecutionReportAssemblyService {
     required SignalRepository signalRepository,
     required SeedingRepository seedingRepository,
     required ComputeSessionCompletenessUseCase completenessUseCase,
+    required TrialPurposeRepository purposeRepository,
+    required CtqFactorDefinitionRepository ctqFactorRepository,
     required AppDatabase db,
   })  : _plotRepo = plotRepository,
         _ratingRepo = ratingRepository,
@@ -32,6 +39,8 @@ class FieldExecutionReportAssemblyService {
         _signalRepo = signalRepository,
         _seedingRepo = seedingRepository,
         _completenessUseCase = completenessUseCase,
+        _purposeRepo = purposeRepository,
+        _ctqFactorRepo = ctqFactorRepository,
         _db = db;
 
   final PlotRepository _plotRepo;
@@ -40,6 +49,8 @@ class FieldExecutionReportAssemblyService {
   final SignalRepository _signalRepo;
   final SeedingRepository _seedingRepo;
   final ComputeSessionCompletenessUseCase _completenessUseCase;
+  final TrialPurposeRepository _purposeRepo;
+  final CtqFactorDefinitionRepository _ctqFactorRepo;
   final AppDatabase _db;
 
   /// Assembles the full report for [session] within [trial].
@@ -212,6 +223,8 @@ class FieldExecutionReportAssemblyService {
       completeness: completeness,
     );
 
+    final cognition = await _assembleCognitionSection(trial.id);
+
     return FieldExecutionReportData(
       identity: identity,
       protocolContext: protocolContext,
@@ -220,6 +233,7 @@ class FieldExecutionReportAssemblyService {
       signals: signals,
       completeness: completeness,
       executionStatement: executionStatement,
+      cognition: cognition,
       generatedAt: DateTime.now(),
     );
   }
@@ -361,4 +375,150 @@ class FieldExecutionReportAssemblyService {
 
     return parts.join(' ');
   }
+
+  // ── Section H: Cognition ─────────────────────────────────────────────────────
+
+  Future<FerCognitionSection> _assembleCognitionSection(int trialId) async {
+    final purpose = await _purposeRepo.getCurrentTrialPurpose(trialId);
+    final arcDto = await computeTrialEvidenceArcDto(_db, trialId);
+
+    final missingFields = _computeMissingFields(purpose);
+    final purposeStatus = _computePurposeStatus(purpose, missingFields);
+
+    final TrialCtqDto ctqDto;
+    if (purpose == null) {
+      ctqDto = TrialCtqDto(
+        trialId: trialId,
+        ctqItems: const [],
+        blockerCount: 0,
+        warningCount: 0,
+        reviewCount: 0,
+        satisfiedCount: 0,
+        overallStatus: 'unknown',
+      );
+    } else {
+      final factors =
+          await _ctqFactorRepo.watchCtqFactorsForPurpose(purpose.id).first;
+      ctqDto = factors.isEmpty
+          ? TrialCtqDto(
+              trialId: trialId,
+              ctqItems: const [],
+              blockerCount: 0,
+              warningCount: 0,
+              reviewCount: 0,
+              satisfiedCount: 0,
+              overallStatus: 'unknown',
+            )
+          : await computeTrialCtqDtoV1(_db, trialId, factors);
+    }
+
+    const actionable = {'blocked', 'review_needed', 'missing'};
+    int rank(String s) => switch (s) {
+          'blocked' => 0,
+          'review_needed' => 1,
+          'missing' => 2,
+          _ => 3,
+        };
+    final topItems = (ctqDto.ctqItems
+            .where((item) => actionable.contains(item.status))
+            .toList()
+          ..sort((a, b) => rank(a.status).compareTo(rank(b.status))))
+        .take(5)
+        .map((item) => FerCognitionAttentionItem(
+              factorKey: item.factorKey,
+              label: item.label,
+              statusLabel: _ctqItemStatusLabel(item.status),
+            ))
+        .toList();
+
+    return FerCognitionSection(
+      purposeStatus: purposeStatus,
+      purposeStatusLabel: _purposeStatusLabel(purposeStatus),
+      claimBeingTested: purpose?.claimBeingTested,
+      primaryEndpoint: purpose?.primaryEndpoint,
+      missingIntentFields: List.unmodifiable(missingFields),
+      missingIntentFieldLabels:
+          List.unmodifiable(missingFields.map(_missingFieldLabel).toList()),
+      evidenceState: arcDto.evidenceState,
+      evidenceStateLabel: _evidenceStateLabel(arcDto.evidenceState),
+      actualEvidenceSummary: arcDto.actualEvidenceSummary,
+      missingEvidenceItems: arcDto.missingEvidenceItems,
+      ctqOverallStatus: ctqDto.overallStatus,
+      ctqOverallStatusLabel: _ctqOverallStatusLabel(ctqDto.overallStatus),
+      blockerCount: ctqDto.blockerCount,
+      warningCount: ctqDto.warningCount,
+      reviewCount: ctqDto.reviewCount,
+      satisfiedCount: ctqDto.satisfiedCount,
+      topCtqAttentionItems: topItems,
+    );
+  }
+
+  // ── Label helpers (FER-specific; independent of Trial Story widget labels) ───
+
+  static List<String> _computeMissingFields(TrialPurpose? p) {
+    if (p == null) {
+      return const [
+        'claim_being_tested',
+        'trial_purpose_context',
+        'primary_endpoint',
+        'treatment_roles',
+      ];
+    }
+    return [
+      if (p.claimBeingTested == null) 'claim_being_tested',
+      if (p.trialPurpose == null) 'trial_purpose_context',
+      if (p.primaryEndpoint == null) 'primary_endpoint',
+      if (p.treatmentRoleSummary == null) 'treatment_roles',
+    ];
+  }
+
+  static String _computePurposeStatus(
+      TrialPurpose? p, List<String> missingFields) {
+    if (p == null) return 'unknown';
+    if (p.status == 'confirmed' && missingFields.isEmpty) return 'confirmed';
+    if (missingFields.length < 4) return 'partial';
+    return p.status;
+  }
+
+  static String _purposeStatusLabel(String status) => switch (status) {
+        'confirmed' => 'Intent confirmed',
+        'partial' => 'Intent in progress',
+        'draft' => 'Intent in draft',
+        _ => 'Intent not captured',
+      };
+
+  static String _evidenceStateLabel(String state) => switch (state) {
+        'no_evidence' => 'No evidence yet',
+        'started' => 'Evidence started',
+        'partial' => 'Partial evidence',
+        'sufficient_for_review' => 'Sufficient for review',
+        'export_ready_candidate' => 'Ready for export review',
+        _ => state,
+      };
+
+  static String _ctqOverallStatusLabel(String status) => switch (status) {
+        'unknown' => 'Not yet evaluated',
+        'incomplete' => 'Needs evidence',
+        'review_needed' => 'Needs review',
+        'ready_for_review' => 'Ready for review',
+        _ => status,
+      };
+
+  static String _ctqItemStatusLabel(String status) => switch (status) {
+        'blocked' => 'Blocked',
+        'review_needed' => 'Needs review',
+        'missing' => 'Missing',
+        'satisfied' => 'Satisfied',
+        'not_applicable' => 'Not applicable',
+        _ => 'Not evaluated',
+      };
+
+  static String _missingFieldLabel(String key) => switch (key) {
+        'claim_being_tested' => 'Claim being tested',
+        'trial_purpose_context' => 'Trial purpose',
+        'primary_endpoint' => 'Primary endpoint',
+        'treatment_roles' => 'Treatment roles',
+        'known_interpretation_factors' => 'Interpretation factors',
+        _ => key,
+      };
 }
