@@ -818,55 +818,70 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     TrialApplicationEvent? existing,
   ) async {
     if (!context.mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+    final scrollController = ScrollController();
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: AppDesignTokens.cardSurface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
-        child: DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.4,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (_, scrollController) => ApplicationSheetContent(
-            trial: widget.trial,
-            existing: existing,
-            scrollController: scrollController,
-            rateUnits: _rateUnits,
-            applicationMethods: _applicationMethods,
-            nozzleTypes: _nozzleTypes,
-            pressureUnits: _pressureUnits,
-            speedUnits: _speedUnits,
-            waterVolumeUnits: _waterVolumeUnits,
-            adjuvantRateUnits: _adjuvantRateUnits,
-            treatedAreaUnits: _treatedAreaUnits,
-            soilMoistureOptions: _soilMoistureOptions,
-            onSaved: () {
-              ref.invalidate(
-                  trialApplicationsForTrialProvider(widget.trial.id));
-              unawaited(
-                  _invalidateSessionTimingForTrialSessions(ref, widget.trial.id));
-              if (context.mounted) Navigator.pop(ctx);
-            },
-            onDelete: existing != null
-                ? () {
-                    unawaited(_deleteApplicationFromSheet(
-                      sheetContext: ctx,
-                      ref: ref,
-                      eventId: existing.id,
-                    ));
-                  }
-                : null,
-          ),
-        ),
-      ),
-    );
+        builder: (ctx) {
+          final mq = MediaQuery.of(ctx);
+          final insetBottom = mq.viewInsets.bottom;
+          final maxH = (mq.size.height - insetBottom).clamp(0.0, mq.size.height);
+          final sheetH = maxH <= 0
+              ? mq.size.height * 0.7
+              : (maxH * 0.92).clamp(280.0, maxH);
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: insetBottom),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: SizedBox(
+                height: sheetH,
+                width: mq.size.width,
+                child: ApplicationSheetContent(
+                  trial: widget.trial,
+                  existing: existing,
+                  scrollController: scrollController,
+                  rateUnits: _rateUnits,
+                  applicationMethods: _applicationMethods,
+                  nozzleTypes: _nozzleTypes,
+                  pressureUnits: _pressureUnits,
+                  speedUnits: _speedUnits,
+                  waterVolumeUnits: _waterVolumeUnits,
+                  adjuvantRateUnits: _adjuvantRateUnits,
+                  treatedAreaUnits: _treatedAreaUnits,
+                  soilMoistureOptions: _soilMoistureOptions,
+                  onSaved: () {
+                    ref.invalidate(
+                        trialApplicationsForTrialProvider(widget.trial.id));
+                    unawaited(
+                        _invalidateSessionTimingForTrialSessions(
+                            ref, widget.trial.id));
+                    if (context.mounted) Navigator.pop(ctx);
+                  },
+                  onDelete: existing != null
+                      ? () {
+                          unawaited(_deleteApplicationFromSheet(
+                            sheetContext: ctx,
+                            ref: ref,
+                            eventId: existing.id,
+                          ));
+                        }
+                      : null,
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    } finally {
+      scrollController.dispose();
+    }
   }
 }
 

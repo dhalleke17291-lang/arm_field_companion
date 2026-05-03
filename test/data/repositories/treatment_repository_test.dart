@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/protocol_edit_blocked_exception.dart';
+import 'package:arm_field_companion/core/trial_state.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
@@ -543,6 +544,304 @@ void main() {
       final comps = await repo.getComponentsForTreatment(trtId);
       expect(comps.length, 1);
       expect(comps[0].pesticideCategory, 'fungicide');
+    });
+  });
+
+  // ─── First-component fill on locked trials (FCF) ──────────────────────────
+
+  group('insertFirstComponent', () {
+    Future<int> insertTreatmentOnTrial(int trialId) =>
+        repo.insertTreatment(trialId: trialId, code: '1', name: 'T1');
+
+    test(
+        'FCF-1: zero components on locked (active) trial → succeeds via bypass',
+        () async {
+      final trialId = await createTrial();
+      final trtId = await insertTreatmentOnTrial(trialId);
+      await trialRepo.updateTrialStatus(trialId, kTrialStatusActive);
+
+      final compId = await repo.insertFirstComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'Roundup',
+        pesticideCategory: 'herbicide',
+      );
+
+      final comps = await repo.getComponentsForTreatment(trtId);
+      expect(comps.length, 1);
+      expect(comps[0].id, compId);
+      expect(comps[0].pesticideCategory, 'herbicide');
+    });
+
+    test(
+        'FCF-2: one existing component on locked trial → throws '
+        'ProtocolEditBlockedException', () async {
+      final trialId = await createTrial();
+      final trtId = await insertTreatmentOnTrial(trialId);
+      await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'First',
+      );
+      await trialRepo.updateTrialStatus(trialId, kTrialStatusActive);
+
+      expect(
+        () => repo.insertFirstComponent(
+          treatmentId: trtId,
+          trialId: trialId,
+          productName: 'Second',
+        ),
+        throwsA(isA<ProtocolEditBlockedException>()),
+      );
+    });
+
+    test(
+        'FCF-3: unlocked trial → adds whether components exist or not',
+        () async {
+      final trialId = await createTrial();
+      final trtId = await insertTreatmentOnTrial(trialId);
+
+      // First component (zero existing).
+      await repo.insertFirstComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'A',
+      );
+      // Second component (one existing) — delegates to insertComponent
+      // which succeeds because trial is unlocked.
+      await repo.insertFirstComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'B',
+      );
+
+      final comps = await repo.getComponentsForTreatment(trtId);
+      expect(comps.map((c) => c.productName).toList(), ['A', 'B']);
+    });
+
+    test('FCF-4: bypass path records audit with first_component: true',
+        () async {
+      final trialId = await createTrial();
+      final trtId = await insertTreatmentOnTrial(trialId);
+      await trialRepo.updateTrialStatus(trialId, kTrialStatusActive);
+
+      await repo.insertFirstComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'Roundup',
+        performedBy: 'tester',
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where((a) => a.eventType.equals('TREATMENT_COMPONENT_ADDED')))
+          .get();
+      expect(audits.length, 1);
+      final meta = jsonDecode(audits[0].metadata!) as Map<String, dynamic>;
+      expect(meta['first_component'], true);
+    });
+
+    test('FCF-5: ARM-linked trial rejects insertFirstComponent', () async {
+      final trialId = await createTrial();
+      final trtId = await insertTreatmentOnTrial(trialId);
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
+
+      expect(
+        () => repo.insertFirstComponent(
+          treatmentId: trtId,
+          trialId: trialId,
+          productName: 'Forbidden',
+        ),
+        throwsA(isA<ProtocolEditBlockedException>()),
+      );
+    });
+
+    test('FCF-6: closed trial rejects insertFirstComponent', () async {
+      final trialId = await createTrial();
+      final trtId = await insertTreatmentOnTrial(trialId);
+      await trialRepo.updateTrialStatus(trialId, kTrialStatusClosed);
+
+      expect(
+        () => repo.insertFirstComponent(
+          treatmentId: trtId,
+          trialId: trialId,
+          productName: 'Forbidden',
+        ),
+        throwsA(isA<ProtocolEditBlockedException>()),
+      );
+    });
+  });
+
+  // ─── Annotation-only component lock (ACL) ─────────────────────────────────
+
+  group('updateComponentAnnotationsOnly', () {
+    Future<int> lockedTrialWithComponent() async {
+      final trialId = await createTrial();
+      final trtId =
+          await repo.insertTreatment(trialId: trialId, code: '1', name: 'T1');
+      final compId = await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'Roundup',
+        rate: 1.5,
+        rateUnit: 'L/ha',
+      );
+      await trialRepo.updateTrialStatus(trialId, kTrialStatusActive);
+      return compId;
+    }
+
+    test('ACL-1: saves pesticideCategory on a locked trial', () async {
+      final compId = await lockedTrialWithComponent();
+      await repo.updateComponentAnnotationsOnly(
+        componentId: compId,
+        pesticideCategory: 'herbicide',
+      );
+      final comp = await repo.getComponentById(compId);
+      expect(comp?.pesticideCategory, 'herbicide');
+    });
+
+    test('ACL-2: does not change productName, rate, or rateUnit', () async {
+      final compId = await lockedTrialWithComponent();
+      await repo.updateComponentAnnotationsOnly(
+        componentId: compId,
+        pesticideCategory: 'fungicide',
+        manufacturer: 'AgriCorp',
+      );
+      final comp = await repo.getComponentById(compId);
+      expect(comp?.productName, 'Roundup');
+      expect(comp?.rate, 1.5);
+      expect(comp?.rateUnit, 'L/ha');
+    });
+
+    test('ACL-3: records audit with annotation_only flag', () async {
+      final compId = await lockedTrialWithComponent();
+      await repo.updateComponentAnnotationsOnly(
+        componentId: compId,
+        pesticideCategory: 'herbicide',
+        performedBy: 'tester',
+      );
+      final audits = await (db.select(db.auditEvents)
+            ..where((e) => e.eventType
+                .equals('TREATMENT_COMPONENT_UPDATED')))
+          .get();
+      expect(audits.length, 1);
+      final meta = jsonDecode(audits[0].metadata!) as Map<String, dynamic>;
+      expect(meta['annotation_only'], true);
+    });
+
+    test('ACL-10: no-ops gracefully when component does not exist', () async {
+      await repo.updateComponentAnnotationsOnly(
+        componentId: 99999,
+        pesticideCategory: 'herbicide',
+      );
+      // No exception thrown.
+    });
+  });
+
+  group('updateComponent graduated lock', () {
+    Future<({int trialId, int compId})> lockedSetup() async {
+      final trialId = await createTrial();
+      final trtId =
+          await repo.insertTreatment(trialId: trialId, code: '1', name: 'T1');
+      final compId = await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'Roundup',
+        rate: 1.5,
+        rateUnit: 'L/ha',
+      );
+      await trialRepo.updateTrialStatus(trialId, kTrialStatusActive);
+      return (trialId: trialId, compId: compId);
+    }
+
+    test('ACL-4: annotation-only fields when locked → delegates (success)',
+        () async {
+      final s = await lockedSetup();
+      await repo.updateComponent(
+        s.compId,
+        pesticideCategory: 'herbicide',
+        formulationType: 'EC',
+        performedBy: 'tester',
+      );
+      final comp = await repo.getComponentById(s.compId);
+      expect(comp?.pesticideCategory, 'herbicide');
+      expect(comp?.formulationType, 'EC');
+      expect(comp?.productName, 'Roundup');
+    });
+
+    test('ACL-5: productName change when locked → throws', () async {
+      final s = await lockedSetup();
+      expect(
+        () => repo.updateComponent(s.compId, productName: 'NewName'),
+        throwsA(isA<ProtocolEditBlockedException>()),
+      );
+    });
+
+    test('ACL-6: rate change when locked → throws', () async {
+      final s = await lockedSetup();
+      expect(
+        () => repo.updateComponent(s.compId, rate: 999.0),
+        throwsA(isA<ProtocolEditBlockedException>()),
+      );
+    });
+
+    test('ACL-7: unlocked trial → updates structural fields normally',
+        () async {
+      final trialId = await createTrial();
+      final trtId =
+          await repo.insertTreatment(trialId: trialId, code: '1', name: 'T1');
+      final compId = await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'OldName',
+        rate: 1.0,
+        rateUnit: 'L/ha',
+      );
+      await repo.updateComponent(compId, productName: 'NewName', rate: 2.0);
+      final comp = await repo.getComponentById(compId);
+      expect(comp?.productName, 'NewName');
+      expect(comp?.rate, 2.0);
+    });
+
+    test(
+        'ACL-8: ARM-linked + annotation-only updateComponent → succeeds via delegation',
+        () async {
+      final trialId = await createTrial();
+      final trtId =
+          await repo.insertTreatment(trialId: trialId, code: '1', name: 'T1');
+      final compId = await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'Roundup',
+      );
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
+      await repo.updateComponent(
+        compId,
+        pesticideCategory: 'herbicide',
+      );
+      final comp = await repo.getComponentById(compId);
+      expect(comp?.pesticideCategory, 'herbicide');
+      expect(comp?.productName, 'Roundup');
+    });
+
+    test(
+        'ACL-9: ARM-linked + structural field updateComponent → throws',
+        () async {
+      final trialId = await createTrial();
+      final trtId =
+          await repo.insertTreatment(trialId: trialId, code: '1', name: 'T1');
+      final compId = await repo.insertComponent(
+        treatmentId: trtId,
+        trialId: trialId,
+        productName: 'Roundup',
+      );
+      await upsertArmTrialMetadataForTest(db,
+          trialId: trialId, isArmLinked: true);
+      expect(
+        () => repo.updateComponent(compId, productName: 'Forbidden'),
+        throwsA(isA<ProtocolEditBlockedException>()),
+      );
     });
   });
 }

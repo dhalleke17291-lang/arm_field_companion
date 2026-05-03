@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:arm_field_companion/core/application_state.dart';
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/field_operation_date_rules.dart';
+import 'package:arm_field_companion/core/protocol_edit_blocked_exception.dart';
 import 'package:arm_field_companion/data/repositories/application_product_repository.dart'
     show ApplicationProductRepository, ApplicationProductSaveRow;
 import 'package:arm_field_companion/data/repositories/application_repository.dart';
@@ -125,36 +128,33 @@ void main() {
       return id;
     }
 
-    test('does not update execution fields on confirmed application', () async {
+    test('rejects structural fields on confirmed application', () async {
       final trialId = await createTrial();
       final id = await createAppliedApp(trialId);
 
-      // Attempt to change execution fields after confirmation.
-      final yesterday =
-          DateTime.now().subtract(const Duration(days: 1));
-      await repo.updateApplication(
-        id,
-        TrialApplicationEventsCompanion(
-          applicationDate: Value(yesterday),
-          applicationMethod: const Value('drench'),
-          rate: const Value(999.0),
-          productName: const Value('ShouldNotChange'),
+      final yesterday = DateTime.now().subtract(const Duration(days: 1));
+      expect(
+        () => repo.updateApplication(
+          id,
+          TrialApplicationEventsCompanion(
+            applicationDate: Value(yesterday),
+            applicationMethod: const Value('drench'),
+            rate: const Value(999.0),
+            productName: const Value('ShouldNotChange'),
+          ),
         ),
+        throwsA(isA<ProtocolEditBlockedException>()),
       );
 
       final events = await repo.getApplicationsForTrial(trialId);
       expect(events[0].applicationMethod, 'spray',
-          reason: 'applicationMethod must not change after confirmation');
+          reason: 'applicationMethod must not change after rejection');
       expect(events[0].rate, isNull,
-          reason: 'rate must not change after confirmation');
+          reason: 'rate must not change after rejection');
       expect(events[0].productName, isNull,
-          reason: 'productName must not change after confirmation');
-      // applicationDate was today() at creation; it must remain unchanged.
-      expect(
-        events[0].applicationDate.day,
-        today().day,
-        reason: 'applicationDate must not change after confirmation',
-      );
+          reason: 'productName must not change after rejection');
+      expect(events[0].applicationDate.day, today().day,
+          reason: 'applicationDate must not change after rejection');
     });
 
     test('does update editable fields on confirmed application', () async {
@@ -225,21 +225,26 @@ void main() {
       expect(audits[0].performedBy, 'tester');
     });
 
-    test('no audit event written when no editable field changes', () async {
+    test('no audit event written when only structural fields are passed',
+        () async {
       final trialId = await createTrial();
       final id = await createAppliedApp(trialId);
 
-      // Call with only execution fields (all silently ignored) — no changes.
-      await repo.updateApplication(
-        id,
-        const TrialApplicationEventsCompanion(
-          applicationMethod: Value('drench'),
+      // Structural-only call must throw and write no annotation audit.
+      expect(
+        () => repo.updateApplication(
+          id,
+          TrialApplicationEventsCompanion(
+            productName: const Value('ShouldNotChange'),
+            applicationDate:
+                Value(DateTime.now().subtract(const Duration(days: 1))),
+          ),
         ),
+        throwsA(isA<ProtocolEditBlockedException>()),
       );
 
       final audits = await (db.select(db.auditEvents)
-            ..where(
-                (a) => a.eventType.equals('APPLICATION_EVENT_UPDATED')))
+            ..where((a) => a.eventType.equals('APPLICATION_EVENT_UPDATED')))
           .get();
       expect(audits, isEmpty);
     });
@@ -802,5 +807,288 @@ void main() {
           .get();
       expect(audits.length, 1);
     });
+  });
+
+  // ─── Graduated annotation lock (ACL-A) ────────────────────────────────────
+
+  group('updateApplication — graduated lock', () {
+    Future<String> createAppliedApp(int trialId) async {
+      final id = await repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+          applicationMethod: const Value('spray'),
+          operatorName: const Value('original'),
+        ),
+      );
+      await repo.markApplicationApplied(id: id, appliedAt: DateTime.now());
+      return id;
+    }
+
+    test(
+        'ACL-A1: updateApplicationAnnotationsOnly succeeds on confirmed event '
+        '(growthStageBbchAtApplication)', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.updateApplicationAnnotationsOnly(
+        id,
+        const TrialApplicationEventsCompanion(
+          growthStageBbchAtApplication: Value(32),
+        ),
+      );
+
+      final events = await repo.getApplicationsForTrial(trialId);
+      expect(events[0].growthStageBbchAtApplication, 32);
+    });
+
+    test('ACL-A2: updateApplicationAnnotationsOnly rejects applicationDate',
+        () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      expect(
+        () => repo.updateApplicationAnnotationsOnly(
+          id,
+          TrialApplicationEventsCompanion(
+            applicationDate:
+                Value(DateTime.now().subtract(const Duration(days: 1))),
+          ),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('ACL-A3: updateApplicationAnnotationsOnly rejects treatmentId',
+        () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      expect(
+        () => repo.updateApplicationAnnotationsOnly(
+          id,
+          const TrialApplicationEventsCompanion(treatmentId: Value(99)),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test(
+        'ACL-A4: updateApplication confirmed + only annotation fields → '
+        'succeeds via delegation', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.updateApplication(
+        id,
+        const TrialApplicationEventsCompanion(
+          operatorName: Value('updated operator'),
+          growthStageCode: Value('BBCH 32'),
+          growthStageBbchAtApplication: Value(32),
+          windSpeed: Value(8.0),
+        ),
+      );
+
+      final events = await repo.getApplicationsForTrial(trialId);
+      expect(events[0].operatorName, 'updated operator');
+      expect(events[0].growthStageCode, 'BBCH 32');
+      expect(events[0].growthStageBbchAtApplication, 32);
+      expect(events[0].windSpeed, closeTo(8.0, 0.001));
+    });
+
+    test('ACL-A5: updateApplication confirmed + applicationDate → throws',
+        () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      expect(
+        () => repo.updateApplication(
+          id,
+          TrialApplicationEventsCompanion(
+            applicationDate:
+                Value(DateTime.now().subtract(const Duration(days: 1))),
+          ),
+        ),
+        throwsA(isA<ProtocolEditBlockedException>()),
+      );
+    });
+
+    test(
+        'ACL-A6: updateApplication pending + structural change → updates '
+        'normally', () async {
+      final trialId = await createTrial();
+      final id = await repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+          status: const Value('planned'),
+        ),
+      );
+
+      await repo.updateApplication(
+        id,
+        const TrialApplicationEventsCompanion(
+          rate: Value(150.0),
+          productName: Value('Herbicide Z'),
+          applicationMethod: Value('drench'),
+        ),
+      );
+
+      final events = await repo.getApplicationsForTrial(trialId);
+      expect(events[0].rate, closeTo(150.0, 0.001));
+      expect(events[0].productName, 'Herbicide Z');
+      expect(events[0].applicationMethod, 'drench');
+    });
+
+    test(
+        'ACL-A7: growthStageBbchAtApplication can be set via updateApplication '
+        'on confirmed event', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.updateApplication(
+        id,
+        const TrialApplicationEventsCompanion(
+          growthStageBbchAtApplication: Value(45),
+        ),
+      );
+
+      final events = await repo.getApplicationsForTrial(trialId);
+      expect(events[0].growthStageBbchAtApplication, 45);
+    });
+
+    test('ACL-A8: audit metadata records annotation_only: true', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      await repo.updateApplicationAnnotationsOnly(
+        id,
+        const TrialApplicationEventsCompanion(
+          growthStageBbchAtApplication: Value(32),
+        ),
+        performedBy: 'tester',
+      );
+
+      final audits = await (db.select(db.auditEvents)
+            ..where((a) => a.eventType.equals('APPLICATION_EVENT_UPDATED')))
+          .get();
+      expect(audits.length, 1);
+      final meta = jsonDecode(audits[0].metadata!) as Map<String, dynamic>;
+      expect(meta['annotation_only'], true);
+      expect(
+        (meta['changed_fields'] as List).cast<String>(),
+        contains('growthStageBbchAtApplication'),
+      );
+    });
+
+    test(
+        'ACL-A9: updateApplicationAnnotationsOnly does not alter structural '
+        'fields', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId);
+
+      // Snapshot before.
+      final before = (await repo.getApplicationsForTrial(trialId)).first;
+
+      await repo.updateApplicationAnnotationsOnly(
+        id,
+        const TrialApplicationEventsCompanion(
+          windSpeed: Value(12.0),
+          notes: Value('post-applied note'),
+        ),
+      );
+
+      final after = (await repo.getApplicationsForTrial(trialId)).first;
+      expect(after.applicationDate, before.applicationDate);
+      expect(after.treatmentId, before.treatmentId);
+      expect(after.productName, before.productName);
+      expect(after.rate, before.rate);
+      expect(after.rateUnit, before.rateUnit);
+      expect(after.appliedAt, before.appliedAt);
+      expect(after.status, before.status);
+      // Annotation fields did change.
+      expect(after.windSpeed, closeTo(12.0, 0.001));
+      expect(after.notes, 'post-applied note');
+    });
+
+    test(
+      'ACL-A10: confirmed + full structural mirror .present + only BBCH differs → '
+      'delegates, succeeds',
+      () async {
+        final trialId = await createTrial();
+        final id = await createAppliedApp(trialId);
+        final row = (await repo.getApplicationsForTrial(trialId)).first;
+
+        await repo.updateApplication(
+          id,
+          TrialApplicationEventsCompanion(
+            applicationDate: Value(row.applicationDate),
+            applicationTime: Value(row.applicationTime),
+            treatmentId: Value(row.treatmentId),
+            productName: Value(row.productName),
+            rate: Value(row.rate),
+            rateUnit: Value(row.rateUnit),
+            plotsTreated: Value(row.plotsTreated),
+            status: Value(row.status),
+            appliedAt: Value(row.appliedAt),
+            startedAt: Value(row.startedAt),
+            completedAt: Value(row.completedAt),
+            closedAt: Value(row.closedAt),
+            sessionName: Value(row.sessionName),
+            totalProductMixed: Value(row.totalProductMixed),
+            totalAreaSprayedHa: Value(row.totalAreaSprayedHa),
+            capturedLatitude: Value(row.capturedLatitude),
+            capturedLongitude: Value(row.capturedLongitude),
+            locationCapturedAt: Value(row.locationCapturedAt),
+            growthStageBbchAtApplication: const Value(71),
+          ),
+        );
+
+        final after = (await repo.getApplicationsForTrial(trialId)).first;
+        expect(after.growthStageBbchAtApplication, 71);
+        expect(after.applicationDate, row.applicationDate);
+        expect(after.productName, row.productName);
+      },
+    );
+
+    test(
+      'ACL-A11: confirmed + applicationDate.present unchanged + BBCH change → succeeds',
+      () async {
+        final trialId = await createTrial();
+        final id = await createAppliedApp(trialId);
+        final row = (await repo.getApplicationsForTrial(trialId)).first;
+
+        await repo.updateApplication(
+          id,
+          TrialApplicationEventsCompanion(
+            applicationDate: Value(row.applicationDate),
+            growthStageBbchAtApplication: const Value(55),
+          ),
+        );
+
+        final after = (await repo.getApplicationsForTrial(trialId)).first;
+        expect(after.growthStageBbchAtApplication, 55);
+      },
+    );
+
+    test(
+      'ACL-A12: updateApplicationAnnotationsOnly rejects structural .present even '
+      'when value unchanged',
+      () async {
+        final trialId = await createTrial();
+        final id = await createAppliedApp(trialId);
+        final row = (await repo.getApplicationsForTrial(trialId)).first;
+
+        expect(
+          () => repo.updateApplicationAnnotationsOnly(
+            id,
+            TrialApplicationEventsCompanion(
+              applicationDate: Value(row.applicationDate),
+            ),
+          ),
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
   });
 }

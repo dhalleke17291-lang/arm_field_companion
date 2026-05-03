@@ -287,6 +287,33 @@ class MockTreatmentRepository implements TreatmentRepository {
       throw UnimplementedError();
 
   @override
+  Future<int> insertFirstComponent({
+    required int treatmentId,
+    required int trialId,
+    required String productName,
+    double? rate,
+    String? rateUnit,
+    String? applicationTiming,
+    String? notes,
+    int sortOrder = 0,
+    double? activeIngredientPct,
+    String? formulationType,
+    String? manufacturer,
+    String? registrationNumber,
+    String? eppoCode,
+    int? performedByUserId,
+    String? performedBy,
+    String? activeIngredientName,
+    double? aiConcentration,
+    String? aiConcentrationUnit,
+    double? labelRate,
+    String? labelRateUnit,
+    bool? isTestProduct,
+    String? pesticideCategory,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
   Future<Map<int, int>> insertTreatmentsBulkForNumbers({
     required int trialId,
     required List<int> sortedTrtNumbers,
@@ -337,6 +364,31 @@ class MockTreatmentRepository implements TreatmentRepository {
       int? performedByUserId,
       String? performedBy}) async =>
       throw UnimplementedError();
+
+  @override
+  Future<TreatmentComponent?> getComponentById(int componentId) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> updateComponentAnnotationsOnly({
+    required int componentId,
+    String? pesticideCategory,
+    String? formulationType,
+    String? activeIngredientName,
+    double? aiConcentration,
+    String? aiConcentrationUnit,
+    String? manufacturer,
+    String? registrationNumber,
+    String? eppoCode,
+    String? applicationTiming,
+    double? labelRate,
+    String? labelRateUnit,
+    int? sortOrder,
+    bool? isTestProduct,
+    int? performedByUserId,
+    String? performedBy,
+  }) async =>
+      throw UnimplementedError();
 }
 
 class MockApplicationRepository implements ApplicationRepository {
@@ -360,6 +412,15 @@ class MockApplicationRepository implements ApplicationRepository {
 
   @override
   Future<void> updateApplication(
+    String id,
+    TrialApplicationEventsCompanion companion, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> updateApplicationAnnotationsOnly(
     String id,
     TrialApplicationEventsCompanion companion, {
     String? performedBy,
