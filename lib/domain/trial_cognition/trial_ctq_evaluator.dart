@@ -1,7 +1,10 @@
+import 'dart:math' show sqrt;
+
 import 'package:drift/drift.dart' as drift;
 
 import '../../core/database/app_database.dart';
 import '../../core/plot_analysis_eligibility.dart';
+import '../../core/utils/check_treatment_helper.dart';
 import 'trial_ctq_dto.dart';
 
 /// CTQ V1 deterministic evaluator.
@@ -10,7 +13,8 @@ import 'trial_ctq_dto.dart';
 /// Factors with no safe evidence source return [TrialCtqItemDto.status] == 'unknown'.
 ///
 /// Evaluated: plot_completeness, photo_evidence, gps_evidence,
-///   treatment_identity, rater_consistency, application_timing, rating_window.
+///   treatment_identity, rater_consistency, application_timing, rating_window,
+///   data_variance, untreated_check_pressure.
 /// Intentionally unknown: disease_pressure, crop_stage, rainfall_after_application.
 Future<TrialCtqDto> computeTrialCtqDtoV1(
   AppDatabase db,
@@ -61,6 +65,10 @@ Future<TrialCtqDto> computeTrialCtqDtoV1(
     (db.select(db.trialApplicationEvents)
           ..where((a) => a.trialId.equals(trialId)))
         .get(),
+    // 6: assignments (for correct plot→treatment mapping)
+    (db.select(db.assignments)
+          ..where((a) => a.trialId.equals(trialId)))
+        .get(),
   ]);
 
   final treatments = results[0] as List<Treatment>;
@@ -69,6 +77,7 @@ Future<TrialCtqDto> computeTrialCtqDtoV1(
   final allPlots = results[3] as List<Plot>;
   final openSignals = results[4] as List<Signal>;
   final applications = results[5] as List<TrialApplicationEvent>;
+  final assignments = results[6] as List<Assignment>;
 
   final analyzablePlots = allPlots.where(isAnalyzablePlot).toList();
   final ratedPlotPks = recordedRatings.map((r) => r.plotPk).toSet();
@@ -81,6 +90,9 @@ Future<TrialCtqDto> computeTrialCtqDtoV1(
       .where((s) =>
           s.signalType == 'rater_drift' ||
           s.signalType == 'between_rater_divergence')
+      .toList();
+  final timingWindowSignals = openSignals
+      .where((s) => s.signalType == 'causal_context_flag')
       .toList();
   final hasCriticalSignals = openSignals.any((s) => s.severity == 'critical');
   final hasProtocolDivergenceSignals =
@@ -100,7 +112,11 @@ Future<TrialCtqDto> computeTrialCtqDtoV1(
       'rater_consistency' => _evalRaterConsistency(factor, raterSignals),
       'application_timing' =>
         _evalApplicationTiming(factor, applications, treatments),
-      'rating_window' => _evalRatingWindow(factor, recordedRatings),
+      'rating_window' =>
+        _evalRatingWindow(factor, recordedRatings, timingWindowSignals),
+      'data_variance' => _evalDataVariance(factor, recordedRatings),
+      'untreated_check_pressure' => _evalUntreatedCheckPressure(
+          factor, treatments, allPlots, assignments, recordedRatings),
       _ => _unknownFactor(factor),
     };
     items.add(item);
@@ -318,23 +334,207 @@ TrialCtqItemDto _evalApplicationTiming(
   );
 }
 
+/// Upgraded from presence-only: also checks for open timing-window signals.
+///
+/// If [timingWindowSignals] is non-empty, returns review_needed — the signals
+/// were raised by [TimingWindowViolationWriter] and require investigation before
+/// the rating window can be considered acceptable.
 TrialCtqItemDto _evalRatingWindow(
   CtqFactorDefinition factor,
   List<RatingRecord> recordedRatings,
+  List<Signal> timingWindowSignals,
 ) {
-  if (recordedRatings.isNotEmpty) {
+  if (recordedRatings.isEmpty) {
     return _item(
       factor,
-      status: 'satisfied',
-      evidenceSummary: '${recordedRatings.length} recorded rating(s).',
-      reason: 'Rating evidence is present.',
+      status: 'missing',
+      evidenceSummary: 'No recorded ratings.',
+      reason: 'No rating assessments have been recorded.',
+    );
+  }
+  if (timingWindowSignals.isNotEmpty) {
+    return _item(
+      factor,
+      status: 'review_needed',
+      evidenceSummary:
+          '${timingWindowSignals.length} open timing-window signal(s).',
+      reason:
+          'Timing-window signals exist and should be reviewed before interpretation.',
     );
   }
   return _item(
     factor,
-    status: 'missing',
-    evidenceSummary: 'No recorded ratings.',
-    reason: 'No rating assessments have been recorded.',
+    status: 'satisfied',
+    evidenceSummary: '${recordedRatings.length} recorded rating(s).',
+    reason:
+        'Rating evidence is present and no open timing-window signal was found.',
+  );
+}
+
+/// Evaluates per-assessment CV across all recorded ratings.
+///
+/// Returns review_needed when any assessment group reaches the high-CV
+/// threshold (≥50%, matching the delta-color suppression threshold used
+/// elsewhere in the app). Returns unknown when there is insufficient
+/// replicate data to compute CV.
+TrialCtqItemDto _evalDataVariance(
+  CtqFactorDefinition factor,
+  List<RatingRecord> recordedRatings,
+) {
+  if (recordedRatings.isEmpty) {
+    return _item(
+      factor,
+      status: 'unknown',
+      evidenceSummary: 'No recorded ratings.',
+      reason: 'Not enough rating data to evaluate variance.',
+    );
+  }
+
+  // Group numeric values by assessmentId (trial-wide, not per-treatment)
+  final groups = <int, List<double>>{};
+  for (final r in recordedRatings) {
+    final v = r.numericValue;
+    if (v == null) continue;
+    groups.putIfAbsent(r.assessmentId, () => []).add(v);
+  }
+
+  if (groups.isEmpty) {
+    return _item(
+      factor,
+      status: 'unknown',
+      evidenceSummary: 'No numeric rating values found.',
+      reason: 'Not enough numeric data to evaluate variance.',
+    );
+  }
+
+  // 3 replicates minimum — matches kMinRepsForRepVariability
+  const minReps = 3;
+  // 50.0 — matches kHighCvDeltaColorSuppressionThreshold in trial_statistics.dart
+  const highCvThreshold = 50.0;
+
+  bool anyComputedCv = false;
+  bool anyHighCv = false;
+
+  for (final vals in groups.values) {
+    if (vals.length < minReps) continue;
+    final n = vals.length;
+    final mean = vals.reduce((a, b) => a + b) / n;
+    if (mean.abs() < 1e-9) continue;
+    final variance = vals
+            .map((v) => (v - mean) * (v - mean))
+            .reduce((a, b) => a + b) /
+        (n - 1);
+    final cv = (sqrt(variance) / mean.abs()) * 100.0;
+    anyComputedCv = true;
+    if (cv >= highCvThreshold) anyHighCv = true;
+  }
+
+  if (!anyComputedCv) {
+    return _item(
+      factor,
+      status: 'unknown',
+      evidenceSummary: 'Fewer than $minReps replicates per assessment.',
+      reason: 'Not enough replicate data to evaluate variance.',
+    );
+  }
+
+  if (anyHighCv) {
+    return _item(
+      factor,
+      status: 'review_needed',
+      evidenceSummary: 'High rating variability detected.',
+      reason: 'High rating variability may limit treatment separation.',
+    );
+  }
+
+  return _item(
+    factor,
+    status: 'satisfied',
+    evidenceSummary: 'Rating variability is within the expected range.',
+    reason: 'Rating variability is within the expected range.',
+  );
+}
+
+/// Evaluates whether the untreated check treatment shows a measurable response.
+///
+/// Uses [isCheckTreatment] to identify check treatments. Returns review_needed
+/// only when the check mean is at the absolute floor (zero). Does not apply
+/// crop-specific or scale-specific thresholds.
+TrialCtqItemDto _evalUntreatedCheckPressure(
+  CtqFactorDefinition factor,
+  List<Treatment> treatments,
+  List<Plot> allPlots,
+  List<Assignment> assignments,
+  List<RatingRecord> recordedRatings,
+) {
+  final checkTreatments = treatments.where(isCheckTreatment).toList();
+
+  if (checkTreatments.isEmpty) {
+    return _item(
+      factor,
+      status: 'unknown',
+      evidenceSummary: 'No untreated check treatment identified.',
+      reason: 'No untreated check treatment was identified for this trial.',
+    );
+  }
+
+  if (recordedRatings.isEmpty) {
+    return _item(
+      factor,
+      status: 'unknown',
+      evidenceSummary: 'No ratings recorded.',
+      reason: 'No rating data to evaluate untreated check response.',
+    );
+  }
+
+  // Build plot → treatmentId map: plot.treatmentId as base, assignments override
+  final plotTreatmentMap = <int, int>{};
+  for (final p in allPlots) {
+    if (p.treatmentId != null) plotTreatmentMap[p.id] = p.treatmentId!;
+  }
+  for (final a in assignments) {
+    if (a.treatmentId != null) plotTreatmentMap[a.plotId] = a.treatmentId!;
+  }
+
+  final checkTreatmentIds = {for (final t in checkTreatments) t.id};
+
+  final checkValues = <double>[];
+  for (final r in recordedRatings) {
+    final tid = plotTreatmentMap[r.plotPk];
+    if (tid == null || !checkTreatmentIds.contains(tid)) continue;
+    final v = r.numericValue;
+    if (v != null) checkValues.add(v);
+  }
+
+  if (checkValues.isEmpty) {
+    return _item(
+      factor,
+      status: 'unknown',
+      evidenceSummary: 'No ratings found for untreated check plots.',
+      reason:
+          'No rating data found for the identified untreated check treatment.',
+    );
+  }
+
+  final checkMean =
+      checkValues.reduce((a, b) => a + b) / checkValues.length;
+
+  if (checkMean.abs() < 1e-9) {
+    return _item(
+      factor,
+      status: 'review_needed',
+      evidenceSummary: 'Untreated check mean is zero.',
+      reason:
+          'Untreated check response appears near zero; treatment separation may be difficult to interpret.',
+    );
+  }
+
+  return _item(
+    factor,
+    status: 'satisfied',
+    evidenceSummary:
+        'Untreated check mean: ${checkMean.toStringAsFixed(1)}.',
+    reason: 'Untreated check response is present.',
   );
 }
 
