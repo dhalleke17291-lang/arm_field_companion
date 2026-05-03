@@ -201,6 +201,12 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
 
       await purposeRepo.confirmTrialPurpose(newId, confirmedBy: widget.capturedBy);
 
+      await ref.read(ctqFactorDefinitionRepositoryProvider)
+          .seedDefaultCtqFactorsForPurpose(
+        trialId: widget.trial.id,
+        trialPurposeId: newId,
+      );
+
       for (var i = 0; i < _totalQuestions; i++) {
         if (_controllers[i].text.trim().isNotEmpty) {
           await _writeEvent(

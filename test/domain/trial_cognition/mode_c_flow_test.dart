@@ -1,4 +1,5 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/data/repositories/ctq_factor_definition_repository.dart';
 import 'package:arm_field_companion/data/repositories/intent_revelation_event_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_purpose_repository.dart';
 import 'package:arm_field_companion/domain/trial_cognition/mode_c_revelation_model.dart';
@@ -53,12 +54,14 @@ void main() {
   late TrialPurposeRepository purposeRepo;
   late IntentRevelationEventRepository eventRepo;
   late TrialRepository trialRepo;
+  late CtqFactorDefinitionRepository ctqRepo;
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     purposeRepo = TrialPurposeRepository(db);
     eventRepo = IntentRevelationEventRepository(db);
     trialRepo = TrialRepository(db);
+    ctqRepo = CtqFactorDefinitionRepository(db);
   });
 
   tearDown(() async => db.close());
@@ -220,6 +223,32 @@ void main() {
     expect(dto.isConfirmed, isTrue);
     expect(dto.canDriveReadinessClaims, isTrue);
     expect(dto.missingIntentFields, isEmpty);
+  });
+
+  // 10 — confirming Mode C seeds 10 default CTQ factors for the confirmed purpose
+  test('confirming Mode C flow seeds default CTQ factors for the purpose',
+      () async {
+    final trialId = await makeTrial();
+    final purposeId = await purposeRepo.createInitialTrialPurpose(
+      trialId: trialId,
+      claimBeingTested: 'Fungicide efficacy on wheat.',
+      trialPurpose: 'Registration support',
+      primaryEndpoint: 'DISEASE_SEV at 21 DAT',
+      treatmentRoleSummary: 'T1=untreated, T2=product',
+    );
+    await purposeRepo.confirmTrialPurpose(purposeId, confirmedBy: 'researcher');
+
+    await ctqRepo.seedDefaultCtqFactorsForPurpose(
+      trialId: trialId,
+      trialPurposeId: purposeId,
+    );
+
+    final factors = await ctqRepo.watchCtqFactorsForTrial(trialId).first;
+    expect(factors, hasLength(kCtqDefaultFactorKeys.length));
+    expect(
+      factors.map((f) => f.factorKey),
+      containsAll(kCtqDefaultFactorKeys),
+    );
   });
 
   // 9 — getIntentRevelationEventsForPurpose returns only events for that purpose
