@@ -41,7 +41,6 @@ import 'tabs/plots_tab.dart';
 import 'tabs/photos_tab.dart';
 import 'tabs/timeline_tab.dart';
 import 'trial_data_screen.dart';
-import 'trial_story_screen.dart';
 import 'trial_setup_screen.dart';
 import 'widgets/insight_row.dart';
 import 'widgets/site_details_card.dart';
@@ -1050,13 +1049,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               builder: (_) => TrialDataScreen(trial: trial),
             ),
           );
-        } else if (value == 'trial_story') {
-          Navigator.push<void>(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => TrialStoryScreen(trial: trial),
-            ),
-          );
         } else if (value == 'delete_trial') {
           _confirmAndSoftDeleteTrial(context, trial);
         }
@@ -1065,10 +1057,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
         const PopupMenuItem<String>(
           value: 'activity',
           child: Text('Activity'),
-        ),
-        const PopupMenuItem<String>(
-          value: 'trial_story',
-          child: Text('Trial Story'),
         ),
         const PopupMenuItem<String>(
           value: 'delete_trial',
