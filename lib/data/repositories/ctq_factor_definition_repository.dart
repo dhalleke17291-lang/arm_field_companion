@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/database/app_database.dart';
+import '../../domain/trial_cognition/ctq_factor_acknowledgment_dto.dart';
 
 /// Well-known CTQ factor keys.
 const List<String> kCtqDefaultFactorKeys = [
@@ -96,6 +97,72 @@ class CtqFactorDefinitionRepository {
       retiredAt: Value(DateTime.now().toUtc()),
       updatedAt: Value(DateTime.now().toUtc()),
     ));
+  }
+
+  /// Records a researcher acknowledgment of a CTQ factor's status.
+  ///
+  /// [reason] must be non-empty — no acknowledgment without reasoning, ever.
+  /// [acknowledgedAt] is set to [DateTime.now()] internally; callers cannot
+  /// supply a timestamp, preventing backdating.
+  Future<void> acknowledgeCtqFactor({
+    required int trialId,
+    required String factorKey,
+    required String reason,
+    required String factorStatusAtAcknowledgment,
+    int? acknowledgedByUserId,
+    int? purposeVersionId,
+  }) async {
+    if (reason.trim().isEmpty) {
+      throw ArgumentError(
+        'reason must be non-empty for CTQ factor acknowledgment.',
+      );
+    }
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await _db.into(_db.ctqFactorAcknowledgments).insert(
+          CtqFactorAcknowledgmentsCompanion.insert(
+            trialId: trialId,
+            factorKey: factorKey,
+            acknowledgedAt: now,
+            reason: reason.trim(),
+            factorStatusAtAcknowledgment: factorStatusAtAcknowledgment,
+            acknowledgedByUserId: Value(acknowledgedByUserId),
+            purposeVersionId: Value(purposeVersionId),
+          ),
+        );
+  }
+
+  /// Returns the most recent acknowledgment for [trialId] + [factorKey],
+  /// or null if none exists.
+  Future<CtqFactorAcknowledgmentDto?> getLatestAcknowledgment({
+    required int trialId,
+    required String factorKey,
+  }) async {
+    final rows = await (_db.select(_db.ctqFactorAcknowledgments)
+          ..where(
+            (a) =>
+                a.trialId.equals(trialId) & a.factorKey.equals(factorKey),
+          )
+          ..orderBy([(a) => OrderingTerm.desc(a.acknowledgedAt)])
+          ..limit(1))
+        .get();
+    if (rows.isEmpty) return null;
+    final row = rows.first;
+    String? actorName;
+    if (row.acknowledgedByUserId != null) {
+      final user = await (_db.select(_db.users)
+            ..where((u) => u.id.equals(row.acknowledgedByUserId!)))
+          .getSingleOrNull();
+      actorName = user?.displayName;
+    }
+    return CtqFactorAcknowledgmentDto(
+      id: row.id,
+      factorKey: row.factorKey,
+      acknowledgedAt:
+          DateTime.fromMillisecondsSinceEpoch(row.acknowledgedAt),
+      actorName: actorName,
+      reason: row.reason,
+      factorStatusAtAcknowledgment: row.factorStatusAtAcknowledgment,
+    );
   }
 
   /// Seeds default CTQ factors for a purpose. Additive per key — inserts only

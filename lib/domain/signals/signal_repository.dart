@@ -96,6 +96,36 @@ class SignalRepository {
         );
   }
 
+  /// Records a researcher decision on a signal.
+  ///
+  /// Sets [occurredAt] to [DateTime.now()] internally — callers cannot supply
+  /// a timestamp, preventing backdating.
+  ///
+  /// Validation: [reason] must be non-empty for confirm, suppress, and
+  /// investigate. Defer permits an empty reason (though one is encouraged).
+  /// Throws [ArgumentError] if validation fails.
+  Future<void> recordResearcherDecision({
+    required int signalId,
+    required SignalDecisionEventType eventType,
+    required String reason,
+    int? actorUserId,
+  }) async {
+    final requiresReason = eventType != SignalDecisionEventType.defer;
+    if (requiresReason && reason.trim().isEmpty) {
+      throw ArgumentError(
+        'reason must be non-empty for ${eventType.dbValue} decisions.',
+      );
+    }
+    final occurredAt = DateTime.now().millisecondsSinceEpoch;
+    await recordDecisionEvent(
+      signalId: signalId,
+      eventType: eventType,
+      occurredAt: occurredAt,
+      actorUserId: actorUserId,
+      note: reason.trim().isEmpty ? null : reason.trim(),
+    );
+  }
+
   Future<void> recordDecisionEvent({
     required int signalId,
     required SignalDecisionEventType eventType,
