@@ -1,3 +1,5 @@
+import 'ctq_factor_acknowledgment_dto.dart';
+
 /// One CTQ factor evaluation item.
 /// status: unknown | missing | satisfied | review_needed | blocked | not_applicable
 class TrialCtqItemDto {
@@ -9,6 +11,8 @@ class TrialCtqItemDto {
     required this.evidenceSummary,
     required this.reason,
     required this.source,
+    this.isAcknowledged = false,
+    this.latestAcknowledgment,
   });
 
   final String factorKey;
@@ -18,6 +22,8 @@ class TrialCtqItemDto {
   final String evidenceSummary;
   final String reason;
   final String source;
+  final bool isAcknowledged;
+  final CtqFactorAcknowledgmentDto? latestAcknowledgment;
 
   bool get isBlocked => status == 'blocked';
   bool get isSatisfied => status == 'satisfied';

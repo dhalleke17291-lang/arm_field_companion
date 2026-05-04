@@ -126,6 +126,7 @@ import '../domain/trial_cognition/trial_purpose_dto.dart';
 import '../domain/trial_cognition/trial_evidence_arc_dto.dart';
 import '../domain/trial_cognition/trial_ctq_dto.dart';
 import '../domain/trial_cognition/trial_ctq_evaluator.dart';
+import '../domain/trial_cognition/trial_decision_summary_dto.dart';
 import '../domain/trial_cognition/mode_c_revelation_model.dart';
 
 /// ARCHITECTURE RULE: Use case return types
@@ -2183,6 +2184,7 @@ final trialEvidenceArcProvider =
 /// Deterministic CTQ readiness/evidence status.
 /// Factors are scoped to the current (non-superseded) purpose version so that
 /// re-confirms never mix factors from old purpose rows.
+/// Each item is enriched with the latest researcher acknowledgment (if any).
 final trialCriticalToQualityProvider =
     FutureProvider.autoDispose.family<TrialCtqDto, int>((ref, trialId) async {
   final db = ref.watch(databaseProvider);
@@ -2211,7 +2213,59 @@ final trialCriticalToQualityProvider =
     );
     factors = await ctqRepo.watchCtqFactorsForPurpose(currentPurpose.id).first;
   }
-  return computeTrialCtqDtoV1(db, trialId, factors);
+  final base = await computeTrialCtqDtoV1(db, trialId, factors);
+  final enriched = await Future.wait(base.ctqItems.map((item) async {
+    final ack = await ctqRepo.getLatestAcknowledgment(
+      trialId: trialId,
+      factorKey: item.factorKey,
+    );
+    if (ack == null) return item;
+    return TrialCtqItemDto(
+      factorKey: item.factorKey,
+      label: item.label,
+      importance: item.importance,
+      status: item.status,
+      evidenceSummary: item.evidenceSummary,
+      reason: item.reason,
+      source: item.source,
+      isAcknowledged: true,
+      latestAcknowledgment: ack,
+    );
+  }));
+  return TrialCtqDto(
+    trialId: base.trialId,
+    ctqItems: List.unmodifiable(enriched),
+    blockerCount: base.blockerCount,
+    warningCount: base.warningCount,
+    reviewCount: base.reviewCount,
+    satisfiedCount: base.satisfiedCount,
+    overallStatus: base.overallStatus,
+  );
+});
+
+/// All researcher-authored decisions and CTQ acknowledgments for a trial,
+/// excluding canned system notes. Used by the "Decisions and reasoning"
+/// section in Trial Story.
+///
+/// TODO(coherence): add trialCoherenceProvider when cross-factor coherence
+/// checks are implemented.
+final trialDecisionSummaryProvider =
+    FutureProvider.autoDispose.family<TrialDecisionSummaryDto, int>(
+        (ref, trialId) async {
+  final signalRepo = ref.read(signalRepositoryProvider);
+  final ctqRepo = ref.read(ctqFactorDefinitionRepositoryProvider);
+
+  final signalDecisions =
+      await signalRepo.getAllResearcherDecisionEventsForTrial(trialId);
+  final ctqAcks = await ctqRepo.getAllAcknowledgmentsForTrial(trialId);
+
+  return TrialDecisionSummaryDto(
+    trialId: trialId,
+    signalDecisions: signalDecisions,
+    ctqAcknowledgments: ctqAcks,
+    hasAnyResearcherReasoning:
+        signalDecisions.isNotEmpty || ctqAcks.isNotEmpty,
+  );
 });
 
 // ─── Trial Cognition V1 — computation helpers ─────────────────────────────────

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
+import 'signal_decision_dto.dart';
 import 'signal_models.dart';
 
 class SignalRepository {
@@ -214,6 +215,66 @@ class SignalRepository {
           ..where((e) => e.signalId.equals(signalId))
           ..orderBy([(e) => OrderingTerm.asc(e.occurredAt)]))
         .get();
+  }
+
+  static const _cannedPhrases = [
+    'Proceeded at session close',
+    'Not shown at session close',
+    'Trial closed — signals expired',
+  ];
+
+  /// Returns decision events for a signal as DTOs, with actorName resolved.
+  Future<List<SignalDecisionDto>> getDecisionHistoryDtos(int signalId) async {
+    final events = await (_db.select(_db.signalDecisionEvents)
+          ..where((e) => e.signalId.equals(signalId))
+          ..orderBy([(e) => OrderingTerm.asc(e.occurredAt)]))
+        .get();
+    return _toDecisionDtos(events);
+  }
+
+  /// Returns all researcher decision events for a trial, excluding canned
+  /// system notes, ordered chronologically.
+  Future<List<SignalDecisionDto>> getAllResearcherDecisionEventsForTrial(
+      int trialId) async {
+    final signals = await (_db.select(_db.signals)
+          ..where((s) => s.trialId.equals(trialId)))
+        .get();
+    if (signals.isEmpty) return [];
+    final signalIds = signals.map((s) => s.id).toList();
+    final events = await (_db.select(_db.signalDecisionEvents)
+          ..where((e) => e.signalId.isIn(signalIds))
+          ..orderBy([(e) => OrderingTerm.asc(e.occurredAt)]))
+        .get();
+    final filtered = events.where((e) {
+      final note = e.note;
+      if (note == null || note.isEmpty) return false;
+      return !_cannedPhrases.any((phrase) => note.contains(phrase));
+    }).toList();
+    return _toDecisionDtos(filtered);
+  }
+
+  Future<List<SignalDecisionDto>> _toDecisionDtos(
+      List<SignalDecisionEvent> events) async {
+    final userIds =
+        events.map((e) => e.actorUserId).whereType<int>().toSet();
+    final nameMap = <int, String>{};
+    for (final uid in userIds) {
+      final user = await (_db.select(_db.users)
+            ..where((u) => u.id.equals(uid)))
+          .getSingleOrNull();
+      if (user != null) nameMap[uid] = user.displayName;
+    }
+    return events
+        .map((e) => SignalDecisionDto(
+              id: e.id,
+              signalId: e.signalId,
+              eventType: e.eventType,
+              occurredAt: e.occurredAt,
+              actorName: e.actorUserId != null ? nameMap[e.actorUserId!] : null,
+              note: e.note,
+              resultingStatus: e.resultingStatus,
+            ))
+        .toList();
   }
 
   Future<List<Signal>> getUnresolvedSignalsBeforeExport(int trialId) async {

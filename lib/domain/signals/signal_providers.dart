@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/database/app_database.dart';
+import 'signal_decision_dto.dart';
 import 'signal_repository.dart';
 
 final signalRepositoryProvider = Provider<SignalRepository>((ref) {
@@ -17,10 +18,11 @@ final openSignalsForTrialProvider =
   return ref.read(signalRepositoryProvider).getOpenSignalsForTrial(trialId);
 });
 
+/// Decision events for a single signal, as DTOs with resolved actorName.
 final signalDecisionHistoryProvider =
-    FutureProvider.family<List<SignalDecisionEvent>, int>(
+    FutureProvider.family<List<SignalDecisionDto>, int>(
         (ref, signalId) async {
-  return ref.read(signalRepositoryProvider).getDecisionHistory(signalId);
+  return ref.read(signalRepositoryProvider).getDecisionHistoryDtos(signalId);
 });
 
 final unresolvedSignalsBeforeExportProvider =

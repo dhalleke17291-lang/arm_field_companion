@@ -165,6 +165,37 @@ class CtqFactorDefinitionRepository {
     );
   }
 
+  /// Returns all acknowledgments for [trialId] in chronological order.
+  Future<List<CtqFactorAcknowledgmentDto>> getAllAcknowledgmentsForTrial(
+      int trialId) async {
+    final rows = await (_db.select(_db.ctqFactorAcknowledgments)
+          ..where((a) => a.trialId.equals(trialId))
+          ..orderBy([(a) => OrderingTerm.asc(a.acknowledgedAt)]))
+        .get();
+    final userIds =
+        rows.map((r) => r.acknowledgedByUserId).whereType<int>().toSet();
+    final nameMap = <int, String>{};
+    for (final uid in userIds) {
+      final user = await (_db.select(_db.users)
+            ..where((u) => u.id.equals(uid)))
+          .getSingleOrNull();
+      if (user != null) nameMap[uid] = user.displayName;
+    }
+    return rows
+        .map((r) => CtqFactorAcknowledgmentDto(
+              id: r.id,
+              factorKey: r.factorKey,
+              acknowledgedAt:
+                  DateTime.fromMillisecondsSinceEpoch(r.acknowledgedAt),
+              actorName: r.acknowledgedByUserId != null
+                  ? nameMap[r.acknowledgedByUserId!]
+                  : null,
+              reason: r.reason,
+              factorStatusAtAcknowledgment: r.factorStatusAtAcknowledgment,
+            ))
+        .toList();
+  }
+
   /// Seeds default CTQ factors for a purpose. Additive per key — inserts only
   /// keys that are not already present, leaving existing rows untouched.
   Future<void> seedDefaultCtqFactorsForPurpose({
