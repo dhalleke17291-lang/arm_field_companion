@@ -1593,6 +1593,24 @@ class ProtocolDocumentReferences extends Table {
   TextColumn get notes => text().nullable()();
 }
 
+/// Decision Ledger v80: researcher acknowledgment of a CTQ factor's status.
+/// reason is NOT NULL — no acknowledgment without reasoning, ever.
+class CtqFactorAcknowledgments extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId => integer().references(Trials, #id,
+      onDelete: KeyAction.cascade)();
+  TextColumn get factorKey => text()();
+  IntColumn get acknowledgedAt => integer()();
+  IntColumn get acknowledgedByUserId =>
+      integer().references(Users, #id).nullable()();
+  TextColumn get reason => text()();
+  TextColumn get factorStatusAtAcknowledgment => text()();
+  IntColumn get purposeVersionId =>
+      integer().references(TrialPurposes, #id).nullable()();
+  IntColumn get createdAt => integer().withDefault(
+      const CustomExpression("(strftime('%s','now') * 1000)"))();
+}
+
 @DriftDatabase(tables: [
   Users,
   Trials,
@@ -1651,6 +1669,8 @@ class ProtocolDocumentReferences extends Table {
   IntentRevelationEvents,
   CtqFactorDefinitions,
   ProtocolDocumentReferences,
+  // Decision Ledger (v80): researcher acknowledgment of CTQ factor status.
+  CtqFactorAcknowledgments,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -1659,7 +1679,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 79;
+  int get schemaVersion => 80;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -3259,6 +3279,10 @@ END
                 treatmentComponents.pesticideCategory,
               );
             }
+          }
+
+          if (from < 80) {
+            await m.createTable(ctqFactorAcknowledgments);
           }
 
           await _createIndexes();

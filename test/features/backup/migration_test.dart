@@ -62,7 +62,7 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 79);
+    expect(db.schemaVersion, 80);
 
     final names = await _tableNames(db);
     expect(names, contains(_kApplicationSlots));
@@ -74,6 +74,7 @@ void main() {
     expect(names, contains('action_effects'));
     expect(names, contains('se_type_causal_profiles'));
     expect(names, contains('evidence_anchors'));
+    expect(names, contains('ctq_factor_acknowledgments'));
 
     final profiles = await db.select(db.seTypeProfiles).get();
     final prefixes = profiles.map((p) => p.ratingTypePrefix).toSet();

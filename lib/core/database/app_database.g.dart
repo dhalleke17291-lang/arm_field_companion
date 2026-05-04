@@ -44822,6 +44822,521 @@ class ProtocolDocumentReferencesCompanion
   }
 }
 
+class $CtqFactorAcknowledgmentsTable extends CtqFactorAcknowledgments
+    with TableInfo<$CtqFactorAcknowledgmentsTable, CtqFactorAcknowledgment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CtqFactorAcknowledgmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES trials (id) ON DELETE CASCADE'));
+  static const VerificationMeta _factorKeyMeta =
+      const VerificationMeta('factorKey');
+  @override
+  late final GeneratedColumn<String> factorKey = GeneratedColumn<String>(
+      'factor_key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _acknowledgedAtMeta =
+      const VerificationMeta('acknowledgedAt');
+  @override
+  late final GeneratedColumn<int> acknowledgedAt = GeneratedColumn<int>(
+      'acknowledged_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _acknowledgedByUserIdMeta =
+      const VerificationMeta('acknowledgedByUserId');
+  @override
+  late final GeneratedColumn<int> acknowledgedByUserId = GeneratedColumn<int>(
+      'acknowledged_by_user_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
+  @override
+  late final GeneratedColumn<String> reason = GeneratedColumn<String>(
+      'reason', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _factorStatusAtAcknowledgmentMeta =
+      const VerificationMeta('factorStatusAtAcknowledgment');
+  @override
+  late final GeneratedColumn<String> factorStatusAtAcknowledgment =
+      GeneratedColumn<String>(
+          'factor_status_at_acknowledgment', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _purposeVersionIdMeta =
+      const VerificationMeta('purposeVersionId');
+  @override
+  late final GeneratedColumn<int> purposeVersionId = GeneratedColumn<int>(
+      'purpose_version_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES trial_purposes (id)'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const CustomExpression("(strftime('%s','now') * 1000)"));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        factorKey,
+        acknowledgedAt,
+        acknowledgedByUserId,
+        reason,
+        factorStatusAtAcknowledgment,
+        purposeVersionId,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ctq_factor_acknowledgments';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<CtqFactorAcknowledgment> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('factor_key')) {
+      context.handle(_factorKeyMeta,
+          factorKey.isAcceptableOrUnknown(data['factor_key']!, _factorKeyMeta));
+    } else if (isInserting) {
+      context.missing(_factorKeyMeta);
+    }
+    if (data.containsKey('acknowledged_at')) {
+      context.handle(
+          _acknowledgedAtMeta,
+          acknowledgedAt.isAcceptableOrUnknown(
+              data['acknowledged_at']!, _acknowledgedAtMeta));
+    } else if (isInserting) {
+      context.missing(_acknowledgedAtMeta);
+    }
+    if (data.containsKey('acknowledged_by_user_id')) {
+      context.handle(
+          _acknowledgedByUserIdMeta,
+          acknowledgedByUserId.isAcceptableOrUnknown(
+              data['acknowledged_by_user_id']!, _acknowledgedByUserIdMeta));
+    }
+    if (data.containsKey('reason')) {
+      context.handle(_reasonMeta,
+          reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta));
+    } else if (isInserting) {
+      context.missing(_reasonMeta);
+    }
+    if (data.containsKey('factor_status_at_acknowledgment')) {
+      context.handle(
+          _factorStatusAtAcknowledgmentMeta,
+          factorStatusAtAcknowledgment.isAcceptableOrUnknown(
+              data['factor_status_at_acknowledgment']!,
+              _factorStatusAtAcknowledgmentMeta));
+    } else if (isInserting) {
+      context.missing(_factorStatusAtAcknowledgmentMeta);
+    }
+    if (data.containsKey('purpose_version_id')) {
+      context.handle(
+          _purposeVersionIdMeta,
+          purposeVersionId.isAcceptableOrUnknown(
+              data['purpose_version_id']!, _purposeVersionIdMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CtqFactorAcknowledgment map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CtqFactorAcknowledgment(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      factorKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}factor_key'])!,
+      acknowledgedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}acknowledged_at'])!,
+      acknowledgedByUserId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}acknowledged_by_user_id']),
+      reason: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}reason'])!,
+      factorStatusAtAcknowledgment: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}factor_status_at_acknowledgment'])!,
+      purposeVersionId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}purpose_version_id']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $CtqFactorAcknowledgmentsTable createAlias(String alias) {
+    return $CtqFactorAcknowledgmentsTable(attachedDatabase, alias);
+  }
+}
+
+class CtqFactorAcknowledgment extends DataClass
+    implements Insertable<CtqFactorAcknowledgment> {
+  final int id;
+  final int trialId;
+  final String factorKey;
+  final int acknowledgedAt;
+  final int? acknowledgedByUserId;
+  final String reason;
+  final String factorStatusAtAcknowledgment;
+  final int? purposeVersionId;
+  final int createdAt;
+  const CtqFactorAcknowledgment(
+      {required this.id,
+      required this.trialId,
+      required this.factorKey,
+      required this.acknowledgedAt,
+      this.acknowledgedByUserId,
+      required this.reason,
+      required this.factorStatusAtAcknowledgment,
+      this.purposeVersionId,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    map['factor_key'] = Variable<String>(factorKey);
+    map['acknowledged_at'] = Variable<int>(acknowledgedAt);
+    if (!nullToAbsent || acknowledgedByUserId != null) {
+      map['acknowledged_by_user_id'] = Variable<int>(acknowledgedByUserId);
+    }
+    map['reason'] = Variable<String>(reason);
+    map['factor_status_at_acknowledgment'] =
+        Variable<String>(factorStatusAtAcknowledgment);
+    if (!nullToAbsent || purposeVersionId != null) {
+      map['purpose_version_id'] = Variable<int>(purposeVersionId);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  CtqFactorAcknowledgmentsCompanion toCompanion(bool nullToAbsent) {
+    return CtqFactorAcknowledgmentsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      factorKey: Value(factorKey),
+      acknowledgedAt: Value(acknowledgedAt),
+      acknowledgedByUserId: acknowledgedByUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(acknowledgedByUserId),
+      reason: Value(reason),
+      factorStatusAtAcknowledgment: Value(factorStatusAtAcknowledgment),
+      purposeVersionId: purposeVersionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(purposeVersionId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory CtqFactorAcknowledgment.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CtqFactorAcknowledgment(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      factorKey: serializer.fromJson<String>(json['factorKey']),
+      acknowledgedAt: serializer.fromJson<int>(json['acknowledgedAt']),
+      acknowledgedByUserId:
+          serializer.fromJson<int?>(json['acknowledgedByUserId']),
+      reason: serializer.fromJson<String>(json['reason']),
+      factorStatusAtAcknowledgment:
+          serializer.fromJson<String>(json['factorStatusAtAcknowledgment']),
+      purposeVersionId: serializer.fromJson<int?>(json['purposeVersionId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'factorKey': serializer.toJson<String>(factorKey),
+      'acknowledgedAt': serializer.toJson<int>(acknowledgedAt),
+      'acknowledgedByUserId': serializer.toJson<int?>(acknowledgedByUserId),
+      'reason': serializer.toJson<String>(reason),
+      'factorStatusAtAcknowledgment':
+          serializer.toJson<String>(factorStatusAtAcknowledgment),
+      'purposeVersionId': serializer.toJson<int?>(purposeVersionId),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  CtqFactorAcknowledgment copyWith(
+          {int? id,
+          int? trialId,
+          String? factorKey,
+          int? acknowledgedAt,
+          Value<int?> acknowledgedByUserId = const Value.absent(),
+          String? reason,
+          String? factorStatusAtAcknowledgment,
+          Value<int?> purposeVersionId = const Value.absent(),
+          int? createdAt}) =>
+      CtqFactorAcknowledgment(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        factorKey: factorKey ?? this.factorKey,
+        acknowledgedAt: acknowledgedAt ?? this.acknowledgedAt,
+        acknowledgedByUserId: acknowledgedByUserId.present
+            ? acknowledgedByUserId.value
+            : this.acknowledgedByUserId,
+        reason: reason ?? this.reason,
+        factorStatusAtAcknowledgment:
+            factorStatusAtAcknowledgment ?? this.factorStatusAtAcknowledgment,
+        purposeVersionId: purposeVersionId.present
+            ? purposeVersionId.value
+            : this.purposeVersionId,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  CtqFactorAcknowledgment copyWithCompanion(
+      CtqFactorAcknowledgmentsCompanion data) {
+    return CtqFactorAcknowledgment(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      factorKey: data.factorKey.present ? data.factorKey.value : this.factorKey,
+      acknowledgedAt: data.acknowledgedAt.present
+          ? data.acknowledgedAt.value
+          : this.acknowledgedAt,
+      acknowledgedByUserId: data.acknowledgedByUserId.present
+          ? data.acknowledgedByUserId.value
+          : this.acknowledgedByUserId,
+      reason: data.reason.present ? data.reason.value : this.reason,
+      factorStatusAtAcknowledgment: data.factorStatusAtAcknowledgment.present
+          ? data.factorStatusAtAcknowledgment.value
+          : this.factorStatusAtAcknowledgment,
+      purposeVersionId: data.purposeVersionId.present
+          ? data.purposeVersionId.value
+          : this.purposeVersionId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CtqFactorAcknowledgment(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('factorKey: $factorKey, ')
+          ..write('acknowledgedAt: $acknowledgedAt, ')
+          ..write('acknowledgedByUserId: $acknowledgedByUserId, ')
+          ..write('reason: $reason, ')
+          ..write(
+              'factorStatusAtAcknowledgment: $factorStatusAtAcknowledgment, ')
+          ..write('purposeVersionId: $purposeVersionId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      factorKey,
+      acknowledgedAt,
+      acknowledgedByUserId,
+      reason,
+      factorStatusAtAcknowledgment,
+      purposeVersionId,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CtqFactorAcknowledgment &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.factorKey == this.factorKey &&
+          other.acknowledgedAt == this.acknowledgedAt &&
+          other.acknowledgedByUserId == this.acknowledgedByUserId &&
+          other.reason == this.reason &&
+          other.factorStatusAtAcknowledgment ==
+              this.factorStatusAtAcknowledgment &&
+          other.purposeVersionId == this.purposeVersionId &&
+          other.createdAt == this.createdAt);
+}
+
+class CtqFactorAcknowledgmentsCompanion
+    extends UpdateCompanion<CtqFactorAcknowledgment> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<String> factorKey;
+  final Value<int> acknowledgedAt;
+  final Value<int?> acknowledgedByUserId;
+  final Value<String> reason;
+  final Value<String> factorStatusAtAcknowledgment;
+  final Value<int?> purposeVersionId;
+  final Value<int> createdAt;
+  const CtqFactorAcknowledgmentsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.factorKey = const Value.absent(),
+    this.acknowledgedAt = const Value.absent(),
+    this.acknowledgedByUserId = const Value.absent(),
+    this.reason = const Value.absent(),
+    this.factorStatusAtAcknowledgment = const Value.absent(),
+    this.purposeVersionId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  CtqFactorAcknowledgmentsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    required String factorKey,
+    required int acknowledgedAt,
+    this.acknowledgedByUserId = const Value.absent(),
+    required String reason,
+    required String factorStatusAtAcknowledgment,
+    this.purposeVersionId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  })  : trialId = Value(trialId),
+        factorKey = Value(factorKey),
+        acknowledgedAt = Value(acknowledgedAt),
+        reason = Value(reason),
+        factorStatusAtAcknowledgment = Value(factorStatusAtAcknowledgment);
+  static Insertable<CtqFactorAcknowledgment> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<String>? factorKey,
+    Expression<int>? acknowledgedAt,
+    Expression<int>? acknowledgedByUserId,
+    Expression<String>? reason,
+    Expression<String>? factorStatusAtAcknowledgment,
+    Expression<int>? purposeVersionId,
+    Expression<int>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (factorKey != null) 'factor_key': factorKey,
+      if (acknowledgedAt != null) 'acknowledged_at': acknowledgedAt,
+      if (acknowledgedByUserId != null)
+        'acknowledged_by_user_id': acknowledgedByUserId,
+      if (reason != null) 'reason': reason,
+      if (factorStatusAtAcknowledgment != null)
+        'factor_status_at_acknowledgment': factorStatusAtAcknowledgment,
+      if (purposeVersionId != null) 'purpose_version_id': purposeVersionId,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  CtqFactorAcknowledgmentsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<String>? factorKey,
+      Value<int>? acknowledgedAt,
+      Value<int?>? acknowledgedByUserId,
+      Value<String>? reason,
+      Value<String>? factorStatusAtAcknowledgment,
+      Value<int?>? purposeVersionId,
+      Value<int>? createdAt}) {
+    return CtqFactorAcknowledgmentsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      factorKey: factorKey ?? this.factorKey,
+      acknowledgedAt: acknowledgedAt ?? this.acknowledgedAt,
+      acknowledgedByUserId: acknowledgedByUserId ?? this.acknowledgedByUserId,
+      reason: reason ?? this.reason,
+      factorStatusAtAcknowledgment:
+          factorStatusAtAcknowledgment ?? this.factorStatusAtAcknowledgment,
+      purposeVersionId: purposeVersionId ?? this.purposeVersionId,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (factorKey.present) {
+      map['factor_key'] = Variable<String>(factorKey.value);
+    }
+    if (acknowledgedAt.present) {
+      map['acknowledged_at'] = Variable<int>(acknowledgedAt.value);
+    }
+    if (acknowledgedByUserId.present) {
+      map['acknowledged_by_user_id'] =
+          Variable<int>(acknowledgedByUserId.value);
+    }
+    if (reason.present) {
+      map['reason'] = Variable<String>(reason.value);
+    }
+    if (factorStatusAtAcknowledgment.present) {
+      map['factor_status_at_acknowledgment'] =
+          Variable<String>(factorStatusAtAcknowledgment.value);
+    }
+    if (purposeVersionId.present) {
+      map['purpose_version_id'] = Variable<int>(purposeVersionId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CtqFactorAcknowledgmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('factorKey: $factorKey, ')
+          ..write('acknowledgedAt: $acknowledgedAt, ')
+          ..write('acknowledgedByUserId: $acknowledgedByUserId, ')
+          ..write('reason: $reason, ')
+          ..write(
+              'factorStatusAtAcknowledgment: $factorStatusAtAcknowledgment, ')
+          ..write('purposeVersionId: $purposeVersionId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -44908,6 +45423,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CtqFactorDefinitionsTable(this);
   late final $ProtocolDocumentReferencesTable protocolDocumentReferences =
       $ProtocolDocumentReferencesTable(this);
+  late final $CtqFactorAcknowledgmentsTable ctqFactorAcknowledgments =
+      $CtqFactorAcknowledgmentsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -44965,7 +45482,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         trialPurposes,
         intentRevelationEvents,
         ctqFactorDefinitions,
-        protocolDocumentReferences
+        protocolDocumentReferences,
+        ctqFactorAcknowledgments
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -45019,6 +45537,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
                 limitUpdateKind: UpdateKind.delete),
             result: [
               TableUpdate('action_effects', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('trials',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('ctq_factor_acknowledgments',
+                  kind: UpdateKind.delete),
             ],
           ),
         ],
@@ -45331,6 +45857,24 @@ class $$UsersTableFilterComposer
             builder: (joinBuilder, parentComposers) =>
                 $$EvidenceAnchorsTableFilterComposer(ComposerState($state.db,
                     $state.db.evidenceAnchors, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter ctqFactorAcknowledgmentsRefs(
+      ComposableFilter Function($$CtqFactorAcknowledgmentsTableFilterComposer f)
+          f) {
+    final $$CtqFactorAcknowledgmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ctqFactorAcknowledgments,
+            getReferencedColumn: (t) => t.acknowledgedByUserId,
+            builder: (joinBuilder, parentComposers) =>
+                $$CtqFactorAcknowledgmentsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ctqFactorAcknowledgments,
+                    joinBuilder,
+                    parentComposers)));
     return f(composer);
   }
 }
@@ -46818,6 +47362,24 @@ class $$TrialsTableFilterComposer
                 $$ProtocolDocumentReferencesTableFilterComposer(ComposerState(
                     $state.db,
                     $state.db.protocolDocumentReferences,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter ctqFactorAcknowledgmentsRefs(
+      ComposableFilter Function($$CtqFactorAcknowledgmentsTableFilterComposer f)
+          f) {
+    final $$CtqFactorAcknowledgmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ctqFactorAcknowledgments,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$CtqFactorAcknowledgmentsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ctqFactorAcknowledgments,
                     joinBuilder,
                     parentComposers)));
     return f(composer);
@@ -64077,6 +64639,24 @@ class $$TrialPurposesTableFilterComposer
                     parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter ctqFactorAcknowledgmentsRefs(
+      ComposableFilter Function($$CtqFactorAcknowledgmentsTableFilterComposer f)
+          f) {
+    final $$CtqFactorAcknowledgmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ctqFactorAcknowledgments,
+            getReferencedColumn: (t) => t.purposeVersionId,
+            builder: (joinBuilder, parentComposers) =>
+                $$CtqFactorAcknowledgmentsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ctqFactorAcknowledgments,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$TrialPurposesTableOrderingComposer
@@ -64987,6 +65567,238 @@ class $$ProtocolDocumentReferencesTableOrderingComposer
   }
 }
 
+typedef $$CtqFactorAcknowledgmentsTableCreateCompanionBuilder
+    = CtqFactorAcknowledgmentsCompanion Function({
+  Value<int> id,
+  required int trialId,
+  required String factorKey,
+  required int acknowledgedAt,
+  Value<int?> acknowledgedByUserId,
+  required String reason,
+  required String factorStatusAtAcknowledgment,
+  Value<int?> purposeVersionId,
+  Value<int> createdAt,
+});
+typedef $$CtqFactorAcknowledgmentsTableUpdateCompanionBuilder
+    = CtqFactorAcknowledgmentsCompanion Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<String> factorKey,
+  Value<int> acknowledgedAt,
+  Value<int?> acknowledgedByUserId,
+  Value<String> reason,
+  Value<String> factorStatusAtAcknowledgment,
+  Value<int?> purposeVersionId,
+  Value<int> createdAt,
+});
+
+class $$CtqFactorAcknowledgmentsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $CtqFactorAcknowledgmentsTable,
+    CtqFactorAcknowledgment,
+    $$CtqFactorAcknowledgmentsTableFilterComposer,
+    $$CtqFactorAcknowledgmentsTableOrderingComposer,
+    $$CtqFactorAcknowledgmentsTableCreateCompanionBuilder,
+    $$CtqFactorAcknowledgmentsTableUpdateCompanionBuilder> {
+  $$CtqFactorAcknowledgmentsTableTableManager(
+      _$AppDatabase db, $CtqFactorAcknowledgmentsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$CtqFactorAcknowledgmentsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$CtqFactorAcknowledgmentsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<String> factorKey = const Value.absent(),
+            Value<int> acknowledgedAt = const Value.absent(),
+            Value<int?> acknowledgedByUserId = const Value.absent(),
+            Value<String> reason = const Value.absent(),
+            Value<String> factorStatusAtAcknowledgment = const Value.absent(),
+            Value<int?> purposeVersionId = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              CtqFactorAcknowledgmentsCompanion(
+            id: id,
+            trialId: trialId,
+            factorKey: factorKey,
+            acknowledgedAt: acknowledgedAt,
+            acknowledgedByUserId: acknowledgedByUserId,
+            reason: reason,
+            factorStatusAtAcknowledgment: factorStatusAtAcknowledgment,
+            purposeVersionId: purposeVersionId,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            required String factorKey,
+            required int acknowledgedAt,
+            Value<int?> acknowledgedByUserId = const Value.absent(),
+            required String reason,
+            required String factorStatusAtAcknowledgment,
+            Value<int?> purposeVersionId = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              CtqFactorAcknowledgmentsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            factorKey: factorKey,
+            acknowledgedAt: acknowledgedAt,
+            acknowledgedByUserId: acknowledgedByUserId,
+            reason: reason,
+            factorStatusAtAcknowledgment: factorStatusAtAcknowledgment,
+            purposeVersionId: purposeVersionId,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$CtqFactorAcknowledgmentsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $CtqFactorAcknowledgmentsTable> {
+  $$CtqFactorAcknowledgmentsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get factorKey => $state.composableBuilder(
+      column: $state.table.factorKey,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get acknowledgedAt => $state.composableBuilder(
+      column: $state.table.acknowledgedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get reason => $state.composableBuilder(
+      column: $state.table.reason,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get factorStatusAtAcknowledgment =>
+      $state.composableBuilder(
+          column: $state.table.factorStatusAtAcknowledgment,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get acknowledgedByUserId {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.acknowledgedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialPurposesTableFilterComposer get purposeVersionId {
+    final $$TrialPurposesTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.purposeVersionId,
+        referencedTable: $state.db.trialPurposes,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialPurposesTableFilterComposer(ComposerState($state.db,
+                $state.db.trialPurposes, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$CtqFactorAcknowledgmentsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $CtqFactorAcknowledgmentsTable> {
+  $$CtqFactorAcknowledgmentsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get factorKey => $state.composableBuilder(
+      column: $state.table.factorKey,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get acknowledgedAt => $state.composableBuilder(
+      column: $state.table.acknowledgedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get reason => $state.composableBuilder(
+      column: $state.table.reason,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get factorStatusAtAcknowledgment =>
+      $state.composableBuilder(
+          column: $state.table.factorStatusAtAcknowledgment,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get acknowledgedByUserId {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.acknowledgedByUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialPurposesTableOrderingComposer get purposeVersionId {
+    final $$TrialPurposesTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.purposeVersionId,
+            referencedTable: $state.db.trialPurposes,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialPurposesTableOrderingComposer(ComposerState($state.db,
+                    $state.db.trialPurposes, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -65105,4 +65917,7 @@ class $AppDatabaseManager {
       get protocolDocumentReferences =>
           $$ProtocolDocumentReferencesTableTableManager(
               _db, _db.protocolDocumentReferences);
+  $$CtqFactorAcknowledgmentsTableTableManager get ctqFactorAcknowledgments =>
+      $$CtqFactorAcknowledgmentsTableTableManager(
+          _db, _db.ctqFactorAcknowledgments);
 }
