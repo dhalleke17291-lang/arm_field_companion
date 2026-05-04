@@ -416,6 +416,7 @@ class MockApplicationRepository implements ApplicationRepository {
     TrialApplicationEventsCompanion companion, {
     String? performedBy,
     int? performedByUserId,
+    String? correctionReason,
   }) async =>
       throw UnimplementedError();
 
@@ -425,6 +426,7 @@ class MockApplicationRepository implements ApplicationRepository {
     TrialApplicationEventsCompanion companion, {
     String? performedBy,
     int? performedByUserId,
+    String? correctionReason,
   }) async =>
       throw UnimplementedError();
 
