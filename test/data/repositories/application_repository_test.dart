@@ -1091,4 +1091,140 @@ void main() {
       },
     );
   });
+
+  group('updateApplicationAnnotationsOnly — correction audit (CWR)', () {
+    Future<String> createAppliedApp(int trialId,
+        {int? bbch, String? operator_}) async {
+      final id = await repo.createApplication(
+        TrialApplicationEventsCompanion.insert(
+          trialId: trialId,
+          applicationDate: today(),
+          operatorName: Value(operator_),
+          growthStageBbchAtApplication: Value(bbch),
+        ),
+      );
+      await repo.markApplicationApplied(id: id, appliedAt: DateTime.now());
+      return id;
+    }
+
+    Future<Map<String, dynamic>> auditMeta(String id) async {
+      final audits = await (db.select(db.auditEvents)
+            ..where((a) => a.eventType.equals('APPLICATION_EVENT_UPDATED')))
+          .get();
+      return jsonDecode(audits.last.metadata!) as Map<String, dynamic>;
+    }
+
+    test('CWR-1: null→value change → no has_corrections in audit', () async {
+      final trialId = await createTrial();
+      // BBCH starts null.
+      final id = await createAppliedApp(trialId);
+
+      await repo.updateApplicationAnnotationsOnly(
+        id,
+        const TrialApplicationEventsCompanion(
+          growthStageBbchAtApplication: Value(32),
+        ),
+      );
+
+      final meta = await auditMeta(id);
+      expect(meta['annotation_only'], true);
+      expect(meta.containsKey('has_corrections'), isFalse);
+    });
+
+    test('CWR-2: value→value change → has_corrections: true + field listed',
+        () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId, bbch: 32);
+
+      await repo.updateApplicationAnnotationsOnly(
+        id,
+        const TrialApplicationEventsCompanion(
+          growthStageBbchAtApplication: Value(29),
+        ),
+      );
+
+      final meta = await auditMeta(id);
+      expect(meta['has_corrections'], true);
+      expect(
+        (meta['corrections'] as List).cast<String>(),
+        contains('growthStageBbchAtApplication'),
+      );
+    });
+
+    test('CWR-3: correctionReason provided → stored in audit', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId, bbch: 32);
+
+      await repo.updateApplicationAnnotationsOnly(
+        id,
+        const TrialApplicationEventsCompanion(
+          growthStageBbchAtApplication: Value(29),
+        ),
+        correctionReason: 'Observer misread field notes',
+      );
+
+      final meta = await auditMeta(id);
+      expect(meta['correction_reason'], 'Observer misread field notes');
+    });
+
+    test('CWR-4: no reason provided → correction_reason: not provided',
+        () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId, bbch: 32);
+
+      await repo.updateApplicationAnnotationsOnly(
+        id,
+        const TrialApplicationEventsCompanion(
+          growthStageBbchAtApplication: Value(29),
+        ),
+      );
+
+      final meta = await auditMeta(id);
+      expect(meta['correction_reason'], 'not provided');
+    });
+
+    test(
+        'CWR-5: mixed fill + correction → only corrected field listed, '
+        'fill not flagged', () async {
+      final trialId = await createTrial();
+      // BBCH has a prior value (32); operatorName starts null.
+      final id = await createAppliedApp(trialId, bbch: 32);
+
+      await repo.updateApplicationAnnotationsOnly(
+        id,
+        const TrialApplicationEventsCompanion(
+          growthStageBbchAtApplication: Value(29), // correction
+          operatorName: Value('J. Smith'), // fill (was null)
+        ),
+      );
+
+      final meta = await auditMeta(id);
+      expect(meta['has_corrections'], true);
+      final corrections = (meta['corrections'] as List).cast<String>();
+      expect(corrections, contains('growthStageBbchAtApplication'));
+      expect(corrections, isNot(contains('operatorName')));
+    });
+
+    test(
+        'CWR-6: thread through updateApplication — correctionReason reaches '
+        'audit on confirmed event', () async {
+      final trialId = await createTrial();
+      final id = await createAppliedApp(trialId, bbch: 32);
+      final row = (await repo.getApplicationsForTrial(trialId)).first;
+
+      await repo.updateApplication(
+        id,
+        TrialApplicationEventsCompanion(
+          id: Value(row.id),
+          trialId: Value(row.trialId),
+          applicationDate: Value(row.applicationDate),
+          growthStageBbchAtApplication: const Value(29),
+        ),
+        correctionReason: 'Threaded reason',
+      );
+
+      final meta = await auditMeta(id);
+      expect(meta['correction_reason'], 'Threaded reason');
+    });
+  });
 }

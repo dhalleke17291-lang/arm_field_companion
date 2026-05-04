@@ -138,6 +138,7 @@ class ApplicationRepository {
     TrialApplicationEventsCompanion companion, {
     String? performedBy,
     int? performedByUserId,
+    String? correctionReason,
   }) async {
     final prior = await (_db.select(_db.trialApplicationEvents)
           ..where((e) => e.id.equals(id)))
@@ -167,6 +168,7 @@ class ApplicationRepository {
         annotationCompanion,
         performedBy: performedBy,
         performedByUserId: performedByUserId,
+        correctionReason: correctionReason,
       );
     }
 
@@ -216,6 +218,7 @@ class ApplicationRepository {
     TrialApplicationEventsCompanion companion, {
     String? performedBy,
     int? performedByUserId,
+    String? correctionReason,
   }) async {
     final prior = await (_db.select(_db.trialApplicationEvents)
           ..where((e) => e.id.equals(id)))
@@ -244,6 +247,21 @@ class ApplicationRepository {
             ..where((e) => e.id.equals(id)))
           .write(write);
       try {
+        final corrected = _correctedFields(companion, prior);
+        final metadata = <String, dynamic>{
+          'trial_application_event_id': id,
+          'trial_id': prior.trialId,
+          'changed_fields': changed.toList()..sort(),
+          'annotation_only': true,
+        };
+        if (corrected.isNotEmpty) {
+          metadata['has_corrections'] = true;
+          metadata['corrections'] = corrected.toList()..sort();
+          metadata['correction_reason'] =
+              (correctionReason?.isNotEmpty == true)
+                  ? correctionReason!
+                  : 'not provided';
+        }
         await _db.into(_db.auditEvents).insert(
               AuditEventsCompanion.insert(
                 trialId: Value(prior.trialId),
@@ -251,12 +269,7 @@ class ApplicationRepository {
                 description: 'Application annotation updated',
                 performedBy: Value(performedBy),
                 performedByUserId: Value(performedByUserId),
-                metadata: Value(jsonEncode({
-                  'trial_application_event_id': id,
-                  'trial_id': prior.trialId,
-                  'changed_fields': changed.toList()..sort(),
-                  'annotation_only': true,
-                })),
+                metadata: Value(jsonEncode(metadata)),
               ),
             );
       } catch (e, st) {
@@ -600,6 +613,60 @@ class ApplicationRepository {
       out.add('waterVolumeUnit');
     }
     return out;
+  }
+
+  /// Returns annotation fields from [changed] where the prior value was non-null.
+  /// A correction is a value→value change; a fill is null→value.
+  Set<String> _correctedFields(
+    TrialApplicationEventsCompanion companion,
+    TrialApplicationEvent existing,
+  ) {
+    final changed = _actuallyChangedFields(companion, existing);
+    return changed
+        .where((f) => _priorAnnotationFieldIsNonNull(f, existing))
+        .toSet();
+  }
+
+  bool _priorAnnotationFieldIsNonNull(
+      String field, TrialApplicationEvent prior) {
+    return switch (field) {
+      'growthStageCode' => prior.growthStageCode != null,
+      'growthStageBbchAtApplication' =>
+        prior.growthStageBbchAtApplication != null,
+      'windSpeed' => prior.windSpeed != null,
+      'windDirection' => prior.windDirection != null,
+      'temperature' => prior.temperature != null,
+      'humidity' => prior.humidity != null,
+      'cloudCoverPct' => prior.cloudCoverPct != null,
+      'soilMoisture' => prior.soilMoisture != null,
+      'soilTemperature' => prior.soilTemperature != null,
+      'soilTempUnit' => prior.soilTempUnit != null,
+      'soilDepth' => prior.soilDepth != null,
+      'soilDepthUnit' => prior.soilDepthUnit != null,
+      'precipitation' => prior.precipitation != null,
+      'precipitationMm' => prior.precipitationMm != null,
+      'conditionsRecordedAt' => prior.conditionsRecordedAt != null,
+      'equipmentUsed' => prior.equipmentUsed != null,
+      'applicationMethod' => prior.applicationMethod != null,
+      'nozzleType' => prior.nozzleType != null,
+      'nozzleSpacingCm' => prior.nozzleSpacingCm != null,
+      'operatingPressure' => prior.operatingPressure != null,
+      'pressureUnit' => prior.pressureUnit != null,
+      'groundSpeed' => prior.groundSpeed != null,
+      'speedUnit' => prior.speedUnit != null,
+      'boomHeightCm' => prior.boomHeightCm != null,
+      'operatorName' => prior.operatorName != null,
+      'notes' => prior.notes != null,
+      'treatedArea' => prior.treatedArea != null,
+      'treatedAreaUnit' => prior.treatedAreaUnit != null,
+      'spraySolutionPh' => prior.spraySolutionPh != null,
+      'adjuvantName' => prior.adjuvantName != null,
+      'adjuvantRate' => prior.adjuvantRate != null,
+      'adjuvantRateUnit' => prior.adjuvantRateUnit != null,
+      'waterVolume' => prior.waterVolume != null,
+      'waterVolumeUnit' => prior.waterVolumeUnit != null,
+      _ => false,
+    };
   }
 
   /// Returns a fresh companion containing only annotation-field values from [c].

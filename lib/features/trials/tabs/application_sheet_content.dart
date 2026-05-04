@@ -56,6 +56,222 @@ bool computeApplicationCoverageTimingInitiallyExpanded(
       event.growthStageBbchAtApplication != null;
 }
 
+/// A single annotation field that was corrected (prior non-null → new value).
+typedef AnnotationCorrection = ({
+  String field,
+  String label,
+  String oldVal,
+  String newVal,
+});
+
+const _kAnnotationFieldLabel = <String, String>{
+  'growthStageBbchAtApplication': 'BBCH at application',
+  'growthStageCode': 'Growth stage',
+  'operatorName': 'Operator',
+  'equipmentUsed': 'Equipment used',
+  'windSpeed': 'Wind speed',
+  'windDirection': 'Wind direction',
+  'temperature': 'Temperature',
+  'humidity': 'Humidity',
+  'cloudCoverPct': 'Cloud cover (%)',
+  'soilMoisture': 'Soil moisture',
+  'soilTemperature': 'Soil temperature',
+  'soilTempUnit': 'Soil temp unit',
+  'soilDepth': 'Soil depth',
+  'soilDepthUnit': 'Soil depth unit',
+  'precipitation': 'Precipitation',
+  'precipitationMm': 'Precipitation (mm)',
+  'conditionsRecordedAt': 'Conditions recorded at',
+  'applicationMethod': 'Application method',
+  'nozzleType': 'Nozzle type',
+  'nozzleSpacingCm': 'Nozzle spacing (cm)',
+  'operatingPressure': 'Operating pressure',
+  'pressureUnit': 'Pressure unit',
+  'groundSpeed': 'Ground speed',
+  'speedUnit': 'Speed unit',
+  'boomHeightCm': 'Boom height (cm)',
+  'waterVolume': 'Water volume',
+  'waterVolumeUnit': 'Water volume unit',
+  'adjuvantName': 'Adjuvant name',
+  'adjuvantRate': 'Adjuvant rate',
+  'adjuvantRateUnit': 'Adjuvant rate unit',
+  'spraySolutionPh': 'Spray solution pH',
+  'treatedArea': 'Treated area',
+  'treatedAreaUnit': 'Treated area unit',
+  'notes': 'Notes',
+};
+
+/// Returns corrections (prior non-null → new value) for annotation fields
+/// present in [companion] that differ from [existing].
+/// Fills (null → value) are not included.
+List<AnnotationCorrection> annotationCorrections(
+  TrialApplicationEventsCompanion companion,
+  TrialApplicationEvent existing,
+) {
+  final out = <AnnotationCorrection>[];
+
+  void check<T>(String field, T? prior, T? current) {
+    if (prior != null && prior != current) {
+      out.add((
+        field: field,
+        label: _kAnnotationFieldLabel[field] ?? field,
+        oldVal: prior.toString(),
+        newVal: current?.toString() ?? '(cleared)',
+      ));
+    }
+  }
+
+  if (companion.growthStageBbchAtApplication.present) {
+    check('growthStageBbchAtApplication',
+        existing.growthStageBbchAtApplication,
+        companion.growthStageBbchAtApplication.value);
+  }
+  if (companion.growthStageCode.present) {
+    check('growthStageCode',
+        _trimSheetText(existing.growthStageCode),
+        _trimSheetText(companion.growthStageCode.value));
+  }
+  if (companion.operatorName.present) {
+    check('operatorName',
+        _trimSheetText(existing.operatorName),
+        _trimSheetText(companion.operatorName.value));
+  }
+  if (companion.equipmentUsed.present) {
+    check('equipmentUsed',
+        _trimSheetText(existing.equipmentUsed),
+        _trimSheetText(companion.equipmentUsed.value));
+  }
+  if (companion.windSpeed.present) {
+    check('windSpeed', existing.windSpeed, companion.windSpeed.value);
+  }
+  if (companion.windDirection.present) {
+    check('windDirection',
+        _trimSheetText(existing.windDirection),
+        _trimSheetText(companion.windDirection.value));
+  }
+  if (companion.temperature.present) {
+    check('temperature', existing.temperature, companion.temperature.value);
+  }
+  if (companion.humidity.present) {
+    check('humidity', existing.humidity, companion.humidity.value);
+  }
+  if (companion.cloudCoverPct.present) {
+    check('cloudCoverPct',
+        existing.cloudCoverPct, companion.cloudCoverPct.value);
+  }
+  if (companion.soilMoisture.present) {
+    check('soilMoisture',
+        _trimSheetText(existing.soilMoisture),
+        _trimSheetText(companion.soilMoisture.value));
+  }
+  if (companion.soilTemperature.present) {
+    check('soilTemperature',
+        existing.soilTemperature, companion.soilTemperature.value);
+  }
+  if (companion.soilTempUnit.present) {
+    check('soilTempUnit',
+        _trimSheetText(existing.soilTempUnit),
+        _trimSheetText(companion.soilTempUnit.value));
+  }
+  if (companion.soilDepth.present) {
+    check('soilDepth', existing.soilDepth, companion.soilDepth.value);
+  }
+  if (companion.soilDepthUnit.present) {
+    check('soilDepthUnit',
+        _trimSheetText(existing.soilDepthUnit),
+        _trimSheetText(companion.soilDepthUnit.value));
+  }
+  if (companion.precipitation.present) {
+    check('precipitation',
+        _trimSheetText(existing.precipitation),
+        _trimSheetText(companion.precipitation.value));
+  }
+  if (companion.precipitationMm.present) {
+    check('precipitationMm',
+        existing.precipitationMm, companion.precipitationMm.value);
+  }
+  if (companion.conditionsRecordedAt.present) {
+    check('conditionsRecordedAt',
+        existing.conditionsRecordedAt, companion.conditionsRecordedAt.value);
+  }
+  if (companion.applicationMethod.present) {
+    check('applicationMethod',
+        _trimSheetText(existing.applicationMethod),
+        _trimSheetText(companion.applicationMethod.value));
+  }
+  if (companion.nozzleType.present) {
+    check('nozzleType',
+        _trimSheetText(existing.nozzleType),
+        _trimSheetText(companion.nozzleType.value));
+  }
+  if (companion.nozzleSpacingCm.present) {
+    check('nozzleSpacingCm',
+        existing.nozzleSpacingCm, companion.nozzleSpacingCm.value);
+  }
+  if (companion.operatingPressure.present) {
+    check('operatingPressure',
+        existing.operatingPressure, companion.operatingPressure.value);
+  }
+  if (companion.pressureUnit.present) {
+    check('pressureUnit',
+        _trimSheetText(existing.pressureUnit),
+        _trimSheetText(companion.pressureUnit.value));
+  }
+  if (companion.groundSpeed.present) {
+    check('groundSpeed',
+        existing.groundSpeed, companion.groundSpeed.value);
+  }
+  if (companion.speedUnit.present) {
+    check('speedUnit',
+        _trimSheetText(existing.speedUnit),
+        _trimSheetText(companion.speedUnit.value));
+  }
+  if (companion.boomHeightCm.present) {
+    check('boomHeightCm',
+        existing.boomHeightCm, companion.boomHeightCm.value);
+  }
+  if (companion.waterVolume.present) {
+    check('waterVolume', existing.waterVolume, companion.waterVolume.value);
+  }
+  if (companion.waterVolumeUnit.present) {
+    check('waterVolumeUnit',
+        _trimSheetText(existing.waterVolumeUnit),
+        _trimSheetText(companion.waterVolumeUnit.value));
+  }
+  if (companion.adjuvantName.present) {
+    check('adjuvantName',
+        _trimSheetText(existing.adjuvantName),
+        _trimSheetText(companion.adjuvantName.value));
+  }
+  if (companion.adjuvantRate.present) {
+    check('adjuvantRate', existing.adjuvantRate, companion.adjuvantRate.value);
+  }
+  if (companion.adjuvantRateUnit.present) {
+    check('adjuvantRateUnit',
+        _trimSheetText(existing.adjuvantRateUnit),
+        _trimSheetText(companion.adjuvantRateUnit.value));
+  }
+  if (companion.spraySolutionPh.present) {
+    check('spraySolutionPh',
+        existing.spraySolutionPh, companion.spraySolutionPh.value);
+  }
+  if (companion.treatedArea.present) {
+    check('treatedArea', existing.treatedArea, companion.treatedArea.value);
+  }
+  if (companion.treatedAreaUnit.present) {
+    check('treatedAreaUnit',
+        _trimSheetText(existing.treatedAreaUnit),
+        _trimSheetText(companion.treatedAreaUnit.value));
+  }
+  if (companion.notes.present) {
+    check('notes',
+        _trimSheetText(existing.notes),
+        _trimSheetText(companion.notes.value));
+  }
+
+  return out;
+}
+
 /// Five-section add/edit application bottom sheet content.
 class ApplicationSheetContent extends ConsumerStatefulWidget {
   const ApplicationSheetContent({
@@ -787,6 +1003,21 @@ class _ApplicationSheetContentState
       return;
     }
 
+    // For confirmed edits, detect corrections and prompt for a reason before
+    // entering the saving state so the dialog can be dismissed cleanly.
+    String? correctionReason;
+    if (_isConfirmed && widget.existing != null) {
+      final preCompanion = _buildCompanion();
+      final corrections =
+          annotationCorrections(preCompanion, widget.existing!);
+      if (corrections.isNotEmpty) {
+        if (!mounted) return;
+        correctionReason =
+            await _showCorrectionReasonDialog(corrections);
+        if (correctionReason == null) return; // user cancelled
+      }
+    }
+
     setState(() => _saving = true);
     try {
       final repo = ref.read(applicationRepositoryProvider);
@@ -807,6 +1038,7 @@ class _ApplicationSheetContentState
           companion,
           performedBy: user?.displayName,
           performedByUserId: userId,
+          correctionReason: correctionReason,
         );
         eventId = widget.existing!.id;
       }
@@ -953,6 +1185,64 @@ class _ApplicationSheetContentState
       plotsTreated: drift.Value(plotsTreatedStr),
       notes: drift.Value(_trim(_notesController.text)),
     );
+  }
+
+  /// Shows a dialog listing corrected fields and prompts for an optional reason.
+  /// Returns the trimmed reason string on confirm, or null if the user cancels.
+  Future<String?> _showCorrectionReasonDialog(
+      List<AnnotationCorrection> corrections) async {
+    final reasonController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Correcting recorded values'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ...corrections.map(
+                (c) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '· ${c.label}: ${c.oldVal} → ${c.newVal}',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Reason for correction (optional)',
+                  hintText: 'e.g. Transcription error, field note corrected',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save correction'),
+          ),
+        ],
+      ),
+    );
+    final reason = reasonController.text.trim();
+    reasonController.dispose();
+    if (confirmed != true) return null;
+    return reason;
   }
 
   @override
