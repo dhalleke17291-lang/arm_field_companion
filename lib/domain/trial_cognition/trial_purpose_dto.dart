@@ -1,3 +1,5 @@
+import 'trial_intent_inferrer.dart';
+
 /// DTO answering: What is this trial trying to prove? Is purpose captured?
 class TrialPurposeDto {
   const TrialPurposeDto({
@@ -12,6 +14,9 @@ class TrialPurposeDto {
     required this.missingIntentFields,
     required this.provenanceSummary,
     required this.canDriveReadinessClaims,
+    this.requiresConfirmation = false,
+    this.inferenceSource,
+    this.inferredPurpose,
   });
 
   final int trialId;
@@ -34,6 +39,17 @@ class TrialPurposeDto {
 
   /// True only when status == confirmed and no required fields are missing.
   final bool canDriveReadinessClaims;
+
+  /// True when this row was written by TrialIntentSeeder and not yet
+  /// confirmed by the researcher.
+  final bool requiresConfirmation;
+
+  /// 'arm_structure' | 'standalone_structure' | 'manual_revelation' etc.
+  final String? inferenceSource;
+
+  /// Structured inferred fields with per-field confidence — present when
+  /// [requiresConfirmation] is true and [inferredFieldsJson] was stored.
+  final InferredTrialPurpose? inferredPurpose;
 
   bool get isUnknown => purposeStatus == 'unknown';
   bool get isConfirmed => purposeStatus == 'confirmed';

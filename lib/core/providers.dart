@@ -136,6 +136,7 @@ import '../data/services/open_meteo_weather_fetch_service.dart';
 import '../data/services/weather_daily_fetch_service.dart';
 import '../domain/trial_cognition/trial_decision_summary_dto.dart';
 import '../domain/trial_cognition/mode_c_revelation_model.dart';
+import '../domain/trial_cognition/trial_intent_inferrer.dart';
 import '../domain/trial_cognition/trial_intent_seeder.dart';
 
 /// ARCHITECTURE RULE: Use case return types
@@ -2389,10 +2390,40 @@ TrialPurposeDto _computeTrialPurposeDto(int trialId, TrialPurpose? purpose) {
     );
   }
 
+  final requiresConfirmation = purpose.requiresConfirmation == 1;
+
+  // Parse inferred confidence JSON when the row is pending confirmation.
+  InferredTrialPurpose? inferredPurpose;
+  if (requiresConfirmation && purpose.inferredFieldsJson != null) {
+    try {
+      inferredPurpose =
+          InferredTrialPurpose.fromJsonString(purpose.inferredFieldsJson!);
+    } catch (_) {
+      // Malformed JSON — treat as no inference data.
+    }
+  }
+
+  // When inferred and pending confirmation, filter out low/cannotInfer fields
+  // so evaluators only see what can be used for preliminary assessment.
+  bool confUsable(FieldConfidence c) =>
+      c == FieldConfidence.high || c == FieldConfidence.moderate;
+
+  String? claim = purpose.claimBeingTested;
+  String? endpoint = purpose.primaryEndpoint;
+  String? regulatory = purpose.regulatoryContext;
+
+  if (requiresConfirmation && inferredPurpose != null) {
+    if (!confUsable(inferredPurpose.claimConfidence)) claim = null;
+    if (!confUsable(inferredPurpose.primaryEndpointConfidence)) endpoint = null;
+    if (!confUsable(inferredPurpose.regulatoryContextConfidence)) {
+      regulatory = null;
+    }
+  }
+
   final missing = <String>[
-    if (purpose.claimBeingTested == null) ModeCQuestionKeys.claimBeingTested,
+    if (claim == null) ModeCQuestionKeys.claimBeingTested,
     if (purpose.trialPurpose == null) ModeCQuestionKeys.trialPurposeContext,
-    if (purpose.primaryEndpoint == null) ModeCQuestionKeys.primaryEndpoint,
+    if (endpoint == null) ModeCQuestionKeys.primaryEndpoint,
     if (purpose.treatmentRoleSummary == null) ModeCQuestionKeys.treatmentRoles,
   ];
 
@@ -2402,24 +2433,31 @@ TrialPurposeDto _computeTrialPurposeDto(int trialId, TrialPurpose? purpose) {
     return purpose.status;
   }();
 
-  final canDrive = effectiveStatus == 'confirmed' && missing.isEmpty;
+  // Inferred rows never drive readiness claims without researcher confirmation.
+  final canDrive =
+      !requiresConfirmation && effectiveStatus == 'confirmed' && missing.isEmpty;
 
-  final provenance = purpose.confirmedAt != null
-      ? 'Confirmed${purpose.confirmedBy != null ? ' by ${purpose.confirmedBy}' : ''}.'
-      : '${missing.length} required field(s) missing.';
+  final provenance = requiresConfirmation
+      ? 'Inferred from ${purpose.sourceMode.replaceAll('_', ' ')} — pending confirmation.'
+      : purpose.confirmedAt != null
+          ? 'Confirmed${purpose.confirmedBy != null ? ' by ${purpose.confirmedBy}' : ''}.'
+          : '${missing.length} required field(s) missing.';
 
   return TrialPurposeDto(
     trialId: trialId,
     purposeStatus: effectiveStatus,
-    claimBeingTested: purpose.claimBeingTested,
+    claimBeingTested: claim,
     trialPurpose: purpose.trialPurpose,
-    regulatoryContext: purpose.regulatoryContext,
-    primaryEndpoint: purpose.primaryEndpoint,
+    regulatoryContext: regulatory,
+    primaryEndpoint: endpoint,
     treatmentRoles: purpose.treatmentRoleSummary,
     knownInterpretationFactors: purpose.knownInterpretationFactors,
     missingIntentFields: List.unmodifiable(missing),
     provenanceSummary: provenance,
     canDriveReadinessClaims: canDrive,
+    requiresConfirmation: requiresConfirmation,
+    inferenceSource: purpose.sourceMode,
+    inferredPurpose: inferredPurpose,
   );
 }
 
