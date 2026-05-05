@@ -1593,6 +1593,44 @@ class ProtocolDocumentReferences extends Table {
   TextColumn get notes => text().nullable()();
 }
 
+/// Environmental Evidence Layer v81: one row per trial per calendar day.
+/// All temperature and precipitation fields are nullable — null means the
+/// data was unavailable, never zero. UNIQUE(trial_id, record_date) prevents
+/// duplicate daily records.
+class TrialEnvironmentalRecords extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get trialId =>
+      integer().references(Trials, #id, onDelete: KeyAction.cascade)();
+
+  /// UTC midnight millisecond timestamp identifying the calendar day.
+  IntColumn get recordDate => integer()();
+
+  RealColumn get siteLatitude => real()();
+  RealColumn get siteLongitude => real()();
+
+  RealColumn get dailyMinTempC => real().nullable()();
+  RealColumn get dailyMaxTempC => real().nullable()();
+  RealColumn get dailyPrecipitationMm => real().nullable()();
+
+  /// Nullable JSON array of notable events: frost, heat, excessive_rainfall, drought.
+  TextColumn get weatherFlags => text().nullable()();
+
+  TextColumn get dataSource => text()();
+  IntColumn get fetchedAt => integer()();
+
+  /// 'measured' | 'estimated' | 'unavailable'
+  TextColumn get confidence =>
+      text().withDefault(const Constant('measured'))();
+
+  IntColumn get createdAt => integer().withDefault(
+      const CustomExpression("(strftime('%s','now') * 1000)"))();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {trialId, recordDate},
+      ];
+}
+
 /// Decision Ledger v80: researcher acknowledgment of a CTQ factor's status.
 /// reason is NOT NULL — no acknowledgment without reasoning, ever.
 class CtqFactorAcknowledgments extends Table {
@@ -1671,6 +1709,8 @@ class CtqFactorAcknowledgments extends Table {
   ProtocolDocumentReferences,
   // Decision Ledger (v80): researcher acknowledgment of CTQ factor status.
   CtqFactorAcknowledgments,
+  // Environmental Evidence Layer (v81): daily weather records per trial.
+  TrialEnvironmentalRecords,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -1679,7 +1719,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 80;
+  int get schemaVersion => 81;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -3283,6 +3323,10 @@ END
 
           if (from < 80) {
             await m.createTable(ctqFactorAcknowledgments);
+          }
+
+          if (from < 81) {
+            await m.createTable(trialEnvironmentalRecords);
           }
 
           await _createIndexes();

@@ -45337,6 +45337,689 @@ class CtqFactorAcknowledgmentsCompanion
   }
 }
 
+class $TrialEnvironmentalRecordsTable extends TrialEnvironmentalRecords
+    with TableInfo<$TrialEnvironmentalRecordsTable, TrialEnvironmentalRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TrialEnvironmentalRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _trialIdMeta =
+      const VerificationMeta('trialId');
+  @override
+  late final GeneratedColumn<int> trialId = GeneratedColumn<int>(
+      'trial_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES trials (id) ON DELETE CASCADE'));
+  static const VerificationMeta _recordDateMeta =
+      const VerificationMeta('recordDate');
+  @override
+  late final GeneratedColumn<int> recordDate = GeneratedColumn<int>(
+      'record_date', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _siteLatitudeMeta =
+      const VerificationMeta('siteLatitude');
+  @override
+  late final GeneratedColumn<double> siteLatitude = GeneratedColumn<double>(
+      'site_latitude', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _siteLongitudeMeta =
+      const VerificationMeta('siteLongitude');
+  @override
+  late final GeneratedColumn<double> siteLongitude = GeneratedColumn<double>(
+      'site_longitude', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _dailyMinTempCMeta =
+      const VerificationMeta('dailyMinTempC');
+  @override
+  late final GeneratedColumn<double> dailyMinTempC = GeneratedColumn<double>(
+      'daily_min_temp_c', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _dailyMaxTempCMeta =
+      const VerificationMeta('dailyMaxTempC');
+  @override
+  late final GeneratedColumn<double> dailyMaxTempC = GeneratedColumn<double>(
+      'daily_max_temp_c', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _dailyPrecipitationMmMeta =
+      const VerificationMeta('dailyPrecipitationMm');
+  @override
+  late final GeneratedColumn<double> dailyPrecipitationMm =
+      GeneratedColumn<double>('daily_precipitation_mm', aliasedName, true,
+          type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _weatherFlagsMeta =
+      const VerificationMeta('weatherFlags');
+  @override
+  late final GeneratedColumn<String> weatherFlags = GeneratedColumn<String>(
+      'weather_flags', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _dataSourceMeta =
+      const VerificationMeta('dataSource');
+  @override
+  late final GeneratedColumn<String> dataSource = GeneratedColumn<String>(
+      'data_source', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _fetchedAtMeta =
+      const VerificationMeta('fetchedAt');
+  @override
+  late final GeneratedColumn<int> fetchedAt = GeneratedColumn<int>(
+      'fetched_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _confidenceMeta =
+      const VerificationMeta('confidence');
+  @override
+  late final GeneratedColumn<String> confidence = GeneratedColumn<String>(
+      'confidence', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('measured'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const CustomExpression("(strftime('%s','now') * 1000)"));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        trialId,
+        recordDate,
+        siteLatitude,
+        siteLongitude,
+        dailyMinTempC,
+        dailyMaxTempC,
+        dailyPrecipitationMm,
+        weatherFlags,
+        dataSource,
+        fetchedAt,
+        confidence,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trial_environmental_records';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<TrialEnvironmentalRecord> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trial_id')) {
+      context.handle(_trialIdMeta,
+          trialId.isAcceptableOrUnknown(data['trial_id']!, _trialIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialIdMeta);
+    }
+    if (data.containsKey('record_date')) {
+      context.handle(
+          _recordDateMeta,
+          recordDate.isAcceptableOrUnknown(
+              data['record_date']!, _recordDateMeta));
+    } else if (isInserting) {
+      context.missing(_recordDateMeta);
+    }
+    if (data.containsKey('site_latitude')) {
+      context.handle(
+          _siteLatitudeMeta,
+          siteLatitude.isAcceptableOrUnknown(
+              data['site_latitude']!, _siteLatitudeMeta));
+    } else if (isInserting) {
+      context.missing(_siteLatitudeMeta);
+    }
+    if (data.containsKey('site_longitude')) {
+      context.handle(
+          _siteLongitudeMeta,
+          siteLongitude.isAcceptableOrUnknown(
+              data['site_longitude']!, _siteLongitudeMeta));
+    } else if (isInserting) {
+      context.missing(_siteLongitudeMeta);
+    }
+    if (data.containsKey('daily_min_temp_c')) {
+      context.handle(
+          _dailyMinTempCMeta,
+          dailyMinTempC.isAcceptableOrUnknown(
+              data['daily_min_temp_c']!, _dailyMinTempCMeta));
+    }
+    if (data.containsKey('daily_max_temp_c')) {
+      context.handle(
+          _dailyMaxTempCMeta,
+          dailyMaxTempC.isAcceptableOrUnknown(
+              data['daily_max_temp_c']!, _dailyMaxTempCMeta));
+    }
+    if (data.containsKey('daily_precipitation_mm')) {
+      context.handle(
+          _dailyPrecipitationMmMeta,
+          dailyPrecipitationMm.isAcceptableOrUnknown(
+              data['daily_precipitation_mm']!, _dailyPrecipitationMmMeta));
+    }
+    if (data.containsKey('weather_flags')) {
+      context.handle(
+          _weatherFlagsMeta,
+          weatherFlags.isAcceptableOrUnknown(
+              data['weather_flags']!, _weatherFlagsMeta));
+    }
+    if (data.containsKey('data_source')) {
+      context.handle(
+          _dataSourceMeta,
+          dataSource.isAcceptableOrUnknown(
+              data['data_source']!, _dataSourceMeta));
+    } else if (isInserting) {
+      context.missing(_dataSourceMeta);
+    }
+    if (data.containsKey('fetched_at')) {
+      context.handle(_fetchedAtMeta,
+          fetchedAt.isAcceptableOrUnknown(data['fetched_at']!, _fetchedAtMeta));
+    } else if (isInserting) {
+      context.missing(_fetchedAtMeta);
+    }
+    if (data.containsKey('confidence')) {
+      context.handle(
+          _confidenceMeta,
+          confidence.isAcceptableOrUnknown(
+              data['confidence']!, _confidenceMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {trialId, recordDate},
+      ];
+  @override
+  TrialEnvironmentalRecord map(Map<String, dynamic> data,
+      {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrialEnvironmentalRecord(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      trialId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trial_id'])!,
+      recordDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}record_date'])!,
+      siteLatitude: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}site_latitude'])!,
+      siteLongitude: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}site_longitude'])!,
+      dailyMinTempC: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}daily_min_temp_c']),
+      dailyMaxTempC: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}daily_max_temp_c']),
+      dailyPrecipitationMm: attachedDatabase.typeMapping.read(
+          DriftSqlType.double,
+          data['${effectivePrefix}daily_precipitation_mm']),
+      weatherFlags: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}weather_flags']),
+      dataSource: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}data_source'])!,
+      fetchedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}fetched_at'])!,
+      confidence: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}confidence'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $TrialEnvironmentalRecordsTable createAlias(String alias) {
+    return $TrialEnvironmentalRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class TrialEnvironmentalRecord extends DataClass
+    implements Insertable<TrialEnvironmentalRecord> {
+  final int id;
+  final int trialId;
+
+  /// UTC midnight millisecond timestamp identifying the calendar day.
+  final int recordDate;
+  final double siteLatitude;
+  final double siteLongitude;
+  final double? dailyMinTempC;
+  final double? dailyMaxTempC;
+  final double? dailyPrecipitationMm;
+
+  /// Nullable JSON array of notable events: frost, heat, excessive_rainfall, drought.
+  final String? weatherFlags;
+  final String dataSource;
+  final int fetchedAt;
+
+  /// 'measured' | 'estimated' | 'unavailable'
+  final String confidence;
+  final int createdAt;
+  const TrialEnvironmentalRecord(
+      {required this.id,
+      required this.trialId,
+      required this.recordDate,
+      required this.siteLatitude,
+      required this.siteLongitude,
+      this.dailyMinTempC,
+      this.dailyMaxTempC,
+      this.dailyPrecipitationMm,
+      this.weatherFlags,
+      required this.dataSource,
+      required this.fetchedAt,
+      required this.confidence,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trial_id'] = Variable<int>(trialId);
+    map['record_date'] = Variable<int>(recordDate);
+    map['site_latitude'] = Variable<double>(siteLatitude);
+    map['site_longitude'] = Variable<double>(siteLongitude);
+    if (!nullToAbsent || dailyMinTempC != null) {
+      map['daily_min_temp_c'] = Variable<double>(dailyMinTempC);
+    }
+    if (!nullToAbsent || dailyMaxTempC != null) {
+      map['daily_max_temp_c'] = Variable<double>(dailyMaxTempC);
+    }
+    if (!nullToAbsent || dailyPrecipitationMm != null) {
+      map['daily_precipitation_mm'] = Variable<double>(dailyPrecipitationMm);
+    }
+    if (!nullToAbsent || weatherFlags != null) {
+      map['weather_flags'] = Variable<String>(weatherFlags);
+    }
+    map['data_source'] = Variable<String>(dataSource);
+    map['fetched_at'] = Variable<int>(fetchedAt);
+    map['confidence'] = Variable<String>(confidence);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  TrialEnvironmentalRecordsCompanion toCompanion(bool nullToAbsent) {
+    return TrialEnvironmentalRecordsCompanion(
+      id: Value(id),
+      trialId: Value(trialId),
+      recordDate: Value(recordDate),
+      siteLatitude: Value(siteLatitude),
+      siteLongitude: Value(siteLongitude),
+      dailyMinTempC: dailyMinTempC == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dailyMinTempC),
+      dailyMaxTempC: dailyMaxTempC == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dailyMaxTempC),
+      dailyPrecipitationMm: dailyPrecipitationMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dailyPrecipitationMm),
+      weatherFlags: weatherFlags == null && nullToAbsent
+          ? const Value.absent()
+          : Value(weatherFlags),
+      dataSource: Value(dataSource),
+      fetchedAt: Value(fetchedAt),
+      confidence: Value(confidence),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory TrialEnvironmentalRecord.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrialEnvironmentalRecord(
+      id: serializer.fromJson<int>(json['id']),
+      trialId: serializer.fromJson<int>(json['trialId']),
+      recordDate: serializer.fromJson<int>(json['recordDate']),
+      siteLatitude: serializer.fromJson<double>(json['siteLatitude']),
+      siteLongitude: serializer.fromJson<double>(json['siteLongitude']),
+      dailyMinTempC: serializer.fromJson<double?>(json['dailyMinTempC']),
+      dailyMaxTempC: serializer.fromJson<double?>(json['dailyMaxTempC']),
+      dailyPrecipitationMm:
+          serializer.fromJson<double?>(json['dailyPrecipitationMm']),
+      weatherFlags: serializer.fromJson<String?>(json['weatherFlags']),
+      dataSource: serializer.fromJson<String>(json['dataSource']),
+      fetchedAt: serializer.fromJson<int>(json['fetchedAt']),
+      confidence: serializer.fromJson<String>(json['confidence']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'trialId': serializer.toJson<int>(trialId),
+      'recordDate': serializer.toJson<int>(recordDate),
+      'siteLatitude': serializer.toJson<double>(siteLatitude),
+      'siteLongitude': serializer.toJson<double>(siteLongitude),
+      'dailyMinTempC': serializer.toJson<double?>(dailyMinTempC),
+      'dailyMaxTempC': serializer.toJson<double?>(dailyMaxTempC),
+      'dailyPrecipitationMm': serializer.toJson<double?>(dailyPrecipitationMm),
+      'weatherFlags': serializer.toJson<String?>(weatherFlags),
+      'dataSource': serializer.toJson<String>(dataSource),
+      'fetchedAt': serializer.toJson<int>(fetchedAt),
+      'confidence': serializer.toJson<String>(confidence),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  TrialEnvironmentalRecord copyWith(
+          {int? id,
+          int? trialId,
+          int? recordDate,
+          double? siteLatitude,
+          double? siteLongitude,
+          Value<double?> dailyMinTempC = const Value.absent(),
+          Value<double?> dailyMaxTempC = const Value.absent(),
+          Value<double?> dailyPrecipitationMm = const Value.absent(),
+          Value<String?> weatherFlags = const Value.absent(),
+          String? dataSource,
+          int? fetchedAt,
+          String? confidence,
+          int? createdAt}) =>
+      TrialEnvironmentalRecord(
+        id: id ?? this.id,
+        trialId: trialId ?? this.trialId,
+        recordDate: recordDate ?? this.recordDate,
+        siteLatitude: siteLatitude ?? this.siteLatitude,
+        siteLongitude: siteLongitude ?? this.siteLongitude,
+        dailyMinTempC:
+            dailyMinTempC.present ? dailyMinTempC.value : this.dailyMinTempC,
+        dailyMaxTempC:
+            dailyMaxTempC.present ? dailyMaxTempC.value : this.dailyMaxTempC,
+        dailyPrecipitationMm: dailyPrecipitationMm.present
+            ? dailyPrecipitationMm.value
+            : this.dailyPrecipitationMm,
+        weatherFlags:
+            weatherFlags.present ? weatherFlags.value : this.weatherFlags,
+        dataSource: dataSource ?? this.dataSource,
+        fetchedAt: fetchedAt ?? this.fetchedAt,
+        confidence: confidence ?? this.confidence,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  TrialEnvironmentalRecord copyWithCompanion(
+      TrialEnvironmentalRecordsCompanion data) {
+    return TrialEnvironmentalRecord(
+      id: data.id.present ? data.id.value : this.id,
+      trialId: data.trialId.present ? data.trialId.value : this.trialId,
+      recordDate:
+          data.recordDate.present ? data.recordDate.value : this.recordDate,
+      siteLatitude: data.siteLatitude.present
+          ? data.siteLatitude.value
+          : this.siteLatitude,
+      siteLongitude: data.siteLongitude.present
+          ? data.siteLongitude.value
+          : this.siteLongitude,
+      dailyMinTempC: data.dailyMinTempC.present
+          ? data.dailyMinTempC.value
+          : this.dailyMinTempC,
+      dailyMaxTempC: data.dailyMaxTempC.present
+          ? data.dailyMaxTempC.value
+          : this.dailyMaxTempC,
+      dailyPrecipitationMm: data.dailyPrecipitationMm.present
+          ? data.dailyPrecipitationMm.value
+          : this.dailyPrecipitationMm,
+      weatherFlags: data.weatherFlags.present
+          ? data.weatherFlags.value
+          : this.weatherFlags,
+      dataSource:
+          data.dataSource.present ? data.dataSource.value : this.dataSource,
+      fetchedAt: data.fetchedAt.present ? data.fetchedAt.value : this.fetchedAt,
+      confidence:
+          data.confidence.present ? data.confidence.value : this.confidence,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialEnvironmentalRecord(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('recordDate: $recordDate, ')
+          ..write('siteLatitude: $siteLatitude, ')
+          ..write('siteLongitude: $siteLongitude, ')
+          ..write('dailyMinTempC: $dailyMinTempC, ')
+          ..write('dailyMaxTempC: $dailyMaxTempC, ')
+          ..write('dailyPrecipitationMm: $dailyPrecipitationMm, ')
+          ..write('weatherFlags: $weatherFlags, ')
+          ..write('dataSource: $dataSource, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('confidence: $confidence, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      trialId,
+      recordDate,
+      siteLatitude,
+      siteLongitude,
+      dailyMinTempC,
+      dailyMaxTempC,
+      dailyPrecipitationMm,
+      weatherFlags,
+      dataSource,
+      fetchedAt,
+      confidence,
+      createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrialEnvironmentalRecord &&
+          other.id == this.id &&
+          other.trialId == this.trialId &&
+          other.recordDate == this.recordDate &&
+          other.siteLatitude == this.siteLatitude &&
+          other.siteLongitude == this.siteLongitude &&
+          other.dailyMinTempC == this.dailyMinTempC &&
+          other.dailyMaxTempC == this.dailyMaxTempC &&
+          other.dailyPrecipitationMm == this.dailyPrecipitationMm &&
+          other.weatherFlags == this.weatherFlags &&
+          other.dataSource == this.dataSource &&
+          other.fetchedAt == this.fetchedAt &&
+          other.confidence == this.confidence &&
+          other.createdAt == this.createdAt);
+}
+
+class TrialEnvironmentalRecordsCompanion
+    extends UpdateCompanion<TrialEnvironmentalRecord> {
+  final Value<int> id;
+  final Value<int> trialId;
+  final Value<int> recordDate;
+  final Value<double> siteLatitude;
+  final Value<double> siteLongitude;
+  final Value<double?> dailyMinTempC;
+  final Value<double?> dailyMaxTempC;
+  final Value<double?> dailyPrecipitationMm;
+  final Value<String?> weatherFlags;
+  final Value<String> dataSource;
+  final Value<int> fetchedAt;
+  final Value<String> confidence;
+  final Value<int> createdAt;
+  const TrialEnvironmentalRecordsCompanion({
+    this.id = const Value.absent(),
+    this.trialId = const Value.absent(),
+    this.recordDate = const Value.absent(),
+    this.siteLatitude = const Value.absent(),
+    this.siteLongitude = const Value.absent(),
+    this.dailyMinTempC = const Value.absent(),
+    this.dailyMaxTempC = const Value.absent(),
+    this.dailyPrecipitationMm = const Value.absent(),
+    this.weatherFlags = const Value.absent(),
+    this.dataSource = const Value.absent(),
+    this.fetchedAt = const Value.absent(),
+    this.confidence = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  TrialEnvironmentalRecordsCompanion.insert({
+    this.id = const Value.absent(),
+    required int trialId,
+    required int recordDate,
+    required double siteLatitude,
+    required double siteLongitude,
+    this.dailyMinTempC = const Value.absent(),
+    this.dailyMaxTempC = const Value.absent(),
+    this.dailyPrecipitationMm = const Value.absent(),
+    this.weatherFlags = const Value.absent(),
+    required String dataSource,
+    required int fetchedAt,
+    this.confidence = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  })  : trialId = Value(trialId),
+        recordDate = Value(recordDate),
+        siteLatitude = Value(siteLatitude),
+        siteLongitude = Value(siteLongitude),
+        dataSource = Value(dataSource),
+        fetchedAt = Value(fetchedAt);
+  static Insertable<TrialEnvironmentalRecord> custom({
+    Expression<int>? id,
+    Expression<int>? trialId,
+    Expression<int>? recordDate,
+    Expression<double>? siteLatitude,
+    Expression<double>? siteLongitude,
+    Expression<double>? dailyMinTempC,
+    Expression<double>? dailyMaxTempC,
+    Expression<double>? dailyPrecipitationMm,
+    Expression<String>? weatherFlags,
+    Expression<String>? dataSource,
+    Expression<int>? fetchedAt,
+    Expression<String>? confidence,
+    Expression<int>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (trialId != null) 'trial_id': trialId,
+      if (recordDate != null) 'record_date': recordDate,
+      if (siteLatitude != null) 'site_latitude': siteLatitude,
+      if (siteLongitude != null) 'site_longitude': siteLongitude,
+      if (dailyMinTempC != null) 'daily_min_temp_c': dailyMinTempC,
+      if (dailyMaxTempC != null) 'daily_max_temp_c': dailyMaxTempC,
+      if (dailyPrecipitationMm != null)
+        'daily_precipitation_mm': dailyPrecipitationMm,
+      if (weatherFlags != null) 'weather_flags': weatherFlags,
+      if (dataSource != null) 'data_source': dataSource,
+      if (fetchedAt != null) 'fetched_at': fetchedAt,
+      if (confidence != null) 'confidence': confidence,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  TrialEnvironmentalRecordsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? trialId,
+      Value<int>? recordDate,
+      Value<double>? siteLatitude,
+      Value<double>? siteLongitude,
+      Value<double?>? dailyMinTempC,
+      Value<double?>? dailyMaxTempC,
+      Value<double?>? dailyPrecipitationMm,
+      Value<String?>? weatherFlags,
+      Value<String>? dataSource,
+      Value<int>? fetchedAt,
+      Value<String>? confidence,
+      Value<int>? createdAt}) {
+    return TrialEnvironmentalRecordsCompanion(
+      id: id ?? this.id,
+      trialId: trialId ?? this.trialId,
+      recordDate: recordDate ?? this.recordDate,
+      siteLatitude: siteLatitude ?? this.siteLatitude,
+      siteLongitude: siteLongitude ?? this.siteLongitude,
+      dailyMinTempC: dailyMinTempC ?? this.dailyMinTempC,
+      dailyMaxTempC: dailyMaxTempC ?? this.dailyMaxTempC,
+      dailyPrecipitationMm: dailyPrecipitationMm ?? this.dailyPrecipitationMm,
+      weatherFlags: weatherFlags ?? this.weatherFlags,
+      dataSource: dataSource ?? this.dataSource,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
+      confidence: confidence ?? this.confidence,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (trialId.present) {
+      map['trial_id'] = Variable<int>(trialId.value);
+    }
+    if (recordDate.present) {
+      map['record_date'] = Variable<int>(recordDate.value);
+    }
+    if (siteLatitude.present) {
+      map['site_latitude'] = Variable<double>(siteLatitude.value);
+    }
+    if (siteLongitude.present) {
+      map['site_longitude'] = Variable<double>(siteLongitude.value);
+    }
+    if (dailyMinTempC.present) {
+      map['daily_min_temp_c'] = Variable<double>(dailyMinTempC.value);
+    }
+    if (dailyMaxTempC.present) {
+      map['daily_max_temp_c'] = Variable<double>(dailyMaxTempC.value);
+    }
+    if (dailyPrecipitationMm.present) {
+      map['daily_precipitation_mm'] =
+          Variable<double>(dailyPrecipitationMm.value);
+    }
+    if (weatherFlags.present) {
+      map['weather_flags'] = Variable<String>(weatherFlags.value);
+    }
+    if (dataSource.present) {
+      map['data_source'] = Variable<String>(dataSource.value);
+    }
+    if (fetchedAt.present) {
+      map['fetched_at'] = Variable<int>(fetchedAt.value);
+    }
+    if (confidence.present) {
+      map['confidence'] = Variable<String>(confidence.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrialEnvironmentalRecordsCompanion(')
+          ..write('id: $id, ')
+          ..write('trialId: $trialId, ')
+          ..write('recordDate: $recordDate, ')
+          ..write('siteLatitude: $siteLatitude, ')
+          ..write('siteLongitude: $siteLongitude, ')
+          ..write('dailyMinTempC: $dailyMinTempC, ')
+          ..write('dailyMaxTempC: $dailyMaxTempC, ')
+          ..write('dailyPrecipitationMm: $dailyPrecipitationMm, ')
+          ..write('weatherFlags: $weatherFlags, ')
+          ..write('dataSource: $dataSource, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('confidence: $confidence, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -45425,6 +46108,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ProtocolDocumentReferencesTable(this);
   late final $CtqFactorAcknowledgmentsTable ctqFactorAcknowledgments =
       $CtqFactorAcknowledgmentsTable(this);
+  late final $TrialEnvironmentalRecordsTable trialEnvironmentalRecords =
+      $TrialEnvironmentalRecordsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -45483,7 +46168,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         intentRevelationEvents,
         ctqFactorDefinitions,
         protocolDocumentReferences,
-        ctqFactorAcknowledgments
+        ctqFactorAcknowledgments,
+        trialEnvironmentalRecords
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -45544,6 +46230,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
                 limitUpdateKind: UpdateKind.delete),
             result: [
               TableUpdate('ctq_factor_acknowledgments',
+                  kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('trials',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('trial_environmental_records',
                   kind: UpdateKind.delete),
             ],
           ),
@@ -47380,6 +48074,25 @@ class $$TrialsTableFilterComposer
                 $$CtqFactorAcknowledgmentsTableFilterComposer(ComposerState(
                     $state.db,
                     $state.db.ctqFactorAcknowledgments,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter trialEnvironmentalRecordsRefs(
+      ComposableFilter Function(
+              $$TrialEnvironmentalRecordsTableFilterComposer f)
+          f) {
+    final $$TrialEnvironmentalRecordsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.trialEnvironmentalRecords,
+            getReferencedColumn: (t) => t.trialId,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialEnvironmentalRecordsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.trialEnvironmentalRecords,
                     joinBuilder,
                     parentComposers)));
     return f(composer);
@@ -65799,6 +66512,271 @@ class $$CtqFactorAcknowledgmentsTableOrderingComposer
   }
 }
 
+typedef $$TrialEnvironmentalRecordsTableCreateCompanionBuilder
+    = TrialEnvironmentalRecordsCompanion Function({
+  Value<int> id,
+  required int trialId,
+  required int recordDate,
+  required double siteLatitude,
+  required double siteLongitude,
+  Value<double?> dailyMinTempC,
+  Value<double?> dailyMaxTempC,
+  Value<double?> dailyPrecipitationMm,
+  Value<String?> weatherFlags,
+  required String dataSource,
+  required int fetchedAt,
+  Value<String> confidence,
+  Value<int> createdAt,
+});
+typedef $$TrialEnvironmentalRecordsTableUpdateCompanionBuilder
+    = TrialEnvironmentalRecordsCompanion Function({
+  Value<int> id,
+  Value<int> trialId,
+  Value<int> recordDate,
+  Value<double> siteLatitude,
+  Value<double> siteLongitude,
+  Value<double?> dailyMinTempC,
+  Value<double?> dailyMaxTempC,
+  Value<double?> dailyPrecipitationMm,
+  Value<String?> weatherFlags,
+  Value<String> dataSource,
+  Value<int> fetchedAt,
+  Value<String> confidence,
+  Value<int> createdAt,
+});
+
+class $$TrialEnvironmentalRecordsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $TrialEnvironmentalRecordsTable,
+    TrialEnvironmentalRecord,
+    $$TrialEnvironmentalRecordsTableFilterComposer,
+    $$TrialEnvironmentalRecordsTableOrderingComposer,
+    $$TrialEnvironmentalRecordsTableCreateCompanionBuilder,
+    $$TrialEnvironmentalRecordsTableUpdateCompanionBuilder> {
+  $$TrialEnvironmentalRecordsTableTableManager(
+      _$AppDatabase db, $TrialEnvironmentalRecordsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$TrialEnvironmentalRecordsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$TrialEnvironmentalRecordsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> trialId = const Value.absent(),
+            Value<int> recordDate = const Value.absent(),
+            Value<double> siteLatitude = const Value.absent(),
+            Value<double> siteLongitude = const Value.absent(),
+            Value<double?> dailyMinTempC = const Value.absent(),
+            Value<double?> dailyMaxTempC = const Value.absent(),
+            Value<double?> dailyPrecipitationMm = const Value.absent(),
+            Value<String?> weatherFlags = const Value.absent(),
+            Value<String> dataSource = const Value.absent(),
+            Value<int> fetchedAt = const Value.absent(),
+            Value<String> confidence = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              TrialEnvironmentalRecordsCompanion(
+            id: id,
+            trialId: trialId,
+            recordDate: recordDate,
+            siteLatitude: siteLatitude,
+            siteLongitude: siteLongitude,
+            dailyMinTempC: dailyMinTempC,
+            dailyMaxTempC: dailyMaxTempC,
+            dailyPrecipitationMm: dailyPrecipitationMm,
+            weatherFlags: weatherFlags,
+            dataSource: dataSource,
+            fetchedAt: fetchedAt,
+            confidence: confidence,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int trialId,
+            required int recordDate,
+            required double siteLatitude,
+            required double siteLongitude,
+            Value<double?> dailyMinTempC = const Value.absent(),
+            Value<double?> dailyMaxTempC = const Value.absent(),
+            Value<double?> dailyPrecipitationMm = const Value.absent(),
+            Value<String?> weatherFlags = const Value.absent(),
+            required String dataSource,
+            required int fetchedAt,
+            Value<String> confidence = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              TrialEnvironmentalRecordsCompanion.insert(
+            id: id,
+            trialId: trialId,
+            recordDate: recordDate,
+            siteLatitude: siteLatitude,
+            siteLongitude: siteLongitude,
+            dailyMinTempC: dailyMinTempC,
+            dailyMaxTempC: dailyMaxTempC,
+            dailyPrecipitationMm: dailyPrecipitationMm,
+            weatherFlags: weatherFlags,
+            dataSource: dataSource,
+            fetchedAt: fetchedAt,
+            confidence: confidence,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$TrialEnvironmentalRecordsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $TrialEnvironmentalRecordsTable> {
+  $$TrialEnvironmentalRecordsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get recordDate => $state.composableBuilder(
+      column: $state.table.recordDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get siteLatitude => $state.composableBuilder(
+      column: $state.table.siteLatitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get siteLongitude => $state.composableBuilder(
+      column: $state.table.siteLongitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get dailyMinTempC => $state.composableBuilder(
+      column: $state.table.dailyMinTempC,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get dailyMaxTempC => $state.composableBuilder(
+      column: $state.table.dailyMaxTempC,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get dailyPrecipitationMm => $state.composableBuilder(
+      column: $state.table.dailyPrecipitationMm,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get weatherFlags => $state.composableBuilder(
+      column: $state.table.weatherFlags,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get dataSource => $state.composableBuilder(
+      column: $state.table.dataSource,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get fetchedAt => $state.composableBuilder(
+      column: $state.table.fetchedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get confidence => $state.composableBuilder(
+      column: $state.table.confidence,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableFilterComposer get trialId {
+    final $$TrialsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$TrialsTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$TrialEnvironmentalRecordsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $TrialEnvironmentalRecordsTable> {
+  $$TrialEnvironmentalRecordsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get recordDate => $state.composableBuilder(
+      column: $state.table.recordDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get siteLatitude => $state.composableBuilder(
+      column: $state.table.siteLatitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get siteLongitude => $state.composableBuilder(
+      column: $state.table.siteLongitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get dailyMinTempC => $state.composableBuilder(
+      column: $state.table.dailyMinTempC,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get dailyMaxTempC => $state.composableBuilder(
+      column: $state.table.dailyMaxTempC,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get dailyPrecipitationMm => $state.composableBuilder(
+      column: $state.table.dailyPrecipitationMm,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get weatherFlags => $state.composableBuilder(
+      column: $state.table.weatherFlags,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get dataSource => $state.composableBuilder(
+      column: $state.table.dataSource,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get fetchedAt => $state.composableBuilder(
+      column: $state.table.fetchedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get confidence => $state.composableBuilder(
+      column: $state.table.confidence,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$TrialsTableOrderingComposer get trialId {
+    final $$TrialsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.trialId,
+        referencedTable: $state.db.trials,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$TrialsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.trials, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -65920,4 +66898,7 @@ class $AppDatabaseManager {
   $$CtqFactorAcknowledgmentsTableTableManager get ctqFactorAcknowledgments =>
       $$CtqFactorAcknowledgmentsTableTableManager(
           _db, _db.ctqFactorAcknowledgments);
+  $$TrialEnvironmentalRecordsTableTableManager get trialEnvironmentalRecords =>
+      $$TrialEnvironmentalRecordsTableTableManager(
+          _db, _db.trialEnvironmentalRecords);
 }
