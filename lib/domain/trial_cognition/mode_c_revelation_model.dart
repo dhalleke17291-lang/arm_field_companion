@@ -68,6 +68,7 @@ abstract class TrialPurposeStatus {
 /// Source mode constants for trial_purposes.sourceMode.
 abstract class TrialPurposeSourceMode {
   static const String armStructure = 'arm_structure';
+  static const String standaloneStructure = 'standalone_structure';
   static const String manualRevelation = 'manual_revelation';
   static const String protocolDocument = 'protocol_document';
   static const String mixed = 'mixed';

@@ -1527,6 +1527,10 @@ class TrialPurposes extends Table {
   TextColumn get inferredFieldsJson => text().nullable()();
   DateTimeColumn get confirmedAt => dateTime().nullable()();
   TextColumn get confirmedBy => text().nullable()();
+  /// 1 = inferred by system, pending researcher confirmation.
+  /// 0 = created by researcher (Mode C) or already confirmed.
+  IntColumn get requiresConfirmation =>
+      integer().withDefault(const Constant(1))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get supersededAt => dateTime().nullable()();
@@ -1719,7 +1723,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 81;
+  int get schemaVersion => 82;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -3327,6 +3331,15 @@ END
 
           if (from < 81) {
             await m.createTable(trialEnvironmentalRecords);
+          }
+
+          if (from < 82) {
+            // Add requires_confirmation: existing rows are Mode C created —
+            // backfill to 0 so they are not shown as pending confirmation.
+            await m.addColumn(trialPurposes, trialPurposes.requiresConfirmation);
+            await customStatement(
+              'UPDATE trial_purposes SET requires_confirmation = 0',
+            );
           }
 
           await _createIndexes();

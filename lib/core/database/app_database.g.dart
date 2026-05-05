@@ -42027,6 +42027,14 @@ class $TrialPurposesTable extends TrialPurposes
   late final GeneratedColumn<String> confirmedBy = GeneratedColumn<String>(
       'confirmed_by', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _requiresConfirmationMeta =
+      const VerificationMeta('requiresConfirmation');
+  @override
+  late final GeneratedColumn<int> requiresConfirmation = GeneratedColumn<int>(
+      'requires_confirmation', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -42068,6 +42076,7 @@ class $TrialPurposesTable extends TrialPurposes
         inferredFieldsJson,
         confirmedAt,
         confirmedBy,
+        requiresConfirmation,
         createdAt,
         updatedAt,
         supersededAt
@@ -42181,6 +42190,12 @@ class $TrialPurposesTable extends TrialPurposes
           confirmedBy.isAcceptableOrUnknown(
               data['confirmed_by']!, _confirmedByMeta));
     }
+    if (data.containsKey('requires_confirmation')) {
+      context.handle(
+          _requiresConfirmationMeta,
+          requiresConfirmation.isAcceptableOrUnknown(
+              data['requires_confirmation']!, _requiresConfirmationMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -42243,6 +42258,8 @@ class $TrialPurposesTable extends TrialPurposes
           .read(DriftSqlType.dateTime, data['${effectivePrefix}confirmed_at']),
       confirmedBy: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}confirmed_by']),
+      requiresConfirmation: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}requires_confirmation'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -42276,6 +42293,10 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
   final String? inferredFieldsJson;
   final DateTime? confirmedAt;
   final String? confirmedBy;
+
+  /// 1 = inferred by system, pending researcher confirmation.
+  /// 0 = created by researcher (Mode C) or already confirmed.
+  final int requiresConfirmation;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? supersededAt;
@@ -42297,6 +42318,7 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
       this.inferredFieldsJson,
       this.confirmedAt,
       this.confirmedBy,
+      required this.requiresConfirmation,
       required this.createdAt,
       required this.updatedAt,
       this.supersededAt});
@@ -42348,6 +42370,7 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
     if (!nullToAbsent || confirmedBy != null) {
       map['confirmed_by'] = Variable<String>(confirmedBy);
     }
+    map['requires_confirmation'] = Variable<int>(requiresConfirmation);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || supersededAt != null) {
@@ -42400,6 +42423,7 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
       confirmedBy: confirmedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(confirmedBy),
+      requiresConfirmation: Value(requiresConfirmation),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       supersededAt: supersededAt == null && nullToAbsent
@@ -42436,6 +42460,8 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
           serializer.fromJson<String?>(json['inferredFieldsJson']),
       confirmedAt: serializer.fromJson<DateTime?>(json['confirmedAt']),
       confirmedBy: serializer.fromJson<String?>(json['confirmedBy']),
+      requiresConfirmation:
+          serializer.fromJson<int>(json['requiresConfirmation']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       supersededAt: serializer.fromJson<DateTime?>(json['supersededAt']),
@@ -42466,6 +42492,7 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
       'inferredFieldsJson': serializer.toJson<String?>(inferredFieldsJson),
       'confirmedAt': serializer.toJson<DateTime?>(confirmedAt),
       'confirmedBy': serializer.toJson<String?>(confirmedBy),
+      'requiresConfirmation': serializer.toJson<int>(requiresConfirmation),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'supersededAt': serializer.toJson<DateTime?>(supersededAt),
@@ -42490,6 +42517,7 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
           Value<String?> inferredFieldsJson = const Value.absent(),
           Value<DateTime?> confirmedAt = const Value.absent(),
           Value<String?> confirmedBy = const Value.absent(),
+          int? requiresConfirmation,
           DateTime? createdAt,
           DateTime? updatedAt,
           Value<DateTime?> supersededAt = const Value.absent()}) =>
@@ -42530,6 +42558,7 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
             : this.inferredFieldsJson,
         confirmedAt: confirmedAt.present ? confirmedAt.value : this.confirmedAt,
         confirmedBy: confirmedBy.present ? confirmedBy.value : this.confirmedBy,
+        requiresConfirmation: requiresConfirmation ?? this.requiresConfirmation,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         supersededAt:
@@ -42577,6 +42606,9 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
           data.confirmedAt.present ? data.confirmedAt.value : this.confirmedAt,
       confirmedBy:
           data.confirmedBy.present ? data.confirmedBy.value : this.confirmedBy,
+      requiresConfirmation: data.requiresConfirmation.present
+          ? data.requiresConfirmation.value
+          : this.requiresConfirmation,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       supersededAt: data.supersededAt.present
@@ -42605,6 +42637,7 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
           ..write('inferredFieldsJson: $inferredFieldsJson, ')
           ..write('confirmedAt: $confirmedAt, ')
           ..write('confirmedBy: $confirmedBy, ')
+          ..write('requiresConfirmation: $requiresConfirmation, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('supersededAt: $supersededAt')
@@ -42613,27 +42646,29 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      trialId,
-      version,
-      status,
-      sourceMode,
-      claimBeingTested,
-      trialPurpose,
-      regulatoryContext,
-      primaryEndpoint,
-      primaryEndpointRationale,
-      treatmentRoleSummary,
-      knownInterpretationFactors,
-      requiredEvidenceSummary,
-      readinessCriteriaSummary,
-      inferredFieldsJson,
-      confirmedAt,
-      confirmedBy,
-      createdAt,
-      updatedAt,
-      supersededAt);
+  int get hashCode => Object.hashAll([
+        id,
+        trialId,
+        version,
+        status,
+        sourceMode,
+        claimBeingTested,
+        trialPurpose,
+        regulatoryContext,
+        primaryEndpoint,
+        primaryEndpointRationale,
+        treatmentRoleSummary,
+        knownInterpretationFactors,
+        requiredEvidenceSummary,
+        readinessCriteriaSummary,
+        inferredFieldsJson,
+        confirmedAt,
+        confirmedBy,
+        requiresConfirmation,
+        createdAt,
+        updatedAt,
+        supersededAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -42655,6 +42690,7 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
           other.inferredFieldsJson == this.inferredFieldsJson &&
           other.confirmedAt == this.confirmedAt &&
           other.confirmedBy == this.confirmedBy &&
+          other.requiresConfirmation == this.requiresConfirmation &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.supersededAt == this.supersededAt);
@@ -42678,6 +42714,7 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
   final Value<String?> inferredFieldsJson;
   final Value<DateTime?> confirmedAt;
   final Value<String?> confirmedBy;
+  final Value<int> requiresConfirmation;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> supersededAt;
@@ -42699,6 +42736,7 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
     this.inferredFieldsJson = const Value.absent(),
     this.confirmedAt = const Value.absent(),
     this.confirmedBy = const Value.absent(),
+    this.requiresConfirmation = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.supersededAt = const Value.absent(),
@@ -42721,6 +42759,7 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
     this.inferredFieldsJson = const Value.absent(),
     this.confirmedAt = const Value.absent(),
     this.confirmedBy = const Value.absent(),
+    this.requiresConfirmation = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.supersededAt = const Value.absent(),
@@ -42743,6 +42782,7 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
     Expression<String>? inferredFieldsJson,
     Expression<DateTime>? confirmedAt,
     Expression<String>? confirmedBy,
+    Expression<int>? requiresConfirmation,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? supersededAt,
@@ -42771,6 +42811,8 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
         'inferred_fields_json': inferredFieldsJson,
       if (confirmedAt != null) 'confirmed_at': confirmedAt,
       if (confirmedBy != null) 'confirmed_by': confirmedBy,
+      if (requiresConfirmation != null)
+        'requires_confirmation': requiresConfirmation,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (supersededAt != null) 'superseded_at': supersededAt,
@@ -42795,6 +42837,7 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
       Value<String?>? inferredFieldsJson,
       Value<DateTime?>? confirmedAt,
       Value<String?>? confirmedBy,
+      Value<int>? requiresConfirmation,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<DateTime?>? supersededAt}) {
@@ -42820,6 +42863,7 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
       inferredFieldsJson: inferredFieldsJson ?? this.inferredFieldsJson,
       confirmedAt: confirmedAt ?? this.confirmedAt,
       confirmedBy: confirmedBy ?? this.confirmedBy,
+      requiresConfirmation: requiresConfirmation ?? this.requiresConfirmation,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       supersededAt: supersededAt ?? this.supersededAt,
@@ -42885,6 +42929,9 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
     if (confirmedBy.present) {
       map['confirmed_by'] = Variable<String>(confirmedBy.value);
     }
+    if (requiresConfirmation.present) {
+      map['requires_confirmation'] = Variable<int>(requiresConfirmation.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -42917,6 +42964,7 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
           ..write('inferredFieldsJson: $inferredFieldsJson, ')
           ..write('confirmedAt: $confirmedAt, ')
           ..write('confirmedBy: $confirmedBy, ')
+          ..write('requiresConfirmation: $requiresConfirmation, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('supersededAt: $supersededAt')
@@ -65069,6 +65117,7 @@ typedef $$TrialPurposesTableCreateCompanionBuilder = TrialPurposesCompanion
   Value<String?> inferredFieldsJson,
   Value<DateTime?> confirmedAt,
   Value<String?> confirmedBy,
+  Value<int> requiresConfirmation,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<DateTime?> supersededAt,
@@ -65092,6 +65141,7 @@ typedef $$TrialPurposesTableUpdateCompanionBuilder = TrialPurposesCompanion
   Value<String?> inferredFieldsJson,
   Value<DateTime?> confirmedAt,
   Value<String?> confirmedBy,
+  Value<int> requiresConfirmation,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<DateTime?> supersededAt,
@@ -65131,6 +65181,7 @@ class $$TrialPurposesTableTableManager extends RootTableManager<
             Value<String?> inferredFieldsJson = const Value.absent(),
             Value<DateTime?> confirmedAt = const Value.absent(),
             Value<String?> confirmedBy = const Value.absent(),
+            Value<int> requiresConfirmation = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<DateTime?> supersededAt = const Value.absent(),
@@ -65153,6 +65204,7 @@ class $$TrialPurposesTableTableManager extends RootTableManager<
             inferredFieldsJson: inferredFieldsJson,
             confirmedAt: confirmedAt,
             confirmedBy: confirmedBy,
+            requiresConfirmation: requiresConfirmation,
             createdAt: createdAt,
             updatedAt: updatedAt,
             supersededAt: supersededAt,
@@ -65175,6 +65227,7 @@ class $$TrialPurposesTableTableManager extends RootTableManager<
             Value<String?> inferredFieldsJson = const Value.absent(),
             Value<DateTime?> confirmedAt = const Value.absent(),
             Value<String?> confirmedBy = const Value.absent(),
+            Value<int> requiresConfirmation = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<DateTime?> supersededAt = const Value.absent(),
@@ -65197,6 +65250,7 @@ class $$TrialPurposesTableTableManager extends RootTableManager<
             inferredFieldsJson: inferredFieldsJson,
             confirmedAt: confirmedAt,
             confirmedBy: confirmedBy,
+            requiresConfirmation: requiresConfirmation,
             createdAt: createdAt,
             updatedAt: updatedAt,
             supersededAt: supersededAt,
@@ -65287,6 +65341,11 @@ class $$TrialPurposesTableFilterComposer
 
   ColumnFilters<String> get confirmedBy => $state.composableBuilder(
       column: $state.table.confirmedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get requiresConfirmation => $state.composableBuilder(
+      column: $state.table.requiresConfirmation,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -65456,6 +65515,11 @@ class $$TrialPurposesTableOrderingComposer
 
   ColumnOrderings<String> get confirmedBy => $state.composableBuilder(
       column: $state.table.confirmedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get requiresConfirmation => $state.composableBuilder(
+      column: $state.table.requiresConfirmation,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
