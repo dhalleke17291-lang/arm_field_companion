@@ -126,10 +126,12 @@ import '../domain/trial_cognition/trial_purpose_dto.dart';
 import '../domain/trial_cognition/trial_evidence_arc_dto.dart';
 import '../domain/trial_cognition/trial_ctq_dto.dart';
 import '../domain/trial_cognition/trial_ctq_evaluator.dart';
+import '../domain/trial_cognition/environmental_window_evaluator.dart';
 import '../domain/trial_cognition/trial_coherence_dto.dart';
 import '../domain/trial_cognition/trial_coherence_evaluator.dart';
 import '../domain/trial_cognition/trial_interpretation_risk_dto.dart';
 import '../domain/trial_cognition/trial_interpretation_risk_evaluator.dart';
+import '../data/repositories/trial_environmental_repository.dart';
 import '../domain/trial_cognition/trial_decision_summary_dto.dart';
 import '../domain/trial_cognition/mode_c_revelation_model.dart';
 
@@ -718,6 +720,11 @@ final photoRepositoryProvider = Provider<PhotoRepository>((ref) {
 final weatherSnapshotRepositoryProvider =
     Provider<WeatherSnapshotRepository>((ref) {
   return WeatherSnapshotRepository(ref.watch(databaseProvider));
+});
+
+final trialEnvironmentalRepositoryProvider =
+    Provider<TrialEnvironmentalRepository>((ref) {
+  return TrialEnvironmentalRepository(ref.watch(databaseProvider));
 });
 
 /// Latest weather snapshot for a rating session (one row per session).
@@ -2276,6 +2283,47 @@ final trialInterpretationRiskProvider =
     db: db,
     trialId: trialId,
     coherenceDto: coherenceDto,
+  );
+});
+
+/// Season-level environmental summary for a trial: total precipitation,
+/// frost events, excessive rainfall events, and data completeness.
+final trialEnvironmentalSummaryProvider =
+    FutureProvider.autoDispose.family<EnvironmentalSeasonSummaryDto, int>(
+        (ref, trialId) async {
+  final db = ref.watch(databaseProvider);
+  final envRepo = ref.read(trialEnvironmentalRepositoryProvider);
+
+  final trial = await (db.select(db.trials)
+        ..where((t) => t.id.equals(trialId)))
+      .getSingleOrNull();
+  final records = await envRepo.getRecordsForTrial(trialId);
+
+  final startDate = trial?.createdAt ?? DateTime.now();
+  final endDate = trial?.harvestDate ?? DateTime.now();
+
+  return computeSeasonSummary(records, startDate, endDate);
+});
+
+/// Pre- and post-application environmental windows for a specific
+/// application event. Reads the application date then calls both
+/// window computations against the trial's environmental records.
+final applicationEnvironmentalContextProvider = FutureProvider.autoDispose
+    .family<ApplicationEnvironmentalContextDto, ApplicationEnvironmentalRequest>(
+        (ref, request) async {
+  final db = ref.watch(databaseProvider);
+  final envRepo = ref.read(trialEnvironmentalRepositoryProvider);
+
+  final appEvent = await (db.select(db.trialApplicationEvents)
+        ..where((a) => a.id.equals(request.applicationEventId)))
+      .getSingleOrNull();
+  final records = await envRepo.getRecordsForTrial(request.trialId);
+
+  final appDate = appEvent?.applicationDate ?? DateTime.now();
+
+  return ApplicationEnvironmentalContextDto(
+    preWindow: computePreApplicationWindow(records, appDate),
+    postWindow: computePostApplicationWindow(records, appDate),
   );
 });
 

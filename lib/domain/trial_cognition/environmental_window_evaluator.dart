@@ -3,6 +3,37 @@ import '../../core/database/app_database.dart';
 // Threshold for excessive rainfall flag in a window (mm per window period).
 const double _kExcessiveRainfallMm = 10.0;
 
+// ── Request / context types used by providers ─────────────────────────────────
+
+class ApplicationEnvironmentalRequest {
+  const ApplicationEnvironmentalRequest({
+    required this.trialId,
+    required this.applicationEventId,
+  });
+
+  final int trialId;
+  final String applicationEventId;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ApplicationEnvironmentalRequest &&
+      other.trialId == trialId &&
+      other.applicationEventId == applicationEventId;
+
+  @override
+  int get hashCode => Object.hash(trialId, applicationEventId);
+}
+
+class ApplicationEnvironmentalContextDto {
+  const ApplicationEnvironmentalContextDto({
+    required this.preWindow,
+    required this.postWindow,
+  });
+
+  final EnvironmentalWindowDto preWindow;
+  final EnvironmentalWindowDto postWindow;
+}
+
 // ── Output DTOs ───────────────────────────────────────────────────────────────
 
 class EnvironmentalWindowDto {

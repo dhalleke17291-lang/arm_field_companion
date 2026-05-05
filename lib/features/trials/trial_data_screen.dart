@@ -44,8 +44,7 @@ String computeDataQualityRowSuffix({
 }) {
   if (closedCount == 0) return 'no closed sessions yet';
   final parts = <String>[
-    if (openCount > 0)
-      '$openCount open session${openCount == 1 ? '' : 's'}',
+    if (openCount > 0) '$openCount open session${openCount == 1 ? '' : 's'}',
     if (amendedCount > 0)
       '$amendedCount amended rating${amendedCount == 1 ? '' : 's'}',
     if (outlierCount > 0)
@@ -110,9 +109,10 @@ List<String> computeDataQualityIssueLines({
     if (gapsByAssessment.length == 1 && allMissing.length <= 5) {
       final aId = gapsByAssessment.keys.first;
       final assessName = assessmentDisplayNames[aId] ?? 'A$aId';
-      final plotIds = (allMissing.map((pk) => plotById[pk]?.plotId ?? '$pk').toList()
-            ..sort())
-          .join(', ');
+      final plotIds =
+          (allMissing.map((pk) => plotById[pk]?.plotId ?? '$pk').toList()
+                ..sort())
+              .join(', ');
       line = '· $sessionName: plots $plotIds missing $assessName';
     } else if (allMissing.length > 5) {
       line = '· $sessionName: ${allMissing.length} plots with gaps';
@@ -235,11 +235,13 @@ class _AnalysisData {
 // Screen-local providers
 // ---------------------------------------------------------------------------
 
-final _trialAppBundlesProvider =
-    FutureProvider.autoDispose.family<List<_AppBundle>, int>((ref, trialId) async {
-  final eventsFuture = ref.read(trialApplicationsForTrialProvider(trialId).future);
+final _trialAppBundlesProvider = FutureProvider.autoDispose
+    .family<List<_AppBundle>, int>((ref, trialId) async {
+  final eventsFuture =
+      ref.read(trialApplicationsForTrialProvider(trialId).future);
   final sessionsFuture = ref.read(sessionsForTrialProvider(trialId).future);
-  final snapshotsFuture = ref.read(weatherSnapshotsForTrialProvider(trialId).future);
+  final snapshotsFuture =
+      ref.read(weatherSnapshotsForTrialProvider(trialId).future);
   final events = await eventsFuture;
   final sessions = await sessionsFuture;
   final snapshots = await snapshotsFuture;
@@ -288,9 +290,11 @@ final _trialAnalysisDataProvider =
     FutureProvider.autoDispose.family<_AnalysisData, int>((ref, trialId) async {
   // Fire futures in parallel
   final sessionsFuture = ref.read(sessionsForTrialProvider(trialId).future);
-  final ratingsFuture = ref.read(allSessionRatingsForTrialProvider(trialId).future);
+  final ratingsFuture =
+      ref.read(allSessionRatingsForTrialProvider(trialId).future);
   final plotsFuture = ref.read(plotsForTrialProvider(trialId).future);
-  final assignmentsFuture = ref.read(assignmentsForTrialProvider(trialId).future);
+  final assignmentsFuture =
+      ref.read(assignmentsForTrialProvider(trialId).future);
   final treatmentsFuture = ref.read(treatmentsForTrialProvider(trialId).future);
   final legacyAssessmentsFuture =
       ref.read(assessmentsForTrialProvider(trialId).future);
@@ -355,8 +359,9 @@ final _trialAnalysisDataProvider =
       .toList();
 
   final analyzablePlots = plots.where(isAnalyzablePlot).toList();
-  final excludedPlots =
-      plots.where((p) => !p.isGuardRow && p.excludeFromAnalysis == true).toList();
+  final excludedPlots = plots
+      .where((p) => !p.isGuardRow && p.excludeFromAnalysis == true)
+      .toList();
 
   final treatmentResults = TrialDataComputer.computeTreatmentMeans(
     treatments: treatments,
@@ -427,6 +432,18 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    // Trigger a background daily-weather fetch for this trial if GPS is available.
+    // Runs post-frame so it never blocks the first render.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final trial = widget.trial;
+      final lat = trial.latitude;
+      final lng = trial.longitude;
+      if (lat != null && lng != null) {
+        ref
+            .read(trialEnvironmentalRepositoryProvider)
+            .ensureTodayRecordExists(trial.id, lat, lng);
+      }
+    });
   }
 
   @override
@@ -438,7 +455,8 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
   void _scrollTo(GlobalKey key) {
     final ctx = key.currentContext;
     if (ctx != null) {
-      Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      Scrollable.ensureVisible(ctx,
+          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
   }
 
@@ -512,8 +530,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
       final closedX = data.closedSessions.length;
       final treatY = data.treatments.length;
       final assessZ = data.assessmentOrder.length;
-      resultsSuffix =
-          '$closedX closed session${closedX == 1 ? '' : 's'} · '
+      resultsSuffix = '$closedX closed session${closedX == 1 ? '' : 's'} · '
           '$treatY treatment${treatY == 1 ? '' : 's'} · '
           '$assessZ assessment${assessZ == 1 ? '' : 's'}';
     } else {
@@ -624,7 +641,8 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
             ),
           ),
           if (onTap != null)
-            const Icon(Icons.chevron_right, size: 16, color: AppDesignTokens.secondaryText),
+            const Icon(Icons.chevron_right,
+                size: 16, color: AppDesignTokens.secondaryText),
         ],
       ),
     );
@@ -689,7 +707,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     WorkspaceConfig config,
     CropDescription? cropDesc,
   ) {
-    String _fmtDate(DateTime? dt) =>
+    String fmtDate(DateTime? dt) =>
         dt == null ? '—' : DateFormat('d MMM yyyy').format(dt);
 
     return Column(
@@ -700,8 +718,8 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
           label: 'Variety',
           value: cropDesc?.varietyOrHybrid ?? trial.cultivar ?? '—',
         ),
-        _FieldRow(label: 'Sown', value: _fmtDate(cropDesc?.plantingDate)),
-        _FieldRow(label: 'Emerged', value: _fmtDate(cropDesc?.emergenceDate)),
+        _FieldRow(label: 'Sown', value: fmtDate(cropDesc?.plantingDate)),
+        _FieldRow(label: 'Emerged', value: fmtDate(cropDesc?.emergenceDate)),
         _FieldRow(label: 'Location', value: trial.location ?? '—'),
         _FieldRow(
           label: 'Design',
@@ -760,8 +778,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
   Widget _buildAppBundle(_AppBundle bundle) {
     final event = bundle.event;
     final dateStr = DateFormat('d MMM yyyy').format(event.applicationDate);
-    final hasDeviation =
-        bundle.products.any((p) => p.deviationFlag == true);
+    final hasDeviation = bundle.products.any((p) => p.deviationFlag == true);
     final statusStr =
         '${event.status[0].toUpperCase()}${event.status.substring(1)}';
     final bbch = event.growthStageCode;
@@ -797,8 +814,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
                 color: hasDeviation
                     ? AppDesignTokens.warningFg
                     : AppDesignTokens.secondaryText,
-                fontWeight:
-                    hasDeviation ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: hasDeviation ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ],
@@ -838,8 +854,8 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
           ],
         ),
         if (hasDeviation)
-          Padding(
-            padding: const EdgeInsets.only(top: 3),
+          const Padding(
+            padding: EdgeInsets.only(top: 3),
             child: Text(
               'Rate deviation recorded',
               style: TextStyle(
@@ -980,8 +996,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     required Map<int, RatingRecord> byId,
     required Map<int, Session> sessionById,
   }) {
-    final plotRow =
-        data.allPlots.where((p) => p.id == r.plotPk).firstOrNull;
+    final plotRow = data.allPlots.where((p) => p.id == r.plotPk).firstOrNull;
     final plotLabel = plotRow?.plotId ?? '${r.plotPk}';
     final sess = sessionById[r.sessionId];
     final sessionName = (sess?.name ?? '').trim().isNotEmpty
@@ -990,8 +1005,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     final assessName =
         data.assessmentDisplayNames[r.assessmentId] ?? 'A${r.assessmentId}';
     final prev = r.previousId != null ? byId[r.previousId!] : null;
-    final oldStr =
-        prev != null ? _amendmentRowValueSummary(prev) : '—';
+    final oldStr = prev != null ? _amendmentRowValueSummary(prev) : '—';
     final newStr = _amendmentRowValueSummary(r);
     final reasonLine = r.amendmentReason != null
         ? 'Reason: ${r.amendmentReason}'
@@ -1035,16 +1049,15 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _GroupHeader(label: 'SESSIONS'),
+        const _GroupHeader(label: 'SESSIONS'),
         _FieldRow(label: 'Total', value: '$totalSessions'),
         _FieldRow(label: 'Closed', value: '$closedCount'),
-        if (openCount > 0)
-          _FieldRow(label: 'Open', value: '$openCount'),
+        if (openCount > 0) _FieldRow(label: 'Open', value: '$openCount'),
         const _SectionDivider(),
-        _GroupHeader(label: 'AMENDMENTS'),
+        const _GroupHeader(label: 'AMENDMENTS'),
         _buildAmendmentsQualityRows(data),
         const _SectionDivider(),
-        _GroupHeader(label: 'EXCLUDED PLOTS'),
+        const _GroupHeader(label: 'EXCLUDED PLOTS'),
         if (data.excludedPlots.isEmpty)
           const _FieldRow(label: 'Count', value: '0')
         else
@@ -1053,7 +1066,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
             value: data.excludedPlots.length.toString(),
           ),
         const _SectionDivider(),
-        _GroupHeader(label: 'OUTLIER CANDIDATES'),
+        const _GroupHeader(label: 'OUTLIER CANDIDATES'),
         _FieldRow(
           label: '>2 SD',
           value: data.outlierCandidates.isEmpty
@@ -1061,7 +1074,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
               : '${data.outlierCandidates.length} rating${data.outlierCandidates.length == 1 ? '' : 's'}',
         ),
         const _SectionDivider(),
-        _GroupHeader(label: 'ATTRIBUTION'),
+        const _GroupHeader(label: 'ATTRIBUTION'),
         _FieldRow(
           label: 'Unattributed',
           value: data.unattributedRatings.isEmpty
@@ -1110,7 +1123,8 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
 
     // Only show assessments that have at least one result
     final visibleAssessments = data.assessmentOrder
-        .where((aid) => data.treatmentResults.values.any((m) => m.containsKey(aid)))
+        .where((aid) =>
+            data.treatmentResults.values.any((m) => m.containsKey(aid)))
         .toList();
 
     if (visibleAssessments.isEmpty) {
@@ -1139,11 +1153,11 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
   Widget _buildResultsHeader(_AnalysisData data, List<int> assessmentIds) {
     return Row(
       children: [
-        SizedBox(
+        const SizedBox(
           width: _kTreatColWidth,
           child: Text(
             'Treatment',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppDesignTokens.secondaryText,
@@ -1243,7 +1257,8 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
           ),
         ),
         if (isExpanded)
-          _buildSessionExpansion(data, treatment, assessmentIds, closedBySession),
+          _buildSessionExpansion(
+              data, treatment, assessmentIds, closedBySession),
       ],
     );
   }
@@ -1255,9 +1270,9 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     required TreatmentCellData? cellData,
   }) {
     if (cellData == null) {
-      return SizedBox(
+      return const SizedBox(
         width: _kAssessColWidth,
-        child: const Text(
+        child: Text(
           '—',
           style: TextStyle(fontSize: 13, color: AppDesignTokens.secondaryText),
         ),
@@ -1270,7 +1285,8 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
         treatment: treatment,
         assessmentId: assessmentId,
         cellData: cellData,
-        assessmentName: data.assessmentDisplayNames[assessmentId] ?? 'A$assessmentId',
+        assessmentName:
+            data.assessmentDisplayNames[assessmentId] ?? 'A$assessmentId',
       ),
       child: SizedBox(
         width: _kAssessColWidth,
@@ -1342,8 +1358,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
                     SizedBox(
                       width: _kAssessColWidth,
                       child: Builder(builder: (_) {
-                        final vals =
-                            closedBySession[session.id]?[aid] ?? [];
+                        final vals = closedBySession[session.id]?[aid] ?? [];
                         if (vals.isEmpty) {
                           return const Text(
                             '—',
@@ -1353,8 +1368,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
                             ),
                           );
                         }
-                        final mean =
-                            vals.reduce((a, b) => a + b) / vals.length;
+                        final mean = vals.reduce((a, b) => a + b) / vals.length;
                         return Text(
                           _fmtNum(mean),
                           style: const TextStyle(
@@ -1435,7 +1449,8 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
 
   Widget _buildSection5(Trial trial) {
     final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
-    final snapshotsAsync = ref.watch(weatherSnapshotsForTrialProvider(trial.id));
+    final snapshotsAsync =
+        ref.watch(weatherSnapshotsForTrialProvider(trial.id));
     return _SectionCard(
       title: '5. Weather',
       child: sessionsAsync.when(
@@ -1490,8 +1505,10 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     );
   }
 
-  Widget _buildWeatherRow(Session session, WeatherSnapshot? snapshot, {required int index}) {
-    final sessionName = session.name.isNotEmpty ? session.name : 'Session ${index + 1}';
+  Widget _buildWeatherRow(Session session, WeatherSnapshot? snapshot,
+      {required int index}) {
+    final sessionName =
+        session.name.isNotEmpty ? session.name : 'Session ${index + 1}';
     final headerLine = '$sessionName · ${_sessionLabel(session)}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1508,7 +1525,8 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
         if (snapshot == null)
           const Text(
             'Weather not recorded',
-            style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText),
+            style:
+                TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText),
           )
         else ...[
           _buildWeatherMainLine(snapshot),
@@ -1593,9 +1611,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
         loading: () => const AppLoadingView(),
         error: (e, _) => AppErrorView(error: e),
         data: (insights) {
-          final visible = insights
-              .where((i) => i.basis.minimumDataMet)
-              .toList()
+          final visible = insights.where((i) => i.basis.minimumDataMet).toList()
             ..sort((a, b) {
               final sc = b.severity.index.compareTo(a.severity.index);
               if (sc != 0) return sc;
@@ -1653,8 +1669,8 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     );
   }
 
-  Widget _buildAssessmentGroup(
-      List<TrialInsight> group, {required bool isFirst}) {
+  Widget _buildAssessmentGroup(List<TrialInsight> group,
+      {required bool isFirst}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1689,7 +1705,8 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
 
   Widget _buildFooter(Trial trial, WorkspaceConfig config) {
     final analysisAsync = ref.watch(_trialAnalysisDataProvider(trial.id));
-    final snapshotsAsync = ref.watch(weatherSnapshotsForTrialProvider(trial.id));
+    final snapshotsAsync =
+        ref.watch(weatherSnapshotsForTrialProvider(trial.id));
 
     return _SectionCard(
       title: 'What this is based on',
@@ -1728,14 +1745,13 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _GroupHeader(label: 'CHECK IDENTIFICATION'),
+        const _GroupHeader(label: 'CHECK IDENTIFICATION'),
         if (checks.isEmpty)
           const _FieldRow(label: 'Check', value: 'None identified')
         else
-          for (final t in checks)
-            _FieldRow(label: t.code, value: t.name),
+          for (final t in checks) _FieldRow(label: t.code, value: t.name),
         const _SectionDivider(),
-        _GroupHeader(label: 'COUNTS'),
+        const _GroupHeader(label: 'COUNTS'),
         _FieldRow(
           label: 'Sessions',
           value:
@@ -1751,13 +1767,13 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
         ),
         if (data.excludedPlots.isNotEmpty) ...[
           const _SectionDivider(),
-          _GroupHeader(label: 'EXCLUDED PLOTS'),
+          const _GroupHeader(label: 'EXCLUDED PLOTS'),
           for (final p in data.excludedPlots)
             _FieldRow(label: p.plotId, value: 'Excluded from analysis'),
         ],
         if (weatherGaps.isNotEmpty) ...[
           const _SectionDivider(),
-          _GroupHeader(label: 'WEATHER GAPS'),
+          const _GroupHeader(label: 'WEATHER GAPS'),
           for (final s in weatherGaps)
             _FieldRow(
               label: _sessionLabel(s),
@@ -1766,7 +1782,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
         ],
         if (config.isProtocol) ...[
           const _SectionDivider(),
-          _GroupHeader(label: 'PROTOCOL'),
+          const _GroupHeader(label: 'PROTOCOL'),
           _FieldRow(
             label: 'Mode',
             value: config.isGlp ? 'GLP' : 'GEP',
