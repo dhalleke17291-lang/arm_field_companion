@@ -5,7 +5,7 @@ import 'package:drift/drift.dart' as drift;
 import '../../core/database/app_database.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../core/utils/check_treatment_helper.dart';
-import 'biological_window_profiles.dart';
+import 'application_timing_helper.dart';
 import 'trial_ctq_dto.dart';
 
 /// CTQ V1 deterministic evaluator.
@@ -340,9 +340,11 @@ TrialCtqItemDto _evalApplicationTiming(
       reason: 'No application events have been recorded.',
     );
   }
-  final hasCategorySet =
-      treatmentComponents.any((c) => c.pesticideCategory != null);
-  if (!hasCategorySet) {
+
+  final result =
+      evaluateBbchTiming(applications, treatmentComponents, trialCrop);
+
+  if (result == null) {
     return _item(
       factor,
       status: 'satisfied',
@@ -350,56 +352,34 @@ TrialCtqItemDto _evalApplicationTiming(
       reason: 'Application events are present.',
     );
   }
-  final hasBbch =
-      applications.any((a) => a.growthStageBbchAtApplication != null);
-  if (!hasBbch) {
+
+  final n = result.applicationCount;
+
+  if (!result.hasBbch) {
     return _item(
       factor,
       status: 'review_needed',
-      evidenceSummary:
-          '${applications.length} application record(s); BBCH not captured.',
+      evidenceSummary: '$n application record(s); BBCH not captured.',
       reason:
           'Application events exist but BBCH at application has not been recorded. Timing cannot be evaluated.',
     );
   }
 
-  // Step 4: biological window range check.
-  final pesticideCategory = treatmentComponents
-      .firstWhere((c) => c.pesticideCategory != null)
-      .pesticideCategory!;
-
-  // Most recent BBCH event first; worst severity wins across all events.
-  final bbchEvents = applications
-      .where((a) => a.growthStageBbchAtApplication != null)
-      .toList()
-    ..sort((a, b) => b.applicationDate.compareTo(a.applicationDate));
-
-  final profile = matchProfile(trialCrop, pesticideCategory);
-  if (profile == null) {
+  if (result.profile == null) {
     return _item(
       factor,
       status: 'satisfied',
-      evidenceSummary:
-          '${applications.length} application record(s) with BBCH data.',
+      evidenceSummary: '$n application record(s) with BBCH data.',
       reason:
           'Application timing evidence is present. No window profile is configured for this crop and category combination.',
     );
   }
 
-  // Walk events; upgrade the reported BBCH when a worse tier is found.
-  var reportBbch = bbchEvents.first.growthStageBbchAtApplication!;
-  var reportSeverity = _bbchSeverity(reportBbch, profile);
-  for (final e in bbchEvents.skip(1)) {
-    final bbch = e.growthStageBbchAtApplication!;
-    final sev = _bbchSeverity(bbch, profile);
-    if (sev > reportSeverity) {
-      reportBbch = bbch;
-      reportSeverity = sev;
-    }
-  }
+  final reportBbch = result.worstBbch!;
+  final profile = result.profile!;
+  final pesticideCategory = result.pesticideCategory;
 
-  final n = applications.length;
-  if (reportSeverity == 2) {
+  if (result.worstSeverity == 2) {
     return _item(
       factor,
       status: 'review_needed',
@@ -408,7 +388,7 @@ TrialCtqItemDto _evalApplicationTiming(
           'Applied at BBCH $reportBbch. Outside the acceptable application window (${profile.acceptableWindowLabel}) for ${profile.cropLabel} $pesticideCategory. This may affect interpretation of the primary endpoint.',
     );
   }
-  if (reportSeverity == 1) {
+  if (result.worstSeverity == 1) {
     return _item(
       factor,
       status: 'review_needed',
@@ -424,16 +404,6 @@ TrialCtqItemDto _evalApplicationTiming(
     reason:
         'Applied at BBCH $reportBbch. Within optimal window (${profile.optimalWindowLabel}) for ${profile.cropLabel} $pesticideCategory.',
   );
-}
-
-int _bbchSeverity(int bbch, BiologicalWindowProfile profile) {
-  if (bbch < profile.acceptableBbchMin || bbch > profile.acceptableBbchMax) {
-    return 2;
-  }
-  if (bbch < profile.optimalBbchMin || bbch > profile.optimalBbchMax) {
-    return 1;
-  }
-  return 0;
 }
 
 /// Upgraded from presence-only: also checks for open timing-window signals.

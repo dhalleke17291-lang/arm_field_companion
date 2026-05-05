@@ -126,6 +126,8 @@ import '../domain/trial_cognition/trial_purpose_dto.dart';
 import '../domain/trial_cognition/trial_evidence_arc_dto.dart';
 import '../domain/trial_cognition/trial_ctq_dto.dart';
 import '../domain/trial_cognition/trial_ctq_evaluator.dart';
+import '../domain/trial_cognition/trial_coherence_dto.dart';
+import '../domain/trial_cognition/trial_coherence_evaluator.dart';
 import '../domain/trial_cognition/trial_decision_summary_dto.dart';
 import '../domain/trial_cognition/mode_c_revelation_model.dart';
 
@@ -2243,12 +2245,24 @@ final trialCriticalToQualityProvider =
   );
 });
 
+/// Cross-factor coherence: four deterministic checks that verify whether the
+/// trial's evidence, application timing, replication, and open signals are
+/// internally consistent with the stated claim.
+final trialCoherenceProvider =
+    FutureProvider.autoDispose.family<TrialCoherenceDto, int>(
+        (ref, trialId) async {
+  final db = ref.watch(databaseProvider);
+  final signalRepo = ref.read(signalRepositoryProvider);
+  return computeTrialCoherenceDto(
+    db: db,
+    trialId: trialId,
+    signalRepo: signalRepo,
+  );
+});
+
 /// All researcher-authored decisions and CTQ acknowledgments for a trial,
 /// excluding canned system notes. Used by the "Decisions and reasoning"
 /// section in Trial Story.
-///
-/// TODO(coherence): add trialCoherenceProvider when cross-factor coherence
-/// checks are implemented.
 final trialDecisionSummaryProvider =
     FutureProvider.autoDispose.family<TrialDecisionSummaryDto, int>(
         (ref, trialId) async {
