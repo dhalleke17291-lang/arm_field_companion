@@ -41,6 +41,7 @@ import 'tabs/plots_tab.dart';
 import 'tabs/photos_tab.dart';
 import 'tabs/trial_intent_sheet.dart';
 import 'tabs/timeline_tab.dart';
+import 'tabs/trial_overview/trial_overview_tab.dart';
 import 'trial_story_screen.dart';
 import 'trial_data_screen.dart';
 import 'trial_setup_screen.dart';
@@ -87,24 +88,31 @@ const int _overviewTabIndex = 8;
 /// Fixed stack index for the ARM Protocol tab (ARM-linked trials only).
 const int _armProtocolTabIndex = 9;
 
+/// Fixed stack index for the Trial Overview intelligence tab (Sprint A4).
+const int _trialOverviewTabIndex = 10;
+
 /// Computes effective selected index: prefers candidate if visible, else first visible, else Overview.
 /// [candidate] == [_overviewTabIndex] always passes through (Overview is not in [visibleIndices]).
 /// [candidate] == [_armProtocolTabIndex] always passes through (ARM Protocol is not in [visibleIndices]).
+/// [candidate] == [_trialOverviewTabIndex] always passes through.
 int _effectiveSelectedIndex({
   required int candidate,
   required List<int> visibleIndices,
 }) {
   if (candidate == _overviewTabIndex) return _overviewTabIndex;
   if (candidate == _armProtocolTabIndex) return _armProtocolTabIndex;
+  if (candidate == _trialOverviewTabIndex) return _trialOverviewTabIndex;
   if (visibleIndices.isEmpty) return _overviewTabIndex;
   if (visibleIndices.contains(candidate)) return candidate;
   return visibleIndices.first;
 }
 
-/// Sanitizes a tab index for the given trial: visible module tab, Overview (8), or ARM Protocol (9).
+/// Sanitizes a tab index for the given trial: visible module tab, Overview (8),
+/// ARM Protocol (9), or Trial Overview (10).
 int _sanitizeTabIndexForTrial(int index, Trial trial) {
   if (index == _overviewTabIndex) return _overviewTabIndex;
   if (index == _armProtocolTabIndex) return _armProtocolTabIndex;
+  if (index == _trialOverviewTabIndex) return _trialOverviewTabIndex;
   final config = safeConfigFromString(trial.workspaceType);
   final visible = _visibleFixedIndices(config);
   if (visible.isEmpty) return _overviewTabIndex;
@@ -1408,6 +1416,8 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
               ),
               // ARM Protocol tab at index 9 — only reachable when ARM-linked.
               armTabBuilder(currentTrial.id),
+              // Trial Overview intelligence tab at index 10 (Sprint A4).
+              TrialOverviewTab(trial: currentTrial),
             ],
           ),
         ),
@@ -2946,8 +2956,11 @@ class _TrialModuleHub extends StatelessWidget {
     // All possible hub items mapped to their fixed IndexedStack index.
     // Overview (8) is always shown; module tabs use TrialTab for visibility.
     // ARM Protocol (9) is shown only for ARM-linked trials.
+    // Trial Overview (10) is always shown — Sprint A4.
     const allItems = <(int, IconData, String, TrialTab?)>[
       (_overviewTabIndex, Icons.dashboard_outlined, 'Overview', null),
+      (_trialOverviewTabIndex, Icons.fact_check_outlined, 'Trial Overview',
+          null),
       (6, Icons.timeline, 'Timeline', TrialTab.timeline),
       (0, Icons.grid_on, 'Plots', TrialTab.plots),
       (1, Icons.agriculture, 'Seeding', TrialTab.seeding),
