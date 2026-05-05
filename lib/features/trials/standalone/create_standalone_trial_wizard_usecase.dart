@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/trial_state.dart';
 import '../../../data/repositories/assessment_definition_repository.dart';
 import '../../../data/repositories/trial_assessment_repository.dart';
+import '../../../domain/trial_cognition/trial_intent_seeder.dart';
 import '../../plots/plot_repository.dart';
 import '../../../data/repositories/assignment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
@@ -120,8 +121,9 @@ class CreateStandaloneTrialWizardUseCase {
     this._plotRepository,
     this._assignmentRepository,
     this._definitionRepository,
-    this._trialAssessmentRepository,
-  );
+    this._trialAssessmentRepository, {
+    this.intentSeeder,
+  });
 
   final AppDatabase _db;
   final TrialRepository _trialRepository;
@@ -130,6 +132,7 @@ class CreateStandaloneTrialWizardUseCase {
   final AssignmentRepository _assignmentRepository;
   final AssessmentDefinitionRepository _definitionRepository;
   final TrialAssessmentRepository _trialAssessmentRepository;
+  final TrialIntentSeeder? intentSeeder;
 
   Future<CreateStandaloneTrialWizardResult> execute(
     CreateStandaloneTrialWizardInput input,
@@ -323,6 +326,8 @@ class CreateStandaloneTrialWizardUseCase {
         // Standalone: wizard completes protocol setup — go straight to Active (skip Draft/Ready).
         await _trialRepository.updateTrialStatus(trialId, kTrialStatusActive);
       });
+
+      await intentSeeder?.seedFromStandaloneWizard(trialId);
 
       return CreateStandaloneTrialWizardResult.ok(trialId);
     } on DuplicateTrialException catch (e) {

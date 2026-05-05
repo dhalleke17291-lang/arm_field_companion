@@ -3334,9 +3334,19 @@ END
           }
 
           if (from < 82) {
-            // Add requires_confirmation: existing rows are Mode C created —
-            // backfill to 0 so they are not shown as pending confirmation.
-            await m.addColumn(trialPurposes, trialPurposes.requiresConfirmation);
+            // Guard: from < 78 also calls createTable(trialPurposes) using the
+            // current class definition, so the column may already be present
+            // when upgrading a chain that passed through v78.
+            final colCheck = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_purposes')",
+            ).get();
+            final colNames =
+                colCheck.map((r) => r.read<String>('name')).toSet();
+            if (!colNames.contains('requires_confirmation')) {
+              await m.addColumn(
+                  trialPurposes, trialPurposes.requiresConfirmation);
+            }
+            // Backfill: existing rows are Mode C created — mark as confirmed.
             await customStatement(
               'UPDATE trial_purposes SET requires_confirmation = 0',
             );

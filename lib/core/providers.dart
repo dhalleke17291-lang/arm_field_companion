@@ -136,6 +136,7 @@ import '../data/services/open_meteo_weather_fetch_service.dart';
 import '../data/services/weather_daily_fetch_service.dart';
 import '../domain/trial_cognition/trial_decision_summary_dto.dart';
 import '../domain/trial_cognition/mode_c_revelation_model.dart';
+import '../domain/trial_cognition/trial_intent_seeder.dart';
 
 /// ARCHITECTURE RULE: Use case return types
 /// New use cases must return domain result types (e.g. SaveRatingResult),
@@ -360,6 +361,7 @@ final importArmRatingShellUseCaseProvider =
     assignmentRepository: ref.watch(assignmentRepositoryProvider),
     armColumnMappingRepository: ref.watch(armColumnMappingRepositoryProvider),
     armApplicationsRepository: ref.watch(armApplicationsRepositoryProvider),
+    intentSeeder: ref.watch(trialIntentSeederProvider),
   );
 });
 
@@ -886,6 +888,7 @@ final createStandaloneTrialWizardUseCaseProvider =
     ref.watch(assignmentRepositoryProvider),
     ref.watch(assessmentDefinitionRepositoryProvider),
     ref.watch(trialAssessmentRepositoryProvider),
+    intentSeeder: ref.watch(trialIntentSeederProvider),
   );
 });
 
@@ -2173,6 +2176,13 @@ final seTypeProfileByPrefixProvider =
 
 final trialPurposeRepositoryProvider = Provider<TrialPurposeRepository>((ref) {
   return TrialPurposeRepository(ref.watch(databaseProvider));
+});
+
+final trialIntentSeederProvider = Provider<TrialIntentSeeder>((ref) {
+  return TrialIntentSeeder(
+    ref.watch(databaseProvider),
+    ref.watch(trialPurposeRepositoryProvider),
+  );
 });
 
 final intentRevelationEventRepositoryProvider =

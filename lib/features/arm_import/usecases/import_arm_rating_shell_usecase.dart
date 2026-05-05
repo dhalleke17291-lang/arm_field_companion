@@ -8,6 +8,7 @@ import '../../../data/repositories/trial_assessment_repository.dart';
 import '../../../data/services/arm_shell_parser.dart';
 import '../../../data/services/shell_storage_service.dart';
 import '../../../domain/models/arm_column_map.dart';
+import '../../../domain/trial_cognition/trial_intent_seeder.dart';
 import '../data/shell_rating_date_parser.dart';
 import '../../plots/plot_repository.dart';
 import '../../trials/trial_repository.dart';
@@ -126,13 +127,15 @@ class ImportArmRatingShellUseCase {
     required AssignmentRepository assignmentRepository,
     required ArmColumnMappingRepository armColumnMappingRepository,
     required ArmApplicationsRepository armApplicationsRepository,
+    TrialIntentSeeder? intentSeeder,
   })  : _db = db,
         _trialRepository = trialRepository,
         _plotRepository = plotRepository,
         _treatmentRepository = treatmentRepository,
         _assignmentRepository = assignmentRepository,
         _armColumnMappingRepository = armColumnMappingRepository,
-        _armApplicationsRepository = armApplicationsRepository;
+        _armApplicationsRepository = armApplicationsRepository,
+        _intentSeeder = intentSeeder;
 
   final AppDatabase _db;
   final TrialRepository _trialRepository;
@@ -141,6 +144,7 @@ class ImportArmRatingShellUseCase {
   final AssignmentRepository _assignmentRepository;
   final ArmColumnMappingRepository _armColumnMappingRepository;
   final ArmApplicationsRepository _armApplicationsRepository;
+  final TrialIntentSeeder? _intentSeeder;
 
   /// After [trialId] is committed, if shell copy or final setup fails, remove the
   /// trial so no half-imported draft remains.
@@ -651,6 +655,8 @@ class ImportArmRatingShellUseCase {
           'Shell import failed: could not store shell or finalize trial ($e)',
         );
       }
+
+      await _intentSeeder?.seedFromArmImport(plan.trialId);
 
       return ShellImportResult.ok(
         trialId: plan.trialId,

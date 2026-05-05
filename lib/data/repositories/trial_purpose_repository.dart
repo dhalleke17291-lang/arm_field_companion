@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/database/app_database.dart';
+import '../../domain/trial_cognition/trial_intent_inferrer.dart';
 
 class TrialPurposeRepository {
   TrialPurposeRepository(this._db);
@@ -78,8 +79,64 @@ class TrialPurposeRepository {
       status: const Value('confirmed'),
       confirmedAt: Value(DateTime.now().toUtc()),
       confirmedBy: Value(confirmedBy),
+      requiresConfirmation: const Value(0),
       updatedAt: Value(DateTime.now().toUtc()),
     ));
+  }
+
+  /// Writes an inferred purpose row for [trialId].
+  /// Stores confidence JSON in [inferredFieldsJson] alongside text values
+  /// in the named columns. Sets [requiresConfirmation] = 1 so Section 1
+  /// shows the confirmation banner until the researcher reviews it.
+  Future<int> createInferredTrialPurpose({
+    required int trialId,
+    required InferredTrialPurpose inferred,
+    required String sourceMode,
+  }) {
+    final testItems = inferred.treatmentRoles
+        .where((r) => r.inferredRole == 'test_item')
+        .map((r) => r.treatmentName)
+        .join(', ');
+    final checkTreatments = inferred.treatmentRoles
+        .where((r) => r.inferredRole == 'untreated_check' ||
+            r.inferredRole == 'reference_standard')
+        .map((r) => '${r.treatmentName} (${r.inferredRole})')
+        .join(', ');
+    final rolesSummary = [
+      if (testItems.isNotEmpty) 'Test items: $testItems',
+      if (checkTreatments.isNotEmpty) 'Controls/standards: $checkTreatments',
+    ].join('; ');
+
+    return _db.into(_db.trialPurposes).insert(
+          TrialPurposesCompanion.insert(
+            trialId: trialId,
+            status: const Value('draft'),
+            sourceMode: Value(sourceMode),
+            claimBeingTested: Value(
+              inferred.claimConfidence == FieldConfidence.high ||
+                      inferred.claimConfidence == FieldConfidence.moderate
+                  ? inferred.claimStatement
+                  : null,
+            ),
+            primaryEndpoint: Value(
+              inferred.primaryEndpointConfidence == FieldConfidence.high ||
+                      inferred.primaryEndpointConfidence ==
+                          FieldConfidence.moderate
+                  ? inferred.primaryEndpointAssessmentKey
+                  : null,
+            ),
+            treatmentRoleSummary: Value(rolesSummary.isEmpty ? null : rolesSummary),
+            regulatoryContext: Value(
+              inferred.regulatoryContextConfidence == FieldConfidence.high ||
+                      inferred.regulatoryContextConfidence ==
+                          FieldConfidence.moderate
+                  ? inferred.regulatoryContext
+                  : null,
+            ),
+            inferredFieldsJson: Value(inferred.toJsonString()),
+            requiresConfirmation: const Value(1),
+          ),
+        );
   }
 
   Future<void> supersedeTrialPurpose(int purposeId) {
