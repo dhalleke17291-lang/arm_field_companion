@@ -132,6 +132,8 @@ import '../domain/trial_cognition/trial_coherence_evaluator.dart';
 import '../domain/trial_cognition/trial_interpretation_risk_dto.dart';
 import '../domain/trial_cognition/trial_interpretation_risk_evaluator.dart';
 import '../data/repositories/trial_environmental_repository.dart';
+import '../data/services/open_meteo_weather_fetch_service.dart';
+import '../data/services/weather_daily_fetch_service.dart';
 import '../domain/trial_cognition/trial_decision_summary_dto.dart';
 import '../domain/trial_cognition/mode_c_revelation_model.dart';
 
@@ -722,9 +724,24 @@ final weatherSnapshotRepositoryProvider =
   return WeatherSnapshotRepository(ref.watch(databaseProvider));
 });
 
+final weatherDailyFetchServiceProvider =
+    Provider<WeatherDailyFetchService>((ref) {
+  return OpenMeteoWeatherFetchService();
+});
+
+/// When false, skips the post-frame trial environmental fetch on [TrialDataScreen].
+/// Default true for production; set to false in widget tests to avoid HTTP/DB side effects from
+/// [TrialEnvironmentalRepository.ensureTodayRecordExists]. Overriding [trialEnvironmentalRepositoryProvider]
+/// with a no-op subclass remains valid too.
+final environmentalEnsureTodayBackgroundEnabledProvider =
+    Provider<bool>((ref) => true);
+
 final trialEnvironmentalRepositoryProvider =
     Provider<TrialEnvironmentalRepository>((ref) {
-  return TrialEnvironmentalRepository(ref.watch(databaseProvider));
+  return TrialEnvironmentalRepository(
+    ref.watch(databaseProvider),
+    ref.watch(weatherDailyFetchServiceProvider),
+  );
 });
 
 /// Latest weather snapshot for a rating session (one row per session).

@@ -1,5 +1,5 @@
 // Migration tests covering v49 defensive recreation, v71 SeTypeProfiles activation,
-// and v72 signals/causal/evidence tables.
+// v72 signals/causal/evidence tables, v81 environmental trial weather records.
 // Temp dir + file-backed NativeDatabase matches `backup_service_test.dart` pattern.
 //
 // v49: A brand-new SQLite file at user_version 36 cannot run 36→49 because
@@ -62,7 +62,7 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 80);
+    expect(db.schemaVersion, 81);
 
     final names = await _tableNames(db);
     expect(names, contains(_kApplicationSlots));
@@ -75,6 +75,7 @@ void main() {
     expect(names, contains('se_type_causal_profiles'));
     expect(names, contains('evidence_anchors'));
     expect(names, contains('ctq_factor_acknowledgments'));
+    expect(names, contains('trial_environmental_records'));
 
     final profiles = await db.select(db.seTypeProfiles).get();
     final prefixes = profiles.map((p) => p.ratingTypePrefix).toSet();

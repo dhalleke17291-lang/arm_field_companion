@@ -435,6 +435,9 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     // Trigger a background daily-weather fetch for this trial if GPS is available.
     // Runs post-frame so it never blocks the first render.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!ref.read(environmentalEnsureTodayBackgroundEnabledProvider)) {
+        return;
+      }
       final trial = widget.trial;
       final lat = trial.latitude;
       final lng = trial.longitude;

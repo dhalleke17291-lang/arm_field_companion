@@ -4,14 +4,19 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'fake_weather_fetch_service.dart';
+
 void main() {
   late AppDatabase db;
+  late FakeWeatherFetchService fakeWeather;
   late TrialEnvironmentalRepository repo;
   late int trialId;
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    repo = TrialEnvironmentalRepository(db);
+    fakeWeather =
+        FakeWeatherFetchService(result: null); // no network — deterministic unavailable path
+    repo = TrialEnvironmentalRepository(db, fakeWeather);
     trialId =
         await db.into(db.trials).insert(TrialsCompanion.insert(name: 'T'));
   });
@@ -117,10 +122,6 @@ void main() {
   test(
       'TER-5: ensureTodayRecordExists with no existing record inserts a row',
       () async {
-    // We can't mock the HTTP client here, but we can verify that after calling
-    // ensureTodayRecordExists, exactly one record exists for today.
-    // The test environment has no network, so the record will be confidence=unavailable.
-    // We accept either 'measured' or 'unavailable' — the key is that a row was created.
     await repo.ensureTodayRecordExists(trialId, 51.5, -0.1);
 
     final today = DateTime.now();
@@ -128,6 +129,8 @@ void main() {
     expect(found, isNotNull);
     expect(found!.siteLatitude, 51.5);
     expect(found.siteLongitude, -0.1);
+    expect(fakeWeather.totalCalls, 1);
+    expect(found.confidence, 'unavailable');
   });
 
   // ── TER-6: ensureTodayRecordExists is idempotent ─────────────────────────
@@ -139,6 +142,7 @@ void main() {
 
     final rows = await repo.getRecordsForTrial(trialId);
     expect(rows.length, 1);
+    expect(fakeWeather.totalCalls, 1);
   });
 
   // ── TER-7: getRecordsForTrial returns ordered by date ────────────────────

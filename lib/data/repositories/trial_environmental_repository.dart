@@ -1,15 +1,15 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 
 import '../../core/database/app_database.dart';
+import '../services/weather_daily_fetch_service.dart';
 
 class TrialEnvironmentalRepository {
-  TrialEnvironmentalRepository(this._db);
+  TrialEnvironmentalRepository(this._db, this._weatherFetch);
 
   final AppDatabase _db;
+  final WeatherDailyFetchService _weatherFetch;
 
   Future<void> upsertDailyRecord(TrialEnvironmentalRecord record) async {
     final companion = TrialEnvironmentalRecordsCompanion(
@@ -72,7 +72,8 @@ class TrialEnvironmentalRepository {
     if (existing != null) return;
 
     final fetchedMs = DateTime.now().millisecondsSinceEpoch;
-    final result = await _fetchDailyRecord(lat, lng, DateTime.now());
+    final result =
+        await _weatherFetch.fetchDailySummary(lat, lng, DateTime.now());
 
     final flags = _computeFlags(
       minTempC: result?.minTempC,
@@ -106,57 +107,6 @@ class TrialEnvironmentalRepository {
         .millisecondsSinceEpoch;
   }
 
-  static String _isoDate(DateTime date) {
-    final utc = date.toUtc();
-    return '${utc.year}-'
-        '${utc.month.toString().padLeft(2, '0')}-'
-        '${utc.day.toString().padLeft(2, '0')}';
-  }
-
-  Future<_DailyWeatherResult?> _fetchDailyRecord(
-    double lat,
-    double lng,
-    DateTime date,
-  ) async {
-    try {
-      final dateStr = _isoDate(date);
-      final url = Uri.parse(
-        'https://api.open-meteo.com/v1/forecast'
-        '?latitude=$lat&longitude=$lng'
-        '&daily=temperature_2m_min,temperature_2m_max,precipitation_sum'
-        '&timezone=UTC'
-        '&start_date=$dateStr&end_date=$dateStr',
-      );
-
-      final response =
-          await http.get(url).timeout(const Duration(seconds: 15));
-      if (response.statusCode != 200) return null;
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      final daily = json['daily'] as Map<String, dynamic>?;
-      if (daily == null) return null;
-
-      final mins = daily['temperature_2m_min'] as List?;
-      final maxs = daily['temperature_2m_max'] as List?;
-      final precips = daily['precipitation_sum'] as List?;
-
-      return _DailyWeatherResult(
-        minTempC: (mins?.isNotEmpty == true)
-            ? (mins![0] as num?)?.toDouble()
-            : null,
-        maxTempC: (maxs?.isNotEmpty == true)
-            ? (maxs![0] as num?)?.toDouble()
-            : null,
-        precipMm: (precips?.isNotEmpty == true)
-            ? (precips![0] as num?)?.toDouble()
-            : null,
-      );
-    } catch (e) {
-      debugPrint('TrialEnvironmentalRepository: fetch failed — $e');
-      return null;
-    }
-  }
-
   /// Returns a list of flag strings for notable weather events.
   static List<String> _computeFlags({
     double? minTempC,
@@ -169,16 +119,4 @@ class TrialEnvironmentalRepository {
     if (precipMm != null && precipMm >= 10) flags.add('excessive_rainfall');
     return flags;
   }
-}
-
-class _DailyWeatherResult {
-  const _DailyWeatherResult({
-    this.minTempC,
-    this.maxTempC,
-    this.precipMm,
-  });
-
-  final double? minTempC;
-  final double? maxTempC;
-  final double? precipMm;
 }
