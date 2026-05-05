@@ -6,12 +6,17 @@ import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
+import '../../domain/signals/signal_providers.dart';
+import '../../domain/trial_cognition/ctq_factor_acknowledgment_dto.dart';
 import '../../domain/trial_cognition/trial_ctq_dto.dart';
+import '../../domain/trial_cognition/trial_decision_summary_dto.dart';
 import '../../domain/trial_cognition/trial_evidence_arc_dto.dart';
 import '../../domain/trial_cognition/trial_purpose_dto.dart';
 import '../../domain/trial_story/trial_story_event.dart';
 import '../../domain/trial_story/trial_story_provider.dart';
 import 'tabs/trial_intent_sheet.dart';
+import 'widgets/ctq_acknowledgment_sheet.dart';
+import 'widgets/signal_action_sheet.dart';
 
 class TrialStoryScreen extends ConsumerWidget {
   const TrialStoryScreen({super.key, required this.trial});
@@ -63,9 +68,16 @@ class _TrialStoryBody extends StatelessWidget {
         _EvidenceArcCard(trialId: trial.id),
         const SizedBox(height: AppDesignTokens.spacing12),
         _CtqCard(trialId: trial.id),
-        const SizedBox(height: AppDesignTokens.spacing24),
+        const SizedBox(height: AppDesignTokens.spacing12),
+
+        // ── Open signals ─────────────────────────────────────────────────────
+        _OpenSignalsSection(trialId: trial.id),
+
+        // ── Decisions and reasoning ──────────────────────────────────────────
+        _DecisionsSection(trialId: trial.id),
 
         // ── Timeline section ────────────────────────────────────────────────
+        const SizedBox(height: AppDesignTokens.spacing12),
         const Text(
           'TIMELINE',
           style: TextStyle(
@@ -360,16 +372,17 @@ class _CtqCard extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (dto) => _CognitionCard(
         sectionLabel: 'CRITICAL TO QUALITY',
-        child: _CtqBody(dto: dto),
+        child: _CtqBody(dto: dto, trialId: trialId),
       ),
     );
   }
 }
 
-class _CtqBody extends StatelessWidget {
-  const _CtqBody({required this.dto});
+class _CtqBody extends ConsumerWidget {
+  const _CtqBody({required this.dto, required this.trialId});
 
   final TrialCtqDto dto;
+  final int trialId;
 
   static String _overallLabel(String status) => switch (status) {
         'unknown' => 'Not yet evaluated',
@@ -385,8 +398,11 @@ class _CtqBody extends StatelessWidget {
         _ => AppDesignTokens.primaryText,
       };
 
+  static bool _canAcknowledge(String status) =>
+      status == 'review_needed' || status == 'blocked' || status == 'missing';
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final attentionItems = _topAttentionItems(dto);
 
     return Column(
@@ -452,6 +468,16 @@ class _CtqBody extends StatelessWidget {
                         ),
                       ),
                     ),
+                  if (item.isAcknowledged && item.latestAcknowledgment != null)
+                    _AcknowledgedBadge(ack: item.latestAcknowledgment!)
+                  else if (_canAcknowledge(item.status))
+                    _AcknowledgeButton(
+                      onTap: () => showCtqAcknowledgmentSheet(
+                        context,
+                        item: item,
+                        trialId: trialId,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -462,7 +488,9 @@ class _CtqBody extends StatelessWidget {
   }
 
   static String _countSummary(TrialCtqDto dto) {
-    if (dto.blockerCount == 0 && dto.reviewCount == 0 && dto.warningCount == 0) {
+    if (dto.blockerCount == 0 &&
+        dto.reviewCount == 0 &&
+        dto.warningCount == 0) {
       return 'No checks need attention';
     }
     final parts = <String>[];
@@ -476,7 +504,8 @@ class _CtqBody extends StatelessWidget {
     }
     if (dto.warningCount > 0) {
       final n = dto.warningCount;
-      parts.add('$n check${n == 1 ? '' : 's'} need${n == 1 ? 's' : ''} evidence');
+      parts.add(
+          '$n check${n == 1 ? '' : 's'} need${n == 1 ? 's' : ''} evidence');
     }
     return parts.join(' · ');
   }
@@ -511,6 +540,336 @@ class _CtqBody extends StatelessWidget {
       ..sort((a, b) => rank(a.status).compareTo(rank(b.status)));
     return filtered.take(5).toList();
   }
+}
+
+class _AcknowledgeButton extends StatelessWidget {
+  const _AcknowledgeButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, top: 4),
+      child: GestureDetector(
+        onTap: onTap,
+        child: const Text(
+          'Acknowledge →',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppDesignTokens.primary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AcknowledgedBadge extends StatelessWidget {
+  const _AcknowledgedBadge({required this.ack});
+  final CtqFactorAcknowledgmentDto ack;
+
+  static final _fmt = DateFormat('MMM d');
+
+  @override
+  Widget build(BuildContext context) {
+    final dateStr = _fmt.format(ack.acknowledgedAt.toLocal());
+    final truncated = ack.reason.length > 60
+        ? '${ack.reason.substring(0, 60)}…'
+        : ack.reason;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, top: 4),
+      child: GestureDetector(
+        onTap: () => showDialog<void>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Acknowledgment'),
+            content: Text(ack.reason),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_outline,
+              size: 12,
+              color: AppDesignTokens.successFg,
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                'Acknowledged $dateStr · $truncated',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppDesignTokens.successFg,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Open signals ──────────────────────────────────────────────────────────────
+
+class _OpenSignalsSection extends ConsumerWidget {
+  const _OpenSignalsSection({required this.trialId});
+  final int trialId;
+
+  static String _signalTypeLabel(String type) => switch (type) {
+        'scale_violation' => 'Scale violation',
+        'rater_drift' => 'Rater drift',
+        'between_rater_divergence' => 'Rater divergence',
+        'causal_context_flag' => 'Timing window',
+        'aov_prediction' => 'Statistical flag',
+        'replication_warning' => 'Replication warning',
+        'protocol_divergence' => 'Protocol difference',
+        'deviation_declaration' => 'Deviation',
+        _ => type.replaceAll('_', ' '),
+      };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(openSignalsForTrialProvider(trialId));
+    return async.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (signals) {
+        if (signals.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'OPEN SIGNALS',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing8),
+            ...signals.map(
+              (signal) => Padding(
+                padding:
+                    const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+                child: GestureDetector(
+                  onTap: () => showSignalActionSheet(
+                    context,
+                    signal: signal,
+                    trialId: trialId,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppDesignTokens.spacing12),
+                    decoration: BoxDecoration(
+                      color: AppDesignTokens.cardSurface,
+                      borderRadius:
+                          BorderRadius.circular(AppDesignTokens.radiusCard),
+                      border: Border.all(color: AppDesignTokens.borderCrisp),
+                      boxShadow: AppDesignTokens.cardShadowRating,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _signalTypeLabel(signal.signalType),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.3,
+                                  color: AppDesignTokens.secondaryText,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                signal.consequenceText,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppDesignTokens.primaryText,
+                                  height: 1.4,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: AppDesignTokens.spacing8),
+                        const Text(
+                          'Decide →',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppDesignTokens.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing4),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ── Decisions and reasoning ───────────────────────────────────────────────────
+
+class _DecisionsSection extends ConsumerWidget {
+  const _DecisionsSection({required this.trialId});
+  final int trialId;
+
+  static final _dateFmt = DateFormat('MMM d, yyyy');
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(trialDecisionSummaryProvider(trialId));
+    return async.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (dto) {
+        if (!dto.hasAnyResearcherReasoning) return const SizedBox.shrink();
+
+        final entries = _mergedEntries(dto);
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'DECISIONS AND REASONING',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing8),
+            ...entries.map(
+              (e) => Padding(
+                padding:
+                    const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+                child: Container(
+                  padding: const EdgeInsets.all(AppDesignTokens.spacing12),
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.cardSurface,
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusCard),
+                    border: Border.all(color: AppDesignTokens.borderCrisp),
+                    boxShadow: AppDesignTokens.cardShadowRating,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        e.sourceLabel,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppDesignTokens.primaryText,
+                          height: 1.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        [
+                          e.decisionLabel,
+                          _dateFmt.format(
+                              DateTime.fromMillisecondsSinceEpoch(e.timestampMs)
+                                  .toLocal()),
+                          if (e.actorName != null) e.actorName!,
+                        ].join(' · '),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppDesignTokens.secondaryText,
+                          height: 1.3,
+                        ),
+                      ),
+                      const SizedBox(height: AppDesignTokens.spacing4),
+                      Text(
+                        e.reasoning,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppDesignTokens.primaryText,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  static List<_LedgerEntry> _mergedEntries(TrialDecisionSummaryDto dto) {
+    final entries = <_LedgerEntry>[
+      for (final d in dto.signalDecisions)
+        if (d.note != null && d.note!.isNotEmpty)
+          _LedgerEntry(
+            sourceLabel: d.note!.length > 80
+                ? '${d.note!.substring(0, 80)}…'
+                : d.note!,
+            decisionLabel: _decisionLabel(d.eventType),
+            timestampMs: d.occurredAt,
+            actorName: d.actorName,
+            reasoning: d.note!,
+          ),
+      for (final a in dto.ctqAcknowledgments)
+        _LedgerEntry(
+          sourceLabel: a.factorKey.replaceAll('_', ' '),
+          decisionLabel: 'Acknowledged',
+          timestampMs: a.acknowledgedAt.millisecondsSinceEpoch,
+          actorName: a.actorName,
+          reasoning: a.reason,
+        ),
+    ]..sort((a, b) => a.timestampMs.compareTo(b.timestampMs));
+    return entries;
+  }
+
+  static String _decisionLabel(String eventType) => switch (eventType) {
+        'confirm' => 'Confirmed',
+        'investigate' => 'Investigating',
+        'defer' => 'Deferred',
+        'suppress' => 'Suppressed',
+        're_rate' => 'Re-rated',
+        'expire' => 'Expired',
+        _ => eventType,
+      };
+}
+
+class _LedgerEntry {
+  const _LedgerEntry({
+    required this.sourceLabel,
+    required this.decisionLabel,
+    required this.timestampMs,
+    required this.actorName,
+    required this.reasoning,
+  });
+
+  final String sourceLabel;
+  final String decisionLabel;
+  final int timestampMs;
+  final String? actorName;
+  final String reasoning;
 }
 
 // ---------------------------------------------------------------------------

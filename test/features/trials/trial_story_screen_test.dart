@@ -4,7 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/providers.dart';
+import 'package:arm_field_companion/domain/signals/signal_providers.dart';
+import 'package:arm_field_companion/domain/trial_cognition/ctq_factor_acknowledgment_dto.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_ctq_dto.dart';
+import 'package:arm_field_companion/domain/trial_cognition/trial_decision_summary_dto.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_evidence_arc_dto.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_purpose_dto.dart';
 import 'package:arm_field_companion/domain/trial_story/trial_story_event.dart';
@@ -78,7 +81,23 @@ Widget _wrap(
       child: MaterialApp(home: child),
     );
 
-// Minimal overrides that silence all three cognition providers so existing
+/// Silences only the two new signal/decision providers added in Commit 4.
+/// Use this in tests that already manually override the cognition providers.
+List<Override> _silenceSignalDecision(int trialId) => [
+      openSignalsForTrialProvider(trialId).overrideWith(
+        (ref) async => const <Signal>[],
+      ),
+      trialDecisionSummaryProvider(trialId).overrideWith(
+        (ref) async => TrialDecisionSummaryDto(
+          trialId: trialId,
+          signalDecisions: const [],
+          ctqAcknowledgments: const <CtqFactorAcknowledgmentDto>[],
+          hasAnyResearcherReasoning: false,
+        ),
+      ),
+    ];
+
+// Minimal overrides that silence all cognition providers so existing
 // timeline-only tests don't fail due to missing database.
 List<Override> _silenceCognition(int trialId) => [
       trialPurposeProvider(trialId).overrideWith(
@@ -89,6 +108,17 @@ List<Override> _silenceCognition(int trialId) => [
       ),
       trialCriticalToQualityProvider(trialId).overrideWith(
         (ref) async => _ctqDto(),
+      ),
+      openSignalsForTrialProvider(trialId).overrideWith(
+        (ref) async => const <Signal>[],
+      ),
+      trialDecisionSummaryProvider(trialId).overrideWith(
+        (ref) async => TrialDecisionSummaryDto(
+          trialId: trialId,
+          signalDecisions: const [],
+          ctqAcknowledgments: const <CtqFactorAcknowledgmentDto>[],
+          hasAnyResearcherReasoning: false,
+        ),
       ),
     ];
 
@@ -286,6 +316,7 @@ void main() {
                 .overrideWith((ref) async => _arcDto()),
             trialCriticalToQualityProvider(trial.id)
                 .overrideWith((ref) async => _ctqDto()),
+            ..._silenceSignalDecision(trial.id),
           ],
         ),
       );
@@ -317,6 +348,7 @@ void main() {
                 .overrideWith((ref) async => _arcDto()),
             trialCriticalToQualityProvider(trial.id)
                 .overrideWith((ref) async => _ctqDto()),
+            ..._silenceSignalDecision(trial.id),
           ],
         ),
       );
@@ -349,6 +381,7 @@ void main() {
                 .overrideWith((ref) async => _arcDto()),
             trialCriticalToQualityProvider(trial.id)
                 .overrideWith((ref) async => _ctqDto()),
+            ..._silenceSignalDecision(trial.id),
           ],
         ),
       );
@@ -377,6 +410,7 @@ void main() {
             ),
             trialCriticalToQualityProvider(trial.id)
                 .overrideWith((ref) async => _ctqDto()),
+            ..._silenceSignalDecision(trial.id),
           ],
         ),
       );
@@ -403,6 +437,7 @@ void main() {
             ),
             trialCriticalToQualityProvider(trial.id)
                 .overrideWith((ref) async => _ctqDto()),
+            ..._silenceSignalDecision(trial.id),
           ],
         ),
       );
@@ -431,6 +466,7 @@ void main() {
             trialCriticalToQualityProvider(trial.id).overrideWith(
               (ref) async => _ctqDto(status: 'unknown'),
             ),
+            ..._silenceSignalDecision(trial.id),
           ],
         ),
       );
@@ -462,6 +498,7 @@ void main() {
                 warnings: 3,
               ),
             ),
+            ..._silenceSignalDecision(trial.id),
           ],
         ),
       );
@@ -517,6 +554,7 @@ void main() {
                 items: items,
               ),
             ),
+            ..._silenceSignalDecision(trial.id),
           ],
         ),
       );
@@ -544,6 +582,7 @@ void main() {
             trialCriticalToQualityProvider(trial.id).overrideWith(
               (ref) async => _ctqDto(status: 'ready_for_review'),
             ),
+            ..._silenceSignalDecision(trial.id),
           ],
         ),
       );
@@ -552,6 +591,178 @@ void main() {
 
       expect(find.text('Ready for review'), findsOneWidget);
       expect(find.text('No checks need attention'), findsOneWidget);
+    });
+
+    testWidgets(
+        'review_needed item with isAcknowledged=false shows Acknowledge button',
+        (WidgetTester tester) async {
+      final trial = _trial();
+      const items = [
+        TrialCtqItemDto(
+          factorKey: 'plot_completeness',
+          label: 'Plot Completeness',
+          importance: 'critical',
+          status: 'review_needed',
+          evidenceSummary: '4/8 plots.',
+          reason: 'Partial evidence.',
+          source: 'system',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        _wrap(
+          TrialStoryScreen(trial: trial),
+          overrides: [
+            trialStoryProvider(trial.id)
+                .overrideWith((ref) async => const <TrialStoryEvent>[]),
+            trialPurposeProvider(trial.id)
+                .overrideWith((ref) => Stream.value(_purposeDto())),
+            trialEvidenceArcProvider(trial.id)
+                .overrideWith((ref) async => _arcDto()),
+            trialCriticalToQualityProvider(trial.id).overrideWith(
+              (ref) async => _ctqDto(
+                status: 'review_needed',
+                review: 1,
+                items: items,
+              ),
+            ),
+            ..._silenceSignalDecision(trial.id),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Acknowledge →'), findsOneWidget);
+    });
+
+    testWidgets(
+        'review_needed item with isAcknowledged=true shows badge not button',
+        (WidgetTester tester) async {
+      final trial = _trial();
+      final ack = CtqFactorAcknowledgmentDto(
+        id: 1,
+        factorKey: 'plot_completeness',
+        acknowledgedAt: DateTime(2026, 5, 1),
+        actorName: null,
+        reason: 'Three plots excluded per protocol amendment.',
+        factorStatusAtAcknowledgment: 'review_needed',
+      );
+      final items = [
+        TrialCtqItemDto(
+          factorKey: 'plot_completeness',
+          label: 'Plot Completeness',
+          importance: 'critical',
+          status: 'review_needed',
+          evidenceSummary: '4/8 plots.',
+          reason: 'Partial evidence.',
+          source: 'system',
+          isAcknowledged: true,
+          latestAcknowledgment: ack,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        _wrap(
+          TrialStoryScreen(trial: trial),
+          overrides: [
+            trialStoryProvider(trial.id)
+                .overrideWith((ref) async => const <TrialStoryEvent>[]),
+            trialPurposeProvider(trial.id)
+                .overrideWith((ref) => Stream.value(_purposeDto())),
+            trialEvidenceArcProvider(trial.id)
+                .overrideWith((ref) async => _arcDto()),
+            trialCriticalToQualityProvider(trial.id).overrideWith(
+              (ref) async => _ctqDto(
+                status: 'review_needed',
+                review: 1,
+                items: items,
+              ),
+            ),
+            ..._silenceSignalDecision(trial.id),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Acknowledge →'), findsNothing);
+      expect(find.textContaining('Acknowledged'), findsOneWidget);
+    });
+
+    testWidgets(
+        'hasAnyResearcherReasoning=true shows Decisions and reasoning section',
+        (WidgetTester tester) async {
+      final trial = _trial();
+
+      await tester.pumpWidget(
+        _wrap(
+          TrialStoryScreen(trial: trial),
+          overrides: [
+            trialStoryProvider(trial.id)
+                .overrideWith((ref) async => const <TrialStoryEvent>[]),
+            trialPurposeProvider(trial.id)
+                .overrideWith((ref) => Stream.value(_purposeDto())),
+            trialEvidenceArcProvider(trial.id)
+                .overrideWith((ref) async => _arcDto()),
+            trialCriticalToQualityProvider(trial.id)
+                .overrideWith((ref) async => _ctqDto()),
+            openSignalsForTrialProvider(trial.id).overrideWith(
+              (ref) async => const <Signal>[],
+            ),
+            trialDecisionSummaryProvider(trial.id).overrideWith(
+              (ref) async => TrialDecisionSummaryDto(
+                trialId: trial.id,
+                signalDecisions: const [],
+                ctqAcknowledgments: [
+                  CtqFactorAcknowledgmentDto(
+                    id: 1,
+                    factorKey: 'plot_completeness',
+                    acknowledgedAt: DateTime(2026, 5, 1),
+                    actorName: 'Dr. Reed',
+                    reason: 'Protocol excludes three marginal plots.',
+                    factorStatusAtAcknowledgment: 'review_needed',
+                  ),
+                ],
+                hasAnyResearcherReasoning: true,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('DECISIONS AND REASONING'), findsOneWidget);
+      expect(find.textContaining('Protocol excludes three marginal plots.'),
+          findsOneWidget);
+    });
+
+    testWidgets(
+        'hasAnyResearcherReasoning=false hides Decisions and reasoning section',
+        (WidgetTester tester) async {
+      final trial = _trial();
+
+      await tester.pumpWidget(
+        _wrap(
+          TrialStoryScreen(trial: trial),
+          overrides: [
+            trialStoryProvider(trial.id)
+                .overrideWith((ref) async => const <TrialStoryEvent>[]),
+            trialPurposeProvider(trial.id)
+                .overrideWith((ref) => Stream.value(_purposeDto())),
+            trialEvidenceArcProvider(trial.id)
+                .overrideWith((ref) async => _arcDto()),
+            trialCriticalToQualityProvider(trial.id)
+                .overrideWith((ref) async => _ctqDto()),
+            ..._silenceSignalDecision(trial.id),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('DECISIONS AND REASONING'), findsNothing);
     });
   });
 }
