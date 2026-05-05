@@ -128,6 +128,8 @@ import '../domain/trial_cognition/trial_ctq_dto.dart';
 import '../domain/trial_cognition/trial_ctq_evaluator.dart';
 import '../domain/trial_cognition/trial_coherence_dto.dart';
 import '../domain/trial_cognition/trial_coherence_evaluator.dart';
+import '../domain/trial_cognition/trial_interpretation_risk_dto.dart';
+import '../domain/trial_cognition/trial_interpretation_risk_evaluator.dart';
 import '../domain/trial_cognition/trial_decision_summary_dto.dart';
 import '../domain/trial_cognition/mode_c_revelation_model.dart';
 
@@ -2257,6 +2259,23 @@ final trialCoherenceProvider =
     db: db,
     trialId: trialId,
     signalRepo: signalRepo,
+  );
+});
+
+/// Five cross-factor risk factors that surface interpretation hazards:
+/// data variability (CV), untreated check pressure, application timing
+/// deviation (from coherence provider), primary endpoint completeness,
+/// and rater consistency.
+final trialInterpretationRiskProvider =
+    FutureProvider.autoDispose.family<TrialInterpretationRiskDto, int>(
+        (ref, trialId) async {
+  final db = ref.watch(databaseProvider);
+  final coherenceDto =
+      await ref.watch(trialCoherenceProvider(trialId).future);
+  return computeTrialInterpretationRiskDto(
+    db: db,
+    trialId: trialId,
+    coherenceDto: coherenceDto,
   );
 });
 
