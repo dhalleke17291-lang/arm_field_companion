@@ -43,6 +43,7 @@ Generated*.xcconfig
 
 # Android build
 android/.gradle/
+android/.kotlin/
 /android/app/debug
 /android/app/profile
 /android/app/release
