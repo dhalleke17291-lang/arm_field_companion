@@ -1,4 +1,5 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/core/providers.dart';
 import 'package:arm_field_companion/data/repositories/ctq_factor_definition_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_purpose_repository.dart';
 import 'package:arm_field_companion/domain/trial_cognition/biological_window_profiles.dart';
@@ -7,6 +8,7 @@ import 'package:arm_field_companion/domain/trial_cognition/trial_ctq_evaluator.d
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -782,5 +784,203 @@ void main() {
     );
     expect(blocked.isBlocked, true);
     expect(blocked.needsReview, false);
+  });
+
+  // ── Reason text quality ───────────────────────────────────────────────────
+
+  group('RQ: reason text quality', () {
+    test('RQ-GPS-1: no ratings → GPS reason mentions evaluates once ratings exist',
+        () async {
+      final ctx = await makeSeededTrial();
+      final dto = await evaluate(ctx.trialId);
+      final item = factorItem(dto, 'gps_evidence')!;
+      expect(item.status, 'unknown');
+      expect(item.reason, contains('evaluates once ratings exist'));
+    });
+
+    test(
+        'RQ-GPS-2: ratings with GPS → reason mentions plot provenance confirmed',
+        () async {
+      final ctx = await makeSeededTrial();
+      final plotPk = await makePlot(ctx.trialId);
+      final sessionId = await makeSession(ctx.trialId);
+      final assessmentId = await makeAssessment(ctx.trialId);
+      await makeRating(ctx.trialId, plotPk, sessionId, assessmentId,
+          lat: 51.5074, lng: -0.1278);
+      final dto = await evaluate(ctx.trialId);
+      final item = factorItem(dto, 'gps_evidence')!;
+      expect(item.status, 'satisfied');
+      expect(item.reason, contains('plot provenance confirmed'));
+    });
+
+    test(
+        'RQ-GPS-3: ratings without GPS → reason mentions plot location provenance',
+        () async {
+      final ctx = await makeSeededTrial();
+      final plotPk = await makePlot(ctx.trialId);
+      final sessionId = await makeSession(ctx.trialId);
+      final assessmentId = await makeAssessment(ctx.trialId);
+      await makeRating(ctx.trialId, plotPk, sessionId, assessmentId);
+      final dto = await evaluate(ctx.trialId);
+      final item = factorItem(dto, 'gps_evidence')!;
+      expect(item.status, 'missing');
+      expect(item.reason, contains('plot location provenance'));
+    });
+
+    test(
+        'RQ-CV-1: high-CV assessment → reason includes numeric CV value as X.Y%',
+        () async {
+      final ctx = await makeSeededTrial();
+      final sessionId = await makeSession(ctx.trialId);
+      final assessmentId = await makeAssessment(ctx.trialId);
+      // [1.0, 1.0, 200.0] → CV ≈ 171%
+      for (final v in [1.0, 1.0, 200.0]) {
+        final plotPk = await makePlot(ctx.trialId);
+        await makeRating(ctx.trialId, plotPk, sessionId, assessmentId,
+            numericValue: v);
+      }
+      final dto = await evaluate(ctx.trialId);
+      final item = factorItem(dto, 'data_variance')!;
+      expect(item.status, 'review_needed');
+      expect(item.reason, matches(RegExp(r'\d+\.\d+%')));
+    });
+
+    test(
+        'RQ-CHK-1: satisfied untreated check → reason includes rep count and mean',
+        () async {
+      final ctx = await makeSeededTrial();
+      final checkId = await makeCheckTreatment(ctx.trialId);
+      final plotPk = await makePlot(ctx.trialId, treatmentId: checkId);
+      final sessionId = await makeSession(ctx.trialId);
+      final assessmentId = await makeAssessment(ctx.trialId);
+      await makeRating(ctx.trialId, plotPk, sessionId, assessmentId,
+          numericValue: 30.0);
+      final dto = await evaluate(ctx.trialId);
+      final item = factorItem(dto, 'untreated_check_pressure')!;
+      expect(item.status, 'satisfied');
+      expect(item.reason, contains('1 rep'));
+      expect(item.reason, contains('mean'));
+    });
+
+    test('RQ-UNK-1: disease_pressure reason mentions application events', () async {
+      final ctx = await makeSeededTrial();
+      final dto = await evaluate(ctx.trialId);
+      final item = factorItem(dto, 'disease_pressure')!;
+      expect(item.status, 'unknown');
+      expect(item.reason, contains('application events recorded'));
+    });
+
+    test('RQ-UNK-2: crop_stage reason mentions Intent not confirmed', () async {
+      final ctx = await makeSeededTrial();
+      final dto = await evaluate(ctx.trialId);
+      final item = factorItem(dto, 'crop_stage')!;
+      expect(item.status, 'unknown');
+      expect(item.reason, contains('Intent not confirmed'));
+    });
+
+    test('RQ-UNK-3: rainfall_after_application reason mentions weather records',
+        () async {
+      final ctx = await makeSeededTrial();
+      final dto = await evaluate(ctx.trialId);
+      final item = factorItem(dto, 'rainfall_after_application')!;
+      expect(item.status, 'unknown');
+      expect(item.reason, contains('weather records'));
+    });
+  });
+
+  // ── CTQ refresh — evaluator reads fresh DB state ──────────────────────────
+  //
+  // These tests confirm that (a) the evaluator always reads the current DB
+  // state on each call, and (b) the Riverpod provider exposes updated data
+  // after explicit invalidation — validating the fix that adds
+  // ref.invalidate(trialCriticalToQualityProvider) to save paths.
+
+  group('CTQ-R: refresh after data saves', () {
+    test(
+        'CTQ-R1: application_timing transitions from missing to satisfied after application inserted',
+        () async {
+      final ctx = await makeSeededTrial();
+      await makeTreatment(ctx.trialId);
+
+      final before = await evaluate(ctx.trialId);
+      expect(factorItem(before, 'application_timing')?.status, 'missing',
+          reason: 'treatment present but no application yet');
+
+      await makeApplication(ctx.trialId);
+
+      final after = await evaluate(ctx.trialId);
+      // No pesticideCategory on treatment → evaluateBbchTiming returns null → satisfied
+      expect(factorItem(after, 'application_timing')?.status, 'satisfied');
+    });
+
+    test(
+        'CTQ-R2: rating_window transitions from missing to satisfied after RECORDED rating inserted',
+        () async {
+      final ctx = await makeSeededTrial();
+      final plotPk = await makePlot(ctx.trialId);
+      final sessionId = await makeSession(ctx.trialId);
+      final assessmentId = await makeAssessment(ctx.trialId);
+
+      final before = await evaluate(ctx.trialId);
+      expect(factorItem(before, 'rating_window')?.status, 'missing',
+          reason: 'no ratings yet');
+
+      // Default insert: resultStatus='RECORDED', isCurrent=true, isDeleted=false
+      await makeRating(ctx.trialId, plotPk, sessionId, assessmentId);
+
+      final after = await evaluate(ctx.trialId);
+      expect(factorItem(after, 'rating_window')?.status, 'satisfied');
+    });
+
+    test(
+        'CTQ-R3: application_timing transitions from review_needed to satisfied after BBCH recorded',
+        () async {
+      final ctx = await makeSeededTrial();
+      final tid = await makeTreatment(ctx.trialId);
+      // pesticideCategory set → evaluateBbchTiming returns a result → hasBbch check applies
+      await makeTreatmentComponent(ctx.trialId, tid,
+          pesticideCategory: 'herbicide');
+
+      await makeApplication(ctx.trialId); // no BBCH
+
+      final before = await evaluate(ctx.trialId);
+      expect(factorItem(before, 'application_timing')?.status, 'review_needed',
+          reason: 'pesticideCategory set but BBCH not captured');
+
+      // Simulate update: replace with application that has BBCH
+      await (db.delete(db.trialApplicationEvents)
+            ..where((a) => a.trialId.equals(ctx.trialId)))
+          .go();
+      await makeApplicationWithBbch(ctx.trialId, bbch: 30);
+
+      final after = await evaluate(ctx.trialId);
+      // BBCH present, no crop window profile configured → satisfied
+      expect(factorItem(after, 'application_timing')?.status, 'satisfied');
+    });
+
+    test(
+        'CTQ-R4: ProviderContainer returns updated application_timing after invalidation',
+        () async {
+      final ctx = await makeSeededTrial();
+      await makeTreatment(ctx.trialId);
+
+      final container = ProviderContainer(
+        overrides: [databaseProvider.overrideWithValue(db)],
+      );
+      addTearDown(container.dispose);
+
+      // First read: no application → missing
+      final dto1 = await container
+          .read(trialCriticalToQualityProvider(ctx.trialId).future);
+      expect(factorItem(dto1, 'application_timing')?.status, 'missing');
+
+      // Insert application then invalidate — provider must re-query DB
+      await makeApplication(ctx.trialId);
+      container.invalidate(trialCriticalToQualityProvider(ctx.trialId));
+
+      final dto2 = await container
+          .read(trialCriticalToQualityProvider(ctx.trialId).future);
+      expect(factorItem(dto2, 'application_timing')?.status, 'satisfied');
+    });
   });
 }

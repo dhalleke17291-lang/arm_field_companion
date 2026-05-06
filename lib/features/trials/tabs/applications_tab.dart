@@ -11,6 +11,8 @@ import '../../../core/connectivity/gps_service.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../domain/application_deviation.dart';
+import '../../../shared/layout/responsive_layout.dart';
+import '../../../domain/trial_cognition/environmental_window_evaluator.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import 'application_assistant_screen.dart';
 import 'application_sheet_content.dart';
@@ -40,6 +42,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
   Future<void> _onApplicationDeleted(WidgetRef ref, String eventId) async {
     await ref.read(applicationRepositoryProvider).deleteApplication(eventId);
     ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
+    ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
     await _invalidateSessionTimingForTrialSessions(ref, widget.trial.id);
   }
 
@@ -50,6 +53,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
   }) async {
     await ref.read(applicationRepositoryProvider).deleteApplication(eventId);
     ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
+    ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
     await _invalidateSessionTimingForTrialSessions(ref, widget.trial.id);
     if (sheetContext.mounted) Navigator.pop(sheetContext);
   }
@@ -165,34 +169,36 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
   Widget build(BuildContext context) {
     final applicationsAsync =
         ref.watch(trialApplicationsForTrialProvider(widget.trial.id));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(
-          child: applicationsAsync.when(
-            loading: () => const AppLoadingView(),
-            error: (e, st) => AppErrorView(
-              error: e,
-              stackTrace: st,
-              onRetry: () => ref.invalidate(
-                  trialApplicationsForTrialProvider(widget.trial.id)),
+    return ResponsiveBody(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: applicationsAsync.when(
+              loading: () => const AppLoadingView(),
+              error: (e, st) => AppErrorView(
+                error: e,
+                stackTrace: st,
+                onRetry: () => ref.invalidate(
+                    trialApplicationsForTrialProvider(widget.trial.id)),
+              ),
+              data: (list) {
+                final sorted = _sorted(list);
+                if (sorted.isEmpty) {
+                  return _buildEmpty(context, ref);
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _applicationsSectionHeader(context, count: sorted.length),
+                    Expanded(child: _buildList(context, ref, sorted)),
+                  ],
+                );
+              },
             ),
-            data: (list) {
-              final sorted = _sorted(list);
-              if (sorted.isEmpty) {
-                return _buildEmpty(context, ref);
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _applicationsSectionHeader(context, count: sorted.length),
-                  Expanded(child: _buildList(context, ref, sorted)),
-                ],
-              );
-            },
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -397,7 +403,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                 ),
               ],
 
-              // Weather line.
+              // Weather line (recorded at application: temp, humidity, wind).
               if (weatherParts.isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Row(
@@ -420,6 +426,10 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                   ],
                 ),
               ],
+
+              // Environmental window (A3 pre/post windows).
+              const SizedBox(height: 2),
+              _buildEnvWindowLine(ref, e, isPending),
 
               const SizedBox(height: 6),
 
@@ -697,6 +707,7 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
       }
       unawaited(_captureApplicationWeatherAndGps(e.id, widget.trial.id, appliedAt));
       ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
+      ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
       await _invalidateSessionTimingForTrialSessions(ref, widget.trial.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -736,6 +747,74 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
     } catch (_) {
       // Never propagate — GPS/weather must not affect the apply action.
     }
+  }
+
+  Widget _buildEnvWindowLine(
+    WidgetRef ref,
+    TrialApplicationEvent e,
+    bool isPending,
+  ) {
+    if (isPending) {
+      return const Text(
+        'Environmental window available after application is confirmed.',
+        style: TextStyle(
+          fontSize: 11,
+          height: 1.2,
+          color: AppDesignTokens.secondaryText,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+
+    final request = ApplicationEnvironmentalRequest(
+      trialId: widget.trial.id,
+      applicationEventId: e.id,
+    );
+    final ctxAsync = ref.watch(applicationEnvironmentalContextProvider(request));
+
+    return ctxAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (ctx) {
+        if (ctx.isUnavailable) {
+          return const Text(
+            'Environmental window unavailable.',
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.2,
+              color: AppDesignTokens.secondaryText,
+            ),
+          );
+        }
+        final pre = ctx.preWindow;
+        final post = ctx.postWindow;
+        final preStr = pre.recordCount == 0
+            ? 'no records'
+            : '${pre.totalPrecipitationMm?.toStringAsFixed(1) ?? '—'} mm';
+        final postStr = post.recordCount == 0
+            ? 'no records'
+            : '${post.totalPrecipitationMm?.toStringAsFixed(1) ?? '—'} mm';
+        return Row(
+          children: [
+            const Icon(Icons.water_drop_outlined,
+                size: 12, color: AppDesignTokens.secondaryText),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                '72h pre: $preStr · 48h post: $postStr',
+                style: const TextStyle(
+                  fontSize: 11,
+                  height: 1.2,
+                  color: AppDesignTokens.secondaryText,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildList(
@@ -835,14 +914,18 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
           final sheetH = maxH <= 0
               ? mq.size.height * 0.7
               : (maxH * 0.92).clamp(280.0, maxH);
+          final rl = ResponsiveLayout.of(ctx);
+          final maxW = rl.modalSheetMaxWidth;
 
           return Padding(
             padding: EdgeInsets.only(bottom: insetBottom),
             child: Align(
               alignment: Alignment.bottomCenter,
-              child: SizedBox(
-                height: sheetH,
-                width: mq.size.width,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: sheetH,
+                  maxWidth: maxW.isInfinite ? double.infinity : maxW,
+                ),
                 child: ApplicationSheetContent(
                   trial: widget.trial,
                   existing: existing,
@@ -859,6 +942,8 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
                   onSaved: () {
                     ref.invalidate(
                         trialApplicationsForTrialProvider(widget.trial.id));
+                    ref.invalidate(
+                        trialCriticalToQualityProvider(widget.trial.id));
                     unawaited(
                         _invalidateSessionTimingForTrialSessions(
                             ref, widget.trial.id));

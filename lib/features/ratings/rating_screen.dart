@@ -28,6 +28,7 @@ import '../../domain/ratings/assessment_scale_resolver.dart';
 import '../../domain/signals/signal_providers.dart';
 import '../../domain/signals/signal_writers/scale_violation_writer.dart';
 import '../../domain/signals/signal_writers/timing_window_violation_writer.dart';
+import '../../shared/layout/responsive_layout.dart';
 import '../photos/photo_filename_helper.dart';
 import '../photos/photo_view_screen.dart';
 import '../photos/usecases/save_photo_usecase.dart';
@@ -714,14 +715,24 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                     ),
                   ),
                 Expanded(
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.paddingOf(context).bottom + 88,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final rl =
+                          ResponsiveLayout(constraints.maxWidth);
+                      final bottomPad =
+                          MediaQuery.paddingOf(context).bottom + 88;
+
+                      Widget scrollColumn(List<Widget> children) =>
+                          SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: EdgeInsets.only(bottom: bottomPad),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: children,
+                            ),
+                          );
+
+                      final leftChildren = <Widget>[
                         _buildContextCard(context),
                         _buildNeighborAndTreatmentStrip(
                           context,
@@ -736,10 +747,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                           nonRecordedAssessmentIds,
                           definitions,
                         ),
+                      ];
+                      final rightChildren = <Widget>[
                         existingRatingAsync.when(
                           loading: () => const Padding(
                             padding: EdgeInsets.all(48),
-                            child: Center(child: CircularProgressIndicator()),
+                            child:
+                                Center(child: CircularProgressIndicator()),
                           ),
                           error: (e, st) => Padding(
                             padding: const EdgeInsets.all(24),
@@ -749,8 +763,60 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                               _buildRatingArea(context, existing),
                         ),
                         _buildPhotoStrip(context),
-                      ],
-                    ),
+                      ];
+
+                      final columnChildren = <Widget>[
+                        ...leftChildren,
+                        ...rightChildren,
+                      ];
+
+                      if (!rl.shouldUseTwoPaneLayout) {
+                        return scrollColumn(columnChildren);
+                      }
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 42,
+                            child: SingleChildScrollView(
+                              physics:
+                                  const AlwaysScrollableScrollPhysics(),
+                              padding: EdgeInsets.only(bottom: bottomPad),
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.stretch,
+                                children: leftChildren,
+                              ),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.only(
+                              top: AppDesignTokens.spacing8,
+                              bottom: AppDesignTokens.spacing8,
+                            ),
+                            child: VerticalDivider(
+                              width: 1,
+                              thickness: 1,
+                              color: AppDesignTokens.divider,
+                            ),
+                          ),
+                          Expanded(
+                            flex: 58,
+                            child: SingleChildScrollView(
+                              physics:
+                                  const AlwaysScrollableScrollPhysics(),
+                              padding: EdgeInsets.only(bottom: bottomPad),
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.stretch,
+                                children: rightChildren,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 _buildBottomBar(context),
@@ -2595,6 +2661,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     );
     ref.invalidate(sessionRatingsProvider(widget.session.id));
     ref.invalidate(ratedPlotPksProvider(widget.session.id));
+    ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
   }
 
   Future<void> _showVoidRatingDialog(
@@ -4509,6 +4576,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     if (result.isSuccess) {
       ref.invalidate(sessionRatingsProvider(widget.session.id));
       ref.invalidate(ratedPlotPksProvider(widget.session.id));
+      ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
       // Assessment consistency check (non-blocking, SnackBar only).
       _runAssessmentConsistencyCheck();
       // _taIdForCurrentAssessment() is null when the provider is still loading;
@@ -4978,6 +5046,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     if (result.success) {
       ref.invalidate(sessionRatingsProvider(widget.session.id));
       ref.invalidate(ratedPlotPksProvider(widget.session.id));
+      ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
     } else {
       if (result.errorMessage == kClosedSessionBlockedMessage) {
         ref.read(diagnosticsStoreProvider).recordError(
