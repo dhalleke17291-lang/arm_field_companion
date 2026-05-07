@@ -225,7 +225,8 @@ final armImportSnapshotServiceProvider =
     Provider<ArmImportSnapshotService>((ref) => ArmImportSnapshotService());
 
 final compatibilityProfileBuilderProvider =
-    Provider<CompatibilityProfileBuilder>((ref) => CompatibilityProfileBuilder());
+    Provider<CompatibilityProfileBuilder>(
+        (ref) => CompatibilityProfileBuilder());
 
 final armImportReportBuilderProvider =
     Provider<ArmImportReportBuilder>((ref) => ArmImportReportBuilder());
@@ -243,9 +244,7 @@ final armTrialMetadataRepositoryProvider =
 /// ARM shell-link row for [trialId]; null when the trial is standalone (no row).
 final armTrialMetadataStreamProvider =
     StreamProvider.family<ArmTrialMetadataData?, int>((ref, trialId) {
-  return ref
-      .watch(armTrialMetadataRepositoryProvider)
-      .watchForTrial(trialId);
+  return ref.watch(armTrialMetadataRepositoryProvider).watchForTrial(trialId);
 });
 
 /// Persistence for per-treatment ARM coding (Phase 0b-treatments).
@@ -346,9 +345,8 @@ final armSessionMetadataMapForTrialProvider =
 /// never receive AAM rows. See docs/ARM_SEPARATION.md.
 final armTreatmentMetadataMapForTrialProvider =
     FutureProvider.family<Map<int, ArmTreatmentMetadataData>, int>(
-  (ref, trialId) async => ref
-      .watch(armTreatmentMetadataRepositoryProvider)
-      .getMapForTrial(trialId),
+  (ref, trialId) async =>
+      ref.watch(armTreatmentMetadataRepositoryProvider).getMapForTrial(trialId),
 );
 
 final importArmRatingShellUseCaseProvider =
@@ -508,8 +506,8 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
     };
 
     // Session date lookup for ARM trials (no-op for standalone).
-    final sessionMetaMap = await ref
-        .read(armSessionMetadataMapForTrialProvider(trialId).future);
+    final sessionMetaMap =
+        await ref.read(armSessionMetadataMapForTrialProvider(trialId).future);
 
     final exportRepo = ref.read(exportRepositoryProvider);
     final rawRows = await exportRepo.buildTrialExportRows(trialId: trialId);
@@ -533,8 +531,9 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
     final analyzablePlots = plots.where(isAnalyzablePlot).toList();
     final totalPlots = analyzablePlots.length;
     final analyzablePlotLabels = analyzablePlots.map((p) => p.plotId).toSet();
-    final filteredRatingRows =
-        ratingRows.where((r) => analyzablePlotLabels.contains(r.plotId)).toList();
+    final filteredRatingRows = ratingRows
+        .where((r) => analyzablePlotLabels.contains(r.plotId))
+        .toList();
     final allReps = analyzablePlots.map((p) => p.rep).whereType<int>().toSet();
 
     final result = <int, List<AssessmentStatistics>>{};
@@ -575,8 +574,7 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
         for (final sid in sessionIds)
           computeAssessmentStatistics(
             filteredRatingRows
-                .where(
-                    (r) => r.assessmentName == name && r.sessionId == sid)
+                .where((r) => r.assessmentName == name && r.sessionId == sid)
                 .toList(),
             name,
             ta.id,
@@ -686,15 +684,14 @@ final sessionRepositoryProvider = Provider<SessionRepository>((ref) {
 });
 
 /// Latest non-deleted session row by id (e.g. after BBCH update).
-final sessionByIdProvider = FutureProvider.autoDispose.family<Session?, int>(
-    (ref, sessionId) {
+final sessionByIdProvider =
+    FutureProvider.autoDispose.family<Session?, int>((ref, sessionId) {
   return ref.watch(sessionRepositoryProvider).getSessionById(sessionId);
 });
 
 /// DAS/DAT from seeding + applied applications; BBCH from session.
-final sessionTimingContextProvider =
-    FutureProvider.autoDispose.family<SessionTimingContext, int>(
-        (ref, sessionId) async {
+final sessionTimingContextProvider = FutureProvider.autoDispose
+    .family<SessionTimingContext, int>((ref, sessionId) async {
   final sessionRepo = ref.watch(sessionRepositoryProvider);
   final session = await sessionRepo.getSessionById(sessionId);
   if (session == null) {
@@ -749,9 +746,10 @@ final trialEnvironmentalRepositoryProvider =
 
 /// Latest weather snapshot for a rating session (one row per session).
 final weatherSnapshotForSessionProvider =
-    StreamProvider.autoDispose
-      .family<WeatherSnapshot?, int>((ref, sessionId) {
-  return ref.watch(weatherSnapshotRepositoryProvider).watchWeatherSnapshotForParent(
+    StreamProvider.autoDispose.family<WeatherSnapshot?, int>((ref, sessionId) {
+  return ref
+      .watch(weatherSnapshotRepositoryProvider)
+      .watchWeatherSnapshotForParent(
         kWeatherParentTypeRatingSession,
         sessionId,
       );
@@ -789,7 +787,8 @@ final todayActivityProvider = StreamProvider.autoDispose
     .family<List<ActivityEvent>, String>((ref, dateLocal) {
   final db = ref.watch(databaseProvider);
   return ref.watch(currentUserIdProvider).when(
-        data: (userId) => mergeTodayActivityTableWatches(db).asyncMap((_) async {
+        data: (userId) =>
+            mergeTodayActivityTableWatches(db).asyncMap((_) async {
           final repo = ref.read(todayActivityRepositoryProvider);
           return repo.getActivityForDate(dateLocal, currentUserId: userId);
         }),
@@ -804,15 +803,17 @@ final workLogDatesProvider =
         (ref) {
   final db = ref.watch(databaseProvider);
   return ref.watch(currentUserIdProvider).when(
-        data: (userId) => mergeTodayActivityTableWatches(db).asyncMap((_) async {
+        data: (userId) =>
+            mergeTodayActivityTableWatches(db).asyncMap((_) async {
           final repo = ref.read(todayActivityRepositoryProvider);
           return repo.getDatesWithActivity(currentUserId: userId);
         }),
         loading: () => Stream.value([]),
-        error: (e, st) => Stream<List<({String dateLocal, int eventCount})>>.error(
-              e,
-              st,
-            ),
+        error: (e, st) =>
+            Stream<List<({String dateLocal, int eventCount})>>.error(
+          e,
+          st,
+        ),
       );
 });
 
@@ -1076,7 +1077,8 @@ final protocolTrialsProvider = StreamProvider((ref) {
 /// Current trial by id (e.g. for trial detail). Updates when the trial row changes.
 final trialProvider = StreamProvider.autoDispose.family<Trial?, int>((ref, id) {
   final db = ref.watch(databaseProvider);
-  return (db.select(db.trials)..where((t) => t.id.equals(id))).watchSingleOrNull();
+  return (db.select(db.trials)..where((t) => t.id.equals(id)))
+      .watchSingleOrNull();
 });
 
 /// Trial setup fields (protocol, location, plot dimensions, soil, etc.). Watch for setup screen.
@@ -1128,8 +1130,7 @@ final trialHasSessionDataProvider =
 });
 
 /// Soft-deleted trials (Recovery). Newest [deletedAt] first.
-final deletedTrialsProvider =
-    FutureProvider.autoDispose<List<Trial>>((ref) {
+final deletedTrialsProvider = FutureProvider.autoDispose<List<Trial>>((ref) {
   return ref.watch(trialRepositoryProvider).getDeletedTrials();
 });
 
@@ -1159,8 +1160,8 @@ final deletedPlotsForTrialRecoveryProvider =
 });
 
 /// Seeding records for a trial (for Seeding tab).
-final seedingRecordsForTrialProvider = StreamProvider.autoDispose
-    .family<List<SeedingRecord>, int>((ref, trialId) {
+final seedingRecordsForTrialProvider =
+    StreamProvider.autoDispose.family<List<SeedingRecord>, int>((ref, trialId) {
   final db = ref.watch(databaseProvider);
   return (db.select(db.seedingRecords)
         ..where((t) => t.trialId.equals(trialId))
@@ -1244,8 +1245,8 @@ final ratedPlotPksProvider =
       .asyncMap((ratings) async {
     if (ratings.isEmpty) return <int>{};
     final pks = ratings.map((r) => r.plotPk).toSet();
-    final plotRows = await (db.select(db.plots)..where((p) => p.id.isIn(pks)))
-        .get();
+    final plotRows =
+        await (db.select(db.plots)..where((p) => p.id.isIn(pks))).get();
     final guardPks =
         plotRows.where((p) => p.isGuardRow).map((p) => p.id).toSet();
     return pks.difference(guardPks);
@@ -1318,10 +1319,12 @@ final plotPksWithCorrectionsForSessionProvider =
     StreamProvider.autoDispose.family<Set<int>, int>((ref, sessionId) {
   final db = ref.watch(databaseProvider);
   return (db.select(db.ratingCorrections)
-        ..where((c) =>
-            c.sessionId.equals(sessionId) & c.plotPk.isNotNull()))
+        ..where((c) => c.sessionId.equals(sessionId) & c.plotPk.isNotNull()))
       .watch()
-      .map((rows) => {for (final c in rows) if (c.plotPk != null) c.plotPk!});
+      .map((rows) => {
+            for (final c in rows)
+              if (c.plotPk != null) c.plotPk!
+          });
 });
 
 // ===== Export (CSV) =====
@@ -1572,8 +1575,8 @@ final armExportPreflightFutureProvider = FutureProvider.autoDispose
 final trialReadinessProvider = StreamProvider.autoDispose
     .family<TrialReadinessReport, int>((ref, trialId) {
   final db = ref.watch(databaseProvider);
-  return mergeTrialOperationalTableWatches(db, trialId).asyncMap((_) =>
-      TrialReadinessService().runChecks(trialId.toString(), ref));
+  return mergeTrialOperationalTableWatches(db, trialId).asyncMap(
+      (_) => TrialReadinessService().runChecks(trialId.toString(), ref));
 });
 
 /// Merged [DiagnosticFinding]s for trial-scoped diagnostics UI (readiness sheet).
@@ -1582,8 +1585,8 @@ final trialReadinessProvider = StreamProvider.autoDispose
 /// findings from [trialExportDiagnosticsMapProvider] (validation + ARM
 /// confidence from the most recent export attempt). Snapshots are persisted in
 /// Drift and hydrated on startup.
-final trialDiagnosticsProvider = Provider.autoDispose
-    .family<List<DiagnosticFinding>, int>((ref, trialId) {
+final trialDiagnosticsProvider =
+    Provider.autoDispose.family<List<DiagnosticFinding>, int>((ref, trialId) {
   final readinessAsync = ref.watch(trialReadinessProvider(trialId));
   final readinessFindings = readinessAsync.maybeWhen(
     data: (report) => report.checks
@@ -1675,9 +1678,8 @@ final photosForPlotProvider =
 });
 
 /// Photos for a plot in a session (live updates).
-final photosForPlotInSessionProvider =
-    StreamProvider.autoDispose.family<List<Photo>, PhotosForPlotParams>(
-        (ref, params) {
+final photosForPlotInSessionProvider = StreamProvider.autoDispose
+    .family<List<Photo>, PhotosForPlotParams>((ref, params) {
   return ref.watch(photoRepositoryProvider).watchPhotosForPlot(
         trialId: params.trialId,
         plotPk: params.plotPk,
@@ -1830,9 +1832,8 @@ final applicationPlotAssignmentRepositoryProvider =
 });
 
 /// Products (tank mix) for a trial application event; empty stream until event exists.
-final trialApplicationProductsForEventProvider =
-    StreamProvider.autoDispose.family<List<TrialApplicationProduct>, String>(
-        (ref, eventId) {
+final trialApplicationProductsForEventProvider = StreamProvider.autoDispose
+    .family<List<TrialApplicationProduct>, String>((ref, eventId) {
   return ref
       .watch(applicationProductRepositoryProvider)
       .watchProductsForEvent(eventId);
@@ -1950,8 +1951,7 @@ final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
   return service;
 });
 
-final weatherBackfillServiceProvider =
-    Provider<WeatherBackfillService>((ref) {
+final weatherBackfillServiceProvider = Provider<WeatherBackfillService>((ref) {
   return WeatherBackfillService(
     connectivityService: ref.watch(connectivityServiceProvider),
     weatherRepo: ref.watch(weatherSnapshotRepositoryProvider),
@@ -2080,8 +2080,8 @@ final trialInsightsProvider = FutureProvider.autoDispose
     .family<List<TrialInsight>, int>((ref, trialId) async {
   final treatments =
       await ref.watch(treatmentsForTrialProvider(trialId).future);
-  final assessmentPairs = await ref.watch(
-      trialAssessmentsWithDefinitionsForTrialProvider(trialId).future);
+  final assessmentPairs = await ref
+      .watch(trialAssessmentsWithDefinitionsForTrialProvider(trialId).future);
   final assessmentNames = <int, String>{
     for (final pair in assessmentPairs)
       if (pair.$1.legacyAssessmentId != null)
@@ -2095,17 +2095,16 @@ final trialInsightsProvider = FutureProvider.autoDispose
   final assessmentDirections = <int, ResultDirection>{
     for (final pair in assessmentPairs)
       if (pair.$1.legacyAssessmentId != null)
-        pair.$1.legacyAssessmentId!: ResultDirection.fromString(pair.$2.resultDirection),
+        pair.$1.legacyAssessmentId!:
+            ResultDirection.fromString(pair.$2.resultDirection),
   };
   final trial = await ref.watch(trialProvider(trialId).future);
-  return ref
-      .watch(trialIntelligenceServiceProvider)
-      .computeInsights(
-          trialId: trialId,
-          treatments: treatments,
-          assessmentNames: assessmentNames,
-          assessmentDirections: assessmentDirections,
-          trialIsClosed: trial?.status == kTrialStatusClosed);
+  return ref.watch(trialIntelligenceServiceProvider).computeInsights(
+      trialId: trialId,
+      treatments: treatments,
+      assessmentNames: assessmentNames,
+      assessmentDirections: assessmentDirections,
+      trialIsClosed: trial?.status == kTrialStatusClosed);
 });
 
 // ---------------------------------------------------------------------------
@@ -2134,8 +2133,8 @@ final allSessionRatingsForTrialProvider =
 });
 
 /// All weather snapshots for a trial, ordered by recordedAt ascending.
-final weatherSnapshotsForTrialProvider =
-    FutureProvider.autoDispose.family<List<WeatherSnapshot>, int>((ref, trialId) {
+final weatherSnapshotsForTrialProvider = FutureProvider.autoDispose
+    .family<List<WeatherSnapshot>, int>((ref, trialId) {
   return ref
       .watch(weatherSnapshotRepositoryProvider)
       .getWeatherSnapshotsForTrial(trialId);
@@ -2213,11 +2212,18 @@ final trialPurposeProvider =
 });
 
 /// What evidence exists, what is missing, what are the risk flags?
-final trialEvidenceArcProvider =
-    FutureProvider.autoDispose.family<TrialEvidenceArcDto, int>(
-        (ref, trialId) async {
+final trialEvidenceArcProvider = StreamProvider.autoDispose
+    .family<TrialEvidenceArcDto, int>((ref, trialId) {
   final db = ref.watch(databaseProvider);
-  return computeTrialEvidenceArcDto(db, trialId);
+  return mergeTableWatchStreams([
+    (db.select(db.sessions)..where((s) => s.trialId.equals(trialId))).watch(),
+    (db.select(db.ratingRecords)..where((r) => r.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.photos)..where((p) => p.trialId.equals(trialId))).watch(),
+    (db.select(db.evidenceAnchors)..where((a) => a.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.plots)..where((p) => p.trialId.equals(trialId))).watch(),
+  ]).asyncMap((_) => computeTrialEvidenceArcDto(db, trialId));
 });
 
 /// Deterministic CTQ readiness/evidence status.
@@ -2225,105 +2231,260 @@ final trialEvidenceArcProvider =
 /// re-confirms never mix factors from old purpose rows.
 /// Each item is enriched with the latest researcher acknowledgment (if any).
 final trialCriticalToQualityProvider =
-    FutureProvider.autoDispose.family<TrialCtqDto, int>((ref, trialId) async {
+    StreamProvider.autoDispose.family<TrialCtqDto, int>((ref, trialId) {
   final db = ref.watch(databaseProvider);
   final ctqRepo = ref.watch(ctqFactorDefinitionRepositoryProvider);
   final purposeRepo = ref.watch(trialPurposeRepositoryProvider);
 
-  final currentPurpose = await purposeRepo.getCurrentTrialPurpose(trialId);
-  if (currentPurpose == null) {
+  return mergeTableWatchStreams([
+    (db.select(db.trialPurposes)
+          ..where((p) => p.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.ctqFactorDefinitions)
+          ..where((f) => f.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.ctqFactorAcknowledgments)
+          ..where((a) => a.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.treatments)..where((t) => t.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.photos)..where((p) => p.trialId.equals(trialId))).watch(),
+    (db.select(db.ratingRecords)..where((r) => r.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.plots)..where((p) => p.trialId.equals(trialId))).watch(),
+    (db.select(db.signals)..where((s) => s.trialId.equals(trialId))).watch(),
+    (db.select(db.trialApplicationEvents)
+          ..where((a) => a.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.assignments)..where((a) => a.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.treatmentComponents)
+          ..where((c) => c.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.trials)..where((t) => t.id.equals(trialId))).watch(),
+    db.select(db.users).watch(),
+  ]).asyncMap((_) async {
+    final currentPurpose = await purposeRepo.getCurrentTrialPurpose(trialId);
+    if (currentPurpose == null) {
+      return TrialCtqDto(
+        trialId: trialId,
+        ctqItems: const [],
+        blockerCount: 0,
+        warningCount: 0,
+        reviewCount: 0,
+        satisfiedCount: 0,
+        overallStatus: 'unknown',
+      );
+    }
+    var factors =
+        await ctqRepo.watchCtqFactorsForPurpose(currentPurpose.id).first;
+    // Re-seed if existing trials are missing newly added default keys.
+    if (factors.length < kCtqDefaultFactorKeys.length) {
+      await ctqRepo.seedDefaultCtqFactorsForPurpose(
+        trialId: trialId,
+        trialPurposeId: currentPurpose.id,
+      );
+      factors =
+          await ctqRepo.watchCtqFactorsForPurpose(currentPurpose.id).first;
+    }
+    final base = await computeTrialCtqDtoV1(db, trialId, factors);
+    final enriched = await Future.wait(base.ctqItems.map((item) async {
+      final ack = await ctqRepo.getLatestAcknowledgment(
+        trialId: trialId,
+        factorKey: item.factorKey,
+      );
+      if (ack == null) return item;
+      return TrialCtqItemDto(
+        factorKey: item.factorKey,
+        label: item.label,
+        importance: item.importance,
+        status: item.status,
+        evidenceSummary: item.evidenceSummary,
+        reason: item.reason,
+        source: item.source,
+        isAcknowledged: true,
+        latestAcknowledgment: ack,
+      );
+    }));
     return TrialCtqDto(
-      trialId: trialId,
-      ctqItems: const [],
-      blockerCount: 0,
-      warningCount: 0,
-      reviewCount: 0,
-      satisfiedCount: 0,
-      overallStatus: 'unknown',
+      trialId: base.trialId,
+      ctqItems: List.unmodifiable(enriched),
+      blockerCount: base.blockerCount,
+      warningCount: base.warningCount,
+      reviewCount: base.reviewCount,
+      satisfiedCount: base.satisfiedCount,
+      overallStatus: base.overallStatus,
     );
-  }
-  var factors =
-      await ctqRepo.watchCtqFactorsForPurpose(currentPurpose.id).first;
-  // Re-seed if existing trials are missing newly added default keys.
-  if (factors.length < kCtqDefaultFactorKeys.length) {
-    await ctqRepo.seedDefaultCtqFactorsForPurpose(
-      trialId: trialId,
-      trialPurposeId: currentPurpose.id,
-    );
-    factors = await ctqRepo.watchCtqFactorsForPurpose(currentPurpose.id).first;
-  }
-  final base = await computeTrialCtqDtoV1(db, trialId, factors);
-  final enriched = await Future.wait(base.ctqItems.map((item) async {
-    final ack = await ctqRepo.getLatestAcknowledgment(
-      trialId: trialId,
-      factorKey: item.factorKey,
-    );
-    if (ack == null) return item;
-    return TrialCtqItemDto(
-      factorKey: item.factorKey,
-      label: item.label,
-      importance: item.importance,
-      status: item.status,
-      evidenceSummary: item.evidenceSummary,
-      reason: item.reason,
-      source: item.source,
-      isAcknowledged: true,
-      latestAcknowledgment: ack,
-    );
-  }));
-  return TrialCtqDto(
-    trialId: base.trialId,
-    ctqItems: List.unmodifiable(enriched),
-    blockerCount: base.blockerCount,
-    warningCount: base.warningCount,
-    reviewCount: base.reviewCount,
-    satisfiedCount: base.satisfiedCount,
-    overallStatus: base.overallStatus,
-  );
+  });
 });
 
 /// Cross-factor coherence: four deterministic checks that verify whether the
 /// trial's evidence, application timing, replication, and open signals are
 /// internally consistent with the stated claim.
-final trialCoherenceProvider =
-    FutureProvider.autoDispose.family<TrialCoherenceDto, int>(
-        (ref, trialId) async {
+final trialCoherenceProvider = StreamProvider.autoDispose
+    .family<TrialCoherenceDto, int>((ref, trialId) {
   final db = ref.watch(databaseProvider);
   final signalRepo = ref.read(signalRepositoryProvider);
-  return computeTrialCoherenceDto(
-    db: db,
-    trialId: trialId,
-    signalRepo: signalRepo,
-  );
+  return mergeTableWatchStreams([
+    (db.select(db.trialPurposes)
+          ..where((p) => p.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.assessments)..where((a) => a.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.trialApplicationEvents)
+          ..where((a) => a.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.treatments)..where((t) => t.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.treatmentComponents)
+          ..where((c) => c.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.trials)..where((t) => t.id.equals(trialId))).watch(),
+    (db.select(db.assignments)..where((a) => a.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.signals)..where((s) => s.trialId.equals(trialId))).watch(),
+    db.select(db.signalDecisionEvents).watch(),
+    db.select(db.users).watch(),
+  ]).asyncMap((_) => computeTrialCoherenceDto(
+        db: db,
+        trialId: trialId,
+        signalRepo: signalRepo,
+      ));
 });
 
 /// Five cross-factor risk factors that surface interpretation hazards:
 /// data variability (CV), untreated check pressure, application timing
 /// deviation (from coherence provider), primary endpoint completeness,
 /// and rater consistency.
-final trialInterpretationRiskProvider =
-    FutureProvider.autoDispose.family<TrialInterpretationRiskDto, int>(
-        (ref, trialId) async {
+final trialInterpretationRiskProvider = StreamProvider.autoDispose
+    .family<TrialInterpretationRiskDto, int>((ref, trialId) {
   final db = ref.watch(databaseProvider);
-  final coherenceDto =
-      await ref.watch(trialCoherenceProvider(trialId).future);
-  return computeTrialInterpretationRiskDto(
-    db: db,
-    trialId: trialId,
-    coherenceDto: coherenceDto,
+  final signalRepo = ref.read(signalRepositoryProvider);
+  return mergeTableWatchStreams([
+    (db.select(db.trialPurposes)
+          ..where((p) => p.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.assessments)..where((a) => a.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.trialApplicationEvents)
+          ..where((a) => a.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.treatments)..where((t) => t.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.treatmentComponents)
+          ..where((c) => c.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.trials)..where((t) => t.id.equals(trialId))).watch(),
+    (db.select(db.assignments)..where((a) => a.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.signals)..where((s) => s.trialId.equals(trialId))).watch(),
+    (db.select(db.ratingRecords)..where((r) => r.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.plots)..where((p) => p.trialId.equals(trialId))).watch(),
+    db.select(db.signalDecisionEvents).watch(),
+    db.select(db.users).watch(),
+  ]).asyncMap((_) async {
+    final coherenceDto = await computeTrialCoherenceDto(
+      db: db,
+      trialId: trialId,
+      signalRepo: signalRepo,
+    );
+    return computeTrialInterpretationRiskDto(
+      db: db,
+      trialId: trialId,
+      coherenceDto: coherenceDto,
+    );
+  });
+});
+
+/// Provenance metadata derived from a trial's environmental records:
+/// dominant data source, most recent fetch timestamp, overall confidence,
+/// and whether multiple sources are present.
+class EnvironmentalProvenanceDto {
+  const EnvironmentalProvenanceDto({
+    required this.dataSource,
+    required this.fetchedAtMs,
+    required this.overallConfidence,
+    required this.isMultiSource,
+    required this.dominantCount,
+  });
+
+  /// Most common data source value across all records (e.g. 'open_meteo').
+  final String? dataSource;
+
+  /// Epoch milliseconds of the most recently fetched record.
+  final int? fetchedAtMs;
+
+  /// Worst confidence level across all records (measured < estimated < unavailable).
+  final String? overallConfidence;
+
+  /// True when records originate from more than one distinct source.
+  final bool isMultiSource;
+
+  /// Number of records attributed to [dataSource].
+  final int dominantCount;
+}
+
+String? _worseConfidence(String? a, String? b) {
+  const order = ['measured', 'estimated', 'unavailable'];
+  final ai = order.indexOf(a ?? '');
+  final bi = order.indexOf(b ?? '');
+  if (bi == -1) return a;
+  if (ai == -1) return b;
+  return ai > bi ? a : b;
+}
+
+/// Provenance for the environmental data of a trial.
+/// Returns null when no records exist for the trial.
+final trialEnvironmentalProvenanceProvider = FutureProvider.autoDispose
+    .family<EnvironmentalProvenanceDto?, int>((ref, trialId) async {
+  final envRepo = ref.read(trialEnvironmentalRepositoryProvider);
+  final records = await envRepo.getRecordsForTrial(trialId);
+  if (records.isEmpty) return null;
+
+  int? latestFetch;
+  for (final r in records) {
+    if (latestFetch == null || r.fetchedAt > latestFetch) {
+      latestFetch = r.fetchedAt;
+    }
+  }
+
+  final sourceCounts = <String, int>{};
+  for (final r in records) {
+    sourceCounts[r.dataSource] = (sourceCounts[r.dataSource] ?? 0) + 1;
+  }
+
+  String? dominantSource;
+  var dominantCount = 0;
+  for (final entry in sourceCounts.entries) {
+    if (entry.value > dominantCount) {
+      dominantCount = entry.value;
+      dominantSource = entry.key;
+    }
+  }
+
+  String? worstConf;
+  for (final r in records) {
+    worstConf = _worseConfidence(worstConf, r.confidence);
+  }
+
+  return EnvironmentalProvenanceDto(
+    dataSource: dominantSource,
+    fetchedAtMs: latestFetch,
+    overallConfidence: worstConf,
+    isMultiSource: sourceCounts.length > 1,
+    dominantCount: dominantCount,
   );
 });
 
 /// Season-level environmental summary for a trial: total precipitation,
 /// frost events, excessive rainfall events, and data completeness.
-final trialEnvironmentalSummaryProvider =
-    FutureProvider.autoDispose.family<EnvironmentalSeasonSummaryDto, int>(
-        (ref, trialId) async {
+final trialEnvironmentalSummaryProvider = FutureProvider.autoDispose
+    .family<EnvironmentalSeasonSummaryDto, int>((ref, trialId) async {
   final db = ref.watch(databaseProvider);
   final envRepo = ref.read(trialEnvironmentalRepositoryProvider);
 
-  final trial = await (db.select(db.trials)
-        ..where((t) => t.id.equals(trialId)))
+  final trial = await (db.select(db.trials)..where((t) => t.id.equals(trialId)))
       .getSingleOrNull();
   final records = await envRepo.getRecordsForTrial(trialId);
 
@@ -2337,8 +2498,8 @@ final trialEnvironmentalSummaryProvider =
 /// application event. Reads the application date then calls both
 /// window computations against the trial's environmental records.
 final applicationEnvironmentalContextProvider = FutureProvider.autoDispose
-    .family<ApplicationEnvironmentalContextDto, ApplicationEnvironmentalRequest>(
-        (ref, request) async {
+    .family<ApplicationEnvironmentalContextDto,
+        ApplicationEnvironmentalRequest>((ref, request) async {
   final db = ref.watch(databaseProvider);
   final envRepo = ref.read(trialEnvironmentalRepositoryProvider);
 
@@ -2347,20 +2508,53 @@ final applicationEnvironmentalContextProvider = FutureProvider.autoDispose
       .getSingleOrNull();
   final records = await envRepo.getRecordsForTrial(request.trialId);
 
-  final appDate = appEvent?.applicationDate ?? DateTime.now();
+  if (appEvent == null) {
+    return const ApplicationEnvironmentalContextDto(
+      preWindow: EnvironmentalWindowDto(
+        frostFlagPresent: false,
+        excessiveRainfallFlag: false,
+        recordCount: 0,
+        confidence: 'unavailable',
+      ),
+      postWindow: EnvironmentalWindowDto(
+        frostFlagPresent: false,
+        excessiveRainfallFlag: false,
+        recordCount: 0,
+        confidence: 'unavailable',
+      ),
+      unavailableReason: 'application event not found.',
+    );
+  }
+
+  if (appEvent.trialId != request.trialId) {
+    return const ApplicationEnvironmentalContextDto(
+      preWindow: EnvironmentalWindowDto(
+        frostFlagPresent: false,
+        excessiveRainfallFlag: false,
+        recordCount: 0,
+        confidence: 'unavailable',
+      ),
+      postWindow: EnvironmentalWindowDto(
+        frostFlagPresent: false,
+        excessiveRainfallFlag: false,
+        recordCount: 0,
+        confidence: 'unavailable',
+      ),
+      unavailableReason: 'application event does not belong to this trial.',
+    );
+  }
 
   return ApplicationEnvironmentalContextDto(
-    preWindow: computePreApplicationWindow(records, appDate),
-    postWindow: computePostApplicationWindow(records, appDate),
+    preWindow: computePreApplicationWindow(records, appEvent.applicationDate),
+    postWindow: computePostApplicationWindow(records, appEvent.applicationDate),
   );
 });
 
 /// All researcher-authored decisions and CTQ acknowledgments for a trial,
 /// excluding canned system notes. Used by the "Decisions and reasoning"
 /// section in Trial Story.
-final trialDecisionSummaryProvider =
-    FutureProvider.autoDispose.family<TrialDecisionSummaryDto, int>(
-        (ref, trialId) async {
+final trialDecisionSummaryProvider = FutureProvider.autoDispose
+    .family<TrialDecisionSummaryDto, int>((ref, trialId) async {
   final signalRepo = ref.read(signalRepositoryProvider);
   final ctqRepo = ref.read(ctqFactorDefinitionRepositoryProvider);
 
@@ -2372,8 +2566,7 @@ final trialDecisionSummaryProvider =
     trialId: trialId,
     signalDecisions: signalDecisions,
     ctqAcknowledgments: ctqAcks,
-    hasAnyResearcherReasoning:
-        signalDecisions.isNotEmpty || ctqAcks.isNotEmpty,
+    hasAnyResearcherReasoning: signalDecisions.isNotEmpty || ctqAcks.isNotEmpty,
   );
 });
 
@@ -2434,8 +2627,9 @@ TrialPurposeDto _computeTrialPurposeDto(int trialId, TrialPurpose? purpose) {
   }();
 
   // Inferred rows never drive readiness claims without researcher confirmation.
-  final canDrive =
-      !requiresConfirmation && effectiveStatus == 'confirmed' && missing.isEmpty;
+  final canDrive = !requiresConfirmation &&
+      effectiveStatus == 'confirmed' &&
+      missing.isEmpty;
 
   final provenance = requiresConfirmation
       ? 'Inferred from ${purpose.sourceMode.replaceAll('_', ' ')} — pending confirmation.'
@@ -2452,6 +2646,7 @@ TrialPurposeDto _computeTrialPurposeDto(int trialId, TrialPurpose? purpose) {
     primaryEndpoint: endpoint,
     treatmentRoles: purpose.treatmentRoleSummary,
     knownInterpretationFactors: purpose.knownInterpretationFactors,
+    readinessCriteriaSummary: purpose.readinessCriteriaSummary,
     missingIntentFields: List.unmodifiable(missing),
     provenanceSummary: provenance,
     canDriveReadinessClaims: canDrive,
@@ -2460,5 +2655,3 @@ TrialPurposeDto _computeTrialPurposeDto(int trialId, TrialPurpose? purpose) {
     inferredPurpose: inferredPurpose,
   );
 }
-
-

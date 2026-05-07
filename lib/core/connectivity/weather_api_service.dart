@@ -11,6 +11,7 @@ class WeatherApiResult {
     this.windDirection,
     this.cloudCoverPct,
     this.precipitation,
+    this.precipitationMm,
     this.providerName,
   });
 
@@ -20,6 +21,10 @@ class WeatherApiResult {
   final String? windDirection;
   final double? cloudCoverPct;
   final String? precipitation;
+
+  /// Raw numeric precipitation in millimetres from the API response.
+  /// Null when the API returned no precipitation data.
+  final double? precipitationMm;
   final String? providerName;
 }
 
@@ -72,6 +77,7 @@ class OpenMeteoProvider implements WeatherProvider {
       if (current == null) return null;
 
       final windDeg = (current['wind_direction_10m'] as num?)?.toDouble();
+      final precipMm = (current['precipitation'] as num?)?.toDouble();
 
       return WeatherApiResult(
         temperatureC:
@@ -83,8 +89,8 @@ class OpenMeteoProvider implements WeatherProvider {
         windDirection: windDeg != null ? _degreesToCompass(windDeg) : null,
         cloudCoverPct:
             (current['cloud_cover'] as num?)?.toDouble(),
-        precipitation: _describePrecipitation(
-            (current['precipitation'] as num?)?.toDouble()),
+        precipitation: _describePrecipitation(precipMm),
+        precipitationMm: precipMm,
         providerName: displayName,
       );
     } catch (_) {
@@ -126,6 +132,7 @@ class EnvironmentCanadaProvider implements WeatherProvider {
       if (current == null) return null;
 
       final windDeg = (current['wind_direction_10m'] as num?)?.toDouble();
+      final precipMm = (current['precipitation'] as num?)?.toDouble();
 
       return WeatherApiResult(
         temperatureC:
@@ -137,8 +144,8 @@ class EnvironmentCanadaProvider implements WeatherProvider {
         windDirection: windDeg != null ? _degreesToCompass(windDeg) : null,
         cloudCoverPct:
             (current['cloud_cover'] as num?)?.toDouble(),
-        precipitation: _describePrecipitation(
-            (current['precipitation'] as num?)?.toDouble()),
+        precipitation: _describePrecipitation(precipMm),
+        precipitationMm: precipMm,
         providerName: displayName,
       );
     } catch (_) {

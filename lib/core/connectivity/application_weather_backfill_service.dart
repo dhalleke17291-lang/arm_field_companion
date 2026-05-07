@@ -154,7 +154,7 @@ class ApplicationWeatherBackfillService {
       windDirection: result.windDirection,
       cloudCoverPct: result.cloudCoverPct,
       precipitation: result.precipitation,
-      precipitationMm: null,
+      precipitationMm: result.precipitationMm,
     );
 
     await _remove(task.tag);
@@ -197,6 +197,10 @@ class ApplicationWeatherBackfillService {
 
       final idx = hour.clamp(0, (temps?.length ?? 24) - 1);
 
+      final precipMm = precips != null && idx < precips.length
+          ? (precips[idx] as num?)?.toDouble()
+          : null;
+
       return WeatherApiResult(
         temperatureC: (temps?[idx] as num?)?.toDouble() ?? 0,
         humidityPct: (humids?[idx] as num?)?.toDouble() ?? 0,
@@ -205,9 +209,8 @@ class ApplicationWeatherBackfillService {
             ? _degreesToCompass((windDirs[idx] as num).toDouble())
             : null,
         cloudCoverPct: (clouds?[idx] as num?)?.toDouble(),
-        precipitation: precips != null && idx < precips.length
-            ? _describePrecipitation((precips[idx] as num?)?.toDouble())
-            : null,
+        precipitation: _describePrecipitation(precipMm),
+        precipitationMm: precipMm,
         providerName: 'Open-Meteo',
       );
     } catch (_) {
