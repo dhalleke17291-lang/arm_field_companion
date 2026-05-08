@@ -73,10 +73,7 @@ class _CtqBodyState extends State<_CtqBody> {
 
     // Attention items: blocked, missing, unacknowledged review, acknowledged review.
     final attentionItems = dto.ctqItems
-        .where((i) =>
-            i.isBlocked ||
-            i.status == 'missing' ||
-            i.needsReview)
+        .where((i) => i.isBlocked || i.status == 'missing' || i.needsReview)
         .toList();
 
     // Satisfied items: collapse by default.
@@ -106,7 +103,7 @@ class _CtqBodyState extends State<_CtqBody> {
                       ? 'Hide satisfied checks'
                       : 'Show satisfied checks (${satisfiedItems.length})',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     color: AppDesignTokens.primary,
                     fontWeight: FontWeight.w600,
                   ),
@@ -133,7 +130,7 @@ class _CtqBodyState extends State<_CtqBody> {
           const Text(
             'No factors evaluated yet.',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: AppDesignTokens.secondaryText,
             ),
           ),
@@ -157,7 +154,8 @@ class _CtqItemRow extends StatelessWidget {
       'treatment_identity' => 'Required: define treatments for this trial.',
       'application_timing' => 'Required: record application events.',
       'rating_window' => 'Required: record rating assessments.',
-      'rater_consistency' => 'Required: resolve the open rater consistency signal.',
+      'rater_consistency' =>
+        'Required: resolve the open rater consistency signal.',
       _ => 'Required: address this factor before export.',
     };
   }
@@ -224,7 +222,7 @@ class _CtqItemRow extends StatelessWidget {
                 child: Text(
                   item.label,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppDesignTokens.primaryText,
                   ),
@@ -239,7 +237,7 @@ class _CtqItemRow extends StatelessWidget {
             Text(
               item.reason,
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 15,
                 color: AppDesignTokens.secondaryText,
                 height: 1.4,
               ),
@@ -250,7 +248,7 @@ class _CtqItemRow extends StatelessWidget {
             Text(
               _requiredActionHint(item),
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: AppDesignTokens.warningFg,
               ),
@@ -262,7 +260,7 @@ class _CtqItemRow extends StatelessWidget {
               'Acknowledged ${DateFormat('MMM d, y').format(item.latestAcknowledgment!.acknowledgedAt)}'
               '${item.latestAcknowledgment!.actorName != null ? ' by ${item.latestAcknowledgment!.actorName}' : ''}',
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 15,
                 color: AppDesignTokens.secondaryText,
               ),
             ),
@@ -278,7 +276,7 @@ class _CtqItemRow extends StatelessWidget {
               child: const Text(
                 'Acknowledge →',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppDesignTokens.primary,
                 ),

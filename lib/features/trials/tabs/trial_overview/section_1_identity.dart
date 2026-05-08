@@ -31,8 +31,7 @@ class Section1Identity extends ConsumerWidget {
           onIntent: () => showTrialIntentSheet(context, ref, trial: trial),
           onConfirmIntent: () async {
             final purposeRepo = ref.read(trialPurposeRepositoryProvider);
-            final existing =
-                await purposeRepo.getCurrentTrialPurpose(trial.id);
+            final existing = await purposeRepo.getCurrentTrialPurpose(trial.id);
             if (existing != null) {
               await purposeRepo.confirmTrialPurpose(existing.id);
               ref.invalidate(trialPurposeProvider(trial.id));
@@ -108,32 +107,33 @@ class _InferenceBanner extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppDesignTokens.warningBg,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: AppDesignTokens.warningFg.withValues(alpha: 0.3),
         ),
       ),
-      padding: const EdgeInsets.all(AppDesignTokens.spacing12),
+      padding: const EdgeInsets.all(AppDesignTokens.spacing16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               const Icon(Icons.auto_awesome,
-                  size: 14, color: AppDesignTokens.warningFg),
-              const SizedBox(width: 6),
+                  size: 18, color: AppDesignTokens.warningFg),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Intent inferred from $sourceLabel',
-                  style: theme.textTheme.labelSmall?.copyWith(
+                  style: theme.textTheme.titleSmall?.copyWith(
                     color: AppDesignTokens.warningFg,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w800,
+                    height: 1.25,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppDesignTokens.spacing8),
+          const SizedBox(height: AppDesignTokens.spacing12),
           if (inferred != null) ...[
             if (purpose.primaryEndpoint != null)
               _InferredField(
@@ -154,12 +154,11 @@ class _InferenceBanner extends StatelessWidget {
                     .map((r) =>
                         '${r.treatmentName}=${r.inferredRole.replaceAll('_', ' ')}')
                     .join(', '),
-                confidence: inferred.treatmentRoles
-                    .map((r) => r.confidence)
-                    .fold(
-                      FieldConfidence.high,
-                      (a, b) => a.index > b.index ? a : b,
-                    ),
+                confidence:
+                    inferred.treatmentRoles.map((r) => r.confidence).fold(
+                          FieldConfidence.high,
+                          (a, b) => a.index > b.index ? a : b,
+                        ),
               ),
             if (purpose.claimBeingTested != null)
               _InferredField(
@@ -182,10 +181,10 @@ class _InferenceBanner extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: AppDesignTokens.warningFg,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
-                  textStyle: theme.textTheme.labelSmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  textStyle: theme.textTheme.labelLarge
+                      ?.copyWith(fontWeight: FontWeight.w700),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -196,10 +195,10 @@ class _InferenceBanner extends StatelessWidget {
                 onPressed: onEdit,
                 style: TextButton.styleFrom(
                   foregroundColor: AppDesignTokens.warningFg,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
-                  textStyle: theme.textTheme.labelSmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  textStyle: theme.textTheme.labelLarge
+                      ?.copyWith(fontWeight: FontWeight.w700),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -235,10 +234,13 @@ class _InferredField extends StatelessWidget {
     };
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 7),
       child: RichText(
         text: TextSpan(
-          style: theme.textTheme.bodySmall?.copyWith(height: 1.4),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            height: 1.45,
+            fontSize: 15,
+          ),
           children: [
             TextSpan(
               text: '$label: ',
@@ -285,7 +287,7 @@ class _PurposeSection extends StatelessWidget {
           const Text(
             'Intent not yet captured.',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 15,
               color: AppDesignTokens.secondaryText,
             ),
           ),
@@ -295,7 +297,7 @@ class _PurposeSection extends StatelessWidget {
             child: const Text(
               'Capture intent →',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: AppDesignTokens.primary,
               ),
@@ -349,7 +351,7 @@ class _PurposeSection extends StatelessWidget {
             child: const Text(
               'Update intent →',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: AppDesignTokens.primary,
               ),

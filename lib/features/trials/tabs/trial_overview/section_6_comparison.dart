@@ -47,7 +47,7 @@ class _ComparisonBody extends StatelessWidget {
       if (treatmentItem == null || treatmentItem.status == 'unknown') {
         return const Text(
           'Evaluates once treatments are defined.',
-          style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText),
+          style: TextStyle(fontSize: 14, color: AppDesignTokens.secondaryText),
         );
       }
       final (proxyBg, proxyFg, proxyLabel) = switch (treatmentItem.status) {
@@ -107,7 +107,7 @@ class _ComparisonBody extends StatelessWidget {
           Text(
             item.reason,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: AppDesignTokens.secondaryText,
               height: 1.4,
             ),

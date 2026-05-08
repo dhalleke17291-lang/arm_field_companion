@@ -72,7 +72,7 @@ class _ArcBody extends StatelessWidget {
           const Text(
             'Not yet recorded:',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 15,
               fontWeight: FontWeight.w600,
               color: AppDesignTokens.secondaryText,
             ),
@@ -83,7 +83,7 @@ class _ArcBody extends StatelessWidget {
               child: Text(
                 '• $item',
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 14,
                   color: AppDesignTokens.primaryText,
                 ),
               ),
@@ -98,7 +98,7 @@ class _ArcBody extends StatelessWidget {
               child: Text(
                 '⚠ $flag',
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 14,
                   color: AppDesignTokens.warningFg,
                 ),
               ),

@@ -45,7 +45,7 @@ class Section9Decisions extends ConsumerWidget {
               return const Text(
                 'No review items or documented decisions.',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 14,
                   color: AppDesignTokens.secondaryText,
                 ),
               );
@@ -58,7 +58,7 @@ class Section9Decisions extends ConsumerWidget {
                   const Text(
                     'NEEDS REVIEW',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,
                       color: AppDesignTokens.secondaryText,
@@ -83,7 +83,7 @@ class Section9Decisions extends ConsumerWidget {
                   const Text(
                     'RESEARCHER DECISIONS',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,
                       color: AppDesignTokens.secondaryText,
@@ -107,7 +107,7 @@ class Section9Decisions extends ConsumerWidget {
                   const Text(
                     'CTQ ACKNOWLEDGMENTS',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,
                       color: AppDesignTokens.secondaryText,
@@ -121,7 +121,7 @@ class Section9Decisions extends ConsumerWidget {
                         '${a.factorKey.replaceAll('_', ' ')}: '
                         '${a.reason.length > 80 ? '${a.reason.substring(0, 80)}…' : a.reason}',
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 14,
                           color: AppDesignTokens.primaryText,
                           height: 1.4,
                         ),
@@ -211,7 +211,7 @@ class _SignalGroupRow extends StatelessWidget {
         title: Text(
           'Review ${group.signalCount} signals',
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
             color: AppDesignTokens.primary,
           ),
@@ -243,7 +243,7 @@ class _SignalGroupRow extends StatelessWidget {
         title: const Text(
           'Review context',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
             color: AppDesignTokens.secondaryText,
           ),
@@ -293,7 +293,7 @@ class _SignalGroupRow extends StatelessWidget {
                     Text(
                       group.displayTitle,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: AppDesignTokens.primaryText,
                         height: 1.35,
@@ -311,7 +311,7 @@ class _SignalGroupRow extends StatelessWidget {
                 Text(
                   group.shortSummary,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     color: AppDesignTokens.primaryText,
                     height: 1.4,
                   ),
@@ -320,7 +320,7 @@ class _SignalGroupRow extends StatelessWidget {
                 Text(
                   group.statusLabel,
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 15,
                     color: AppDesignTokens.secondaryText,
                     height: 1.35,
                   ),
@@ -330,7 +330,7 @@ class _SignalGroupRow extends StatelessWidget {
                   Text(
                     affectedSummary,
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 15,
                       color: AppDesignTokens.secondaryText,
                       height: 1.35,
                     ),
@@ -369,7 +369,7 @@ class _InterpretationLine extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 10,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.4,
               color: AppDesignTokens.secondaryText,
@@ -379,7 +379,7 @@ class _InterpretationLine extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 15,
               color: AppDesignTokens.primaryText,
               height: 1.35,
             ),
@@ -415,7 +415,7 @@ class _DecisionRow extends StatelessWidget {
         Text(
           '${eventType.replaceAll('_', ' ')} — $dateStr$byStr',
           style: const TextStyle(
-            fontSize: 11,
+            fontSize: 15,
             fontWeight: FontWeight.w600,
             color: AppDesignTokens.secondaryText,
           ),
@@ -424,7 +424,7 @@ class _DecisionRow extends StatelessWidget {
           Text(
             note!.length > 120 ? '${note!.substring(0, 120)}…' : note!,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: AppDesignTokens.primaryText,
               height: 1.4,
             ),

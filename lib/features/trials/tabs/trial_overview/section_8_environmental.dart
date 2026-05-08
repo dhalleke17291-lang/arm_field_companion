@@ -111,7 +111,7 @@ class _EnvBody extends StatelessWidget {
           const Text(
             'No application events recorded yet.',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: AppDesignTokens.secondaryText,
             ),
           )
@@ -119,7 +119,7 @@ class _EnvBody extends StatelessWidget {
           const Text(
             'No confirmed application events recorded yet.',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: AppDesignTokens.secondaryText,
             ),
           ),
@@ -127,7 +127,7 @@ class _EnvBody extends StatelessWidget {
           const Text(
             'Planned applications are not shown until confirmed.',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 15,
               color: AppDesignTokens.secondaryText,
             ),
           ),
@@ -141,7 +141,7 @@ class _EnvBody extends StatelessWidget {
             Text(
               '$hiddenPlannedCount planned application${hiddenPlannedCount == 1 ? '' : 's'} not shown until confirmed.',
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 15,
                 color: AppDesignTokens.secondaryText,
               ),
             ),
@@ -164,7 +164,8 @@ class _EnvBody extends StatelessWidget {
     for (final event in events) {
       final key = _applicationWindowKey(event);
       final existing = byWindow[key];
-      if (existing == null || _applicationWindowScore(event) > _applicationWindowScore(existing)) {
+      if (existing == null ||
+          _applicationWindowScore(event) > _applicationWindowScore(existing)) {
         byWindow[key] = event;
       }
     }
@@ -292,7 +293,7 @@ class _AppEnvRow extends ConsumerWidget {
           Text(
             'Application — $dateStr',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: FontWeight.w600,
               color: AppDesignTokens.primaryText,
             ),
@@ -302,7 +303,7 @@ class _AppEnvRow extends ConsumerWidget {
             Text(
               bbch,
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 15,
                 color: AppDesignTokens.secondaryText,
               ),
             ),
@@ -316,7 +317,7 @@ class _AppEnvRow extends ConsumerWidget {
                 return Text(
                   'Application environmental context unavailable — ${ctx.unavailableReason}',
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 15,
                     color: AppDesignTokens.secondaryText,
                     height: 1.3,
                   ),
@@ -357,7 +358,7 @@ class _WindowRow extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 15,
               fontWeight: FontWeight.w600,
               color: AppDesignTokens.secondaryText,
             ),
@@ -367,7 +368,7 @@ class _WindowRow extends StatelessWidget {
                 ? 'No environmental records available for this window.'
                 : _summaryLine(window),
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 15,
               color: noData
                   ? AppDesignTokens.secondaryText
                   : AppDesignTokens.primaryText,
@@ -429,7 +430,7 @@ class _ProvenanceStrip extends StatelessWidget {
     return Text(
       parts.join(' · '),
       style: const TextStyle(
-        fontSize: 10,
+        fontSize: 14,
         color: AppDesignTokens.secondaryText,
         height: 1.4,
       ),
@@ -452,8 +453,8 @@ class _ProvenanceStrip extends StatelessWidget {
       };
 
   static String _relativeTime(int epochMs) {
-    final age = DateTime.now()
-        .difference(DateTime.fromMillisecondsSinceEpoch(epochMs));
+    final age =
+        DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(epochMs));
     if (age.inMinutes < 1) return 'just now';
     if (age.inHours < 1) return '${age.inMinutes}min ago';
     if (age.inDays < 1) return '${age.inHours}h ago';
@@ -477,13 +478,13 @@ class _EnvUnavailable extends StatelessWidget {
       children: [
         const Text(
           'Environmental evidence not available yet.',
-          style: TextStyle(fontSize: 12, color: AppDesignTokens.primaryText),
+          style: TextStyle(fontSize: 14, color: AppDesignTokens.primaryText),
         ),
         const SizedBox(height: 2),
         Text(
           reason,
           style: const TextStyle(
-            fontSize: 11,
+            fontSize: 15,
             color: AppDesignTokens.secondaryText,
           ),
         ),
@@ -502,7 +503,7 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-        fontSize: 10,
+        fontSize: 14,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.5,
         color: AppDesignTokens.secondaryText,

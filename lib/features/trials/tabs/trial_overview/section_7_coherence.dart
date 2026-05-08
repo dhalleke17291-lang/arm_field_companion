@@ -55,7 +55,7 @@ class _CoherenceBodyState extends State<_CoherenceBody> {
     if (dto.checks.isEmpty) {
       return const Text(
         'No coherence concerns identified.',
-        style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText),
+        style: TextStyle(fontSize: 14, color: AppDesignTokens.secondaryText),
       );
     }
 
@@ -64,8 +64,7 @@ class _CoherenceBodyState extends State<_CoherenceBody> {
           (c) => c.status == 'review_needed' || c.status == 'cannot_evaluate',
         )
         .toList();
-    final aligned =
-        dto.checks.where((c) => c.status == 'aligned').toList();
+    final aligned = dto.checks.where((c) => c.status == 'aligned').toList();
 
     final total = dto.checks.length;
     final reviewCount =
@@ -73,8 +72,7 @@ class _CoherenceBodyState extends State<_CoherenceBody> {
     final cannotCount =
         dto.checks.where((c) => c.status == 'cannot_evaluate').length;
 
-    final parsed =
-        InterpretationFactorsCodec.parse(widget.knownFactorsJson);
+    final parsed = InterpretationFactorsCodec.parse(widget.knownFactorsJson);
 
     final String summaryLine;
     if (concerns.isEmpty) {
@@ -82,8 +80,7 @@ class _CoherenceBodyState extends State<_CoherenceBody> {
     } else {
       final parts = <String>[];
       if (reviewCount > 0) {
-        parts.add(
-            '$reviewCount ${reviewCount == 1 ? 'needs' : 'need'} review');
+        parts.add('$reviewCount ${reviewCount == 1 ? 'needs' : 'need'} review');
       }
       if (cannotCount > 0) {
         parts.add('$cannotCount cannot evaluate');
@@ -98,7 +95,7 @@ class _CoherenceBodyState extends State<_CoherenceBody> {
         Text(
           summaryLine,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: FontWeight.w600,
             color: AppDesignTokens.primaryText,
           ),
@@ -108,7 +105,7 @@ class _CoherenceBodyState extends State<_CoherenceBody> {
           const Text(
             'No coherence concerns identified.',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: AppDesignTokens.secondaryText,
             ),
           )
@@ -125,7 +122,7 @@ class _CoherenceBodyState extends State<_CoherenceBody> {
                       ? 'Hide aligned checks'
                       : 'Show aligned checks (${aligned.length})',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     color: AppDesignTokens.primary,
                     fontWeight: FontWeight.w600,
                   ),
@@ -158,7 +155,7 @@ class _CoherenceBodyState extends State<_CoherenceBody> {
                       child: Text(
                         c.label,
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 14,
                           color: AppDesignTokens.secondaryText,
                         ),
                       ),
@@ -186,8 +183,7 @@ class _KnownFactorsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labels = [
-      for (final k in parsed.selectedKeys)
-        kInterpretationFactorLabels[k] ?? k,
+      for (final k in parsed.selectedKeys) kInterpretationFactorLabels[k] ?? k,
       if (parsed.otherText != null) parsed.otherText!,
     ];
 
@@ -197,7 +193,7 @@ class _KnownFactorsRow extends StatelessWidget {
         const Text(
           'SITE / SEASON CONDITIONS',
           style: TextStyle(
-            fontSize: 10,
+            fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
             color: AppDesignTokens.secondaryText,
@@ -221,7 +217,7 @@ class _KnownFactorsRow extends StatelessWidget {
                   child: Text(
                     label,
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 15,
                       color: AppDesignTokens.emptyBadgeFg,
                     ),
                   ),
@@ -266,7 +262,7 @@ class _CoherenceCheckRow extends StatelessWidget {
                 child: Text(
                   check.label,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppDesignTokens.primaryText,
                   ),
@@ -281,7 +277,7 @@ class _CoherenceCheckRow extends StatelessWidget {
             Text(
               check.reason,
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 15,
                 color: AppDesignTokens.secondaryText,
                 height: 1.4,
               ),

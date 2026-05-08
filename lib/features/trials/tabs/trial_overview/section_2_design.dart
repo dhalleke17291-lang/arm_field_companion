@@ -29,12 +29,8 @@ class Section2Design extends ConsumerWidget {
           data: (plots) {
             final activePlots =
                 plots.where((p) => !p.isDeleted && !p.isGuardRow).toList();
-            final reps = activePlots
-                .map((p) => p.rep)
-                .whereType<int>()
-                .toSet();
-            final isArmLinked =
-                armAsync.valueOrNull?.isArmLinked ?? false;
+            final reps = activePlots.map((p) => p.rep).whereType<int>().toSet();
+            final isArmLinked = armAsync.valueOrNull?.isArmLinked ?? false;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,

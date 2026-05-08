@@ -80,9 +80,9 @@ class TrialReviewSummaryCard extends ConsumerWidget {
       return Container(
         margin: const EdgeInsets.fromLTRB(
           AppDesignTokens.spacing16,
-          AppDesignTokens.spacing8,
+          AppDesignTokens.spacing12,
           AppDesignTokens.spacing16,
-          AppDesignTokens.spacing4,
+          AppDesignTokens.spacing8,
         ),
         decoration: BoxDecoration(
           color: AppDesignTokens.cardSurface,
@@ -91,7 +91,7 @@ class TrialReviewSummaryCard extends ConsumerWidget {
           boxShadow: AppDesignTokens.cardShadowRating,
         ),
         child: const Padding(
-          padding: EdgeInsets.all(AppDesignTokens.spacing12),
+          padding: EdgeInsets.fromLTRB(18, 18, 18, 16),
           child: OverviewSectionLoading(),
         ),
       );
@@ -151,9 +151,9 @@ class _SummaryCardBody extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(
         AppDesignTokens.spacing16,
-        AppDesignTokens.spacing8,
+        AppDesignTokens.spacing12,
         AppDesignTokens.spacing16,
-        AppDesignTokens.spacing4,
+        AppDesignTokens.spacing8,
       ),
       decoration: BoxDecoration(
         color: AppDesignTokens.cardSurface,
@@ -162,7 +162,7 @@ class _SummaryCardBody extends StatelessWidget {
         boxShadow: AppDesignTokens.cardShadowRating,
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppDesignTokens.spacing12),
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -171,22 +171,22 @@ class _SummaryCardBody extends StatelessWidget {
               bg: chipBg,
               fg: chipFg,
             ),
-            const SizedBox(height: AppDesignTokens.spacing8),
+            const SizedBox(height: AppDesignTokens.spacing12),
             if (isReady) ...[
               Text(
                 statement.summaryText,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 15,
                   color: AppDesignTokens.primaryText,
                   height: 1.4,
                 ),
               ),
               if (openSignalsCount != null && openSignalsCount! == 0) ...[
-                const SizedBox(height: AppDesignTokens.spacing4),
+                const SizedBox(height: AppDesignTokens.spacing8),
                 const Text(
                   'No open signals.',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     color: AppDesignTokens.secondaryText,
                   ),
                 ),
@@ -196,23 +196,23 @@ class _SummaryCardBody extends StatelessWidget {
                 const Text(
                   'NEEDS ATTENTION',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
                     color: AppDesignTokens.secondaryText,
                   ),
                 ),
-                const SizedBox(height: AppDesignTokens.spacing4),
+                const SizedBox(height: AppDesignTokens.spacing8),
                 ...attentionItems.map(
                   (item) => Padding(
-                    padding: const EdgeInsets.only(bottom: 3),
+                    padding: const EdgeInsets.only(bottom: 6),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           '• ',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 14,
                             color: AppDesignTokens.primaryText,
                           ),
                         ),
@@ -220,7 +220,7 @@ class _SummaryCardBody extends StatelessWidget {
                           child: Text(
                             item,
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: 14,
                               color: AppDesignTokens.primaryText,
                               height: 1.4,
                             ),
@@ -236,7 +236,7 @@ class _SummaryCardBody extends StatelessWidget {
                 Text(
                   '$openSignalsCount open signal${openSignalsCount == 1 ? '' : 's'} require attention.',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     color: AppDesignTokens.secondaryText,
                   ),
                 ),
@@ -248,7 +248,7 @@ class _SummaryCardBody extends StatelessWidget {
               Text(
                 '$documentedDecisionsCount documented decision${documentedDecisionsCount == 1 ? '' : 's'}.',
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 14,
                   color: AppDesignTokens.secondaryText,
                 ),
               ),

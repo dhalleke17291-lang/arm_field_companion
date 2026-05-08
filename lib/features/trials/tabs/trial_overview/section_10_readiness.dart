@@ -128,7 +128,7 @@ class _ReadinessBody extends StatelessWidget {
         Text(
           statement.summaryText,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 15,
             color: AppDesignTokens.primaryText,
             height: 1.5,
           ),
@@ -138,7 +138,7 @@ class _ReadinessBody extends StatelessWidget {
           const Text(
             'WHY',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
               color: AppDesignTokens.secondaryText,
@@ -148,7 +148,7 @@ class _ReadinessBody extends StatelessWidget {
           Text(
             whyText,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 14,
               color: AppDesignTokens.primaryText,
               height: 1.4,
             ),
@@ -159,7 +159,7 @@ class _ReadinessBody extends StatelessWidget {
           const Text(
             'ITEMS REQUIRING ACTION',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
               color: AppDesignTokens.secondaryText,
@@ -174,7 +174,7 @@ class _ReadinessBody extends StatelessWidget {
           const Text(
             'CAUTIONS',
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
               color: AppDesignTokens.secondaryText,
@@ -199,7 +199,7 @@ class _ReadinessBody extends StatelessWidget {
                 const Text(
                   '• ',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     color: AppDesignTokens.primaryText,
                   ),
                 ),
@@ -207,7 +207,7 @@ class _ReadinessBody extends StatelessWidget {
                   child: Text(
                     item,
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: 14,
                       color: AppDesignTokens.primaryText,
                       height: 1.4,
                     ),
@@ -233,7 +233,7 @@ class _ReadinessBody extends StatelessWidget {
                 const Text(
                   '• ',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     color: AppDesignTokens.primaryText,
                   ),
                 ),
@@ -244,7 +244,7 @@ class _ReadinessBody extends StatelessWidget {
                       Text(
                         item.displayTitle,
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppDesignTokens.primaryText,
                           height: 1.4,
@@ -255,7 +255,7 @@ class _ReadinessBody extends StatelessWidget {
                         Text(
                           item.readinessActionReason!,
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 14,
                             color: AppDesignTokens.primaryText,
                             height: 1.4,
                           ),
@@ -265,7 +265,7 @@ class _ReadinessBody extends StatelessWidget {
                       Text(
                         item.statusLabel,
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: AppDesignTokens.secondaryText,
                           height: 1.3,
@@ -277,7 +277,7 @@ class _ReadinessBody extends StatelessWidget {
                         Text(
                           item.blocksExportReason!,
                           style: const TextStyle(
-                            fontSize: 11,
+                            fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: AppDesignTokens.warningFg,
                             height: 1.3,
@@ -326,7 +326,7 @@ class _CriteriaSection extends StatelessWidget {
         const Text(
           'READINESS CRITERIA',
           style: TextStyle(
-            fontSize: 10,
+            fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
             color: AppDesignTokens.secondaryText,
@@ -339,7 +339,7 @@ class _CriteriaSection extends StatelessWidget {
             child: Text(
               r,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 14,
                 color: AppDesignTokens.primaryText,
                 height: 1.4,
               ),

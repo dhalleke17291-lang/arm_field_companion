@@ -25,9 +25,9 @@ class OverviewSectionCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(
         AppDesignTokens.spacing16,
-        AppDesignTokens.spacing8,
+        AppDesignTokens.spacing12,
         AppDesignTokens.spacing16,
-        AppDesignTokens.spacing4,
+        AppDesignTokens.spacing8,
       ),
       decoration: BoxDecoration(
         color: AppDesignTokens.cardSurface,
@@ -36,7 +36,7 @@ class OverviewSectionCard extends StatelessWidget {
         boxShadow: AppDesignTokens.cardShadowRating,
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppDesignTokens.spacing12),
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -44,23 +44,26 @@ class OverviewSectionCard extends StatelessWidget {
             Text(
               '$number. $title'.toUpperCase(),
               style: const TextStyle(
-                fontSize: 10,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.6,
+                letterSpacing: 0.8,
+                height: 1.2,
                 color: AppDesignTokens.secondaryText,
               ),
             ),
             if (subtitle != null) ...[
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 subtitle!,
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 14,
+                  height: 1.35,
+                  fontWeight: FontWeight.w500,
                   color: AppDesignTokens.secondaryText,
                 ),
               ),
             ],
-            const SizedBox(height: AppDesignTokens.spacing8),
+            const SizedBox(height: AppDesignTokens.spacing12),
             child,
           ],
         ),
@@ -76,7 +79,7 @@ class OverviewSectionLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const SizedBox(
-      height: 4,
+      height: 5,
       child: LinearProgressIndicator(
         backgroundColor: AppDesignTokens.divider,
         valueColor: AlwaysStoppedAnimation<Color>(AppDesignTokens.primary),
@@ -93,7 +96,7 @@ class OverviewSectionError extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Text(
       'Unable to load.',
-      style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText),
+      style: TextStyle(fontSize: 14, color: AppDesignTokens.secondaryText),
     );
   }
 }
@@ -108,16 +111,18 @@ class OverviewDataRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 3),
+      padding: const EdgeInsets.only(bottom: 7),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 130,
+            width: 150,
             child: Text(
               label,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 15,
+                height: 1.3,
+                fontWeight: FontWeight.w600,
                 color: AppDesignTokens.secondaryText,
               ),
             ),
@@ -126,7 +131,9 @@ class OverviewDataRow extends StatelessWidget {
             child: Text(
               value,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 15,
+                height: 1.3,
+                fontWeight: FontWeight.w700,
                 color: AppDesignTokens.primaryText,
               ),
             ),
@@ -153,7 +160,7 @@ class OverviewStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
@@ -161,8 +168,9 @@ class OverviewStatusChip extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+          fontSize: 13,
+          height: 1.15,
+          fontWeight: FontWeight.w700,
           color: fg,
         ),
       ),

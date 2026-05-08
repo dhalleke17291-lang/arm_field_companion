@@ -56,7 +56,7 @@ class _EndpointBody extends StatelessWidget {
       if (plotItem == null || plotItem.status == 'unknown') {
         return const Text(
           'Evaluates once analyzable plots and ratings are defined.',
-          style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText),
+          style: TextStyle(fontSize: 14, color: AppDesignTokens.secondaryText),
         );
       }
       final (proxyBg, proxyFg, proxyLabel) = switch (plotItem.status) {
@@ -126,7 +126,7 @@ class _EndpointBody extends StatelessWidget {
           const Text(
             'Missing evidence:',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 15,
               fontWeight: FontWeight.w600,
               color: AppDesignTokens.secondaryText,
             ),
@@ -137,7 +137,7 @@ class _EndpointBody extends StatelessWidget {
               child: Text(
                 '• $item',
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 14,
                   color: AppDesignTokens.primaryText,
                 ),
               ),
