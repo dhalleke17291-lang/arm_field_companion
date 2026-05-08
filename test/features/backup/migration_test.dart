@@ -59,11 +59,12 @@ void main() {
     }
   });
 
-  test('onCreate: all tables including se_type_profiles exist on fresh install', () async {
+  test('onCreate: all tables including se_type_profiles exist on fresh install',
+      () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
 
-    expect(db.schemaVersion, 82);
+    expect(db.schemaVersion, 83);
 
     final names = await _tableNames(db);
     expect(names, contains(_kApplicationSlots));
@@ -83,120 +84,121 @@ void main() {
     expect(prefixes, containsAll({'CONTRO', 'PHYGEN'}));
 
     final causal = await db.select(db.seTypeCausalProfiles).get();
-    final causalKeys =
-        causal.map((r) => '${r.seType}:${r.trialType}').toSet();
+    final causalKeys = causal.map((r) => '${r.seType}:${r.trialType}').toSet();
     expect(causalKeys,
         containsAll({'CONTRO:efficacy', 'PESINC:efficacy', 'LODGIN:efficacy'}));
     expect(causal.length, 3);
   });
 
   test(
-    'onUpgrade to 49: missing application tables are recreated when absent '
-    '(simulates legacy DB at user_version 48 without the three tables)',
-    () async {
-      // An empty file at user_version 36 cannot run 36→49 (migrations need prior tables).
-      // Realistic case for the v49 block: already at 48, application_* missing, then 48→49.
-      final dbFile = File(p.join(docsPath, 'upgrade_missing_app_tables.db'));
-      if (await dbFile.exists()) await dbFile.delete();
+      'onUpgrade to 49: missing application tables are recreated when absent '
+      '(simulates legacy DB at user_version 48 without the three tables)',
+      () async {
+    // An empty file at user_version 36 cannot run 36→49 (migrations need prior tables).
+    // Realistic case for the v49 block: already at 48, application_* missing, then 48→49.
+    final dbFile = File(p.join(docsPath, 'upgrade_missing_app_tables.db'));
+    if (await dbFile.exists()) await dbFile.delete();
 
-      var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
-      expect(await _tableNames(db), contains(_kApplicationSlots));
+    var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    expect(await _tableNames(db), contains(_kApplicationSlots));
 
-      await db.customStatement('PRAGMA foreign_keys = OFF');
-      await db.customStatement('DROP TABLE IF EXISTS application_plot_records');
-      await db.customStatement('DROP TABLE IF EXISTS application_events');
-      await db.customStatement('DROP TABLE IF EXISTS application_slots');
-      await db.customStatement('PRAGMA foreign_keys = ON');
-      await db.close();
+    await db.customStatement('PRAGMA foreign_keys = OFF');
+    await db.customStatement('DROP TABLE IF EXISTS application_plot_records');
+    await db.customStatement('DROP TABLE IF EXISTS application_events');
+    await db.customStatement('DROP TABLE IF EXISTS application_slots');
+    await db.customStatement('PRAGMA foreign_keys = ON');
+    await db.close();
 
-      _setUserVersion(dbFile.path, 48);
+    _setUserVersion(dbFile.path, 48);
 
-      db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
-      addTearDown(db.close);
+    db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    addTearDown(db.close);
 
-      final names = await _tableNames(db);
-      expect(names, contains(_kApplicationSlots));
-      expect(names, contains(_kApplicationEvents));
-      expect(names, contains(_kApplicationPlotRecords));
-    });
-
-  test(
-    'onUpgrade to 49: idempotent when legacy application tables already exist',
-    () async {
-      final dbFile = File(p.join(docsPath, 'idempotent.db'));
-      if (await dbFile.exists()) await dbFile.delete();
-
-      var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
-      await _tableNames(db);
-      await db.close();
-
-      _setUserVersion(dbFile.path, 48);
-
-      db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
-      addTearDown(db.close);
-
-      final names = await _tableNames(db);
-      expect(names, contains(_kApplicationSlots));
-      expect(names, contains(_kApplicationEvents));
-      expect(names, contains(_kApplicationPlotRecords));
-    });
+    final names = await _tableNames(db);
+    expect(names, contains(_kApplicationSlots));
+    expect(names, contains(_kApplicationEvents));
+    expect(names, contains(_kApplicationPlotRecords));
+  });
 
   test(
-    'onUpgrade v70 → v71: se_type_profiles is created and seeded when absent',
-    () async {
-      final dbFile = File(p.join(docsPath, 'upgrade_v70_to_v71.db'));
-      if (await dbFile.exists()) await dbFile.delete();
+      'onUpgrade to 49: idempotent when legacy application tables already exist',
+      () async {
+    final dbFile = File(p.join(docsPath, 'idempotent.db'));
+    if (await dbFile.exists()) await dbFile.delete();
 
-      // Fresh install at v71: onCreate creates all tables including se_type_profiles.
-      var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
-      await _tableNames(db); // warm up — ensures onCreate completes
+    var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    await _tableNames(db);
+    await db.close();
 
-      // Simulate v70 state: drop se_type_profiles, then wind user_version back.
-      await db.customStatement('DROP TABLE IF EXISTS se_type_profiles');
-      await db.close();
-      _setUserVersion(dbFile.path, 70);
+    _setUserVersion(dbFile.path, 48);
 
-      // Reopen: Drift sees user_version 70, runs onUpgrade(m, 70, 71).
-      db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
-      addTearDown(db.close);
+    db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    addTearDown(db.close);
 
-      final names = await _tableNames(db);
-      expect(names, contains('se_type_profiles'));
-
-      final profiles = await db.select(db.seTypeProfiles).get();
-      final prefixes = profiles.map((p) => p.ratingTypePrefix).toSet();
-      expect(prefixes, containsAll({'CONTRO', 'PHYGEN'}));
-    });
+    final names = await _tableNames(db);
+    expect(names, contains(_kApplicationSlots));
+    expect(names, contains(_kApplicationEvents));
+    expect(names, contains(_kApplicationPlotRecords));
+  });
 
   test(
-    'onUpgrade v70 → v71 idempotent: se_type_profiles already exists, no error, no duplicate rows',
-    () async {
-      final dbFile = File(p.join(docsPath, 'idempotent_v71.db'));
-      if (await dbFile.exists()) await dbFile.delete();
+      'onUpgrade v70 → v71: se_type_profiles is created and seeded when absent',
+      () async {
+    final dbFile = File(p.join(docsPath, 'upgrade_v70_to_v71.db'));
+    if (await dbFile.exists()) await dbFile.delete();
 
-      // Fresh install at v71.
-      var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
-      await _tableNames(db); // warm up
-      await db.close();
+    // Fresh install at v71: onCreate creates all tables including se_type_profiles.
+    var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    await _tableNames(db); // warm up — ensures onCreate completes
 
-      // Wind user_version back to 70 WITHOUT dropping the table —
-      // tests that existingTables guard prevents double-createTable
-      // and INSERT OR IGNORE prevents duplicate seed rows.
-      _setUserVersion(dbFile.path, 70);
+    // Simulate v70 state: drop se_type_profiles, then wind user_version back.
+    await db.customStatement('DROP TABLE IF EXISTS se_type_profiles');
+    await db.close();
+    _setUserVersion(dbFile.path, 70);
 
-      db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
-      addTearDown(db.close);
+    // Reopen: Drift sees user_version 70, runs onUpgrade(m, 70, 71).
+    db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    addTearDown(db.close);
 
-      final names = await _tableNames(db);
-      expect(names, contains('se_type_profiles'));
+    final names = await _tableNames(db);
+    expect(names, contains('se_type_profiles'));
 
-      final profiles = await db.select(db.seTypeProfiles).get();
-      final prefixes = profiles.map((p) => p.ratingTypePrefix).toSet();
-      expect(prefixes, containsAll({'CONTRO', 'PHYGEN'}));
-      expect(profiles.length, 2, reason: 'INSERT OR IGNORE must not produce duplicate seed rows');
-    });
+    final profiles = await db.select(db.seTypeProfiles).get();
+    final prefixes = profiles.map((p) => p.ratingTypePrefix).toSet();
+    expect(prefixes, containsAll({'CONTRO', 'PHYGEN'}));
+  });
 
-  group('v77 schema fixes: DROP converted_yield, COALESCE index, sync trigger', () {
+  test(
+      'onUpgrade v70 → v71 idempotent: se_type_profiles already exists, no error, no duplicate rows',
+      () async {
+    final dbFile = File(p.join(docsPath, 'idempotent_v71.db'));
+    if (await dbFile.exists()) await dbFile.delete();
+
+    // Fresh install at v71.
+    var db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    await _tableNames(db); // warm up
+    await db.close();
+
+    // Wind user_version back to 70 WITHOUT dropping the table —
+    // tests that existingTables guard prevents double-createTable
+    // and INSERT OR IGNORE prevents duplicate seed rows.
+    _setUserVersion(dbFile.path, 70);
+
+    db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
+    addTearDown(db.close);
+
+    final names = await _tableNames(db);
+    expect(names, contains('se_type_profiles'));
+
+    final profiles = await db.select(db.seTypeProfiles).get();
+    final prefixes = profiles.map((p) => p.ratingTypePrefix).toSet();
+    expect(prefixes, containsAll({'CONTRO', 'PHYGEN'}));
+    expect(profiles.length, 2,
+        reason: 'INSERT OR IGNORE must not produce duplicate seed rows');
+  });
+
+  group('v77 schema fixes: DROP converted_yield, COALESCE index, sync trigger',
+      () {
     /// Reverts a v77 DB back to a v76-like state so the migration can be re-run.
     Future<void> simulateV76(AppDatabase db) async {
       await db.customStatement(
@@ -229,8 +231,7 @@ void main() {
 
         // ── (a) converted_yield must be absent ──────────────────────────────
         final cols = await db
-            .customSelect(
-                "SELECT name FROM pragma_table_info('yield_details')")
+            .customSelect("SELECT name FROM pragma_table_info('yield_details')")
             .get();
         expect(cols.map((r) => r.read<String>('name')),
             isNot(contains('converted_yield')));
@@ -252,33 +253,31 @@ void main() {
                 "SELECT name FROM sqlite_master WHERE type='trigger' AND name='sync_signal_status'")
             .getSingleOrNull();
         expect(trigRow, isNotNull,
-            reason: 'sync_signal_status trigger must be created by v77 migration');
+            reason:
+                'sync_signal_status trigger must be created by v77 migration');
 
         // Insert the minimal rows needed to exercise the trigger.
         await db.customStatement(
             "INSERT INTO trials (name, workspace_type, region) "
             "VALUES ('v77 trigger test', 'efficacy', 'eppo_eu')");
-        final trialId = (await db
-                .customSelect('SELECT last_insert_rowid() AS id')
-                .get())
-            .first
-            .read<int>('id');
+        final trialId =
+            (await db.customSelect('SELECT last_insert_rowid() AS id').get())
+                .first
+                .read<int>('id');
 
         final now = DateTime.now().millisecondsSinceEpoch;
         await db.customStatement(
             'INSERT INTO signals (trial_id, signal_type, moment, severity, '
             'raised_at, reference_context, consequence_text, created_at) '
             "VALUES ($trialId, 'scale_violation', 1, 'review', $now, '{}', 'test', $now)");
-        final sigId = (await db
-                .customSelect('SELECT last_insert_rowid() AS id')
-                .get())
-            .first
-            .read<int>('id');
+        final sigId =
+            (await db.customSelect('SELECT last_insert_rowid() AS id').get())
+                .first
+                .read<int>('id');
 
         // Insert directly — bypasses SignalRepository.recordDecisionEvent()
         // to confirm the trigger (not app code) updates signals.status.
-        await db.customStatement(
-            'INSERT INTO signal_decision_events '
+        await db.customStatement('INSERT INTO signal_decision_events '
             '(signal_id, event_type, occurred_at, resulting_status, created_at) '
             "VALUES ($sigId, 'expire', $now, 'expired', $now)");
 
@@ -326,7 +325,7 @@ void main() {
 
         db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
         await assertV77State(db); // first run: correct
-        await simulateV76(db);    // reset to v76 for second run
+        await simulateV76(db); // reset to v76 for second run
         await db.close();
         _setUserVersion(dbFile.path, 76);
 
@@ -345,8 +344,8 @@ void main() {
         final dbFile = File(p.join(docsPath, 'v75_promote_draft.db'));
 
         // Start at v74 with a draft trial that has a session.
-        var db = AppDatabase.forTesting(
-            NativeDatabase.createInBackground(dbFile));
+        var db =
+            AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
         await db.customStatement(
             "INSERT INTO trials (name, status, workspace_type, region) "
             "VALUES ('T1', 'draft', 'efficacy', 'eppo_eu')");
@@ -361,8 +360,7 @@ void main() {
         await db.close();
 
         _setUserVersion(dbFile.path, 74);
-        db = AppDatabase.forTesting(
-            NativeDatabase.createInBackground(dbFile));
+        db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
         addTearDown(db.close);
 
         final trial = await (db.select(db.trials)
@@ -378,8 +376,8 @@ void main() {
       () async {
         final dbFile = File(p.join(docsPath, 'v75_promote_ready.db'));
 
-        var db = AppDatabase.forTesting(
-            NativeDatabase.createInBackground(dbFile));
+        var db =
+            AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
         await db.customStatement(
             "INSERT INTO trials (name, status, workspace_type, region) "
             "VALUES ('T2', 'ready', 'efficacy', 'eppo_eu')");
@@ -394,8 +392,7 @@ void main() {
         await db.close();
 
         _setUserVersion(dbFile.path, 74);
-        db = AppDatabase.forTesting(
-            NativeDatabase.createInBackground(dbFile));
+        db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
         addTearDown(db.close);
 
         final trial = await (db.select(db.trials)
@@ -410,8 +407,8 @@ void main() {
       () async {
         final dbFile = File(p.join(docsPath, 'v75_no_session.db'));
 
-        var db = AppDatabase.forTesting(
-            NativeDatabase.createInBackground(dbFile));
+        var db =
+            AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
         await db.customStatement(
             "INSERT INTO trials (name, status, workspace_type, region) "
             "VALUES ('T3', 'draft', 'efficacy', 'eppo_eu')");
@@ -422,8 +419,7 @@ void main() {
         await db.close();
 
         _setUserVersion(dbFile.path, 74);
-        db = AppDatabase.forTesting(
-            NativeDatabase.createInBackground(dbFile));
+        db = AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
         addTearDown(db.close);
 
         final trial = await (db.select(db.trials)
@@ -439,8 +435,8 @@ void main() {
       () async {
         final dbFile = File(p.join(docsPath, 'v75_idempotent.db'));
 
-        var db = AppDatabase.forTesting(
-            NativeDatabase.createInBackground(dbFile));
+        var db =
+            AppDatabase.forTesting(NativeDatabase.createInBackground(dbFile));
         await db.customStatement(
             "INSERT INTO trials (name, status, workspace_type, region) "
             "VALUES ('T4', 'draft', 'efficacy', 'eppo_eu')");

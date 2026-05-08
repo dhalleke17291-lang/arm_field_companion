@@ -205,6 +205,7 @@ class WeatherBackfillService {
           ? _cloudCoverLabel(result.cloudCoverPct!)
           : null,
       precipitation: result.precipitation,
+      precipitationMm: result.precipitationMm,
       source: 'api_historical',
     );
 
@@ -235,8 +236,7 @@ class WeatherBackfillService {
         '&wind_speed_unit=kmh&temperature_unit=celsius',
       );
 
-      final response =
-          await http.get(url).timeout(const Duration(seconds: 15));
+      final response = await http.get(url).timeout(const Duration(seconds: 15));
       if (response.statusCode != 200) return null;
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -263,6 +263,9 @@ class WeatherBackfillService {
         precipitation: precips != null && idx < precips.length
             ? _describePrecipitation((precips[idx] as num?)?.toDouble())
             : null,
+        precipitationMm: precips != null && idx < precips.length
+            ? (precips[idx] as num?)?.toDouble()
+            : null,
         providerName: providerType == WeatherProviderType.environmentCanada
             ? 'Environment Canada (GEM)'
             : 'Open-Meteo',
@@ -284,6 +287,8 @@ class WeatherBackfillService {
         trialId: task.trialId,
         parentType: task.parentType,
         parentId: task.parentId,
+        // qualitative only — no numeric value available from this source
+        precipitationMm: null,
         source: 'missing',
       );
     }
@@ -329,8 +334,22 @@ class WeatherBackfillService {
 
 String _degreesToCompass(double degrees) {
   const directions = [
-    'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
-    'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW',
+    'N',
+    'NNE',
+    'NE',
+    'ENE',
+    'E',
+    'ESE',
+    'SE',
+    'SSE',
+    'S',
+    'SSW',
+    'SW',
+    'WSW',
+    'W',
+    'WNW',
+    'NW',
+    'NNW',
   ];
   final index = ((degrees + 11.25) / 22.5).floor() % 16;
   return directions[index];

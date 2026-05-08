@@ -116,6 +116,7 @@ void showRatingLineageBottomSheet({
 
   showModalBottomSheet<void>(
     context: context,
+    showDragHandle: false,
     isScrollControlled: true,
     backgroundColor: AppDesignTokens.cardSurface,
     shape: const RoundedRectangleBorder(

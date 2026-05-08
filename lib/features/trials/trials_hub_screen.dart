@@ -7,7 +7,6 @@ import '../shell/shell_providers.dart';
 import '../users/user_selection_screen.dart';
 import 'trial_list_screen.dart';
 import 'trials_hub_providers.dart';
-import 'trials_portfolio_screen.dart';
 
 /// Soothing light-mode palette inspired by ag research references.
 class _HubPalette {
@@ -72,9 +71,6 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
           : TrialListFilter.protocolOnly,
       titleOverride: isCustom ? 'Custom Trials' : 'Protocol Trials',
       onBackTap: () => setState(() => _view = _HubView.hub),
-      portfolioInitialWorkspace: isCustom
-          ? PortfolioWorkspaceSegment.custom
-          : PortfolioWorkspaceSegment.protocol,
     );
   }
 
@@ -96,8 +92,8 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
               opacity: _fadeAnim,
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  // Portfolio ~68lp fixed, 2 gaps 12lp each, scroll padding 12+16=28lp
-                  const fixedCost = 68 + 24 + 28;
+                  // 1 gap between 2 cards + scroll padding 12+16=28lp
+                  const fixedCost = 12 + 28;
                   final cardMinHeight =
                       ((constraints.maxHeight - fixedCost) / 2)
                           .clamp(160.0, 280.0);
@@ -110,19 +106,6 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
                     ),
                     child: Column(
                       children: [
-                        _PortfolioHubCard(
-                          onOpen: () {
-                            Navigator.of(context).push<void>(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const TrialsPortfolioScreen(
-                                  initialWorkspace:
-                                      PortfolioWorkspaceSegment.all,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: AppDesignTokens.spacing12),
                         SizedBox(
                           height: cardMinHeight,
                           child: _AgTrialCard(
@@ -264,80 +247,6 @@ class _TrialsHubScreenState extends ConsumerState<TrialsHubScreen>
       context,
       MaterialPageRoute(
         builder: (_) => const UserSelectionScreen(popOnSelect: true),
-      ),
-    );
-  }
-}
-
-/// Entry to [TrialsPortfolioScreen] from the hub.
-class _PortfolioHubCard extends StatelessWidget {
-  const _PortfolioHubCard({required this.onOpen});
-
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onOpen,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDesignTokens.spacing16,
-            vertical: AppDesignTokens.spacing8,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: _HubPalette.accentGreen.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.dashboard_customize_outlined,
-                  color: _HubPalette.accentGreen,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Portfolio',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppDesignTokens.primaryText,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Cross-trial priority, open sessions, and recent activity',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        height: 1.25,
-                        color: _HubPalette.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: scheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

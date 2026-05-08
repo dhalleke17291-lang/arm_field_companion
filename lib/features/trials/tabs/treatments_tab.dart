@@ -399,6 +399,7 @@ class TreatmentsTab extends ConsumerWidget {
   }) async {
     await showModalBottomSheet<void>(
       context: context,
+      showDragHandle: false,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -423,6 +424,7 @@ class TreatmentsTab extends ConsumerWidget {
       BuildContext context, WidgetRef ref, Treatment treatment) async {
     await showModalBottomSheet(
       context: context,
+      showDragHandle: false,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),

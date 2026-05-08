@@ -443,9 +443,15 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
       final lat = trial.latitude;
       final lng = trial.longitude;
       if (lat != null && lng != null) {
-        ref
-            .read(trialEnvironmentalRepositoryProvider)
-            .ensureTodayRecordExists(trial.id, lat, lng);
+        final environmentalRepository =
+            ref.read(trialEnvironmentalRepositoryProvider);
+        environmentalRepository.ensureTodayRecordExists(trial.id, lat, lng);
+        environmentalRepository.ensureSeasonBackfill(
+          trial.id,
+          lat,
+          lng,
+          trial.createdAt,
+        );
       }
     });
   }

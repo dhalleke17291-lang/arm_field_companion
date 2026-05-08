@@ -126,6 +126,15 @@ class _NoopDailyFetchService implements WeatherDailyFetchService {
     DateTime date,
   ) async =>
       null;
+
+  @override
+  Future<List<WeatherDailyRecord>> fetchDailyRange(
+    double lat,
+    double lng,
+    DateTime startDate,
+    DateTime endDate,
+  ) async =>
+      const [];
 }
 
 // ---------------------------------------------------------------------------
@@ -146,9 +155,9 @@ Widget _wrap({
           .overrideWithValue(false),
       evidenceAnchorsProvider(trial.id).overrideWith((_) async => evidence),
       trialEnvironmentalSummaryProvider(trial.id)
-          .overrideWith((_) async => summary),
+          .overrideWith((_) => Stream.value(summary)),
       trialEnvironmentalProvenanceProvider(trial.id)
-          .overrideWith((_) async => provenance),
+          .overrideWith((_) => Stream.value(provenance)),
       trialApplicationsForTrialProvider(trial.id)
           .overrideWith((_) => Stream.value(apps)),
       for (final entry in contextByEventId.entries)
@@ -348,8 +357,12 @@ void main() {
       // "Mark as Applied" tap records a distinct timestamp.
       final apps = [
         _appEvent(id: 'same-day-1', appliedAt: DateTime(2026, 5, 3, 14, 23, 1)),
-        _appEvent(id: 'same-day-2', growthStageBbchAtApplication: 32, appliedAt: DateTime(2026, 5, 3, 14, 23, 2)),
-        _appEvent(id: 'same-day-3', appliedAt: DateTime(2026, 5, 3, 14, 24, 15)),
+        _appEvent(
+            id: 'same-day-2',
+            growthStageBbchAtApplication: 32,
+            appliedAt: DateTime(2026, 5, 3, 14, 23, 2)),
+        _appEvent(
+            id: 'same-day-3', appliedAt: DateTime(2026, 5, 3, 14, 24, 15)),
         _appEvent(id: 'same-day-4', appliedAt: DateTime(2026, 5, 3, 14, 25, 0)),
       ];
 
@@ -441,8 +454,7 @@ void main() {
   });
 
   group('Section8Environmental provenance strip', () {
-    testWidgets(
-        'S8-P1: dataSource present renders source label and confidence',
+    testWidgets('S8-P1: dataSource present renders source label and confidence',
         (tester) async {
       await tester.pumpWidget(
         _wrap(
@@ -460,11 +472,10 @@ void main() {
 
       expect(find.textContaining('Open-Meteo'), findsOneWidget);
       expect(find.textContaining('Confidence: High'), findsOneWidget);
-      expect(find.textContaining('Trial Site GPS'), findsOneWidget);
+      expect(find.textContaining('api.open-meteo.com'), findsOneWidget);
     });
 
-    testWidgets(
-        'S8-P2: null dataSource renders Not recorded fallback',
+    testWidgets('S8-P2: null dataSource renders Not recorded fallback',
         (tester) async {
       await tester.pumpWidget(
         _wrap(
@@ -483,8 +494,7 @@ void main() {
       expect(find.textContaining('Not recorded'), findsOneWidget);
     });
 
-    testWidgets(
-        'S8-P3: recent fetchedAt renders relative time with "ago"',
+    testWidgets('S8-P3: recent fetchedAt renders relative time with "ago"',
         (tester) async {
       final twoHoursAgo = DateTime.now()
           .subtract(const Duration(hours: 2))
@@ -505,6 +515,76 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('ago'), findsOneWidget);
+    });
+  });
+
+  group('provenance display', () {
+    test('sourceDisplayName maps open_meteo to Open-Meteo', () {
+      expect(environmentalSourceDisplayName('open_meteo'), 'Open-Meteo');
+    });
+
+    test('sourceDisplayName maps manual to Manual entry', () {
+      expect(environmentalSourceDisplayName('manual'), 'Manual entry');
+    });
+
+    test('sourceDisplayName returns raw value for unknown source', () {
+      expect(environmentalSourceDisplayName('station_x'), 'station_x');
+    });
+
+    test('sourceDomain returns api.open-meteo.com for open_meteo', () {
+      expect(environmentalSourceDomain('open_meteo'), 'api.open-meteo.com');
+    });
+
+    test('sourceDomain returns null for manual', () {
+      expect(environmentalSourceDomain('manual'), isNull);
+    });
+
+    test('formatCoordinate formats northern western correctly', () {
+      expect(
+        formatEnvironmentalCoordinate(46.2382, -63.1311),
+        '46.2382°N, 63.1311°W',
+      );
+    });
+
+    test('formatCoordinate formats southern eastern correctly', () {
+      expect(
+        formatEnvironmentalCoordinate(-46.2382, 63.1311),
+        '46.2382°S, 63.1311°E',
+      );
+    });
+
+    test('buildProvenanceText omits domain for manual entry', () {
+      final text = buildEnvironmentalProvenanceText(
+        const EnvironmentalProvenanceDto(
+          dataSource: 'manual',
+          fetchedAtMs: null,
+          overallConfidence: 'measured',
+          isMultiSource: false,
+          dominantCount: 1,
+        ),
+      );
+
+      expect(text, contains('Manual entry'));
+      expect(text, isNot(contains('api.open-meteo.com')));
+    });
+
+    test('buildProvenanceText omits coordinates when null', () {
+      final text = buildEnvironmentalProvenanceText(
+        const EnvironmentalProvenanceDto(
+          dataSource: 'open_meteo',
+          fetchedAtMs: null,
+          overallConfidence: 'measured',
+          isMultiSource: false,
+          dominantCount: 1,
+        ),
+      );
+
+      expect(text, contains('Open-Meteo'));
+      expect(text, isNot(contains('°N')));
+    });
+
+    test('confidenceLabel maps measured to High', () {
+      expect(environmentalConfidenceLabel('measured'), 'High');
     });
   });
 

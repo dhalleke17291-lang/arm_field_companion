@@ -37,8 +37,7 @@ class TrialEnvironmentalRepository {
         );
   }
 
-  Future<List<TrialEnvironmentalRecord>> getRecordsForTrial(
-      int trialId) {
+  Future<List<TrialEnvironmentalRecord>> getRecordsForTrial(int trialId) {
     return (_db.select(_db.trialEnvironmentalRecords)
           ..where((r) => r.trialId.equals(trialId))
           ..orderBy([(r) => OrderingTerm.asc(r.recordDate)]))
@@ -49,8 +48,8 @@ class TrialEnvironmentalRepository {
       int trialId, DateTime date) {
     final dayMs = _dayStartMs(date);
     return (_db.select(_db.trialEnvironmentalRecords)
-          ..where((r) =>
-              r.trialId.equals(trialId) & r.recordDate.equals(dayMs)))
+          ..where(
+              (r) => r.trialId.equals(trialId) & r.recordDate.equals(dayMs)))
         .getSingleOrNull();
   }
 
@@ -65,8 +64,8 @@ class TrialEnvironmentalRepository {
   ) async {
     final todayMs = _dayStartMs(DateTime.now());
     final existing = await (_db.select(_db.trialEnvironmentalRecords)
-          ..where((r) =>
-              r.trialId.equals(trialId) & r.recordDate.equals(todayMs)))
+          ..where(
+              (r) => r.trialId.equals(trialId) & r.recordDate.equals(todayMs)))
         .getSingleOrNull();
 
     if (existing != null) return;
@@ -98,13 +97,117 @@ class TrialEnvironmentalRepository {
         );
   }
 
+  Future<void> ensureSeasonBackfill(
+    int trialId,
+    double lat,
+    double lng,
+    DateTime trialCreatedAt,
+  ) async {
+    final startDate = DateTime.utc(
+      trialCreatedAt.year,
+      trialCreatedAt.month,
+      trialCreatedAt.day,
+    );
+    final now = DateTime.now().toUtc();
+    final yesterday = DateTime.utc(now.year, now.month, now.day)
+        .subtract(const Duration(days: 1));
+
+    if (startDate.isAfter(yesterday)) return;
+
+    final existingRows = await (_db.select(_db.trialEnvironmentalRecords)
+          ..where((r) =>
+              r.trialId.equals(trialId) &
+              r.recordDate
+                  .isBiggerOrEqualValue(startDate.millisecondsSinceEpoch) &
+              r.recordDate
+                  .isSmallerOrEqualValue(yesterday.millisecondsSinceEpoch)))
+        .get();
+
+    final existingDates = existingRows
+        .map((r) =>
+            DateTime.fromMillisecondsSinceEpoch(r.recordDate, isUtc: true))
+        .map((d) => DateTime.utc(d.year, d.month, d.day))
+        .toSet();
+
+    final allDates = _dateRange(startDate, yesterday);
+    final missing = allDates.where((d) => !existingDates.contains(d)).toList();
+
+    if (missing.isEmpty) return;
+
+    await _fetchAndStoreRange(trialId, lat, lng, missing.first, missing.last);
+  }
+
   // ── Internal helpers ──────────────────────────────────────────────────────
+
+  List<DateTime> debugDateRange(DateTime start, DateTime end) {
+    return _dateRange(start, end);
+  }
+
+  List<DateTime> _dateRange(DateTime start, DateTime end) {
+    final dates = <DateTime>[];
+    var current = DateTime.utc(start.year, start.month, start.day);
+    final endDay = DateTime.utc(end.year, end.month, end.day);
+    while (!current.isAfter(endDay)) {
+      dates.add(current);
+      current = current.add(const Duration(days: 1));
+    }
+    return dates;
+  }
+
+  Future<void> _fetchAndStoreRange(
+    int trialId,
+    double lat,
+    double lng,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    try {
+      final records =
+          await _weatherFetch.fetchDailyRange(lat, lng, startDate, endDate);
+      for (final record in records) {
+        final dateMs = DateTime.utc(
+          record.date.year,
+          record.date.month,
+          record.date.day,
+        ).millisecondsSinceEpoch;
+
+        final existing = await (_db.select(_db.trialEnvironmentalRecords)
+              ..where((r) =>
+                  r.trialId.equals(trialId) & r.recordDate.equals(dateMs)))
+            .getSingleOrNull();
+        if (existing != null) continue;
+
+        final flags = _computeFlags(
+          minTempC: record.minTempC,
+          maxTempC: record.maxTempC,
+          precipMm: record.precipMm,
+        );
+
+        await _db.into(_db.trialEnvironmentalRecords).insert(
+              TrialEnvironmentalRecordsCompanion.insert(
+                trialId: trialId,
+                recordDate: dateMs,
+                siteLatitude: lat,
+                siteLongitude: lng,
+                dailyMinTempC: Value(record.minTempC),
+                dailyMaxTempC: Value(record.maxTempC),
+                dailyPrecipitationMm: Value(record.precipMm),
+                weatherFlags: Value(flags.isEmpty ? null : jsonEncode(flags)),
+                dataSource: 'open_meteo',
+                fetchedAt: DateTime.now().millisecondsSinceEpoch,
+                confidence: const Value('measured'),
+              ),
+            );
+      }
+    } catch (_) {
+      // Backfill is best-effort: never block or surface errors to the UI.
+    }
+  }
 
   /// UTC midnight milliseconds for the calendar day containing [date].
   static int _dayStartMs(DateTime date) {
     final utc = date.toUtc();
-    return DateTime.utc(utc.year, utc.month, utc.day)
-        .millisecondsSinceEpoch;
+    return DateTime.utc(utc.year, utc.month, utc.day).millisecondsSinceEpoch;
   }
 
   /// Returns a list of flag strings for notable weather events.

@@ -18,7 +18,6 @@ import 'standalone/trial_creation_wizard.dart';
 import '../derived/trial_attention_provider.dart';
 import '../derived/trial_attention_service.dart';
 import 'trial_detail_screen.dart';
-import 'trials_portfolio_screen.dart';
 import 'widgets/trial_card.dart';
 import '../sessions/usecases/start_or_continue_rating_usecase.dart';
 import '../sessions/create_session_screen.dart';
@@ -341,16 +340,11 @@ class TrialListScreen extends ConsumerStatefulWidget {
     this.workspaceFilter = TrialListFilter.all,
     this.titleOverride,
     this.onBackTap,
-    this.portfolioInitialWorkspace,
   });
 
   final TrialListFilter workspaceFilter;
   final String? titleOverride;
   final VoidCallback? onBackTap;
-
-  /// When set (e.g. Custom or Protocol hub lists), toolbar includes Portfolio
-  /// opening with this segment selected by default; user can still pick All.
-  final PortfolioWorkspaceSegment? portfolioInitialWorkspace;
 
   @override
   ConsumerState<TrialListScreen> createState() => _TrialListScreenState();
@@ -433,19 +427,6 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                           ),
                         ),
                         _TrialListToolbarActions(
-                          onOpenPortfolio: widget.portfolioInitialWorkspace ==
-                                  null
-                              ? null
-                              : () {
-                                  Navigator.of(context).push<void>(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => TrialsPortfolioScreen(
-                                        initialWorkspace:
-                                            widget.portfolioInitialWorkspace!,
-                                      ),
-                                    ),
-                                  );
-                                },
                           onExport: () => _exportAllTrials(context, ref),
                           onOpenImportSheet: () =>
                               ImportTrialSheet.show(context),
@@ -929,13 +910,11 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
 /// Grouped header actions: export, optional unified Import sheet, about.
 class _TrialListToolbarActions extends StatelessWidget {
   const _TrialListToolbarActions({
-    this.onOpenPortfolio,
     required this.onExport,
     required this.onOpenImportSheet,
     required this.onAbout,
   });
 
-  final VoidCallback? onOpenPortfolio;
   final VoidCallback onExport;
   final VoidCallback onOpenImportSheet;
   final VoidCallback onAbout;
@@ -957,14 +936,6 @@ class _TrialListToolbarActions extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (onOpenPortfolio != null) ...[
-            _TrialListToolbarIcon(
-              icon: Icons.dashboard_customize_outlined,
-              tooltip: 'Portfolio',
-              onPressed: onOpenPortfolio!,
-            ),
-            sep(),
-          ],
           _TrialListToolbarIcon(
             icon: Icons.file_upload_outlined,
             tooltip: 'Export closed sessions (ZIP per trial)',

@@ -5,6 +5,7 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/design/app_design_tokens.dart';
 import '../../../../core/providers.dart';
 import '../../../../domain/trial_cognition/trial_evidence_arc_dto.dart';
+import '../../trial_data_screen.dart';
 import '_overview_card.dart';
 
 class Section3Arc extends ConsumerWidget {
@@ -15,6 +16,9 @@ class Section3Arc extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final arcAsync = ref.watch(trialEvidenceArcProvider(trial.id));
+    final amendmentCount =
+        ref.watch(amendedRatingCountForTrialProvider(trial.id)).valueOrNull ??
+            0;
 
     return OverviewSectionCard(
       number: 3,
@@ -22,16 +26,26 @@ class Section3Arc extends ConsumerWidget {
       child: arcAsync.when(
         loading: () => const OverviewSectionLoading(),
         error: (_, __) => const OverviewSectionError(),
-        data: (dto) => _ArcBody(dto: dto),
+        data: (dto) => _ArcBody(
+          dto: dto,
+          trial: trial,
+          amendmentCount: amendmentCount,
+        ),
       ),
     );
   }
 }
 
 class _ArcBody extends StatelessWidget {
-  const _ArcBody({required this.dto});
+  const _ArcBody({
+    required this.dto,
+    required this.trial,
+    required this.amendmentCount,
+  });
 
   final TrialEvidenceArcDto dto;
+  final Trial trial;
+  final int amendmentCount;
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +101,43 @@ class _ArcBody extends StatelessWidget {
                   color: AppDesignTokens.primaryText,
                 ),
               ),
+            ),
+          ),
+        ],
+        if (amendmentCount > 0) ...[
+          const SizedBox(height: AppDesignTokens.spacing8),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => TrialDataScreen(trial: trial),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.edit_note_outlined,
+                  size: 14,
+                  color: AppDesignTokens.warningFg,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '$amendmentCount rating '
+                    'amendment${amendmentCount == 1 ? '' : 's'} recorded — '
+                    'view in Data',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppDesignTokens.warningFg,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right,
+                  size: 14,
+                  color: AppDesignTokens.warningFg,
+                ),
+              ],
             ),
           ),
         ],

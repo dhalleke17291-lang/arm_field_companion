@@ -17,6 +17,7 @@ void showSessionCompletenessSheet(
     BuildContext context, Trial trial, Session session) {
   showModalBottomSheet<void>(
     context: context,
+    showDragHandle: false,
     isScrollControlled: true,
     useSafeArea: true,
     shape: const RoundedRectangleBorder(

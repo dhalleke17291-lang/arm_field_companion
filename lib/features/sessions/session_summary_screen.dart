@@ -77,6 +77,7 @@ void _showCellDetailSheet({
 
   showModalBottomSheet<void>(
     context: context,
+    showDragHandle: false,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -455,6 +456,7 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
     var proceedAfterDiagnostic = false;
     await showModalBottomSheet<void>(
       context: context,
+      showDragHandle: false,
       isScrollControlled: true,
       builder: (ctx) => SessionCloseDiagnostic(
         sessionId: widget.session.id,

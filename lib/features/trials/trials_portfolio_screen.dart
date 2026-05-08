@@ -5,15 +5,16 @@ import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/session_state.dart';
-import '../../core/trial_state.dart' show
-    effectiveTrialStatusForListDisplay,
-    kTrialStatusActive,
-    kTrialStatusArchived,
-    kTrialStatusClosed,
-    kTrialStatusDraft,
-    kTrialStatusReady,
-    labelForTrialStatus,
-    trialIsListedAsActive;
+import '../../core/trial_state.dart'
+    show
+        effectiveTrialStatusForListDisplay,
+        kTrialStatusActive,
+        kTrialStatusArchived,
+        kTrialStatusClosed,
+        kTrialStatusDraft,
+        kTrialStatusReady,
+        labelForTrialStatus,
+        trialIsListedAsActive;
 import '../../core/workspace/workspace_filter.dart';
 import '../derived/trial_attention_provider.dart';
 import '../derived/trial_attention_service.dart';
@@ -45,11 +46,20 @@ String _formatLastActivity(DateTime? at) {
     case kTrialStatusDraft:
       return (bg: AppDesignTokens.warningBg, fg: AppDesignTokens.warningFg);
     case kTrialStatusClosed:
-      return (bg: AppDesignTokens.emptyBadgeBg, fg: AppDesignTokens.secondaryText);
+      return (
+        bg: AppDesignTokens.emptyBadgeBg,
+        fg: AppDesignTokens.secondaryText
+      );
     case kTrialStatusArchived:
-      return (bg: AppDesignTokens.emptyBadgeBg, fg: AppDesignTokens.emptyBadgeFg);
+      return (
+        bg: AppDesignTokens.emptyBadgeBg,
+        fg: AppDesignTokens.emptyBadgeFg
+      );
     default:
-      return (bg: AppDesignTokens.sectionHeaderBg, fg: AppDesignTokens.primaryText);
+      return (
+        bg: AppDesignTokens.sectionHeaderBg,
+        fg: AppDesignTokens.primaryText
+      );
   }
 }
 
@@ -81,7 +91,7 @@ class TrialsPortfolioScreen extends ConsumerStatefulWidget {
 
 class _TrialsPortfolioScreenState extends ConsumerState<TrialsPortfolioScreen> {
   late PortfolioWorkspaceSegment _workspace;
-  bool _activeOnly = true;
+  bool _activeOnly = false;
 
   @override
   void initState() {
@@ -290,9 +300,8 @@ class _PortfolioTrialTile extends ConsumerWidget {
 
     final chipColors = _portfolioStatusChipColors(displayStatus.toLowerCase());
     final isActive = displayStatus.toLowerCase() == kTrialStatusActive;
-    final accentColor = isActive
-        ? AppDesignTokens.primaryGreen
-        : AppDesignTokens.borderCrisp;
+    final accentColor =
+        isActive ? AppDesignTokens.primaryGreen : AppDesignTokens.borderCrisp;
 
     return Material(
       color: AppDesignTokens.cardSurface,
@@ -324,8 +333,8 @@ class _PortfolioTrialTile extends ConsumerWidget {
               height: 64,
               decoration: BoxDecoration(
                 color: accentColor,
-                borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.horizontal(left: Radius.circular(12)),
               ),
             ),
             Expanded(

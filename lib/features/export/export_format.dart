@@ -5,15 +5,22 @@ enum ExportFormat {
   armHandoff,
   zipBundle,
   pdfReport,
+
   /// Field Evidence Report — provenance document with timestamps, amendments,
   /// outliers, device/rater certification, and completeness scoring.
   evidenceReport,
+
   /// Trial Report PDF — structured document for the regulatory binder.
   /// Site summary, treatments, design, applications, assessment data tables.
   trialReport,
+
+  /// Trial Defensibility Summary — quality flags, results, decisions, and audit trail.
+  trialDefensibility,
+
   /// Excel rating shell for imported protocol trials; handled by [ExportArmRatingShellUseCase].
   /// Listed on the trial export sheet only when the trial is ARM-linked.
   armRatingShell,
+
   /// Full trial as structured JSON — all data, insights, and completeness.
   jsonExport,
 }
@@ -33,6 +40,8 @@ extension ExportFormatDetails on ExportFormat {
         return 'Evidence Report (PDF)';
       case ExportFormat.trialReport:
         return 'Trial Report (PDF)';
+      case ExportFormat.trialDefensibility:
+        return 'Trial Defensibility Summary';
       case ExportFormat.armRatingShell:
         return 'Rating Sheet (Excel)';
       case ExportFormat.jsonExport:
@@ -54,6 +63,8 @@ extension ExportFormatDetails on ExportFormat {
         return 'Provenance document with timestamps, amendments, outliers, device/rater certification, and completeness scoring — GLP-ready evidence';
       case ExportFormat.trialReport:
         return 'Structured trial report with site summary, treatments, applications, and assessment data tables — for the regulatory binder';
+      case ExportFormat.trialDefensibility:
+        return 'PDF with quality flags, results, decisions and audit trail';
       case ExportFormat.armRatingShell:
         return 'Inject collected ratings back into the original protocol spreadsheet';
       case ExportFormat.jsonExport:
@@ -75,6 +86,8 @@ extension ExportFormatDetails on ExportFormat {
         return Icons.verified_outlined;
       case ExportFormat.trialReport:
         return Icons.article_outlined;
+      case ExportFormat.trialDefensibility:
+        return Icons.verified_outlined;
       case ExportFormat.armRatingShell:
         return Icons.table_view_outlined;
       case ExportFormat.jsonExport:
@@ -90,6 +103,8 @@ extension ExportFormatDetails on ExportFormat {
         return 'GLP';
       case ExportFormat.trialReport:
         return 'Report';
+      case ExportFormat.trialDefensibility:
+        return 'Summary';
       case ExportFormat.armRatingShell:
         return 'Protocol';
       default:

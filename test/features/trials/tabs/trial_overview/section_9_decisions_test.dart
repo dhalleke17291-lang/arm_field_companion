@@ -148,7 +148,6 @@ void main() {
 
       expect(find.text('Recorded values may need review'), findsOneWidget);
       expect(find.text('Needs review'), findsWidgets);
-      expect(find.text('Decide'), findsOneWidget);
       expect(find.text('1 signals'), findsNothing);
       expect(
         find.text('This review item should be considered on its own.'),
@@ -175,7 +174,7 @@ void main() {
       expect(find.text('Raw scale text.'), findsNothing);
     });
 
-    testWidgets('member signal IDs are preserved and actionable',
+    testWidgets('multi-signal row expands and members are actionable',
         (tester) async {
       final trial = _trial();
 
@@ -188,14 +187,22 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Review 2 signals'));
+      // Tap the group row to expand member list
+      await tester.tap(
+        find.text('Replication pattern may affect results').first,
+      );
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Signal #1'), findsOneWidget);
-      expect(find.text('Signal #2'), findsOneWidget);
+      // After expansion: group title + 2 member items (same displayTitle)
+      expect(
+        find.text('Replication pattern may affect results'),
+        findsNWidgets(3),
+      );
 
-      await tester.tap(find.text('Signal #2'));
+      // Tap a member item to open the signal action sheet
+      await tester.tap(
+        find.text('Replication pattern may affect results').last,
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 

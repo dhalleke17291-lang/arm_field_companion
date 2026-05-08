@@ -27,6 +27,7 @@ class PdfBranding {
   static pw.Widget brandBlock(pw.ImageProvider? logo, {double logoWidth = 44}) {
     return pw.Column(
       mainAxisSize: pw.MainAxisSize.min,
+      crossAxisAlignment: pw.CrossAxisAlignment.center,
       children: [
         if (logo != null)
           pw.Image(logo, width: logoWidth, fit: pw.BoxFit.contain),

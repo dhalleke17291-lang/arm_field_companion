@@ -1,5 +1,6 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/data/repositories/trial_environmental_repository.dart';
+import 'package:arm_field_companion/data/services/weather_daily_summary.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,8 +15,8 @@ void main() {
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    fakeWeather =
-        FakeWeatherFetchService(result: null); // no network — deterministic unavailable path
+    fakeWeather = FakeWeatherFetchService(
+        result: null); // no network — deterministic unavailable path
     repo = TrialEnvironmentalRepository(db, fakeWeather);
     trialId =
         await db.into(db.trials).insert(TrialsCompanion.insert(name: 'T'));
@@ -112,15 +113,13 @@ void main() {
   // ── TER-4: getRecordForDate returns null when absent ─────────────────────
 
   test('TER-4: getRecordForDate returns null when no record exists', () async {
-    final found =
-        await repo.getRecordForDate(trialId, DateTime(2026, 3, 1));
+    final found = await repo.getRecordForDate(trialId, DateTime(2026, 3, 1));
     expect(found, isNull);
   });
 
   // ── TER-5: ensureTodayRecordExists inserts unavailable when fetch skipped ─
 
-  test(
-      'TER-5: ensureTodayRecordExists with no existing record inserts a row',
+  test('TER-5: ensureTodayRecordExists with no existing record inserts a row',
       () async {
     await repo.ensureTodayRecordExists(trialId, 51.5, -0.1);
 
@@ -156,5 +155,112 @@ void main() {
     expect(rows.length, 3);
     expect(rows[0].recordDate, lessThan(rows[1].recordDate));
     expect(rows[1].recordDate, lessThan(rows[2].recordDate));
+  });
+
+  group('date range utility', () {
+    test('returns correct list from start to end inclusive', () {
+      final dates = repo.debugDateRange(
+        DateTime.utc(2026, 5, 1),
+        DateTime.utc(2026, 5, 3),
+      );
+
+      expect(dates, [
+        DateTime.utc(2026, 5, 1),
+        DateTime.utc(2026, 5, 2),
+        DateTime.utc(2026, 5, 3),
+      ]);
+    });
+
+    test('returns empty when start equals end + 1 day', () {
+      final dates = repo.debugDateRange(
+        DateTime.utc(2026, 5, 4),
+        DateTime.utc(2026, 5, 3),
+      );
+
+      expect(dates, isEmpty);
+    });
+
+    test('returns single item when start equals end', () {
+      final dates = repo.debugDateRange(
+        DateTime.utc(2026, 5, 3),
+        DateTime.utc(2026, 5, 3),
+      );
+
+      expect(dates, [DateTime.utc(2026, 5, 3)]);
+    });
+  });
+
+  group('ensureSeasonBackfill', () {
+    DateTime utcDaysAgo(int days) {
+      final now = DateTime.now().toUtc();
+      final today = DateTime.utc(now.year, now.month, now.day);
+      return today.subtract(Duration(days: days));
+    }
+
+    test('skips entirely when trial created today', () async {
+      await repo.ensureSeasonBackfill(trialId, 51.5, -0.1, DateTime.now());
+
+      expect(fakeWeather.totalRangeCalls, 0);
+      expect(await repo.getRecordsForTrial(trialId), isEmpty);
+    });
+
+    test('skips dates that already have records', () async {
+      final yesterday = utcDaysAgo(1);
+      await insertRecord(date: yesterday, minTemp: 3);
+
+      await repo.ensureSeasonBackfill(trialId, 51.5, -0.1, yesterday);
+
+      expect(fakeWeather.totalRangeCalls, 0);
+      final rows = await repo.getRecordsForTrial(trialId);
+      expect(rows, hasLength(1));
+      expect(rows.single.dailyMinTempC, 3);
+    });
+
+    test('inserts missing dates only', () async {
+      final twoDaysAgo = utcDaysAgo(2);
+      final yesterday = utcDaysAgo(1);
+      fakeWeather = FakeWeatherFetchService(
+        rangeResult: [
+          WeatherDailyRecord(
+            date: twoDaysAgo,
+            minTempC: -1,
+            maxTempC: 10,
+            precipMm: 12,
+          ),
+          WeatherDailyRecord(
+            date: yesterday,
+            minTempC: 2,
+            maxTempC: 11,
+            precipMm: 1,
+          ),
+        ],
+      );
+      repo = TrialEnvironmentalRepository(db, fakeWeather);
+      await insertRecord(date: twoDaysAgo, minTemp: 4);
+
+      await repo.ensureSeasonBackfill(trialId, 51.5, -0.1, twoDaysAgo);
+
+      final rows = await repo.getRecordsForTrial(trialId);
+      expect(rows, hasLength(2));
+      expect(
+          rows.where((r) => r.recordDate == dayMs(twoDaysAgo)), hasLength(1));
+      final inserted =
+          rows.singleWhere((r) => r.recordDate == dayMs(yesterday));
+      expect(inserted.dailyMinTempC, 2);
+      expect(inserted.dailyPrecipitationMm, 1);
+      expect(fakeWeather.totalRangeCalls, 1);
+    });
+
+    test('never throws — swallows fetch errors silently', () async {
+      fakeWeather = FakeWeatherFetchService(throwOnFetch: true);
+      repo = TrialEnvironmentalRepository(db, fakeWeather);
+
+      await expectLater(
+        repo.ensureSeasonBackfill(trialId, 51.5, -0.1, utcDaysAgo(1)),
+        completes,
+      );
+
+      expect(await repo.getRecordsForTrial(trialId), isEmpty);
+    });
   });
 }

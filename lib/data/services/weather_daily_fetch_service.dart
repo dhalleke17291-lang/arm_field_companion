@@ -10,4 +10,11 @@ abstract class WeatherDailyFetchService {
     double lng,
     DateTime date,
   );
+
+  Future<List<WeatherDailyRecord>> fetchDailyRange(
+    double lat,
+    double lng,
+    DateTime startDate,
+    DateTime endDate,
+  );
 }

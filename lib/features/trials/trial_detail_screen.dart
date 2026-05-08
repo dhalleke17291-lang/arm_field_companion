@@ -373,6 +373,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       List<ExportFormat> allowedFormats) async {
     return showModalBottomSheet<ExportFormat>(
       context: context,
+      showDragHandle: false,
       backgroundColor: Colors.white,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -475,6 +476,18 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ScaffoldMessenger.of(context).clearSnackBars();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Trial report ready to share')),
+          );
+          return;
+        }
+        if (format == ExportFormat.trialDefensibility) {
+          final useCase = ref.read(exportTrialDefensibilityUseCaseProvider);
+          await useCase.execute(trial: widget.trial);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Trial defensibility summary ready to share'),
+            ),
           );
           return;
         }
@@ -759,6 +772,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
     );
     showModalBottomSheet<void>(
       context: context,
+      showDragHandle: false,
       isScrollControlled: true,
       builder: (ctx) => _TrialReadinessSheet(
         trialId: trial.id,
@@ -2971,12 +2985,7 @@ class _TrialModuleHub extends StatelessWidget {
     // Trial Overview (10) is always shown — Sprint A4.
     const allItems = <(int, IconData, String, TrialTab?)>[
       (_overviewTabIndex, Icons.dashboard_outlined, 'Overview', null),
-      (
-        _trialOverviewTabIndex,
-        Icons.fact_check_outlined,
-        'Trial Review',
-        null
-      ),
+      (_trialOverviewTabIndex, Icons.fact_check_outlined, 'Trial Review', null),
       (6, Icons.timeline, 'Timeline', TrialTab.timeline),
       (0, Icons.grid_on, 'Plots', TrialTab.plots),
       (1, Icons.agriculture, 'Seeding', TrialTab.seeding),
@@ -4583,6 +4592,7 @@ class SessionsView extends ConsumerWidget {
     var proceedAfterDiagnostic = false;
     await showModalBottomSheet<void>(
       context: context,
+      showDragHandle: false,
       isScrollControlled: true,
       builder: (ctx) => SessionCloseDiagnostic(
         sessionId: session.id,

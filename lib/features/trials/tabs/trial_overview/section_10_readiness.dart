@@ -7,6 +7,7 @@ import '../../../../core/providers.dart';
 import '../../../../domain/signals/signal_providers.dart';
 import '../../../../domain/signals/signal_review_projection.dart';
 import '../../../../domain/trial_cognition/readiness_criteria_codec.dart';
+import '../../widgets/signal_action_sheet.dart';
 import '../../../../domain/trial_cognition/trial_readiness_statement.dart';
 import '_overview_card.dart';
 
@@ -48,6 +49,7 @@ class Section10Readiness extends ConsumerWidget {
               );
               return _ReadinessBody(
                 statement: statement,
+                trialId: trial.id,
                 readinessCriteriaSummary: purpose?.readinessCriteriaSummary,
                 signalActions: projectedSignalsAsync.valueOrNull
                         ?.where((signal) => signal.requiresReadinessAction)
@@ -62,14 +64,16 @@ class Section10Readiness extends ConsumerWidget {
   }
 }
 
-class _ReadinessBody extends StatelessWidget {
+class _ReadinessBody extends ConsumerWidget {
   const _ReadinessBody({
     required this.statement,
+    required this.trialId,
     this.readinessCriteriaSummary,
     this.signalActions = const <SignalReviewProjection>[],
   });
 
   final TrialReadinessStatement statement;
+  final int trialId;
   final String? readinessCriteriaSummary;
   final List<SignalReviewProjection> signalActions;
 
@@ -98,19 +102,38 @@ class _ReadinessBody extends StatelessWidget {
       return 'Required evidence is missing.';
     }
 
-    // Fallback: most specific blocking reason — never coherence trivia
-    for (final r in statement.reasons) {
-      if (r == 'No coherence concerns identified.') continue;
-      if (r == 'All critical-to-quality factors satisfied.') continue;
-      if (r.startsWith('Interpretation risk is low')) continue;
-      if (r.startsWith('Interpretation risk is moderate')) continue;
-      return r;
+    // Fallback: derive clean prose from action items and reasons
+    // Never surface raw internal check strings
+    final hasCoherenceIssue = statement.actionItems
+        .any((a) => a.startsWith('Review deviation:') ||
+                    a.startsWith('Provide missing input for:'));
+    final hasCTQIssue = statement.actionItems
+        .any((a) => a.startsWith('Resolve:'));
+
+    if (hasCoherenceIssue && hasCTQIssue) {
+      return 'Trial execution has deviations and required evidence is missing.';
+    }
+    if (hasCoherenceIssue) {
+      return 'Trial execution has deviations that require review.';
+    }
+    if (hasCTQIssue) {
+      return 'Required evidence has not been recorded.';
+    }
+    if (statement.actionItems.isNotEmpty) {
+      return 'One or more required conditions have not been met.';
     }
     return null;
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rawSignalsById = {
+      for (final signal
+          in ref.watch(openSignalsForTrialProvider(trialId)).valueOrNull ??
+              const <Signal>[])
+        signal.id: signal,
+    };
+
     final (chipBg, chipFg) = statement.isReadyForExport
         ? (AppDesignTokens.successBg, AppDesignTokens.successFg)
         : (AppDesignTokens.warningBg, AppDesignTokens.warningFg);
@@ -167,7 +190,12 @@ class _ReadinessBody extends StatelessWidget {
           ),
           const SizedBox(height: AppDesignTokens.spacing4),
           ..._bulletList(statement.actionItems),
-          ..._signalActionBulletList(signalActions),
+          ..._signalActionBulletList(
+            signalActions,
+            context: context,
+            rawSignalsById: rawSignalsById,
+            trialId: trialId,
+          ),
         ],
         if (statement.cautions.isNotEmpty) ...[
           const SizedBox(height: AppDesignTokens.spacing8),
@@ -221,77 +249,92 @@ class _ReadinessBody extends StatelessWidget {
   }
 
   static List<Widget> _signalActionBulletList(
-    List<SignalReviewProjection> items,
-  ) {
-    return items
-        .map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 3),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '• ',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppDesignTokens.primaryText,
-                  ),
+    List<SignalReviewProjection> items, {
+    required BuildContext context,
+    required Map<int, Signal> rawSignalsById,
+    required int trialId,
+  }) {
+    return items.map((item) {
+      final rawSignal = rawSignalsById[item.signalId];
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 3),
+        child: InkWell(
+          onTap: rawSignal != null
+              ? () => showSignalActionSheet(context,
+                  signal: rawSignal, trialId: trialId)
+              : null,
+          borderRadius: BorderRadius.circular(4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '• ',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppDesignTokens.primaryText,
                 ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.displayTitle,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppDesignTokens.primaryText,
+                        height: 1.4,
+                      ),
+                    ),
+                    if (item.readinessActionReason != null) ...[
+                      const SizedBox(height: 2),
                       Text(
-                        item.displayTitle,
+                        item.readinessActionReason!,
                         style: const TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w600,
                           color: AppDesignTokens.primaryText,
                           height: 1.4,
                         ),
                       ),
-                      if (item.readinessActionReason != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          item.readinessActionReason!,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppDesignTokens.primaryText,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
+                    ],
+                    const SizedBox(height: 2),
+                    Text(
+                      item.statusLabel,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppDesignTokens.secondaryText,
+                        height: 1.3,
+                      ),
+                    ),
+                    if (item.blocksExport &&
+                        item.blocksExportReason != null) ...[
                       const SizedBox(height: 2),
                       Text(
-                        item.statusLabel,
+                        item.blocksExportReason!,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: AppDesignTokens.secondaryText,
+                          color: AppDesignTokens.warningFg,
                           height: 1.3,
                         ),
                       ),
-                      if (item.blocksExport &&
-                          item.blocksExportReason != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          item.blocksExportReason!,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppDesignTokens.warningFg,
-                            height: 1.3,
-                          ),
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              if (rawSignal != null)
+                const Icon(
+                  Icons.chevron_right,
+                  size: 16,
+                  color: AppDesignTokens.secondaryText,
+                ),
+            ],
           ),
-        )
-        .toList();
+        ),
+      );
+    }).toList();
   }
 }
 

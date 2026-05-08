@@ -90,7 +90,7 @@ Widget _wrapSized({
           (ref) => Stream.value(_purpose()),
         ),
         trialEvidenceArcProvider(trial.id).overrideWith(
-              (ref) => Stream.value(_arc()),
+          (ref) => Stream.value(_arc()),
         ),
         trialCriticalToQualityProvider(trial.id).overrideWith(
           (ref) => Stream.value(_ctq),
@@ -102,7 +102,7 @@ Widget _wrapSized({
           (ref) => Stream.value(_risk),
         ),
         trialEnvironmentalSummaryProvider(trial.id).overrideWith(
-          (ref) async => _env,
+          (ref) => Stream.value(_env),
         ),
         trialApplicationsForTrialProvider(trial.id).overrideWith(
           (ref) => Stream.value(const <TrialApplicationEvent>[]),
@@ -143,7 +143,8 @@ void main() {
       WidgetTester tester,
     ) async {
       final trial = _trial();
-      await tester.pumpWidget(_wrapSized(width: 390, height: 844, trial: trial));
+      await tester
+          .pumpWidget(_wrapSized(width: 390, height: 844, trial: trial));
       await tester.pump(const Duration(seconds: 1));
       expect(tester.takeException(), isNull);
     });
@@ -152,7 +153,8 @@ void main() {
       WidgetTester tester,
     ) async {
       final trial = _trial();
-      await tester.pumpWidget(_wrapSized(width: 834, height: 1194, trial: trial));
+      await tester
+          .pumpWidget(_wrapSized(width: 834, height: 1194, trial: trial));
       await tester.pump(const Duration(seconds: 1));
       expect(tester.takeException(), isNull);
     });

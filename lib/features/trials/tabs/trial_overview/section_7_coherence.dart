@@ -92,12 +92,17 @@ class _CoherenceBodyState extends State<_CoherenceBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          summaryLine,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppDesignTokens.primaryText,
+        GestureDetector(
+          onTap: aligned.isNotEmpty && !_showAligned
+              ? () => setState(() => _showAligned = true)
+              : null,
+          child: Text(
+            summaryLine,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppDesignTokens.primaryText,
+            ),
           ),
         ),
         const SizedBox(height: AppDesignTokens.spacing8),
@@ -230,14 +235,23 @@ class _KnownFactorsRow extends StatelessWidget {
   }
 }
 
-class _CoherenceCheckRow extends StatelessWidget {
+class _CoherenceCheckRow extends StatefulWidget {
   const _CoherenceCheckRow({required this.check});
 
   final TrialCoherenceCheckDto check;
 
   @override
+  State<_CoherenceCheckRow> createState() => _CoherenceCheckRowState();
+}
+
+class _CoherenceCheckRowState extends State<_CoherenceCheckRow> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final check = widget.check;
     final isCannotEval = check.status == 'cannot_evaluate';
+    final hasReason = check.reason.isNotEmpty;
 
     final (chipBg, chipFg, chipLabel) = isCannotEval
         ? (
@@ -256,23 +270,37 @@ class _CoherenceCheckRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  check.label,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppDesignTokens.primaryText,
+          InkWell(
+            onTap: hasReason ? () => setState(() => _expanded = !_expanded) : null,
+            borderRadius: BorderRadius.circular(4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    check.label,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              OverviewStatusChip(label: chipLabel, bg: chipBg, fg: chipFg),
-            ],
+                const SizedBox(width: 8),
+                OverviewStatusChip(label: chipLabel, bg: chipBg, fg: chipFg),
+                if (hasReason) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    size: 16,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ],
+              ],
+            ),
           ),
-          if (check.reason.isNotEmpty) ...[
+          if (_expanded && hasReason) ...[
             const SizedBox(height: 2),
             Text(
               check.reason,

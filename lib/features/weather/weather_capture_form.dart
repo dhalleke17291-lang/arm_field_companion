@@ -23,6 +23,7 @@ Future<void> showWeatherCaptureBottomSheet(
 }) {
   return showModalBottomSheet<void>(
     context: context,
+    showDragHandle: false,
     isScrollControlled: true,
     backgroundColor: AppDesignTokens.transparent,
     builder: (ctx) => Padding(
@@ -66,6 +67,7 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
   String? _windDir;
   String? _cloudCover;
   String? _precipitation;
+  double? _precipitationMm;
   String? _soilCondition;
 
   bool _localeDefaultsApplied = false;
@@ -93,6 +95,7 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
     _windDir = w?.windDirection;
     _cloudCover = w?.cloudCover;
     _precipitation = w?.precipitation;
+    _precipitationMm = w?.precipitationMm;
     _soilCondition = w?.soilCondition;
     _weatherSource = w?.source ?? 'manual';
 
@@ -155,7 +158,10 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
           _cloudCover = 'Overcast';
         }
       }
-      _precipitation ??= result.precipitation;
+      if (_precipitation == null) {
+        _precipitation = result.precipitation;
+        _precipitationMm = result.precipitationMm;
+      }
     });
 
     if (mounted) {
@@ -170,23 +176,18 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
 
   void _markManualEdit() {
     if (_weatherSource == 'api') {
-      setState(() => _weatherSource = 'manual');
+      setState(() {
+        _weatherSource = 'manual';
+        _precipitationMm = null;
+      });
     }
   }
-
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (widget.initialSnapshot != null || _localeDefaultsApplied) return;
     _localeDefaultsApplied = true;
-    final country = Localizations.localeOf(context).countryCode;
-    if (country == 'US') {
-      setState(() {
-        _tempUnit = 'F';
-        _windUnit = 'mph';
-      });
-    }
   }
 
   @override
@@ -249,7 +250,8 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
     final err = tErr ?? hErr ?? wErr;
     if (err != null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(err)));
       }
       return;
     }
@@ -278,6 +280,10 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
             windDirection: Value(_windDir),
             cloudCover: Value(_cloudCover),
             precipitation: Value(_precipitation),
+            precipitationMm: _weatherSource == 'api'
+                ? Value(_precipitationMm)
+                // qualitative only — no numeric value available from this source
+                : const Value(null),
             soilCondition: Value(_soilCondition),
             notes: Value(notesVal),
             recordedAt: Value(nowMs),
@@ -304,6 +310,10 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
             windDirection: Value(_windDir),
             cloudCover: Value(_cloudCover),
             precipitation: Value(_precipitation),
+            precipitationMm: _weatherSource == 'api'
+                ? Value(_precipitationMm)
+                // qualitative only — no numeric value available from this source
+                : const Value(null),
             soilCondition: Value(_soilCondition),
             notes: Value(notesVal),
           ),
@@ -345,7 +355,8 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
       selectedColor: AppDesignTokens.primary,
       checkmarkColor: AppDesignTokens.onPrimary,
       labelStyle: TextStyle(
-        color: selected ? AppDesignTokens.onPrimary : AppDesignTokens.primaryText,
+        color:
+            selected ? AppDesignTokens.onPrimary : AppDesignTokens.primaryText,
         fontWeight: FontWeight.w600,
         fontSize: 13,
       ),
@@ -372,7 +383,8 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
           selectedColor: AppDesignTokens.primary,
           checkmarkColor: AppDesignTokens.onPrimary,
           labelStyle: TextStyle(
-            color: sel ? AppDesignTokens.onPrimary : AppDesignTokens.primaryText,
+            color:
+                sel ? AppDesignTokens.onPrimary : AppDesignTokens.primaryText,
             fontWeight: FontWeight.w500,
             fontSize: 12,
           ),
@@ -452,8 +464,8 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
                     children: [
                       Icon(Icons.cloud_done,
                           size: 13,
-                          color: AppDesignTokens.successFg
-                              .withValues(alpha: 0.7)),
+                          color:
+                              AppDesignTokens.successFg.withValues(alpha: 0.7)),
                       const SizedBox(width: 4),
                       const Text(
                         'Auto-filled from weather API — edit to override',
@@ -535,7 +547,8 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
                 key: const Key('weather_field_humidity'),
                 controller: _humidityCtrl,
                 onChanged: (_) => _markManualEdit(),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   hintText: '% (optional)',
                   border: OutlineInputBorder(),
@@ -612,7 +625,10 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
                 values: kWeatherWindDirections,
                 labelFn: (s) => s,
                 selected: _windDir,
-                onChanged: (v) { setState(() => _windDir = v); _markManualEdit(); },
+                onChanged: (v) {
+                  setState(() => _windDir = v);
+                  _markManualEdit();
+                },
               ),
               const SizedBox(height: 14),
               const Text(
@@ -627,7 +643,10 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
                 values: kWeatherCloudCovers,
                 labelFn: weatherCloudCoverLabel,
                 selected: _cloudCover,
-                onChanged: (v) { setState(() => _cloudCover = v); _markManualEdit(); },
+                onChanged: (v) {
+                  setState(() => _cloudCover = v);
+                  _markManualEdit();
+                },
               ),
               const SizedBox(height: 14),
               const Text(
@@ -642,7 +661,10 @@ class _WeatherCaptureFormState extends ConsumerState<WeatherCaptureForm>
                 values: kWeatherPrecipitations,
                 labelFn: weatherPrecipitationLabel,
                 selected: _precipitation,
-                onChanged: (v) { setState(() => _precipitation = v); _markManualEdit(); },
+                onChanged: (v) {
+                  setState(() => _precipitation = v);
+                  _markManualEdit();
+                },
               ),
               const SizedBox(height: 14),
               const Text(

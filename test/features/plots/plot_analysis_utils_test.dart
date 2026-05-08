@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:arm_field_companion/features/plots/models/plot_analysis_models.dart';
 import 'package:arm_field_companion/features/plots/utils/plot_analysis_utils.dart';
 
 void main() {
@@ -134,6 +135,90 @@ void main() {
       expect(q.q1, 7.0);
       expect(q.median, 7.0);
       expect(q.q3, 7.0);
+    });
+  });
+
+  group('computeProgressionPatternNotes', () {
+    ProgressionSeries makeSeries({
+      required int id,
+      required bool isCheck,
+      required List<double> means,
+    }) {
+      return ProgressionSeries(
+        treatmentId: id,
+        treatmentCode: 'T$id',
+        treatmentName: 'T$id',
+        isCheck: isCheck,
+        points: [
+          for (var i = 0; i < means.length; i++)
+            ProgressionPoint(
+              sessionId: i + 1,
+              sessionLabel: 'S${i + 1}',
+              mean: means[i],
+              n: 4,
+            ),
+        ],
+      );
+    }
+
+    test('PAU-22: empty series returns no notes', () {
+      expect(computeProgressionPatternNotes([]), isEmpty);
+    });
+
+    test('PAU-23: CHK mean rises > 5.0 → contamination warning', () {
+      final notes = computeProgressionPatternNotes([
+        makeSeries(id: 1, isCheck: true, means: [0.0, 20.0]),
+      ]);
+      expect(notes.length, 1);
+      expect(notes.first.isWarning, isTrue);
+    });
+
+    test('PAU-24: CHK mean rises ≤ 5.0 → no note', () {
+      final notes = computeProgressionPatternNotes([
+        makeSeries(id: 1, isCheck: true, means: [5.0, 8.0]),
+      ]);
+      expect(notes, isEmpty);
+    });
+
+    test('PAU-25: CHK with single point → no contamination note', () {
+      final notes = computeProgressionPatternNotes([
+        makeSeries(id: 1, isCheck: true, means: [10.0]),
+      ]);
+      expect(notes, isEmpty);
+    });
+
+    test('PAU-26: non-check spread > 20.0 at last session → separation note', () {
+      final notes = computeProgressionPatternNotes([
+        makeSeries(id: 2, isCheck: false, means: [5.0, 10.0]),
+        makeSeries(id: 3, isCheck: false, means: [5.0, 35.0]),
+      ]);
+      expect(notes.any((n) => !n.isWarning), isTrue);
+    });
+
+    test('PAU-27: non-check spread ≤ 20.0 → no separation note', () {
+      final notes = computeProgressionPatternNotes([
+        makeSeries(id: 2, isCheck: false, means: [10.0, 20.0]),
+        makeSeries(id: 3, isCheck: false, means: [10.0, 25.0]),
+      ]);
+      expect(notes.where((n) => !n.isWarning), isEmpty);
+    });
+
+    test('PAU-28: single non-check series → no separation note', () {
+      final notes = computeProgressionPatternNotes([
+        makeSeries(id: 2, isCheck: false, means: [5.0, 50.0]),
+      ]);
+      expect(notes.where((n) => !n.isWarning), isEmpty);
+    });
+
+    test('PAU-29: CHK contamination and separation both fire independently', () {
+      final notes = computeProgressionPatternNotes([
+        makeSeries(id: 1, isCheck: true, means: [0.0, 20.0]),
+        makeSeries(id: 2, isCheck: false, means: [5.0, 10.0]),
+        makeSeries(id: 3, isCheck: false, means: [5.0, 50.0]),
+      ]);
+      expect(notes.length, 2);
+      expect(notes.any((n) => n.isWarning), isTrue);
+      expect(notes.any((n) => !n.isWarning), isTrue);
     });
   });
 }

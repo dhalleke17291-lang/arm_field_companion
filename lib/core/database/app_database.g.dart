@@ -29482,6 +29482,12 @@ class $WeatherSnapshotsTable extends WeatherSnapshots
   late final GeneratedColumn<String> precipitation = GeneratedColumn<String>(
       'precipitation', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _precipitationMmMeta =
+      const VerificationMeta('precipitationMm');
+  @override
+  late final GeneratedColumn<double> precipitationMm = GeneratedColumn<double>(
+      'precipitation_mm', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
   static const VerificationMeta _soilConditionMeta =
       const VerificationMeta('soilCondition');
   @override
@@ -29533,6 +29539,7 @@ class $WeatherSnapshotsTable extends WeatherSnapshots
         windDirection,
         cloudCover,
         precipitation,
+        precipitationMm,
         soilCondition,
         notes,
         recordedAt,
@@ -29625,6 +29632,12 @@ class $WeatherSnapshotsTable extends WeatherSnapshots
           precipitation.isAcceptableOrUnknown(
               data['precipitation']!, _precipitationMeta));
     }
+    if (data.containsKey('precipitation_mm')) {
+      context.handle(
+          _precipitationMmMeta,
+          precipitationMm.isAcceptableOrUnknown(
+              data['precipitation_mm']!, _precipitationMmMeta));
+    }
     if (data.containsKey('soil_condition')) {
       context.handle(
           _soilConditionMeta,
@@ -29700,6 +29713,8 @@ class $WeatherSnapshotsTable extends WeatherSnapshots
           .read(DriftSqlType.string, data['${effectivePrefix}cloud_cover']),
       precipitation: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}precipitation']),
+      precipitationMm: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}precipitation_mm']),
       soilCondition: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}soil_condition']),
       notes: attachedDatabase.typeMapping
@@ -29736,6 +29751,7 @@ class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
   final String? windDirection;
   final String? cloudCover;
   final String? precipitation;
+  final double? precipitationMm;
   final String? soilCondition;
   final String? notes;
 
@@ -29759,6 +29775,7 @@ class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
       this.windDirection,
       this.cloudCover,
       this.precipitation,
+      this.precipitationMm,
       this.soilCondition,
       this.notes,
       required this.recordedAt,
@@ -29793,6 +29810,9 @@ class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
     }
     if (!nullToAbsent || precipitation != null) {
       map['precipitation'] = Variable<String>(precipitation);
+    }
+    if (!nullToAbsent || precipitationMm != null) {
+      map['precipitation_mm'] = Variable<double>(precipitationMm);
     }
     if (!nullToAbsent || soilCondition != null) {
       map['soil_condition'] = Variable<String>(soilCondition);
@@ -29835,6 +29855,9 @@ class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
       precipitation: precipitation == null && nullToAbsent
           ? const Value.absent()
           : Value(precipitation),
+      precipitationMm: precipitationMm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(precipitationMm),
       soilCondition: soilCondition == null && nullToAbsent
           ? const Value.absent()
           : Value(soilCondition),
@@ -29865,6 +29888,7 @@ class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
       windDirection: serializer.fromJson<String?>(json['windDirection']),
       cloudCover: serializer.fromJson<String?>(json['cloudCover']),
       precipitation: serializer.fromJson<String?>(json['precipitation']),
+      precipitationMm: serializer.fromJson<double?>(json['precipitationMm']),
       soilCondition: serializer.fromJson<String?>(json['soilCondition']),
       notes: serializer.fromJson<String?>(json['notes']),
       recordedAt: serializer.fromJson<int>(json['recordedAt']),
@@ -29891,6 +29915,7 @@ class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
       'windDirection': serializer.toJson<String?>(windDirection),
       'cloudCover': serializer.toJson<String?>(cloudCover),
       'precipitation': serializer.toJson<String?>(precipitation),
+      'precipitationMm': serializer.toJson<double?>(precipitationMm),
       'soilCondition': serializer.toJson<String?>(soilCondition),
       'notes': serializer.toJson<String?>(notes),
       'recordedAt': serializer.toJson<int>(recordedAt),
@@ -29915,6 +29940,7 @@ class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
           Value<String?> windDirection = const Value.absent(),
           Value<String?> cloudCover = const Value.absent(),
           Value<String?> precipitation = const Value.absent(),
+          Value<double?> precipitationMm = const Value.absent(),
           Value<String?> soilCondition = const Value.absent(),
           Value<String?> notes = const Value.absent(),
           int? recordedAt,
@@ -29938,6 +29964,9 @@ class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
         cloudCover: cloudCover.present ? cloudCover.value : this.cloudCover,
         precipitation:
             precipitation.present ? precipitation.value : this.precipitation,
+        precipitationMm: precipitationMm.present
+            ? precipitationMm.value
+            : this.precipitationMm,
         soilCondition:
             soilCondition.present ? soilCondition.value : this.soilCondition,
         notes: notes.present ? notes.value : this.notes,
@@ -29973,6 +30002,9 @@ class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
       precipitation: data.precipitation.present
           ? data.precipitation.value
           : this.precipitation,
+      precipitationMm: data.precipitationMm.present
+          ? data.precipitationMm.value
+          : this.precipitationMm,
       soilCondition: data.soilCondition.present
           ? data.soilCondition.value
           : this.soilCondition,
@@ -30003,6 +30035,7 @@ class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
           ..write('windDirection: $windDirection, ')
           ..write('cloudCover: $cloudCover, ')
           ..write('precipitation: $precipitation, ')
+          ..write('precipitationMm: $precipitationMm, ')
           ..write('soilCondition: $soilCondition, ')
           ..write('notes: $notes, ')
           ..write('recordedAt: $recordedAt, ')
@@ -30014,27 +30047,29 @@ class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      uuid,
-      trialId,
-      parentType,
-      parentId,
-      source,
-      temperature,
-      temperatureUnit,
-      humidity,
-      windSpeed,
-      windSpeedUnit,
-      windDirection,
-      cloudCover,
-      precipitation,
-      soilCondition,
-      notes,
-      recordedAt,
-      createdAt,
-      modifiedAt,
-      createdBy);
+  int get hashCode => Object.hashAll([
+        id,
+        uuid,
+        trialId,
+        parentType,
+        parentId,
+        source,
+        temperature,
+        temperatureUnit,
+        humidity,
+        windSpeed,
+        windSpeedUnit,
+        windDirection,
+        cloudCover,
+        precipitation,
+        precipitationMm,
+        soilCondition,
+        notes,
+        recordedAt,
+        createdAt,
+        modifiedAt,
+        createdBy
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -30053,6 +30088,7 @@ class WeatherSnapshot extends DataClass implements Insertable<WeatherSnapshot> {
           other.windDirection == this.windDirection &&
           other.cloudCover == this.cloudCover &&
           other.precipitation == this.precipitation &&
+          other.precipitationMm == this.precipitationMm &&
           other.soilCondition == this.soilCondition &&
           other.notes == this.notes &&
           other.recordedAt == this.recordedAt &&
@@ -30076,6 +30112,7 @@ class WeatherSnapshotsCompanion extends UpdateCompanion<WeatherSnapshot> {
   final Value<String?> windDirection;
   final Value<String?> cloudCover;
   final Value<String?> precipitation;
+  final Value<double?> precipitationMm;
   final Value<String?> soilCondition;
   final Value<String?> notes;
   final Value<int> recordedAt;
@@ -30097,6 +30134,7 @@ class WeatherSnapshotsCompanion extends UpdateCompanion<WeatherSnapshot> {
     this.windDirection = const Value.absent(),
     this.cloudCover = const Value.absent(),
     this.precipitation = const Value.absent(),
+    this.precipitationMm = const Value.absent(),
     this.soilCondition = const Value.absent(),
     this.notes = const Value.absent(),
     this.recordedAt = const Value.absent(),
@@ -30119,6 +30157,7 @@ class WeatherSnapshotsCompanion extends UpdateCompanion<WeatherSnapshot> {
     this.windDirection = const Value.absent(),
     this.cloudCover = const Value.absent(),
     this.precipitation = const Value.absent(),
+    this.precipitationMm = const Value.absent(),
     this.soilCondition = const Value.absent(),
     this.notes = const Value.absent(),
     required int recordedAt,
@@ -30147,6 +30186,7 @@ class WeatherSnapshotsCompanion extends UpdateCompanion<WeatherSnapshot> {
     Expression<String>? windDirection,
     Expression<String>? cloudCover,
     Expression<String>? precipitation,
+    Expression<double>? precipitationMm,
     Expression<String>? soilCondition,
     Expression<String>? notes,
     Expression<int>? recordedAt,
@@ -30169,6 +30209,7 @@ class WeatherSnapshotsCompanion extends UpdateCompanion<WeatherSnapshot> {
       if (windDirection != null) 'wind_direction': windDirection,
       if (cloudCover != null) 'cloud_cover': cloudCover,
       if (precipitation != null) 'precipitation': precipitation,
+      if (precipitationMm != null) 'precipitation_mm': precipitationMm,
       if (soilCondition != null) 'soil_condition': soilCondition,
       if (notes != null) 'notes': notes,
       if (recordedAt != null) 'recorded_at': recordedAt,
@@ -30193,6 +30234,7 @@ class WeatherSnapshotsCompanion extends UpdateCompanion<WeatherSnapshot> {
       Value<String?>? windDirection,
       Value<String?>? cloudCover,
       Value<String?>? precipitation,
+      Value<double?>? precipitationMm,
       Value<String?>? soilCondition,
       Value<String?>? notes,
       Value<int>? recordedAt,
@@ -30214,6 +30256,7 @@ class WeatherSnapshotsCompanion extends UpdateCompanion<WeatherSnapshot> {
       windDirection: windDirection ?? this.windDirection,
       cloudCover: cloudCover ?? this.cloudCover,
       precipitation: precipitation ?? this.precipitation,
+      precipitationMm: precipitationMm ?? this.precipitationMm,
       soilCondition: soilCondition ?? this.soilCondition,
       notes: notes ?? this.notes,
       recordedAt: recordedAt ?? this.recordedAt,
@@ -30268,6 +30311,9 @@ class WeatherSnapshotsCompanion extends UpdateCompanion<WeatherSnapshot> {
     if (precipitation.present) {
       map['precipitation'] = Variable<String>(precipitation.value);
     }
+    if (precipitationMm.present) {
+      map['precipitation_mm'] = Variable<double>(precipitationMm.value);
+    }
     if (soilCondition.present) {
       map['soil_condition'] = Variable<String>(soilCondition.value);
     }
@@ -30306,6 +30352,7 @@ class WeatherSnapshotsCompanion extends UpdateCompanion<WeatherSnapshot> {
           ..write('windDirection: $windDirection, ')
           ..write('cloudCover: $cloudCover, ')
           ..write('precipitation: $precipitation, ')
+          ..write('precipitationMm: $precipitationMm, ')
           ..write('soilCondition: $soilCondition, ')
           ..write('notes: $notes, ')
           ..write('recordedAt: $recordedAt, ')
@@ -60064,6 +60111,7 @@ typedef $$WeatherSnapshotsTableCreateCompanionBuilder
   Value<String?> windDirection,
   Value<String?> cloudCover,
   Value<String?> precipitation,
+  Value<double?> precipitationMm,
   Value<String?> soilCondition,
   Value<String?> notes,
   required int recordedAt,
@@ -60087,6 +60135,7 @@ typedef $$WeatherSnapshotsTableUpdateCompanionBuilder
   Value<String?> windDirection,
   Value<String?> cloudCover,
   Value<String?> precipitation,
+  Value<double?> precipitationMm,
   Value<String?> soilCondition,
   Value<String?> notes,
   Value<int> recordedAt,
@@ -60127,6 +60176,7 @@ class $$WeatherSnapshotsTableTableManager extends RootTableManager<
             Value<String?> windDirection = const Value.absent(),
             Value<String?> cloudCover = const Value.absent(),
             Value<String?> precipitation = const Value.absent(),
+            Value<double?> precipitationMm = const Value.absent(),
             Value<String?> soilCondition = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<int> recordedAt = const Value.absent(),
@@ -60149,6 +60199,7 @@ class $$WeatherSnapshotsTableTableManager extends RootTableManager<
             windDirection: windDirection,
             cloudCover: cloudCover,
             precipitation: precipitation,
+            precipitationMm: precipitationMm,
             soilCondition: soilCondition,
             notes: notes,
             recordedAt: recordedAt,
@@ -60171,6 +60222,7 @@ class $$WeatherSnapshotsTableTableManager extends RootTableManager<
             Value<String?> windDirection = const Value.absent(),
             Value<String?> cloudCover = const Value.absent(),
             Value<String?> precipitation = const Value.absent(),
+            Value<double?> precipitationMm = const Value.absent(),
             Value<String?> soilCondition = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             required int recordedAt,
@@ -60193,6 +60245,7 @@ class $$WeatherSnapshotsTableTableManager extends RootTableManager<
             windDirection: windDirection,
             cloudCover: cloudCover,
             precipitation: precipitation,
+            precipitationMm: precipitationMm,
             soilCondition: soilCondition,
             notes: notes,
             recordedAt: recordedAt,
@@ -60263,6 +60316,11 @@ class $$WeatherSnapshotsTableFilterComposer
 
   ColumnFilters<String> get precipitation => $state.composableBuilder(
       column: $state.table.precipitation,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get precipitationMm => $state.composableBuilder(
+      column: $state.table.precipitationMm,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -60381,6 +60439,11 @@ class $$WeatherSnapshotsTableOrderingComposer
 
   ColumnOrderings<String> get precipitation => $state.composableBuilder(
       column: $state.table.precipitation,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get precipitationMm => $state.composableBuilder(
+      column: $state.table.precipitationMm,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 

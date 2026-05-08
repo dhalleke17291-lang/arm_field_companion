@@ -83,8 +83,7 @@ class Trials extends Table {
 
   /// FK to shared site record. Nullable — trials without a linked site
   /// still store location/soil fields directly (denormalized copies).
-  IntColumn get siteRefId =>
-      integer().references(Sites, #id).nullable()();
+  IntColumn get siteRefId => integer().references(Sites, #id).nullable()();
 
   /// Cultivar / variety name (distinct from [crop] which is species).
   TextColumn get cultivar => text().nullable()();
@@ -196,12 +195,15 @@ class TreatmentComponents extends Table {
 
   /// Active ingredient common name (e.g. "glyphosate").
   TextColumn get activeIngredientName => text().nullable()();
+
   /// AI concentration (g/L or g/kg). Paired with [aiConcentrationUnit].
   RealColumn get aiConcentration => real().nullable()();
   TextColumn get aiConcentrationUnit => text().nullable()();
+
   /// Maximum legal rate from the product label, separate from trial rate.
   RealColumn get labelRate => real().nullable()();
   TextColumn get labelRateUnit => text().nullable()();
+
   /// Distinguishes test product from reference standard.
   BoolColumn get isTestProduct =>
       boolean().withDefault(const Constant(false))();
@@ -255,15 +257,19 @@ class AssessmentDefinitions extends Table {
   RealColumn get validMin => real().nullable()();
   RealColumn get validMax => real().nullable()();
   TextColumn get eppoCode => text().nullable()();
+
   /// Plant part assessed (PLANT, LEAF3, etc.) — populated from shell Part Rated.
   TextColumn get cropPart => text().nullable()();
   TextColumn get timingDescription => text().nullable()();
   TextColumn get resultDirection =>
       text().withDefault(const Constant('neutral'))();
+
   /// Application timing code (A1, A3, A6, A9, AA) from shell row 42 (0-based).
   TextColumn get appTimingCode => text().nullable()();
+
   /// Treatment-evaluation interval (e.g. "-28 DA-A") from shell row 42 (0-based).
   TextColumn get trtEvalInterval => text().nullable()();
+
   /// Collect basis (PLOT, etc.) from shell row 23 (0-based).
   TextColumn get collectBasis => text().nullable()();
 }
@@ -445,6 +451,7 @@ class RatingRecords extends Table {
   /// Local time of rating as HH:mm.
   TextColumn get ratingTime => text().nullable()();
   TextColumn get ratingMethod => text().nullable()();
+
   /// certain | uncertain | estimated
   TextColumn get confidence => text().nullable()();
   BoolColumn get amended => boolean().withDefault(const Constant(false))();
@@ -763,6 +770,7 @@ class TrialApplicationEvents extends Table {
 
   /// Total product mixed in the tank (g, mL, or other unit matching rate).
   RealColumn get totalProductMixed => real().nullable()();
+
   /// Total area actually sprayed (hectares).
   RealColumn get totalAreaSprayedHa => real().nullable()();
 
@@ -780,9 +788,8 @@ class TrialApplicationEvents extends Table {
 /// Tank-mix products per trial application event (trial_application_events.id is TEXT).
 class TrialApplicationProducts extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get trialApplicationEventId =>
-      text().references(TrialApplicationEvents, #id,
-          onDelete: KeyAction.cascade)();
+  TextColumn get trialApplicationEventId => text()
+      .references(TrialApplicationEvents, #id, onDelete: KeyAction.cascade)();
   TextColumn get productName => text()();
   RealColumn get rate => real().nullable()();
   TextColumn get rateUnit => text().nullable()();
@@ -804,9 +811,8 @@ class TrialApplicationProducts extends Table {
 /// cache alongside this table during the transition period.
 class ApplicationPlotAssignments extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get applicationEventId =>
-      text().references(TrialApplicationEvents, #id,
-          onDelete: KeyAction.cascade)();
+  TextColumn get applicationEventId => text()
+      .references(TrialApplicationEvents, #id, onDelete: KeyAction.cascade)();
   TextColumn get plotLabel => text()();
   IntColumn get plotId => integer().references(Plots, #id).nullable()();
 }
@@ -828,10 +834,12 @@ class ImportSnapshots extends Table {
   TextColumn get treatmentTokens => text()();
   TextColumn get plotTokens => text()();
   TextColumn get unknownPatterns => text()();
-  BoolColumn get hasSubsamples => boolean().withDefault(const Constant(false))();
+  BoolColumn get hasSubsamples =>
+      boolean().withDefault(const Constant(false))();
   BoolColumn get hasMultiApplication =>
       boolean().withDefault(const Constant(false))();
-  BoolColumn get hasSparseData => boolean().withDefault(const Constant(false))();
+  BoolColumn get hasSparseData =>
+      boolean().withDefault(const Constant(false))();
   BoolColumn get hasRepeatedCodes =>
       boolean().withDefault(const Constant(false))();
   TextColumn get rawFileChecksum => text()();
@@ -919,25 +927,25 @@ class YieldDetails extends Table {
 class WeatherSnapshots extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get uuid => text().unique()();
-  IntColumn get trialId => integer().references(Trials, #id,
-      onDelete: KeyAction.cascade)();
+  IntColumn get trialId =>
+      integer().references(Trials, #id, onDelete: KeyAction.cascade)();
   TextColumn get parentType =>
       text().withDefault(const Constant('rating_session'))();
-  IntColumn get parentId => integer().references(Sessions, #id,
-      onDelete: KeyAction.cascade)();
+  IntColumn get parentId =>
+      integer().references(Sessions, #id, onDelete: KeyAction.cascade)();
   TextColumn get source => text().withDefault(const Constant('manual'))();
   RealColumn get temperature => real().nullable()();
-  TextColumn get temperatureUnit =>
-      text().withDefault(const Constant('C'))();
+  TextColumn get temperatureUnit => text().withDefault(const Constant('C'))();
   RealColumn get humidity => real().nullable()();
   RealColumn get windSpeed => real().nullable()();
-  TextColumn get windSpeedUnit =>
-      text().withDefault(const Constant('km/h'))();
+  TextColumn get windSpeedUnit => text().withDefault(const Constant('km/h'))();
   TextColumn get windDirection => text().nullable()();
   TextColumn get cloudCover => text().nullable()();
   TextColumn get precipitation => text().nullable()();
+  RealColumn get precipitationMm => real().nullable()();
   TextColumn get soilCondition => text().nullable()();
   TextColumn get notes => text().nullable()();
+
   /// UTC epoch milliseconds when conditions were observed.
   IntColumn get recordedAt => integer()();
   IntColumn get createdAt => integer()();
@@ -1005,8 +1013,7 @@ class ArmColumnMappings extends Table {
 
   /// The app-side session this column's rating date maps to.
   /// Null = orphan column (see above).
-  IntColumn get sessionId =>
-      integer().references(Sessions, #id).nullable()();
+  IntColumn get sessionId => integer().references(Sessions, #id).nullable()();
 
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -1201,9 +1208,8 @@ class ArmTreatmentMetadata extends Table {
 class ArmApplications extends Table {
   IntColumn get id => integer().autoIncrement()();
 
-  TextColumn get trialApplicationEventId =>
-      text().references(TrialApplicationEvents, #id,
-          onDelete: KeyAction.cascade)();
+  TextColumn get trialApplicationEventId => text()
+      .references(TrialApplicationEvents, #id, onDelete: KeyAction.cascade)();
 
   /// 0-based worksheet column index of this application block (Excel `C` → 2).
   IntColumn get armSheetColumnIndex => integer().nullable()();
@@ -1412,8 +1418,8 @@ class SignalDecisionEvents extends Table {
 class ActionEffects extends Table {
   IntColumn get id => integer().autoIncrement()();
 
-  IntColumn get decisionEventId => integer().references(SignalDecisionEvents, #id,
-      onDelete: KeyAction.cascade)();
+  IntColumn get decisionEventId => integer()
+      .references(SignalDecisionEvents, #id, onDelete: KeyAction.cascade)();
 
   /// plot_observation | session | trial | application | photo
   TextColumn get entityType => text()();
@@ -1527,6 +1533,7 @@ class TrialPurposes extends Table {
   TextColumn get inferredFieldsJson => text().nullable()();
   DateTimeColumn get confirmedAt => dateTime().nullable()();
   TextColumn get confirmedBy => text().nullable()();
+
   /// 1 = inferred by system, pending researcher confirmation.
   /// 0 = created by researcher (Mode C) or already confirmed.
   IntColumn get requiresConfirmation =>
@@ -1547,14 +1554,11 @@ class IntentRevelationEvents extends Table {
   TextColumn get questionKey => text()();
   TextColumn get questionText => text()();
   TextColumn get answerValue => text().nullable()();
-  TextColumn get answerState =>
-      text().withDefault(const Constant('unknown'))();
+  TextColumn get answerState => text().withDefault(const Constant('unknown'))();
   TextColumn get source => text()();
   TextColumn get capturedBy => text().nullable()();
-  DateTimeColumn get capturedAt =>
-      dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get capturedAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
 /// Critical-to-quality factor definitions for the trial claim.
@@ -1562,21 +1566,17 @@ class IntentRevelationEvents extends Table {
 class CtqFactorDefinitions extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get trialId => integer().references(Trials, #id)();
-  IntColumn get trialPurposeId =>
-      integer().references(TrialPurposes, #id)();
+  IntColumn get trialPurposeId => integer().references(TrialPurposes, #id)();
   TextColumn get factorKey => text()();
   TextColumn get factorLabel => text()();
   TextColumn get factorType => text()();
-  TextColumn get importance =>
-      text().withDefault(const Constant('standard'))();
+  TextColumn get importance => text().withDefault(const Constant('standard'))();
   TextColumn get expectedEvidenceType => text().nullable()();
   TextColumn get evaluationRuleKey => text().nullable()();
   TextColumn get description => text().nullable()();
   TextColumn get source => text()();
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get retiredAt => dateTime().nullable()();
 }
 
@@ -1592,8 +1592,7 @@ class ProtocolDocumentReferences extends Table {
   TextColumn get source => text()();
   DateTimeColumn get uploadedAt => dateTime().nullable()();
   TextColumn get uploadedBy => text().nullable()();
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   TextColumn get notes => text().nullable()();
 }
 
@@ -1623,11 +1622,10 @@ class TrialEnvironmentalRecords extends Table {
   IntColumn get fetchedAt => integer()();
 
   /// 'measured' | 'estimated' | 'unavailable'
-  TextColumn get confidence =>
-      text().withDefault(const Constant('measured'))();
+  TextColumn get confidence => text().withDefault(const Constant('measured'))();
 
-  IntColumn get createdAt => integer().withDefault(
-      const CustomExpression("(strftime('%s','now') * 1000)"))();
+  IntColumn get createdAt => integer()
+      .withDefault(const CustomExpression("(strftime('%s','now') * 1000)"))();
 
   @override
   List<Set<Column>> get uniqueKeys => [
@@ -1639,8 +1637,8 @@ class TrialEnvironmentalRecords extends Table {
 /// reason is NOT NULL — no acknowledgment without reasoning, ever.
 class CtqFactorAcknowledgments extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get trialId => integer().references(Trials, #id,
-      onDelete: KeyAction.cascade)();
+  IntColumn get trialId =>
+      integer().references(Trials, #id, onDelete: KeyAction.cascade)();
   TextColumn get factorKey => text()();
   IntColumn get acknowledgedAt => integer()();
   IntColumn get acknowledgedByUserId =>
@@ -1649,8 +1647,8 @@ class CtqFactorAcknowledgments extends Table {
   TextColumn get factorStatusAtAcknowledgment => text()();
   IntColumn get purposeVersionId =>
       integer().references(TrialPurposes, #id).nullable()();
-  IntColumn get createdAt => integer().withDefault(
-      const CustomExpression("(strftime('%s','now') * 1000)"))();
+  IntColumn get createdAt => integer()
+      .withDefault(const CustomExpression("(strftime('%s','now') * 1000)"))();
 }
 
 @DriftDatabase(tables: [
@@ -1723,7 +1721,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 82;
+  int get schemaVersion => 83;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1865,8 +1863,8 @@ class AppDatabase extends _$AppDatabase {
                 trialApplicationEvents.applicationMethod);
             await m.addColumn(
                 trialApplicationEvents, trialApplicationEvents.nozzleType);
-            await m.addColumn(trialApplicationEvents,
-                trialApplicationEvents.nozzleSpacingCm);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.nozzleSpacingCm);
             await m.addColumn(trialApplicationEvents,
                 trialApplicationEvents.operatingPressure);
             await m.addColumn(
@@ -1883,16 +1881,16 @@ class AppDatabase extends _$AppDatabase {
                 trialApplicationEvents.adjuvantRateUnit);
             await m.addColumn(
                 trialApplicationEvents, trialApplicationEvents.spraySolutionPh);
-            await m.addColumn(trialApplicationEvents,
-                trialApplicationEvents.waterVolumeUnit);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.waterVolumeUnit);
             await m.addColumn(
                 trialApplicationEvents, trialApplicationEvents.cloudCoverPct);
             await m.addColumn(
                 trialApplicationEvents, trialApplicationEvents.soilMoisture);
             await m.addColumn(
                 trialApplicationEvents, trialApplicationEvents.treatedArea);
-            await m.addColumn(trialApplicationEvents,
-                trialApplicationEvents.treatedAreaUnit);
+            await m.addColumn(
+                trialApplicationEvents, trialApplicationEvents.treatedAreaUnit);
             await m.addColumn(
                 trialApplicationEvents, trialApplicationEvents.plotsTreated);
           }
@@ -1900,16 +1898,16 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(treatments, treatments.treatmentType);
             await m.addColumn(treatments, treatments.timingCode);
             await m.addColumn(treatments, treatments.eppoCode);
-            await m.addColumn(treatmentComponents,
-                treatmentComponents.activeIngredientPct);
-            await m.addColumn(treatmentComponents,
-                treatmentComponents.formulationType);
-            await m.addColumn(treatmentComponents,
-                treatmentComponents.manufacturer);
-            await m.addColumn(treatmentComponents,
-                treatmentComponents.registrationNumber);
-            await m.addColumn(treatmentComponents,
-                treatmentComponents.eppoCode);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.activeIngredientPct);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.formulationType);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.manufacturer);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.registrationNumber);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.eppoCode);
           }
           if (from < 22) {
             await m.addColumn(plots, plots.plotLengthM);
@@ -1927,8 +1925,8 @@ class AppDatabase extends _$AppDatabase {
                 assessmentDefinitions, assessmentDefinitions.timingCode);
             await m.addColumn(assessmentDefinitions,
                 assessmentDefinitions.daysAfterTreatment);
-            await m.addColumn(assessmentDefinitions,
-                assessmentDefinitions.assessmentMethod);
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.assessmentMethod);
             await m.addColumn(
                 assessmentDefinitions, assessmentDefinitions.validMin);
             await m.addColumn(
@@ -1937,8 +1935,8 @@ class AppDatabase extends _$AppDatabase {
                 assessmentDefinitions, assessmentDefinitions.eppoCode);
             await m.addColumn(
                 assessmentDefinitions, assessmentDefinitions.cropPart);
-            await m.addColumn(assessmentDefinitions,
-                assessmentDefinitions.timingDescription);
+            await m.addColumn(
+                assessmentDefinitions, assessmentDefinitions.timingDescription);
           }
           if (from < 24) {
             await m.addColumn(ratingRecords, ratingRecords.ratingTime);
@@ -1952,17 +1950,13 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 25) {
             await m.addColumn(
-                trialApplicationEvents,
-                trialApplicationEvents.soilTemperature);
+                trialApplicationEvents, trialApplicationEvents.soilTemperature);
             await m.addColumn(
-                trialApplicationEvents,
-                trialApplicationEvents.soilTempUnit);
+                trialApplicationEvents, trialApplicationEvents.soilTempUnit);
             await m.addColumn(
-                trialApplicationEvents,
-                trialApplicationEvents.soilDepth);
+                trialApplicationEvents, trialApplicationEvents.soilDepth);
             await m.addColumn(
-                trialApplicationEvents,
-                trialApplicationEvents.soilDepthUnit);
+                trialApplicationEvents, trialApplicationEvents.soilDepthUnit);
           }
           if (from < 26) {
             await m.addColumn(trials, trials.isDeleted);
@@ -1979,8 +1973,7 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(ratingRecords, ratingRecords.deletedBy);
           }
           if (from < 27) {
-            await m.addColumn(
-                ratingRecords, ratingRecords.lastEditedByUserId);
+            await m.addColumn(ratingRecords, ratingRecords.lastEditedByUserId);
             await m.addColumn(ratingRecords, ratingRecords.lastEditedAt);
           }
           if (from < 28) {
@@ -2028,7 +2021,8 @@ SET status = 'completed',
             await m.createTable(compatibilityProfiles);
             final tc35 = await customSelect(
               "SELECT name FROM pragma_table_info('trials')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!tc35.contains('is_arm_linked')) {
               await customStatement(
                 'ALTER TABLE trials ADD COLUMN is_arm_linked INTEGER NOT NULL DEFAULT 0',
@@ -2061,7 +2055,8 @@ SET status = 'completed',
             // upgrades still pass through v61's drop cleanly.
             final taCols36 = await customSelect(
               "SELECT name FROM pragma_table_info('trial_assessments')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!taCols36.contains('pest_code')) {
               await customStatement(
                 'ALTER TABLE trial_assessments ADD COLUMN pest_code TEXT',
@@ -2081,7 +2076,8 @@ SET status = 'completed',
             await m.addColumn(treatments, treatments.isDeleted);
             await m.addColumn(treatments, treatments.deletedAt);
             await m.addColumn(treatments, treatments.deletedBy);
-            await m.addColumn(treatmentComponents, treatmentComponents.isDeleted);
+            await m.addColumn(
+                treatmentComponents, treatmentComponents.isDeleted);
             await m.addColumn(
                 treatmentComponents, treatmentComponents.deletedAt);
             await m.addColumn(
@@ -2093,8 +2089,8 @@ SET status = 'completed',
           if (from < 38) {
             await m.addColumn(seedingEvents, seedingEvents.lastEditedByUserId);
             await m.addColumn(seedingEvents, seedingEvents.lastEditedAt);
-            await m.addColumn(
-                trialApplicationEvents, trialApplicationEvents.lastEditedByUserId);
+            await m.addColumn(trialApplicationEvents,
+                trialApplicationEvents.lastEditedByUserId);
             await m.addColumn(
                 trialApplicationEvents, trialApplicationEvents.lastEditedAt);
           }
@@ -2118,7 +2114,8 @@ SET status = 'completed',
             // a valid v60 schema (v60 drops the column again idempotently).
             final taCols41 = await customSelect(
               "SELECT name FROM pragma_table_info('trial_assessments')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!taCols41.contains('arm_import_column_index')) {
               await customStatement(
                 'ALTER TABLE trial_assessments ADD COLUMN arm_import_column_index INTEGER',
@@ -2126,7 +2123,8 @@ SET status = 'completed',
             }
             final tc41 = await customSelect(
               "SELECT name FROM pragma_table_info('trials')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!tc41.contains('arm_import_session_id')) {
               await customStatement(
                 'ALTER TABLE trials ADD COLUMN arm_import_session_id INTEGER',
@@ -2136,7 +2134,8 @@ SET status = 'completed',
           if (from < 42) {
             final tc42 = await customSelect(
               "SELECT name FROM pragma_table_info('trials')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!tc42.contains('arm_linked_shell_path')) {
               await customStatement(
                 'ALTER TABLE trials ADD COLUMN arm_linked_shell_path TEXT',
@@ -2159,7 +2158,8 @@ SET status = 'completed',
             // drops cleanly.
             final taCols43 = await customSelect(
               "SELECT name FROM pragma_table_info('trial_assessments')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!taCols43.contains('arm_shell_column_id')) {
               await customStatement(
                 'ALTER TABLE trial_assessments ADD COLUMN arm_shell_column_id TEXT',
@@ -2257,7 +2257,8 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
             // application_slots → application_events → application_plot_records.
             final existingTables = await customSelect(
               "SELECT name FROM sqlite_master WHERE type='table'",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
 
             if (!existingTables.contains('application_slots')) {
               await m.createTable(applicationSlots);
@@ -2273,8 +2274,8 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
           if (from < 50) {
             final sessionCols = await customSelect(
               "SELECT name FROM pragma_table_info('sessions')",
-            ).get().then((rows) =>
-                rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             for (final col in [
               'crop_injury_status',
               'crop_injury_notes',
@@ -2291,8 +2292,8 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
             // Create Sites table.
             final existingTables = await customSelect(
               "SELECT name FROM sqlite_master WHERE type='table'",
-            ).get().then((rows) =>
-                rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!existingTables.contains('sites')) {
               await m.createTable(sites);
             }
@@ -2300,8 +2301,8 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
             // Add new Trial columns (defensive: check before adding).
             final trialCols = await customSelect(
               "SELECT name FROM pragma_table_info('trials')",
-            ).get().then((rows) =>
-                rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             for (final col in {
               'site_ref_id': 'INTEGER REFERENCES sites(id)',
               'cultivar': 'TEXT',
@@ -2364,8 +2365,8 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
             // Application session lifecycle + deviation fields.
             final appCols = await customSelect(
               "SELECT name FROM pragma_table_info('trial_application_events')",
-            ).get().then((rows) =>
-                rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             for (final col in {
               'precipitation': 'TEXT',
               'precipitation_mm': 'REAL',
@@ -2379,16 +2380,15 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
               'total_area_sprayed_ha': 'REAL',
             }.entries) {
               if (!appCols.contains(col.key)) {
-                await customStatement(
-                    'ALTER TABLE trial_application_events '
+                await customStatement('ALTER TABLE trial_application_events '
                     'ADD COLUMN ${col.key} ${col.value}');
               }
             }
 
             final prodCols = await customSelect(
               "SELECT name FROM pragma_table_info('trial_application_products')",
-            ).get().then((rows) =>
-                rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             for (final col in {
               'planned_product': 'TEXT',
               'planned_rate': 'REAL',
@@ -2397,8 +2397,7 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
               'deviation_notes': 'TEXT',
             }.entries) {
               if (!prodCols.contains(col.key)) {
-                await customStatement(
-                    'ALTER TABLE trial_application_products '
+                await customStatement('ALTER TABLE trial_application_products '
                     'ADD COLUMN ${col.key} ${col.value}');
               }
             }
@@ -2407,8 +2406,8 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
           if (from < 53) {
             final compCols = await customSelect(
               "SELECT name FROM pragma_table_info('treatment_components')",
-            ).get().then((rows) =>
-                rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             for (final col in {
               'active_ingredient_name': 'TEXT',
               'ai_concentration': 'REAL',
@@ -2418,8 +2417,7 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
               'is_test_product': 'INTEGER DEFAULT 0',
             }.entries) {
               if (!compCols.contains(col.key)) {
-                await customStatement(
-                    'ALTER TABLE treatment_components '
+                await customStatement('ALTER TABLE treatment_components '
                     'ADD COLUMN ${col.key} ${col.value}');
               }
             }
@@ -2428,8 +2426,8 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
           if (from < 54) {
             final photoCols = await customSelect(
               "SELECT name FROM pragma_table_info('photos')",
-            ).get().then((rows) =>
-                rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!photoCols.contains('assessment_id')) {
               await customStatement(
                   'ALTER TABLE photos ADD COLUMN assessment_id INTEGER '
@@ -2495,14 +2493,11 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
             // ── Item 6: TreatmentComponents.rate TEXT → REAL ──
             // SQLite doesn't support ALTER COLUMN TYPE. Use the standard
             // rename → create → copy → drop pattern.
-            await customStatement(
-                'ALTER TABLE treatment_components '
+            await customStatement('ALTER TABLE treatment_components '
                 'RENAME COLUMN rate TO rate_text_old');
-            await customStatement(
-                'ALTER TABLE treatment_components '
+            await customStatement('ALTER TABLE treatment_components '
                 'ADD COLUMN rate REAL');
-            await customStatement(
-                'UPDATE treatment_components '
+            await customStatement('UPDATE treatment_components '
                 'SET rate = CAST(REPLACE(rate_text_old, \',\', \'.\') AS REAL) '
                 'WHERE rate_text_old IS NOT NULL '
                 'AND rate_text_old != \'\' '
@@ -2517,16 +2512,15 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
             // ── AssessmentDefinitions: new metadata columns ──
             final defCols = await customSelect(
               "SELECT name FROM pragma_table_info('assessment_definitions')",
-            ).get().then((rows) =>
-                rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             for (final col in {
               'app_timing_code': 'TEXT',
               'trt_eval_interval': 'TEXT',
               'collect_basis': 'TEXT',
             }.entries) {
               if (!defCols.contains(col.key)) {
-                await customStatement(
-                    'ALTER TABLE assessment_definitions '
+                await customStatement('ALTER TABLE assessment_definitions '
                     'ADD COLUMN ${col.key} ${col.value}');
               }
             }
@@ -2534,22 +2528,20 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
             // ── TrialAssessments: ARM Column ID integer ──
             final taCols = await customSelect(
               "SELECT name FROM pragma_table_info('trial_assessments')",
-            ).get().then((rows) =>
-                rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!taCols.contains('arm_column_id_integer')) {
-              await customStatement(
-                  'ALTER TABLE trial_assessments '
+              await customStatement('ALTER TABLE trial_assessments '
                   'ADD COLUMN arm_column_id_integer INTEGER');
             }
 
             // ── Trials: shell internal path ──
             final trialCols = await customSelect(
               "SELECT name FROM pragma_table_info('trials')",
-            ).get().then((rows) =>
-                rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!trialCols.contains('shell_internal_path')) {
-              await customStatement(
-                  'ALTER TABLE trials '
+              await customStatement('ALTER TABLE trials '
                   'ADD COLUMN shell_internal_path TEXT');
             }
           }
@@ -2563,7 +2555,8 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
             // lib/features/arm_*. See docs/ARM_SEPARATION.md.
             final existingTables = await customSelect(
               "SELECT name FROM sqlite_master WHERE type='table'",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
 
             if (!existingTables.contains('arm_column_mappings')) {
               await m.createTable(armColumnMappings);
@@ -2580,14 +2573,16 @@ SELECT 'notes', COALESCE((SELECT MAX(id) FROM notes), 0)
             // ── Phase 0b: trial-level ARM metadata → arm_trial_metadata ──
             final tables58 = await customSelect(
               "SELECT name FROM sqlite_master WHERE type='table'",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!tables58.contains('arm_trial_metadata')) {
               await m.createTable(armTrialMetadata);
             }
 
             final trialCols58 = await customSelect(
               "SELECT name FROM pragma_table_info('trials')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
 
             if (trialCols58.contains('is_arm_linked')) {
               await customStatement('''
@@ -2628,7 +2623,8 @@ WHERE COALESCE(is_arm_linked, 0) != 0
               for (final col in armTrialColsOnTrials) {
                 final fresh = await customSelect(
                   "SELECT name FROM pragma_table_info('trials')",
-                ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+                ).get().then(
+                    (rows) => rows.map((r) => r.read<String>('name')).toSet());
                 if (fresh.contains(col)) {
                   await customStatement('ALTER TABLE trials DROP COLUMN $col');
                 }
@@ -2647,23 +2643,24 @@ WHERE COALESCE(is_arm_linked, 0) != 0
             // later schema bump. Safe to re-run.
             final aamCols59 = await customSelect(
               "SELECT name FROM pragma_table_info('arm_assessment_metadata')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
 
             if (!aamCols59.contains('arm_import_column_index')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.armImportColumnIndex);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.armImportColumnIndex);
             }
             if (!aamCols59.contains('arm_shell_column_id')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.armShellColumnId);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.armShellColumnId);
             }
             if (!aamCols59.contains('arm_column_id_integer')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.armColumnIdInteger);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.armColumnIdInteger);
             }
             if (!aamCols59.contains('arm_shell_rating_date')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.armShellRatingDate);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.armShellRatingDate);
             }
 
             // Ensure an arm_assessment_metadata row exists for every
@@ -2672,16 +2669,18 @@ WHERE COALESCE(is_arm_linked, 0) != 0
             // where ARM data lives only on trial_assessments today.
             final taCols59 = await customSelect(
               "SELECT name FROM pragma_table_info('trial_assessments')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
 
-            final hasArmFieldsOnTa = taCols59.contains('arm_import_column_index') ||
-                taCols59.contains('arm_shell_column_id') ||
-                taCols59.contains('arm_column_id_integer') ||
-                taCols59.contains('arm_shell_rating_date') ||
-                taCols59.contains('se_name') ||
-                taCols59.contains('se_description') ||
-                taCols59.contains('arm_rating_type') ||
-                taCols59.contains('pest_code');
+            final hasArmFieldsOnTa =
+                taCols59.contains('arm_import_column_index') ||
+                    taCols59.contains('arm_shell_column_id') ||
+                    taCols59.contains('arm_column_id_integer') ||
+                    taCols59.contains('arm_shell_rating_date') ||
+                    taCols59.contains('se_name') ||
+                    taCols59.contains('se_description') ||
+                    taCols59.contains('arm_rating_type') ||
+                    taCols59.contains('pest_code');
 
             if (hasArmFieldsOnTa) {
               // Build predicate only from columns that actually exist on TA.
@@ -2828,7 +2827,8 @@ WHERE pest_code IS NULL
             //    installs that never had the column are a no-op.
             final taCols60 = await customSelect(
               "SELECT name FROM pragma_table_info('trial_assessments')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             const taColsToDrop = <String>[
               'arm_import_column_index',
               'arm_shell_column_id',
@@ -2856,7 +2856,8 @@ WHERE pest_code IS NULL
             //    are a no-op.
             final taCols61 = await customSelect(
               "SELECT name FROM pragma_table_info('trial_assessments')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             const taColsToDrop61 = <String>[
               'pest_code',
               'se_name',
@@ -2881,7 +2882,8 @@ WHERE pest_code IS NULL
             //    a no-op when the table is already present.
             final tables62 = await customSelect(
               "SELECT name FROM sqlite_master WHERE type='table'",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!tables62.contains('arm_treatment_metadata')) {
               await m.createTable(armTreatmentMetadata);
             }
@@ -2917,7 +2919,8 @@ WHERE pest_code IS NULL
             // ── Phase 1: full Plot Data descriptor capture on AAM (rows 8–46).
             final aamCols64 = await customSelect(
               "SELECT name FROM pragma_table_info('arm_assessment_metadata')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
 
             if (!aamCols64.contains('shell_pest_type')) {
               await m.addColumn(
@@ -2936,8 +2939,8 @@ WHERE pest_code IS NULL
                   armAssessmentMetadata, armAssessmentMetadata.shellCropName);
             }
             if (!aamCols64.contains('shell_crop_variety')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.shellCropVariety);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellCropVariety);
             }
             if (!aamCols64.contains('shell_rating_time')) {
               await m.addColumn(
@@ -2960,8 +2963,8 @@ WHERE pest_code IS NULL
                   armAssessmentMetadata.shellCollectionBasisUnit);
             }
             if (!aamCols64.contains('shell_reporting_basis')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.shellReportingBasis);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellReportingBasis);
             }
             if (!aamCols64.contains('shell_reporting_basis_unit')) {
               await m.addColumn(armAssessmentMetadata,
@@ -2972,40 +2975,40 @@ WHERE pest_code IS NULL
                   armAssessmentMetadata, armAssessmentMetadata.shellStageScale);
             }
             if (!aamCols64.contains('shell_crop_stage_maj')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.shellCropStageMaj);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellCropStageMaj);
             }
             if (!aamCols64.contains('shell_crop_stage_min')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.shellCropStageMin);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellCropStageMin);
             }
             if (!aamCols64.contains('shell_crop_stage_max')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.shellCropStageMax);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellCropStageMax);
             }
             if (!aamCols64.contains('shell_crop_density')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.shellCropDensity);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellCropDensity);
             }
             if (!aamCols64.contains('shell_crop_density_unit')) {
               await m.addColumn(armAssessmentMetadata,
                   armAssessmentMetadata.shellCropDensityUnit);
             }
             if (!aamCols64.contains('shell_pest_stage_maj')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.shellPestStageMaj);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellPestStageMaj);
             }
             if (!aamCols64.contains('shell_pest_stage_min')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.shellPestStageMin);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellPestStageMin);
             }
             if (!aamCols64.contains('shell_pest_stage_max')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.shellPestStageMax);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellPestStageMax);
             }
             if (!aamCols64.contains('shell_pest_density')) {
-              await m.addColumn(
-                  armAssessmentMetadata, armAssessmentMetadata.shellPestDensity);
+              await m.addColumn(armAssessmentMetadata,
+                  armAssessmentMetadata.shellPestDensity);
             }
             if (!aamCols64.contains('shell_pest_density_unit')) {
               await m.addColumn(armAssessmentMetadata,
@@ -3034,7 +3037,8 @@ WHERE pest_code IS NULL
             //    rows 42–44, 0-based 41–43) for round-trip + Protocol tab.
             final aamCols65 = await customSelect(
               "SELECT name FROM pragma_table_info('arm_assessment_metadata')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
 
             if (!aamCols65.contains('shell_app_timing_code')) {
               await m.addColumn(armAssessmentMetadata,
@@ -3056,7 +3060,8 @@ WHERE pest_code IS NULL
             //    importer land in Phase 3b/3c.
             final tables66 = await customSelect(
               "SELECT name FROM sqlite_master WHERE type='table'",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!tables66.contains('arm_applications')) {
               await m.createTable(armApplications);
             }
@@ -3064,7 +3069,8 @@ WHERE pest_code IS NULL
           if (from < 67) {
             final cols67 = await customSelect(
               "SELECT name FROM pragma_table_info('arm_trial_metadata')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!cols67.contains('shell_comments_sheet')) {
               await m.addColumn(
                 armTrialMetadata,
@@ -3075,7 +3081,8 @@ WHERE pest_code IS NULL
           if (from < 68) {
             final userCols = await customSelect(
               "SELECT name FROM pragma_table_info('users')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!userCols.contains('pin_hash')) {
               await m.addColumn(users, users.pinHash);
             }
@@ -3086,7 +3093,8 @@ WHERE pest_code IS NULL
           if (from < 69) {
             final seCols = await customSelect(
               "SELECT name FROM pragma_table_info('seeding_events')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             for (final entry in {
               'temperature_c': 'REAL',
               'humidity_pct': 'REAL',
@@ -3113,7 +3121,8 @@ WHERE pest_code IS NULL
           if (from < 70) {
             final taeCols = await customSelect(
               "SELECT name FROM pragma_table_info('trial_application_events')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             for (final entry in {
               'captured_latitude': 'REAL',
               'captured_longitude': 'REAL',
@@ -3130,7 +3139,8 @@ WHERE pest_code IS NULL
           if (from < 71) {
             final tapCols = await customSelect(
               "SELECT name FROM pragma_table_info('trial_application_products')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!tapCols.contains('lot_code')) {
               await customStatement(
                 'ALTER TABLE trial_application_products ADD COLUMN lot_code TEXT',
@@ -3141,7 +3151,8 @@ WHERE pest_code IS NULL
           if (from < 72) {
             final existingTables = await customSelect(
               "SELECT name FROM sqlite_master WHERE type='table'",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!existingTables.contains('se_type_profiles')) {
               await m.createTable(seTypeProfiles);
             }
@@ -3151,7 +3162,8 @@ WHERE pest_code IS NULL
           if (from < 73) {
             final existingTables = await customSelect(
               "SELECT name FROM sqlite_master WHERE type='table'",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!existingTables.contains('signals')) {
               await m.createTable(signals);
             }
@@ -3173,7 +3185,8 @@ WHERE pest_code IS NULL
           if (from < 74) {
             final trialCols = await customSelect(
               "SELECT name FROM pragma_table_info('trials')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!trialCols.contains('region')) {
               // NOT NULL DEFAULT 'eppo_eu' fills all existing rows automatically.
               await customStatement(
@@ -3185,7 +3198,8 @@ WHERE pest_code IS NULL
           if (from < 75) {
             final profileCols = await customSelect(
               "SELECT name FROM pragma_table_info('se_type_causal_profiles')",
-            ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+            ).get().then(
+                (rows) => rows.map((r) => r.read<String>('name')).toSet());
             if (!profileCols.contains('region')) {
               // Step 1: add the two new columns to the existing table so the
               // data copy below works with a simple SELECT *.
@@ -3245,7 +3259,8 @@ WHERE status IN ('draft', 'ready')
             final ydCols = await customSelect(
                     "SELECT name FROM pragma_table_info('yield_details')")
                 .get();
-            if (ydCols.any((r) => r.read<String>('name') == 'converted_yield')) {
+            if (ydCols
+                .any((r) => r.read<String>('name') == 'converted_yield')) {
               await customStatement(
                   'ALTER TABLE yield_details DROP COLUMN converted_yield');
             }
@@ -3315,8 +3330,7 @@ END
             final tcColsRaw = await customSelect(
               "SELECT name FROM pragma_table_info('treatment_components')",
             ).get();
-            final tcCols =
-                tcColsRaw.map((r) => r.read<String>('name')).toSet();
+            final tcCols = tcColsRaw.map((r) => r.read<String>('name')).toSet();
             if (!tcCols.contains('pesticide_category')) {
               await m.addColumn(
                 treatmentComponents,
@@ -3350,6 +3364,17 @@ END
             await customStatement(
               'UPDATE trial_purposes SET requires_confirmation = 0',
             );
+          }
+
+          if (from < 83) {
+            final wsColsRaw = await customSelect(
+              "SELECT name FROM pragma_table_info('weather_snapshots')",
+            ).get();
+            final wsCols = wsColsRaw.map((r) => r.read<String>('name')).toSet();
+            if (!wsCols.contains('precipitation_mm')) {
+              await m.addColumn(
+                  weatherSnapshots, weatherSnapshots.precipitationMm);
+            }
           }
 
           await _createIndexes();
@@ -3418,13 +3443,31 @@ END
         'expected_cv_min, expected_cv_max, scale_min, scale_max, source, notes, created_at) '
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%s','now'))";
     await customStatement(sql, [
-      'CONTRO', 'Weed Control', 'percent', 'higher_better',
-      7, null, null, null, 0.0, 100.0, 'ARM_CONVENTION',
+      'CONTRO',
+      'Weed Control',
+      'percent',
+      'higher_better',
+      7,
+      null,
+      null,
+      null,
+      0.0,
+      100.0,
+      'ARM_CONVENTION',
       'MVP default — min DAT conservative; CV range pending calibration',
     ]);
     await customStatement(sql, [
-      'PHYGEN', 'Crop Injury — Phytotoxicity', 'percent', 'lower_better',
-      3, null, null, null, 0.0, 100.0, 'EPPO_PP1',
+      'PHYGEN',
+      'Crop Injury — Phytotoxicity',
+      'percent',
+      'lower_better',
+      3,
+      null,
+      null,
+      null,
+      0.0,
+      100.0,
+      'EPPO_PP1',
       'MVP default — min DAT conservative; CV range pending calibration from PP1/135',
     ]);
   }

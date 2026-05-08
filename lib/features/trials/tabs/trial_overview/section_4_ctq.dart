@@ -139,11 +139,18 @@ class _CtqBodyState extends State<_CtqBody> {
   }
 }
 
-class _CtqItemRow extends StatelessWidget {
+class _CtqItemRow extends StatefulWidget {
   const _CtqItemRow({required this.item, required this.trialId});
 
   final TrialCtqItemDto item;
   final int trialId;
+
+  @override
+  State<_CtqItemRow> createState() => _CtqItemRowState();
+}
+
+class _CtqItemRowState extends State<_CtqItemRow> {
+  bool _expanded = false;
 
   static String _requiredActionHint(TrialCtqItemDto item) {
     return switch (item.factorKey) {
@@ -174,8 +181,25 @@ class _CtqItemRow extends StatelessWidget {
     return 'Not evaluated';
   }
 
+  VoidCallback? _onTap(BuildContext context) {
+    final item = widget.item;
+    if (item.needsReview && !item.isAcknowledged) {
+      return () => showCtqAcknowledgmentSheet(
+            context,
+            item: item,
+            trialId: widget.trialId,
+          );
+    }
+    if (item.isAcknowledged) {
+      return () => setState(() => _expanded = !_expanded);
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final item = widget.item;
+
     final (chipBg, chipFg, chipLabel) = switch (item.status) {
       'satisfied' => (
           AppDesignTokens.successBg,
@@ -209,81 +233,77 @@ class _CtqItemRow extends StatelessWidget {
         ),
     };
 
-    final showAckAction = item.needsReview && !item.isAcknowledged;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  item.label,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppDesignTokens.primaryText,
+      child: InkWell(
+        onTap: _onTap(context),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    item.label,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              OverviewStatusChip(label: chipLabel, bg: chipBg, fg: chipFg),
-            ],
-          ),
-          if (item.reason.isNotEmpty) ...[
-            const SizedBox(height: 2),
-            Text(
-              item.reason,
-              style: const TextStyle(
-                fontSize: 15,
-                color: AppDesignTokens.secondaryText,
-                height: 1.4,
-              ),
+                const SizedBox(width: 8),
+                OverviewStatusChip(label: chipLabel, bg: chipBg, fg: chipFg),
+                if (item.isAcknowledged) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    size: 16,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ],
+              ],
             ),
-          ],
-          if (item.status == 'missing' || item.isBlocked) ...[
-            const SizedBox(height: AppDesignTokens.spacing4),
-            Text(
-              _requiredActionHint(item),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppDesignTokens.warningFg,
-              ),
-            ),
-          ],
-          if (item.isAcknowledged && item.latestAcknowledgment != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              'Acknowledged ${DateFormat('MMM d, y').format(item.latestAcknowledgment!.acknowledgedAt)}'
-              '${item.latestAcknowledgment!.actorName != null ? ' by ${item.latestAcknowledgment!.actorName}' : ''}',
-              style: const TextStyle(
-                fontSize: 15,
-                color: AppDesignTokens.secondaryText,
-              ),
-            ),
-          ],
-          if (showAckAction) ...[
-            const SizedBox(height: AppDesignTokens.spacing4),
-            GestureDetector(
-              onTap: () => showCtqAcknowledgmentSheet(
-                context,
-                item: item,
-                trialId: trialId,
-              ),
-              child: const Text(
-                'Acknowledge →',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppDesignTokens.primary,
+            if (item.reason.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                item.reason,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppDesignTokens.secondaryText,
+                  height: 1.4,
                 ),
               ),
-            ),
+            ],
+            if (item.status == 'missing' || item.isBlocked) ...[
+              const SizedBox(height: AppDesignTokens.spacing4),
+              Text(
+                _requiredActionHint(item),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppDesignTokens.warningFg,
+                ),
+              ),
+            ],
+            if (item.isAcknowledged &&
+                item.latestAcknowledgment != null &&
+                _expanded) ...[
+              const SizedBox(height: 2),
+              Text(
+                'Acknowledged ${DateFormat('MMM d, y').format(item.latestAcknowledgment!.acknowledgedAt)}'
+                '${item.latestAcknowledgment!.actorName != null ? ' by ${item.latestAcknowledgment!.actorName}' : ''}',
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

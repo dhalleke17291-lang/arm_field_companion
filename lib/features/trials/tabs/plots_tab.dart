@@ -2707,7 +2707,7 @@ class _TrialPlotsWorkingSurfaceState
   String _analysisModeLabel(_PlotAnalysisMode mode) => switch (mode) {
         _PlotAnalysisMode.heatmap => 'Heat',
         _PlotAnalysisMode.distribution => 'Distribution',
-        _PlotAnalysisMode.progression => 'Progression',
+        _PlotAnalysisMode.progression => 'Profile',
       };
 
   IconData _analysisModeIcon(_PlotAnalysisMode mode) => switch (mode) {
@@ -2871,7 +2871,7 @@ class _TrialPlotsWorkingSurfaceState
                           tooltip: switch (mode) {
                             _PlotAnalysisMode.heatmap => 'Heat map',
                             _PlotAnalysisMode.distribution => 'Distribution',
-                            _PlotAnalysisMode.progression => 'Progression',
+                            _PlotAnalysisMode.progression => 'Profile',
                           },
                           onTap: () => setState(() => _analysisMode = mode),
                         ),
@@ -3036,7 +3036,7 @@ class _TrialPlotsWorkingSurfaceState
           ),
           ButtonSegment(
             value: _PlotAnalysisMode.progression,
-            label: Text('Progression'),
+            label: Text('Profile'),
           ),
         ],
         selected: {_analysisMode},

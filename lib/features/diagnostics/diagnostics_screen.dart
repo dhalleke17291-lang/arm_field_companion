@@ -560,7 +560,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Scans standalone RCBD trials for canonical reps, duplicate reps, '
+            'Scans custom RCBD trials for canonical reps, duplicate reps, '
             'or heavy vertical stripes. Protocol-imported '
             'trials are skipped. Read-only — no data is modified.',
             style: theme.textTheme.bodySmall?.copyWith(
@@ -607,10 +607,10 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                       Expanded(
                         child: Text(
                           _rcbdScanReport!.trialsScanned == 0
-                              ? 'No standalone RCBD trials to scan.'
+                              ? 'No custom RCBD trials to scan.'
                               : 'No issues found across '
                                   '${_rcbdScanReport!.trialsScanned} '
-                                  'standalone RCBD trial${_rcbdScanReport!.trialsScanned == 1 ? '' : 's'}.',
+                                  'custom RCBD trial${_rcbdScanReport!.trialsScanned == 1 ? '' : 's'}.',
                           style: theme.textTheme.bodyMedium,
                         ),
                       ),

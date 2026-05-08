@@ -20,8 +20,7 @@ class WeatherSnapshotRepository {
       throw ArgumentError('WeatherSnapshotsCompanion must include parentId');
     }
     final parentId = companion.parentId.value;
-    final existing =
-        await getWeatherSnapshotForParent(parentType, parentId);
+    final existing = await getWeatherSnapshotForParent(parentType, parentId);
     if (existing != null) {
       final forUpdate = companion.copyWith(
         uuid: const Value.absent(),
@@ -69,8 +68,8 @@ class WeatherSnapshotRepository {
     int parentId,
   ) {
     final q = _db.select(_db.weatherSnapshots)
-      ..where((w) =>
-          w.parentType.equals(parentType) & w.parentId.equals(parentId));
+      ..where(
+          (w) => w.parentType.equals(parentType) & w.parentId.equals(parentId));
     return q.watch().map((rows) => rows.isEmpty ? null : rows.first);
   }
 
@@ -86,6 +85,7 @@ class WeatherSnapshotRepository {
     String? windDirection,
     String? cloudCover,
     String? precipitation,
+    double? precipitationMm,
     required String source,
   }) async {
     final nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
@@ -105,6 +105,7 @@ class WeatherSnapshotRepository {
           windDirection: Value(windDirection),
           cloudCover: Value(cloudCover),
           precipitation: Value(precipitation),
+          precipitationMm: Value(precipitationMm),
           modifiedAt: Value(nowMs),
         ),
       );
@@ -124,6 +125,7 @@ class WeatherSnapshotRepository {
               windDirection: Value(windDirection),
               cloudCover: Value(cloudCover),
               precipitation: Value(precipitation),
+              precipitationMm: Value(precipitationMm),
               recordedAt: nowMs,
               createdAt: nowMs,
               modifiedAt: nowMs,

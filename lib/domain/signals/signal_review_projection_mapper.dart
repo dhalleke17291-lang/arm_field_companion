@@ -306,6 +306,15 @@ String _groupKeyForSignal(Signal signal) {
   ];
 
   if (family.key == SignalFamilyKey.singleton) {
+    // aov_prediction signals with no seType still group by session so that
+    // multiple same-session signals collapse into one card.
+    if (signal.signalType == SignalType.aovPrediction.dbValue &&
+        signal.sessionId != null) {
+      return [
+        ...base,
+        'basis=session:${signal.sessionId}',
+      ].join('|');
+    }
     return [
       ...base,
       'signal=${signal.id}',

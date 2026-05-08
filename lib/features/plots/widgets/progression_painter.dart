@@ -15,7 +15,7 @@ class ProgressionPainter extends CustomPainter {
   static const double _paddingLeft = 44.0;
   static const double _paddingRight = 16.0;
   static const double _paddingTop = 16.0;
-  static const double _paddingBottom = 36.0;
+  static const double _paddingBottom = 52.0;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -44,8 +44,8 @@ class ProgressionPainter extends CustomPainter {
     final yRange = yMax - yMin;
 
     // Build ordered session list from labels
-    final sessionLabels = result.sessionLabels;
-    final nSessions = sessionLabels.length;
+    final assessmentLabels = result.assessmentLabels;
+    final nSessions = assessmentLabels.length;
     if (nSessions == 0) return;
 
     // Build sessionId → x-index map from series data
@@ -99,7 +99,7 @@ class ProgressionPainter extends CustomPainter {
     // X axis session labels
     for (var i = 0; i < nSessions; i++) {
       final x = toX(i);
-      final label = sessionLabels[i];
+      final label = assessmentLabels[i];
       labelPaint.text = TextSpan(
         text: label,
         style: const TextStyle(

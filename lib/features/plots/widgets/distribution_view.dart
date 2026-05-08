@@ -208,7 +208,10 @@ class _DistributionViewState extends ConsumerState<DistributionView> {
             ],
           ),
         ),
-        _buildAxisLabels(treatments.first),
+        SafeArea(
+          top: false,
+          child: _buildAxisLabels(treatments.first),
+        ),
       ],
     );
   }

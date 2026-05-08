@@ -409,48 +409,15 @@ class _ProvenanceStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final parts = <String>[];
-
-    final sourceLabel = _sourceLabel(provenance.dataSource);
-    if (provenance.isMultiSource) {
-      parts.add(
-          'Source: $sourceLabel (${provenance.dominantCount} records) · Mixed sources');
-    } else {
-      parts.add('Source: $sourceLabel');
-    }
-
-    parts.add('Trial Site GPS');
-
-    if (provenance.fetchedAtMs != null) {
-      parts.add('Fetched ${_relativeTime(provenance.fetchedAtMs!)}');
-    }
-
-    parts.add('Confidence: ${_confidenceLabel(provenance.overallConfidence)}');
-
     return Text(
-      parts.join(' · '),
+      buildEnvironmentalProvenanceText(provenance),
       style: const TextStyle(
-        fontSize: 14,
+        fontSize: 11,
         color: AppDesignTokens.secondaryText,
         height: 1.4,
       ),
     );
   }
-
-  static String _sourceLabel(String? source) => switch (source) {
-        'open_meteo' => 'Open-Meteo',
-        null || 'unavailable' => 'Not recorded',
-        _ => source,
-      };
-
-  static String _confidenceLabel(String? confidence) => switch (confidence) {
-        'measured' => 'High',
-        'estimated' => 'Estimated',
-        'unavailable' => 'N/A',
-        _ when confidence != null =>
-          confidence[0].toUpperCase() + confidence.substring(1),
-        _ => 'Unknown',
-      };
 
   static String _relativeTime(int epochMs) {
     final age =
@@ -462,6 +429,69 @@ class _ProvenanceStrip extends StatelessWidget {
     return DateFormat('MMM d, y')
         .format(DateTime.fromMillisecondsSinceEpoch(epochMs).toLocal());
   }
+}
+
+String environmentalSourceDisplayName(String? dataSource) {
+  switch (dataSource?.toLowerCase().trim()) {
+    case 'open_meteo':
+      return 'Open-Meteo';
+    case 'manual':
+      return 'Manual entry';
+    case null:
+    case '':
+    case 'unavailable':
+      return 'Not recorded';
+    default:
+      return dataSource!;
+  }
+}
+
+String? environmentalSourceDomain(String? dataSource) {
+  switch (dataSource?.toLowerCase().trim()) {
+    case 'open_meteo':
+      return 'api.open-meteo.com';
+    default:
+      return null;
+  }
+}
+
+String formatEnvironmentalCoordinate(double lat, double lng) {
+  final latDir = lat >= 0 ? 'N' : 'S';
+  final lngDir = lng >= 0 ? 'E' : 'W';
+  return '${lat.abs().toStringAsFixed(4)}°$latDir, '
+      '${lng.abs().toStringAsFixed(4)}°$lngDir';
+}
+
+String environmentalConfidenceLabel(String? confidence) {
+  switch (confidence?.toLowerCase().trim()) {
+    case 'measured':
+      return 'High';
+    case 'estimated':
+      return 'Estimated';
+    case 'unavailable':
+      return 'Unavailable';
+    case null:
+    case '':
+      return 'Unknown';
+    default:
+      return confidence!;
+  }
+}
+
+String buildEnvironmentalProvenanceText(EnvironmentalProvenanceDto p) {
+  final parts = <String>[];
+  final name = environmentalSourceDisplayName(p.dataSource);
+  final domain = environmentalSourceDomain(p.dataSource);
+  parts.add(name);
+  if (domain != null) parts.add(domain);
+  if (p.siteLatitude != null && p.siteLongitude != null) {
+    parts.add(formatEnvironmentalCoordinate(p.siteLatitude!, p.siteLongitude!));
+  }
+  if (p.fetchedAtMs != null) {
+    parts.add('Fetched ${_ProvenanceStrip._relativeTime(p.fetchedAtMs!)}');
+  }
+  parts.add('Confidence: ${environmentalConfidenceLabel(p.overallConfidence)}');
+  return parts.join(' · ');
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────

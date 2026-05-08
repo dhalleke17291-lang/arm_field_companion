@@ -33,7 +33,7 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
       return const AppEmptyState(
         icon: Icons.show_chart,
         title: 'No sessions yet',
-        subtitle: 'Start rating sessions to see progression across time.',
+        subtitle: 'Profile will appear once rating sessions have been recorded.',
       );
     }
 
@@ -115,13 +115,12 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
       return const AppEmptyState(
         icon: Icons.show_chart,
         title: 'No data yet',
-        subtitle:
-            'Record numeric ratings across multiple sessions to see progression.',
+        subtitle: 'Profile will appear once rating sessions have been recorded.',
       );
     }
 
     final series = result.series;
-    final hasSingleSession = result.sessionLabels.length == 1;
+    final hasSingleSession = result.assessmentLabels.length == 1;
     final colors = List.generate(
       series.length,
       (i) => AppDesignTokens
@@ -136,8 +135,18 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
             padding: EdgeInsets.fromLTRB(12, 8, 12, 0),
             child: AnalysisBanner(
               message:
-                  'Only one session has data — add more sessions to see progression trends.',
+                  'Only one session recorded — profile will show progression once a second session has been rated.',
               severity: AnalysisBannerSeverity.info,
+            ),
+          ),
+        for (final note in result.patternNotes)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+            child: AnalysisBanner(
+              message: note.message,
+              severity: note.isWarning
+                  ? AnalysisBannerSeverity.warning
+                  : AnalysisBannerSeverity.info,
             ),
           ),
         // Assessment unit label
@@ -159,7 +168,7 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
         // Chart
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
             child: CustomPaint(
               painter: ProgressionPainter(
                 result: result,
@@ -169,7 +178,10 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
           ),
         ),
         // Legend
-        _buildLegend(series, colors),
+        SafeArea(
+          top: false,
+          child: _buildLegend(series, colors),
+        ),
       ],
     );
   }

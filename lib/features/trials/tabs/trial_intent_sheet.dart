@@ -24,6 +24,7 @@ Future<void> showTrialIntentSheet(
 
   await showModalBottomSheet<void>(
     context: context,
+    showDragHandle: false,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: AppDesignTokens.cardSurface,

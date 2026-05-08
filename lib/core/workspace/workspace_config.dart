@@ -149,6 +149,7 @@ class WorkspaceConfig {
       ExportFormat.pdfReport,
       ExportFormat.evidenceReport,
       ExportFormat.trialReport,
+      ExportFormat.trialDefensibility,
     ],
     primaryExport: ExportFormat.pdfReport,
     lockPolicy: ProtocolLockPolicy.soft,
@@ -189,6 +190,7 @@ class WorkspaceConfig {
       ExportFormat.pdfReport,
       ExportFormat.evidenceReport,
       ExportFormat.trialReport,
+      ExportFormat.trialDefensibility,
     ],
     primaryExport: ExportFormat.armHandoff,
     lockPolicy: ProtocolLockPolicy.soft,
@@ -231,6 +233,7 @@ class WorkspaceConfig {
       ExportFormat.pdfReport,
       ExportFormat.evidenceReport,
       ExportFormat.trialReport,
+      ExportFormat.trialDefensibility,
     ],
     primaryExport: ExportFormat.armHandoff,
     lockPolicy: ProtocolLockPolicy.hard,
@@ -248,8 +251,9 @@ class WorkspaceConfig {
 
   static const standalone = WorkspaceConfig(
     type: WorkspaceType.standalone,
-    displayName: 'Standalone Trial',
-    shortDescription: 'Independent trial — no CSV import required, PDF and CSV report',
+    displayName: 'Custom Trial',
+    shortDescription:
+        'Independent trial — no CSV import required, PDF and CSV report',
     visibleTabs: [
       TrialTab.plots,
       TrialTab.assessments,
@@ -271,6 +275,7 @@ class WorkspaceConfig {
     availableExports: [
       ExportFormat.pdfReport,
       ExportFormat.trialReport,
+      ExportFormat.trialDefensibility,
       ExportFormat.flatCsv,
       ExportFormat.zipBundle,
     ],

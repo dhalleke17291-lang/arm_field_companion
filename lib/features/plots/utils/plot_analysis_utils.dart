@@ -1,5 +1,8 @@
 import 'dart:math';
 
+import '../models/plot_analysis_models.dart'
+    show ProgressionPatternNote, ProgressionSeries;
+
 enum CVTier { acceptable, moderate, high }
 
 CVTier getCVTier(double cv) {
@@ -83,4 +86,43 @@ double _percentile(List<double> sorted, double p) {
   final hi = index.ceil();
   if (lo == hi) return sorted[lo];
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (index - lo);
+}
+
+/// Derive pattern notes from a completed progression series.
+///
+/// CHK contamination: check mean rises > 5.0 from first to last session.
+/// Treatment separation: spread among non-check last-session means > 20.0.
+List<ProgressionPatternNote> computeProgressionPatternNotes(
+    List<ProgressionSeries> series) {
+  if (series.isEmpty) return const [];
+  final notes = <ProgressionPatternNote>[];
+
+  for (final s in series) {
+    if (!s.isCheck || s.points.length < 2) continue;
+    if (s.points.last.mean > s.points.first.mean + 5.0) {
+      notes.add(const ProgressionPatternNote(
+        message:
+            'Check mean rose across sessions — possible field contamination or carry-over.',
+        isWarning: true,
+      ));
+      break;
+    }
+  }
+
+  final lastMeans = series
+      .where((s) => !s.isCheck && s.points.isNotEmpty)
+      .map((s) => s.points.last.mean)
+      .toList();
+  if (lastMeans.length >= 2) {
+    final spread = lastMeans.reduce(max) - lastMeans.reduce(min);
+    if (spread > 20.0) {
+      notes.add(const ProgressionPatternNote(
+        message:
+            'Wide treatment spread at latest session — strong differentiation visible.',
+        isWarning: false,
+      ));
+    }
+  }
+
+  return notes;
 }

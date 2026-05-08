@@ -347,7 +347,7 @@ List<InferredTreatmentRole> inferTreatmentRoles(
     'standalone' => (
         'efficacy',
         FieldConfidence.moderate,
-        "Trial type inferred as efficacy from standalone workspace — confirm or correct.",
+        "Trial type inferred as efficacy from custom workspace — confirm or correct.",
       ),
     _ => (
         null,

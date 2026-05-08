@@ -119,14 +119,30 @@ class ProgressionSeries {
   });
 }
 
+/// Whether the x-axis represents rated sessions over time or a cross-assessment profile.
+enum ProgressionXAxisMode { sessions, assessmentTypes }
+
+/// A single pattern observation computed from progression series means.
+class ProgressionPatternNote {
+  final String message;
+  final bool isWarning;
+
+  const ProgressionPatternNote({
+    required this.message,
+    required this.isWarning,
+  });
+}
+
 class ProgressionResult {
   final List<ProgressionSeries> series;
-  final String assessmentName;
-  final List<String> sessionLabels;
+  final List<String> assessmentLabels;
+  final ProgressionXAxisMode xAxisMode;
+  final List<ProgressionPatternNote> patternNotes;
 
   const ProgressionResult({
     required this.series,
-    required this.assessmentName,
-    required this.sessionLabels,
+    required this.assessmentLabels,
+    required this.xAxisMode,
+    required this.patternNotes,
   });
 }

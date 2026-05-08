@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
@@ -104,68 +105,67 @@ final plotDistributionProvider = FutureProvider.autoDispose
   return DistributionResult(treatments: dists, pooledCv: pooledCv);
 });
 
-/// Cross-assessment-time-point mean progression per treatment.
+/// Cross-session mean progression per treatment for a selected assessment type.
 final plotProgressionProvider = FutureProvider.autoDispose
     .family<ProgressionResult, PlotProgressionParams>((ref, params) async {
   final trialAssessments =
       ref.watch(trialAssessmentsForTrialProvider(params.trialId)).valueOrNull ??
           const <TrialAssessment>[];
-  final allRatings = await ref
-      .watch(allSessionRatingsForTrialProvider(params.trialId).future);
+  final allRatings =
+      await ref.watch(allSessionRatingsForTrialProvider(params.trialId).future);
   final treatments =
       ref.watch(treatmentsForTrialProvider(params.trialId)).valueOrNull ??
           const <Treatment>[];
   final assignments =
       ref.watch(assignmentsForTrialProvider(params.trialId)).valueOrNull ??
           const <Assignment>[];
+  final sessions =
+      ref.watch(sessionsForTrialProvider(params.trialId)).valueOrNull ??
+          const <Session>[];
 
-  // sort time points by sortOrder
-  final sortedTimePoints = List<TrialAssessment>.from(trialAssessments)
-    ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
-  // x-axis labels: displayNameOverride if set, else TA{i+1}
-  final assessmentLabels = [
-    for (var i = 0; i < sortedTimePoints.length; i++)
-      (sortedTimePoints[i].displayNameOverride?.trim().isNotEmpty ?? false)
-          ? sortedTimePoints[i].displayNameOverride!.trim()
-          : 'TA${i + 1}',
-  ];
-
-  // map legacyAssessmentId → ta.id for rating lookup
-  final legacyIdToTaId = <int, int>{};
-  for (final ta in sortedTimePoints) {
-    if (ta.legacyAssessmentId != null) {
-      legacyIdToTaId[ta.legacyAssessmentId!] = ta.id;
-    }
+  // Find the trial_assessment row for the selected legacy assessment id.
+  final selectedTA = trialAssessments.firstWhereOrNull(
+    (ta) => ta.legacyAssessmentId == params.assessmentId,
+  );
+  if (selectedTA == null || sessions.isEmpty) {
+    return const ProgressionResult(
+      series: [],
+      assessmentLabels: [],
+      xAxisMode: ProgressionXAxisMode.sessions,
+      patternNotes: [],
+    );
   }
+
+  // x-axis: one label per session, ordered by startedAt (from provider).
+  final sessionLabels = sessions.map((s) => s.name).toList();
 
   // map plotPk → treatmentId
   final assignmentByPlot = {for (final a in assignments) a.plotId: a};
 
-  // group ratings by taId → treatmentId → values
-  final byTaByTreatment = <int, Map<int, List<double>>>{};
+  // group ratings by sessionId → treatmentId → values for the selected assessment
+  final bySessionByTreatment = <int, Map<int, List<double>>>{};
   for (final r in allRatings) {
     if (r.resultStatus != 'RECORDED') continue;
     if (r.numericValue == null) continue;
-    final taId = legacyIdToTaId[r.assessmentId];
-    if (taId == null) continue;
+    if (!_ratingMatchesTA(r, selectedTA)) continue;
     final trtId = assignmentByPlot[r.plotPk]?.treatmentId;
     if (trtId == null) continue;
-    ((byTaByTreatment[taId] ??= {})[trtId] ??= []).add(r.numericValue!);
+    ((bySessionByTreatment[r.sessionId] ??= {})[trtId] ??= [])
+        .add(r.numericValue!);
   }
 
   // build per-treatment series
   final series = <ProgressionSeries>[];
   for (final t in treatments) {
     final points = <ProgressionPoint>[];
-    for (var i = 0; i < sortedTimePoints.length; i++) {
-      final ta = sortedTimePoints[i];
-      final vals = byTaByTreatment[ta.id]?[t.id];
+    for (var i = 0; i < sessions.length; i++) {
+      final session = sessions[i];
+      final vals = bySessionByTreatment[session.id]?[t.id];
       if (vals == null || vals.isEmpty) continue;
       final mean = vals.reduce((a, b) => a + b) / vals.length;
       points.add(ProgressionPoint(
-        sessionId: ta.id,
-        sessionLabel: assessmentLabels[i],
+        sessionId: session.id,
+        sessionLabel: sessionLabels[i],
         mean: mean,
         n: vals.length,
       ));
@@ -180,21 +180,33 @@ final plotProgressionProvider = FutureProvider.autoDispose
     ));
   }
 
-  // only include labels for time points that have data in at least one series
-  final taIdsWithData = series
+  // only include labels for sessions that have data in at least one series
+  final sessionIdsWithData = series
       .expand((s) => s.points)
       .map((p) => p.sessionId)
       .toSet();
   final filteredLabels = <String>[];
-  for (var i = 0; i < sortedTimePoints.length; i++) {
-    if (taIdsWithData.contains(sortedTimePoints[i].id)) {
-      filteredLabels.add(assessmentLabels[i]);
+  for (var i = 0; i < sessions.length; i++) {
+    if (sessionIdsWithData.contains(sessions[i].id)) {
+      filteredLabels.add(sessionLabels[i]);
     }
   }
 
   return ProgressionResult(
     series: series,
-    assessmentName: 'Assessment',
-    sessionLabels: filteredLabels.isEmpty ? assessmentLabels : filteredLabels,
+    assessmentLabels: filteredLabels.isEmpty ? sessionLabels : filteredLabels,
+    xAxisMode: ProgressionXAxisMode.sessions,
+    patternNotes: computeProgressionPatternNotes(series),
   );
 });
+
+bool _ratingMatchesTA(RatingRecord r, TrialAssessment ta) {
+  if (r.trialAssessmentId != null && r.trialAssessmentId == ta.id) {
+    return true;
+  }
+  if (ta.legacyAssessmentId != null &&
+      r.assessmentId == ta.legacyAssessmentId) {
+    return true;
+  }
+  return false;
+}

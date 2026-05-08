@@ -31,34 +31,33 @@ void main() {
     });
 
     test('trial_environmental_records table exists', () async {
-      expect(
-          await _tableExists(db, 'trial_environmental_records'), isTrue);
+      expect(await _tableExists(db, 'trial_environmental_records'), isTrue);
     });
 
     test('trial_environmental_records has all required columns', () async {
-      final cols =
-          await _columnNames(db, 'trial_environmental_records');
-      expect(cols, containsAll([
-        'id',
-        'trial_id',
-        'record_date',
-        'site_latitude',
-        'site_longitude',
-        'daily_min_temp_c',
-        'daily_max_temp_c',
-        'daily_precipitation_mm',
-        'weather_flags',
-        'data_source',
-        'fetched_at',
-        'confidence',
-        'created_at',
-      ]));
+      final cols = await _columnNames(db, 'trial_environmental_records');
+      expect(
+          cols,
+          containsAll([
+            'id',
+            'trial_id',
+            'record_date',
+            'site_latitude',
+            'site_longitude',
+            'daily_min_temp_c',
+            'daily_max_temp_c',
+            'daily_precipitation_mm',
+            'weather_flags',
+            'data_source',
+            'fetched_at',
+            'confidence',
+            'created_at',
+          ]));
     });
 
     test('temperature and precipitation columns are nullable', () async {
-      final trialId = await db
-          .into(db.trials)
-          .insert(TrialsCompanion.insert(name: 'T'));
+      final trialId =
+          await db.into(db.trials).insert(TrialsCompanion.insert(name: 'T'));
       final now = DateTime.now().millisecondsSinceEpoch;
 
       // Insert without optional weather fields — should succeed.
@@ -81,9 +80,8 @@ void main() {
     });
 
     test('confidence defaults to measured', () async {
-      final trialId = await db
-          .into(db.trials)
-          .insert(TrialsCompanion.insert(name: 'T'));
+      final trialId =
+          await db.into(db.trials).insert(TrialsCompanion.insert(name: 'T'));
       final now = DateTime.now().millisecondsSinceEpoch;
 
       await db.into(db.trialEnvironmentalRecords).insert(
@@ -102,9 +100,8 @@ void main() {
 
     test('UNIQUE(trial_id, record_date) prevents duplicate daily records',
         () async {
-      final trialId = await db
-          .into(db.trials)
-          .insert(TrialsCompanion.insert(name: 'T'));
+      final trialId =
+          await db.into(db.trials).insert(TrialsCompanion.insert(name: 'T'));
       final now = DateTime.now().millisecondsSinceEpoch;
 
       await db.into(db.trialEnvironmentalRecords).insert(
@@ -135,12 +132,10 @@ void main() {
     });
 
     test('different trials may share the same record_date', () async {
-      final t1 = await db
-          .into(db.trials)
-          .insert(TrialsCompanion.insert(name: 'T1'));
-      final t2 = await db
-          .into(db.trials)
-          .insert(TrialsCompanion.insert(name: 'T2'));
+      final t1 =
+          await db.into(db.trials).insert(TrialsCompanion.insert(name: 'T1'));
+      final t2 =
+          await db.into(db.trials).insert(TrialsCompanion.insert(name: 'T2'));
       final now = DateTime.now().millisecondsSinceEpoch;
 
       await db.into(db.trialEnvironmentalRecords).insert(
@@ -166,6 +161,25 @@ void main() {
 
       final rows = await db.select(db.trialEnvironmentalRecords).get();
       expect(rows.length, 2);
+    });
+  });
+
+  group('precipitation_mm migration', () {
+    late AppDatabase db;
+
+    setUp(() {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    test('schema v83 adds precipitationMm column to weather_snapshots',
+        () async {
+      final cols = await _columnNames(db, 'weather_snapshots');
+
+      expect(cols, contains('precipitation_mm'));
     });
   });
 }

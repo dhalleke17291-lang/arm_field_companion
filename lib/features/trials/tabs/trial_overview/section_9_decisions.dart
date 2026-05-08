@@ -138,7 +138,7 @@ class Section9Decisions extends ConsumerWidget {
   }
 }
 
-class _SignalGroupRow extends StatelessWidget {
+class _SignalGroupRow extends StatefulWidget {
   const _SignalGroupRow({
     required this.group,
     required this.trialId,
@@ -148,6 +148,13 @@ class _SignalGroupRow extends StatelessWidget {
   final SignalReviewGroupProjection group;
   final int trialId;
   final Map<int, Signal> rawSignalsById;
+
+  @override
+  State<_SignalGroupRow> createState() => _SignalGroupRowState();
+}
+
+class _SignalGroupRowState extends State<_SignalGroupRow> {
+  bool _expanded = false;
 
   static (Color, Color) _severityColors(SignalReviewGroupProjection group) {
     final hasExportBlock = group.memberSignals.any((s) => s.blocksExport);
@@ -167,6 +174,7 @@ class _SignalGroupRow extends StatelessWidget {
   }
 
   String? get _affectedSummary {
+    final group = widget.group;
     final parts = <String>[
       if (group.affectedAssessmentIds.isNotEmpty)
         '${group.affectedAssessmentIds.length} assessment${group.affectedAssessmentIds.length == 1 ? '' : 's'}',
@@ -179,7 +187,7 @@ class _SignalGroupRow extends StatelessWidget {
   }
 
   Signal? _rawSignalFor(SignalReviewProjection member) =>
-      rawSignalsById[member.signalId];
+      widget.rawSignalsById[member.signalId];
 
   void _openSignal(BuildContext context, SignalReviewProjection member) {
     final rawSignal = _rawSignalFor(member);
@@ -187,50 +195,16 @@ class _SignalGroupRow extends StatelessWidget {
     showSignalActionSheet(
       context,
       signal: rawSignal,
-      trialId: trialId,
+      trialId: widget.trialId,
     );
   }
 
-  Widget _actionControl(BuildContext context) {
-    if (group.memberSignals.length == 1) {
-      final member = group.memberSignals.single;
-      return TextButton(
-        onPressed: _rawSignalFor(member) == null
-            ? null
-            : () => _openSignal(context, member),
-        child: const Text('Decide'),
-      );
+  void _handleTap(BuildContext context) {
+    if (widget.group.memberSignals.length == 1) {
+      _openSignal(context, widget.group.memberSignals.single);
+    } else {
+      setState(() => _expanded = !_expanded);
     }
-
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: EdgeInsets.zero,
-        visualDensity: VisualDensity.compact,
-        title: Text(
-          'Review ${group.signalCount} signals',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppDesignTokens.primary,
-          ),
-        ),
-        children: group.memberSignals
-            .map(
-              (member) => Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: _rawSignalFor(member) == null
-                      ? null
-                      : () => _openSignal(context, member),
-                  child: Text('Signal #${member.signalId}'),
-                ),
-              ),
-            )
-            .toList(growable: false),
-      ),
-    );
   }
 
   Widget _interpretationDetails(BuildContext context) {
@@ -251,15 +225,15 @@ class _SignalGroupRow extends StatelessWidget {
         children: [
           _InterpretationLine(
             label: 'Why this matters',
-            value: group.familyScientificRole,
+            value: widget.group.familyScientificRole,
           ),
           _InterpretationLine(
             label: 'Effect on results',
-            value: group.familyInterpretationImpact,
+            value: widget.group.familyInterpretationImpact,
           ),
           _InterpretationLine(
             label: 'Question to resolve',
-            value: group.reviewQuestion,
+            value: widget.group.reviewQuestion,
           ),
         ],
       ),
@@ -268,86 +242,122 @@ class _SignalGroupRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final group = widget.group;
     final (chipBg, chipFg) = _severityColors(group);
     final affectedSummary = _affectedSummary;
+    final isMulti = group.memberSignals.length > 1;
 
-    return Container(
-      padding: const EdgeInsets.all(AppDesignTokens.spacing8),
-      decoration: BoxDecoration(
-        color: AppDesignTokens.cardSurface,
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-        border: Border.all(color: AppDesignTokens.borderCrisp),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(
-                      group.displayTitle,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppDesignTokens.primaryText,
-                        height: 1.35,
+    return InkWell(
+      onTap: () => _handleTap(context),
+      borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+      child: Container(
+        padding: const EdgeInsets.all(AppDesignTokens.spacing8),
+        decoration: BoxDecoration(
+          color: AppDesignTokens.cardSurface,
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+          border: Border.all(color: AppDesignTokens.borderCrisp),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        group.displayTitle,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppDesignTokens.primaryText,
+                          height: 1.35,
+                        ),
                       ),
-                    ),
-                    if (group.signalCount > 1)
-                      OverviewStatusChip(
-                        label: '${group.signalCount} signals',
-                        bg: AppDesignTokens.emptyBadgeBg,
-                        fg: AppDesignTokens.emptyBadgeFg,
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  group.shortSummary,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppDesignTokens.primaryText,
-                    height: 1.4,
+                      if (group.signalCount > 1)
+                        OverviewStatusChip(
+                          label: '${group.signalCount} signals',
+                          bg: AppDesignTokens.emptyBadgeBg,
+                          fg: AppDesignTokens.emptyBadgeFg,
+                        ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  group.statusLabel,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: AppDesignTokens.secondaryText,
-                    height: 1.35,
+                  const SizedBox(height: 4),
+                  OverviewStatusChip(
+                    label: group.severityLabel,
+                    bg: chipBg,
+                    fg: chipFg,
                   ),
-                ),
-                if (affectedSummary != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
-                    affectedSummary,
+                    group.shortSummary,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppDesignTokens.primaryText,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    group.statusLabel,
                     style: const TextStyle(
                       fontSize: 15,
                       color: AppDesignTokens.secondaryText,
                       height: 1.35,
                     ),
                   ),
+                  if (affectedSummary != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      affectedSummary,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: AppDesignTokens.secondaryText,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                  _interpretationDetails(context),
+                  if (isMulti && _expanded) ...[
+                    const SizedBox(height: AppDesignTokens.spacing4),
+                    ...group.memberSignals.map(
+                      (member) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: GestureDetector(
+                          onTap: _rawSignalFor(member) != null
+                              ? () => _openSignal(context, member)
+                              : null,
+                          child: Text(
+                            member.displayTitle,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppDesignTokens.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-                _interpretationDetails(context),
-                _actionControl(context),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          OverviewStatusChip(
-            label: group.severityLabel,
-            bg: chipBg,
-            fg: chipFg,
-          ),
-        ],
+            if (isMulti) ...[
+              const SizedBox(width: 8),
+              Icon(
+                _expanded
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+                size: 16,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
