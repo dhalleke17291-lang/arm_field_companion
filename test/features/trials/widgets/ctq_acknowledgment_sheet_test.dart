@@ -28,14 +28,16 @@ Widget _wrap({required AppDatabase db, int trialId = 1}) {
       ctqFactorDefinitionRepositoryProvider
           .overrideWith((_) => CtqFactorDefinitionRepository(db)),
       trialCriticalToQualityProvider(trialId).overrideWith(
-        (ref) async => const TrialCtqDto(
-          trialId: 1,
-          ctqItems: [],
-          blockerCount: 0,
-          warningCount: 0,
-          reviewCount: 0,
-          satisfiedCount: 0,
-          overallStatus: 'unknown',
+        (ref) => Stream.value(
+          const TrialCtqDto(
+            trialId: 1,
+            ctqItems: [],
+            blockerCount: 0,
+            warningCount: 0,
+            reviewCount: 0,
+            satisfiedCount: 0,
+            overallStatus: 'unknown',
+          ),
         ),
       ),
       trialDecisionSummaryProvider(trialId).overrideWith(

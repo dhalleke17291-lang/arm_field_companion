@@ -9,6 +9,8 @@ import '../../core/field_operation_date_rules.dart';
 import '../../core/providers.dart';
 import '../../core/trial_state.dart';
 import '../../core/widgets/loading_error_widgets.dart';
+import '../../shared/layout/responsive_layout.dart';
+import '../sessions/interpretation_factors_sheet.dart';
 import '../sessions/usecases/create_session_usecase.dart';
 
 class CreateSessionScreen extends ConsumerStatefulWidget {
@@ -118,15 +120,21 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: const GradientScreenHeader(title: 'New Session'),
-      body: SafeArea(top: false, child: legacyAsync.when(
-        loading: () => const AppLoadingView(),
-        error: (e, st) => Center(child: Text('Error: $e')),
-        data: (legacy) => trialAsync.when(
-          loading: () => _buildForm(context, legacy, [], aamMap),
-          error: (e, st) => _buildForm(context, legacy, [], aamMap),
-          data: (trialPairs) => _buildForm(context, legacy, trialPairs, aamMap),
+      body: SafeArea(
+        top: false,
+        child: ResponsiveBody(
+          child: legacyAsync.when(
+            loading: () => const AppLoadingView(),
+            error: (e, st) => Center(child: Text('Error: $e')),
+            data: (legacy) => trialAsync.when(
+              loading: () => _buildForm(context, legacy, [], aamMap),
+              error: (e, st) => _buildForm(context, legacy, [], aamMap),
+              data: (trialPairs) =>
+                  _buildForm(context, legacy, trialPairs, aamMap),
+            ),
+          ),
         ),
-      )),
+      ),
       bottomNavigationBar: _buildStartButton(context),
     );
   }
@@ -501,6 +509,28 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
       return;
     }
 
+    // First-session interpretation factors prompt:
+    // Show once, non-blocking. null return = user deferred; String = write to
+    // trial_purposes after session is created.
+    String? factorsJson;
+    {
+      final sessionRepo = ref.read(sessionRepositoryProvider);
+      final existingSessions =
+          await sessionRepo.getSessionsForTrial(widget.trial.id);
+      if (!mounted || !context.mounted) return;
+      if (shouldShowInterpretationFactorsPrompt(
+        existingSessionCount: existingSessions.length,
+        knownInterpretationFactors: (await ref
+                .read(trialPurposeRepositoryProvider)
+                .getCurrentTrialPurpose(widget.trial.id))
+            ?.knownInterpretationFactors,
+      )) {
+        if (!mounted || !context.mounted) return;
+        factorsJson = await showInterpretationFactorsSheet(context);
+        if (!mounted || !context.mounted) return;
+      }
+    }
+
     setState(() => _isCreating = true);
 
     final userId = await ref.read(currentUserIdProvider.future);
@@ -532,6 +562,12 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     setState(() => _isCreating = false);
 
     if (result.success) {
+      if (factorsJson != null) {
+        await ref
+            .read(trialPurposeRepositoryProvider)
+            .updateKnownInterpretationFactors(widget.trial.id, factorsJson);
+        if (!mounted || !context.mounted) return;
+      }
       ref.invalidate(trialProvider(widget.trial.id));
       Navigator.pop(context, result.session);
     } else {

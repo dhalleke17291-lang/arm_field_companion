@@ -7,6 +7,8 @@ import '../../../core/design/app_design_tokens.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/providers.dart';
 import '../../../domain/trial_cognition/mode_c_revelation_model.dart';
+import '../../../domain/trial_cognition/regulatory_context_value.dart';
+import '../../../shared/layout/responsive_layout.dart';
 
 /// Opens the Mode C intent revelation sheet for [trial].
 /// Resolves the current purpose and current user before showing.
@@ -29,15 +31,30 @@ Future<void> showTrialIntentSheet(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
     clipBehavior: Clip.antiAlias,
-    builder: (ctx) => _TrialIntentSheet(
-      trial: trial,
-      existing: existing,
-      capturedBy: user?.displayName,
-    ),
+    builder: (ctx) {
+      final rl = ResponsiveLayout.of(ctx);
+      final maxW = rl.modalSheetMaxWidth;
+      final sheet = _TrialIntentSheet(
+        trial: trial,
+        existing: existing,
+        capturedBy: user?.displayName,
+      );
+      if (maxW.isInfinite) return sheet;
+      return Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxW),
+          child: sheet,
+        ),
+      );
+    },
   );
 }
 
-// Maps each question key index → the existing answer from the DB row.
+// Maps each question key index → the existing text answer from the DB row.
+// Index 1 (trial_purpose_context) maps to trial_purpose for backward-compat
+// text preservation. The picker's initial selection is loaded separately
+// from regulatoryContext in _TrialIntentSheetState.initState.
 String? _existingAnswer(TrialPurpose? p, int index) {
   if (p == null) return null;
   return switch (ModeCQuestionKeys.all[index]) {
@@ -72,6 +89,11 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
   late final PageController _pageController;
   late final List<TextEditingController> _controllers;
   late final List<bool> _hadExisting;
+
+  /// Structured commercial context selection — maps to regulatory_context column.
+  /// Null means no selection yet. Initialized from existing?.regulatoryContext.
+  String? _selectedRegulatoryContext;
+
   var _pageIndex = 0;
   var _submitting = false;
 
@@ -89,6 +111,8 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
       _totalQuestions,
       (i) => (_existingAnswer(widget.existing, i) ?? '').isNotEmpty,
     );
+    // Picker initial selection from structured column (not free-text trial_purpose).
+    _selectedRegulatoryContext = widget.existing?.regulatoryContext;
   }
 
   @override
@@ -171,10 +195,14 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
         return s.isEmpty ? null : s;
       }
 
+      // fieldText(1) carries the display label (or existing trial_purpose text)
+      // for backward-compat display on story screen. regulatory_context is the
+      // structured key written from the picker.
       final companion = TrialPurposesCompanion.insert(
         trialId: widget.trial.id,
         claimBeingTested: Value(fieldText(0)),
         trialPurpose: Value(fieldText(1)),
+        regulatoryContext: Value(_selectedRegulatoryContext),
         primaryEndpoint: Value(fieldText(2)),
         treatmentRoleSummary: Value(fieldText(3)),
         knownInterpretationFactors: Value(fieldText(4)),
@@ -187,6 +215,7 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
           trialId: widget.trial.id,
           claimBeingTested: fieldText(0),
           trialPurpose: fieldText(1),
+          regulatoryContext: _selectedRegulatoryContext,
           primaryEndpoint: fieldText(2),
           treatmentRoleSummary: fieldText(3),
           knownInterpretationFactors: fieldText(4),
@@ -208,8 +237,6 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
       );
 
       ref.invalidate(trialPurposeProvider(widget.trial.id));
-      ref.invalidate(trialEvidenceArcProvider(widget.trial.id));
-      ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
 
       for (var i = 0; i < _totalQuestions; i++) {
         if (_controllers[i].text.trim().isNotEmpty) {
@@ -245,17 +272,31 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   for (var i = 0; i < _totalQuestions; i++)
-                    _QuestionPage(
-                      questionIndex: i,
-                      totalQuestions: _totalQuestions,
-                      controller: _controllers[i],
-                      onSave: () => _onSave(i),
-                      onSkip: () => _onSkip(i),
-                      onBack: _goBack,
-                      isFirst: i == 0,
-                    ),
+                    if (i == 1)
+                      _PickerQuestionPage(
+                        questionIndex: i,
+                        totalQuestions: _totalQuestions,
+                        selectedValue: _selectedRegulatoryContext,
+                        onSelect: (key) {
+                          setState(() => _selectedRegulatoryContext = key);
+                        },
+                        onNext: () => _onSave(i),
+                        onSkip: () => _onSkip(i),
+                        onBack: _goBack,
+                      )
+                    else
+                      _QuestionPage(
+                        questionIndex: i,
+                        totalQuestions: _totalQuestions,
+                        controller: _controllers[i],
+                        onSave: () => _onSave(i),
+                        onSkip: () => _onSkip(i),
+                        onBack: _goBack,
+                        isFirst: i == 0,
+                      ),
                   _ReviewPage(
                     controllers: _controllers,
+                    selectedRegulatoryContext: _selectedRegulatoryContext,
                     onBack: _goBack,
                     onConfirm: _submitting ? null : _onConfirm,
                   ),
@@ -285,6 +326,200 @@ class _DragHandle extends StatelessWidget {
     );
   }
 }
+
+// ── Picker question page (commercial context) ─────────────────────────────────
+
+class _PickerQuestionPage extends StatelessWidget {
+  const _PickerQuestionPage({
+    required this.questionIndex,
+    required this.totalQuestions,
+    required this.selectedValue,
+    required this.onSelect,
+    required this.onNext,
+    required this.onSkip,
+    required this.onBack,
+  });
+
+  final int questionIndex;
+  final int totalQuestions;
+  final String? selectedValue;
+  final ValueChanged<String> onSelect;
+  final VoidCallback onNext;
+  final VoidCallback onSkip;
+  final VoidCallback onBack;
+
+  bool get _isRequired =>
+      ModeCQuestionKeys.required.contains(ModeCQuestionKeys.all[questionIndex]);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            FormStyles.formSheetHorizontalPadding,
+            AppDesignTokens.spacing8,
+            FormStyles.formSheetHorizontalPadding,
+            0,
+          ),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: onBack,
+                icon: const Icon(Icons.arrow_back, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'Back',
+                color: AppDesignTokens.secondaryText,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${questionIndex + 1} of $totalQuestions',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+              if (_isRequired) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.emptyBadgeBg,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'REQUIRED',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontSize: 10,
+                      color: AppDesignTokens.secondaryText,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              FormStyles.formSheetHorizontalPadding,
+              AppDesignTokens.spacing16,
+              FormStyles.formSheetHorizontalPadding,
+              AppDesignTokens.spacing16,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'What is the purpose of this trial?',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primaryText,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: AppDesignTokens.spacing16),
+                for (final key in RegulatoryContextValue.all) ...[
+                  _ContextOptionTile(
+                    label: RegulatoryContextValue.labels[key]!,
+                    selected: selectedValue == key,
+                    onTap: () => onSelect(key),
+                  ),
+                  const SizedBox(height: AppDesignTokens.spacing8),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            FormStyles.formSheetHorizontalPadding,
+            AppDesignTokens.spacing12,
+            FormStyles.formSheetHorizontalPadding,
+            AppDesignTokens.spacing16,
+          ),
+          child: Row(
+            children: [
+              TextButton(
+                onPressed: onSkip,
+                child: const Text('Skip'),
+              ),
+              const Spacer(),
+              FilledButton(
+                onPressed: onNext,
+                child: const Text('Next →'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ContextOptionTile extends StatelessWidget {
+  const _ContextOptionTile({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = selected ? AppDesignTokens.primary : AppDesignTokens.divider;
+    final bg = selected
+        ? AppDesignTokens.primary.withValues(alpha: 0.06)
+        : Colors.transparent;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color, width: selected ? 1.5 : 1),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: selected
+                      ? AppDesignTokens.primaryText
+                      : AppDesignTokens.secondaryText,
+                  fontWeight:
+                      selected ? FontWeight.w500 : FontWeight.normal,
+                ),
+              ),
+            ),
+            if (selected)
+              const Icon(
+                Icons.check,
+                size: 16,
+                color: AppDesignTokens.primary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Free-text question page ───────────────────────────────────────────────────
 
 class _QuestionPage extends StatelessWidget {
   const _QuestionPage({
@@ -439,14 +674,21 @@ class _QuestionPage extends StatelessWidget {
   }
 }
 
+// ── Review page ───────────────────────────────────────────────────────────────
+
 class _ReviewPage extends StatelessWidget {
   const _ReviewPage({
     required this.controllers,
+    required this.selectedRegulatoryContext,
     required this.onBack,
     required this.onConfirm,
   });
 
   final List<TextEditingController> controllers;
+
+  /// Structured commercial context key from the picker (may be null if skipped).
+  final String? selectedRegulatoryContext;
+
   final VoidCallback onBack;
   final VoidCallback? onConfirm;
 
@@ -483,6 +725,38 @@ class _ReviewPage extends StatelessWidget {
             separatorBuilder: (_, __) =>
                 const Divider(height: AppDesignTokens.spacing24),
             itemBuilder: (_, i) {
+              // Index 1 is the commercial context picker — display the
+              // selected label as its own row, not the free-text trial_purpose.
+              if (i == 1) {
+                final label = selectedRegulatoryContext != null
+                    ? RegulatoryContextValue.labels[selectedRegulatoryContext]
+                    : null;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'What is the purpose of this trial?',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppDesignTokens.secondaryText,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      label ?? '— skipped',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: label == null
+                            ? AppDesignTokens.secondaryText
+                            : AppDesignTokens.primaryText,
+                        fontStyle: label == null
+                            ? FontStyle.italic
+                            : FontStyle.normal,
+                      ),
+                    ),
+                  ],
+                );
+              }
+
               final key = ModeCQuestionKeys.all[i];
               final answer = controllers[i].text.trim();
               return Column(

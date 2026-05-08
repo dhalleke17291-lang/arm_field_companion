@@ -1,16 +1,47 @@
+import 'interpretation_factors_codec.dart';
 import 'trial_coherence_dto.dart';
 import 'trial_ctq_dto.dart';
 import 'trial_interpretation_risk_dto.dart';
 
+const _kReadinessConditionLabels = <String, String>{
+  'low_pest_pressure': 'low pest or disease pressure expected at this site',
+  'high_pest_pressure':
+      'high pest or disease pressure may affect treatment expression',
+  'drought_stress': 'drought stress this season',
+  'excessive_rainfall': 'excessive rainfall during the trial period',
+  'frost_risk': 'frost risk during the trial period',
+  'spatial_gradient':
+      'spatial gradient in the field may affect treatment comparisons',
+  'previous_crop_residue': 'previous crop residue effects noted at this site',
+  'atypical_season': 'atypical seasonal conditions for this region',
+  'drainage_issues': 'drainage issues noted in the trial area',
+};
+
 class TrialReadinessStatement {
   const TrialReadinessStatement({
-    required this.narrative,
+    required this.statusLabel,
+    required this.summaryText,
+    required this.reasons,
     required this.actionItems,
+    required this.cautions,
     required this.isReadyForExport,
   });
 
-  final String narrative;
+  /// Short chip label: 'Export ready' | 'Not export-ready'
+  final String statusLabel;
+
+  /// One-sentence summary shown below the chip.
+  final String summaryText;
+
+  /// Supporting "why" bullets (CTQ/coherence detail sentences).
+  final List<String> reasons;
+
+  /// Actionable items the researcher must resolve.
   final List<String> actionItems;
+
+  /// Caveats that do not block export but warrant attention (e.g. moderate risk).
+  final List<String> cautions;
+
   final bool isReadyForExport;
 }
 
@@ -23,9 +54,11 @@ TrialReadinessStatement computeTrialReadinessStatement({
   required TrialInterpretationRiskDto riskDto,
   required TrialCtqDto ctqDto,
   required String trialState,
+  String? knownInterpretationFactors,
 }) {
-  final parts = <String>[];
+  final reasons = <String>[];
   final actions = <String>[];
+  final cautions = <String>[];
 
   // ── CTQ ──────────────────────────────────────────────────────────────────
   final blockers = ctqDto.ctqItems.where((i) => i.isBlocked).toList();
@@ -33,10 +66,10 @@ TrialReadinessStatement computeTrialReadinessStatement({
       ctqDto.ctqItems.where((i) => i.needsReview && !i.isAcknowledged).toList();
 
   if (ctqDto.overallStatus == 'ready_for_review') {
-    parts.add('All critical-to-quality factors satisfied.');
+    reasons.add('All critical-to-quality factors satisfied.');
   } else {
     for (final b in blockers) {
-      parts.add('${b.label}: ${b.reason}');
+      reasons.add('${b.label}: ${b.reason}');
       actions.add('Resolve: ${b.label}');
     }
     for (final r in unacknowledgedReview) {
@@ -53,14 +86,36 @@ TrialReadinessStatement computeTrialReadinessStatement({
       .toList();
 
   if (reviewNeededChecks.isEmpty && cannotEvalChecks.isEmpty) {
-    parts.add('No coherence concerns identified.');
+    reasons.add('No coherence concerns identified.');
   } else {
     for (final c in reviewNeededChecks) {
-      parts.add('${c.label}: ${c.reason}');
+      reasons.add('${c.label}: ${c.reason}');
       actions.add('Review deviation: ${c.label}');
     }
     for (final c in cannotEvalChecks) {
       actions.add('Provide missing input for: ${c.label}');
+    }
+  }
+
+  // ── Known site/season conditions ─────────────────────────────────────────
+  final parsedFactors =
+      InterpretationFactorsCodec.parse(knownInterpretationFactors);
+  if (parsedFactors != null && !parsedFactors.noneSelected) {
+    for (final k in parsedFactors.selectedKeys) {
+      final text = _kReadinessConditionLabels[k];
+      if (text != null) cautions.add('Site/season condition noted: $text.');
+    }
+    if (parsedFactors.otherText != null) {
+      cautions.add('Site/season condition noted: ${parsedFactors.otherText}.');
+    }
+  }
+
+  // ── Known site / season risk factor ─────────────────────────────────────
+  for (final f in riskDto.factors) {
+    if (f.factorKey == 'known_site_season_factors' &&
+        (f.severity == 'moderate' || f.severity == 'high')) {
+      cautions.add(f.reason);
+      break;
     }
   }
 
@@ -74,14 +129,19 @@ TrialReadinessStatement computeTrialReadinessStatement({
 
   if (riskLabel != null) {
     final elevatedFactors = riskDto.factors
-        .where((f) => f.severity == 'moderate' || f.severity == 'high')
+        .where((f) =>
+            (f.severity == 'moderate' || f.severity == 'high') &&
+            f.factorKey != 'known_site_season_factors')
         .toList();
 
-    if (elevatedFactors.isNotEmpty) {
-      final detail = elevatedFactors.first.reason;
-      parts.add('Interpretation risk is $riskLabel — $detail');
+    if (elevatedFactors.isNotEmpty && riskLabel != 'low') {
+      final worstFactor = elevatedFactors.firstWhere(
+        (f) => f.severity == riskLabel,
+        orElse: () => elevatedFactors.first,
+      );
+      cautions.add('Interpretation risk is $riskLabel — ${worstFactor.reason}');
     } else {
-      parts.add('Interpretation risk is $riskLabel.');
+      reasons.add('Interpretation risk is $riskLabel.');
     }
   }
 
@@ -92,15 +152,17 @@ TrialReadinessStatement computeTrialReadinessStatement({
       (riskDto.riskLevel == 'low' || riskDto.riskLevel == 'moderate') &&
       (trialState == 'active' || trialState == 'closed');
 
-  if (isReady) {
-    parts.add('Trial is ready for export and analysis.');
-  } else {
-    parts.add('Trial is not currently export-ready.');
-  }
+  final statusLabel = isReady ? 'Export ready' : 'Not export-ready';
+  final summaryText = isReady
+      ? 'Trial is ready for export and analysis.'
+      : 'Trial is not currently export-ready.';
 
   return TrialReadinessStatement(
-    narrative: parts.join(' '),
+    statusLabel: statusLabel,
+    summaryText: summaryText,
+    reasons: List.unmodifiable(reasons),
     actionItems: List.unmodifiable(actions),
+    cautions: List.unmodifiable(cautions),
     isReadyForExport: isReady,
   );
 }

@@ -244,4 +244,18 @@ void main() {
     expect(report.blockerCount, greaterThanOrEqualTo(1));
     expect(report.canExport, isFalse);
   });
+
+  test('T7: Trial Review not-ready statement blocks export readiness',
+      () async {
+    final trialId = await _seedBaselineTrial(
+      db,
+      name: 'int_t7_${DateTime.now().microsecondsSinceEpoch}',
+    );
+
+    final report = await _runReadiness(db, trialId);
+    final c = _check(report.checks, 'trial_cognition_not_export_ready');
+    expect(c.severity, TrialCheckSeverity.blocker);
+    expect(c.label, contains('Trial Review'));
+    expect(report.canExport, isFalse);
+  });
 }

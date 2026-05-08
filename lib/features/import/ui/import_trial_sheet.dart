@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
+import '../../../core/trial_review_invalidation.dart';
 import '../../export/domain/shell_link_preview.dart';
 import '../../trials/trial_detail_screen.dart';
 
@@ -70,6 +71,7 @@ class ImportTrialSheet extends ConsumerWidget {
               onTap: () async {
                 // Capture providers BEFORE popping the sheet — ref is
                 // invalid after Navigator.pop disposes the widget.
+                final container = ProviderScope.containerOf(parentContext);
                 final uc = ref.read(importArmRatingShellUseCaseProvider);
                 final trialRepo = ref.read(trialRepositoryProvider);
                 Navigator.pop(context);
@@ -122,8 +124,14 @@ class ImportTrialSheet extends ConsumerWidget {
                 Navigator.of(parentContext, rootNavigator: true).pop();
 
                 if (result.success && result.trialId != null) {
+                  final trialId = result.trialId!;
+                  container.invalidate(trialsStreamProvider);
+                  container.invalidate(trialProvider(trialId));
+                  container.invalidate(trialSetupProvider(trialId));
+                  container.invalidate(trialAssessmentsForTrialProvider(trialId));
+                  invalidateTrialReviewProvidersInContainer(container, trialId);
                   final trial = await trialRepo
-                      .getTrialById(result.trialId!);
+                      .getTrialById(trialId);
                   if (trial != null && parentContext.mounted) {
                     ScaffoldMessenger.of(parentContext).showSnackBar(
                       SnackBar(
@@ -299,6 +307,7 @@ Future<void> _onLinkArmShellTap({
     container.invalidate(trialSetupProvider(resolvedId));
     container.invalidate(trialAssessmentsForTrialProvider(resolvedId));
     container.invalidate(trialsStreamProvider);
+    invalidateTrialReviewProvidersInContainer(container, resolvedId);
 
     ScaffoldMessenger.of(parentContext).showSnackBar(
       SnackBar(

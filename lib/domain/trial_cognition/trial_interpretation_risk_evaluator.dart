@@ -6,6 +6,7 @@ import '../../core/database/app_database.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../core/utils/check_treatment_helper.dart';
 import '../../features/derived/domain/trial_statistics.dart';
+import 'interpretation_factors_codec.dart';
 import 'trial_coherence_dto.dart';
 import 'trial_interpretation_risk_dto.dart';
 
@@ -80,15 +81,19 @@ Future<TrialInterpretationRiskDto> computeTrialInterpretationRiskDto({
     if (a.treatmentId != null) plotTreatmentMap[a.plotId] = a.treatmentId!;
   }
 
+  final parsed =
+      InterpretationFactorsCodec.parse(purpose?.knownInterpretationFactors);
+
   final factors = [
     _factorDataVariability(
         purpose, assessments, recordedRatings, treatments, plotTreatmentMap),
     _factorUntreatedCheckPressure(
-        treatments, allPlots, assignments, recordedRatings, plotTreatmentMap),
+        purpose, assessments, treatments, recordedRatings, plotTreatmentMap),
     _factorApplicationTimingDeviation(coherenceDto),
     _factorPrimaryEndpointCompleteness(
         purpose, assessments, recordedRatings, analyzablePlots),
     _factorRaterConsistency(raterSignals),
+    _factorSiteConditions(parsed),
   ];
 
   return TrialInterpretationRiskDto(
@@ -143,11 +148,14 @@ TrialRiskFactorDto _factorDataVariability(
   }
 
   final assessmentId = matched.id;
+  final checkIds = {
+    for (final t in treatments) if (isCheckTreatment(t)) t.id,
+  };
   final groups = <int, List<double>>{};
   for (final r in recordedRatings) {
     if (r.assessmentId != assessmentId) continue;
     final tid = plotTreatmentMap[r.plotPk];
-    if (tid == null) continue;
+    if (tid == null || checkIds.contains(tid)) continue;
     final v = r.numericValue;
     if (v == null) continue;
     groups.putIfAbsent(tid, () => []).add(v);
@@ -159,7 +167,7 @@ TrialRiskFactorDto _factorDataVariability(
       label: label,
       severity: 'cannot_evaluate',
       reason:
-          'No numeric ratings for "${matched.name}" — CV cannot be computed.',
+          'No treated-plot numeric ratings for "${matched.name}" — CV cannot be computed.',
       sourceFields: sources,
     );
   }
@@ -215,7 +223,7 @@ TrialRiskFactorDto _factorDataVariability(
       label: label,
       severity: 'high',
       reason:
-          '${matched.name}: CV = $cvStr% — exceeds high threshold '
+          '${matched.name}: CV = $cvStr% (treated plots only) — exceeds high threshold '
           '(${kCvHighThreshold.toStringAsFixed(0)}%, EPPO PP1/152(4)).',
       sourceFields: sources,
     );
@@ -226,7 +234,7 @@ TrialRiskFactorDto _factorDataVariability(
       label: label,
       severity: 'moderate',
       reason:
-          '${matched.name}: CV = $cvStr% — above review threshold '
+          '${matched.name}: CV = $cvStr% (treated plots only) — above review threshold '
           '(${kCvReviewThreshold.toStringAsFixed(0)}%, EPPO PP1/152(4)).',
       sourceFields: sources,
     );
@@ -235,26 +243,54 @@ TrialRiskFactorDto _factorDataVariability(
     factorKey: key,
     label: label,
     severity: 'none',
-    reason: '${matched.name}: CV = $cvStr% — within acceptable range.',
+    reason: '${matched.name}: CV = $cvStr% (treated plots only) — within acceptable range.',
     sourceFields: sources,
   );
 }
 
 // ── Factor 2: untreated check pressure ───────────────────────────────────────
 
-// Threshold below which check mean is considered "low but present".
-const _kCheckLowPressureThreshold = 10.0;
-
 TrialRiskFactorDto _factorUntreatedCheckPressure(
+  TrialPurpose? purpose,
+  List<Assessment> assessments,
   List<Treatment> treatments,
-  List<Plot> allPlots,
-  List<Assignment> assignments,
   List<RatingRecord> recordedRatings,
   Map<int, int> plotTreatmentMap,
 ) {
   const key = 'untreated_check_pressure';
   const label = 'Untreated check pressure';
-  const sources = ['treatments', 'rating_records', 'assignments'];
+  const sources = ['trial_purposes', 'assessments', 'treatments', 'rating_records'];
+
+  if (purpose?.primaryEndpoint == null) {
+    return const TrialRiskFactorDto(
+      factorKey: key,
+      label: label,
+      severity: 'cannot_evaluate',
+      reason: 'No primary endpoint defined — check pressure cannot be assessed.',
+      sourceFields: sources,
+    );
+  }
+
+  final endpoint = purpose!.primaryEndpoint!.toLowerCase();
+  Assessment? matched;
+  for (final a in assessments) {
+    final name = a.name.toLowerCase();
+    if (endpoint.contains(name) || name.contains(endpoint)) {
+      matched = a;
+      break;
+    }
+  }
+
+  if (matched == null) {
+    return TrialRiskFactorDto(
+      factorKey: key,
+      label: label,
+      severity: 'cannot_evaluate',
+      reason:
+          'No assessment matching "${purpose.primaryEndpoint}" — check pressure cannot be assessed.',
+      sourceFields: sources,
+    );
+  }
 
   final checkTreatments = treatments.where(isCheckTreatment).toList();
 
@@ -269,9 +305,11 @@ TrialRiskFactorDto _factorUntreatedCheckPressure(
   }
 
   final checkIds = {for (final t in checkTreatments) t.id};
+  final assessmentId = matched.id;
 
   final checkValues = <double>[];
   for (final r in recordedRatings) {
+    if (r.assessmentId != assessmentId) continue;
     final tid = plotTreatmentMap[r.plotPk];
     if (tid == null || !checkIds.contains(tid)) continue;
     final v = r.numericValue;
@@ -279,17 +317,20 @@ TrialRiskFactorDto _factorUntreatedCheckPressure(
   }
 
   if (checkValues.isEmpty) {
-    return const TrialRiskFactorDto(
+    return TrialRiskFactorDto(
       factorKey: key,
       label: label,
       severity: 'cannot_evaluate',
-      reason: 'No ratings found for untreated check plots.',
+      reason:
+          'No ratings found for untreated check plots for "${matched.name}".',
       sourceFields: sources,
     );
   }
 
-  final mean = checkValues.reduce((a, b) => a + b) / checkValues.length;
+  final repCount = checkValues.length;
+  final mean = checkValues.reduce((a, b) => a + b) / repCount;
   final meanStr = mean.toStringAsFixed(1);
+  final endpointName = matched.name;
 
   if (mean.abs() < 1e-9) {
     return TrialRiskFactorDto(
@@ -297,20 +338,8 @@ TrialRiskFactorDto _factorUntreatedCheckPressure(
       label: label,
       severity: 'high',
       reason:
-          'Untreated check mean = $meanStr — at scale floor. '
+          'Untreated check mean = $meanStr for $endpointName — at scale floor. '
           'Treatment separation is unlikely to be interpretable.',
-      sourceFields: sources,
-    );
-  }
-
-  if (mean < _kCheckLowPressureThreshold) {
-    return TrialRiskFactorDto(
-      factorKey: key,
-      label: label,
-      severity: 'moderate',
-      reason:
-          'Untreated check mean = $meanStr — low pressure. '
-          'Treatment differences may be difficult to detect.',
       sourceFields: sources,
     );
   }
@@ -319,7 +348,9 @@ TrialRiskFactorDto _factorUntreatedCheckPressure(
     factorKey: key,
     label: label,
     severity: 'none',
-    reason: 'Untreated check mean = $meanStr — adequate pressure for treatment separation.',
+    reason:
+        'Untreated check data present across $repCount rep${repCount == 1 ? '' : 's'} '
+        'for $endpointName (mean: $meanStr).',
     sourceFields: sources,
   );
 }
@@ -513,6 +544,66 @@ TrialRiskFactorDto _factorRaterConsistency(List<Signal> raterSignals) {
     label: label,
     severity: 'moderate',
     reason: '$count open rater signal(s). $details',
+    sourceFields: sources,
+  );
+}
+
+// ── Factor 6: known site / season conditions ──────────────────────────────────
+
+const _kSiteConditionLabels = <String, String>{
+  'low_pest_pressure': 'Low pest/disease pressure this season',
+  'high_pest_pressure': 'High pest/disease pressure this season',
+  'drought_stress': 'Drought stress this season',
+  'excessive_rainfall': 'Excessive rainfall during trial period',
+  'frost_risk': 'Frost risk during trial period',
+  'spatial_gradient': 'Spatial gradient in the field',
+  'previous_crop_residue': 'Previous crop residue effects',
+  'atypical_season': 'Atypical season for this region',
+  'drainage_issues': 'Drainage issues noted',
+};
+
+TrialRiskFactorDto _factorSiteConditions(InterpretationFactorsResult? factors) {
+  const key = 'known_site_season_factors';
+  const label = 'Known site / season conditions';
+  const sources = ['trial_purposes'];
+
+  if (factors == null) {
+    return const TrialRiskFactorDto(
+      factorKey: key,
+      label: label,
+      severity: 'cannot_evaluate',
+      reason: 'Site conditions not yet captured.',
+      sourceFields: sources,
+    );
+  }
+
+  if (factors.noneSelected) {
+    return const TrialRiskFactorDto(
+      factorKey: key,
+      label: label,
+      severity: 'none',
+      reason: 'No site conditions flagged by researcher.',
+      sourceFields: sources,
+    );
+  }
+
+  const moderateKeys = {'low_pest_pressure', 'spatial_gradient', 'drought_stress'};
+
+  var hasModerateSeverity = factors.hasOther;
+  final conditionLabels = <String>[];
+  for (final k in factors.selectedKeys) {
+    if (moderateKeys.contains(k)) hasModerateSeverity = true;
+    conditionLabels.add(_kSiteConditionLabels[k] ?? k);
+  }
+  if (factors.hasOther) {
+    conditionLabels.add(factors.otherText!);
+  }
+
+  return TrialRiskFactorDto(
+    factorKey: key,
+    label: label,
+    severity: hasModerateSeverity ? 'moderate' : 'none',
+    reason: 'Known conditions: ${conditionLabels.join(', ')}.',
     sourceFields: sources,
   );
 }

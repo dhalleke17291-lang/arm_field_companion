@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../core/providers.dart';
 import '../../core/workspace/workspace_config.dart';
+import '../../domain/trial_cognition/trial_readiness_statement.dart';
 import 'trial_readiness.dart';
 
 /// Runs trial readiness checks using existing providers and trial-scoped DB reads.
@@ -513,6 +514,39 @@ class TrialReadinessService {
         code: 'photos_ok',
         label: '${photos.length} photo(s) attached',
         severity: TrialCheckSeverity.pass,
+      ));
+    }
+
+    final coherence =
+        await ref.read(trialCoherenceProvider(trialPk).future);
+    final risk =
+        await ref.read(trialInterpretationRiskProvider(trialPk).future);
+    final ctq =
+        await ref.read(trialCriticalToQualityProvider(trialPk).future);
+    final purpose = await ref.read(trialPurposeProvider(trialPk).future);
+    final cognitionStatement = computeTrialReadinessStatement(
+      coherenceDto: coherence,
+      riskDto: risk,
+      ctqDto: ctq,
+      trialState: trial.status,
+      knownInterpretationFactors: purpose.knownInterpretationFactors,
+    );
+    if (cognitionStatement.isReadyForExport) {
+      checks.add(const TrialReadinessCheck(
+        code: 'trial_cognition_ready',
+        label: 'Trial Review readiness statement is export-ready',
+        severity: TrialCheckSeverity.pass,
+      ));
+    } else {
+      final details = [
+        ...cognitionStatement.actionItems,
+        ...cognitionStatement.cautions,
+      ].take(6).join('\n');
+      checks.add(TrialReadinessCheck(
+        code: 'trial_cognition_not_export_ready',
+        label: 'Trial Review readiness statement requires action',
+        detail: details.isEmpty ? cognitionStatement.summaryText : details,
+        severity: TrialCheckSeverity.blocker,
       ));
     }
 

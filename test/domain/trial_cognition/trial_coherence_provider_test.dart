@@ -140,6 +140,23 @@ void main() {
     expect(c.status, 'aligned');
   });
 
+  test(
+      'TC-2b: long primary endpoint phrase matches core assessment name',
+      () async {
+    final trialId = await makeTrial();
+    await makePurpose(
+      trialId,
+      primaryEndpoint:
+          '% weed control at flag leaf stage — primary comparison between treated plots and untreated check',
+    );
+    await makeAssessment(trialId, 'Weed Control');
+
+    final dto = await coherence(trialId);
+    final c = check(dto, 'primary_endpoint_assessment_present');
+
+    expect(c.status, 'aligned');
+  });
+
   // ── TC-3: Check 2 — BBCH 32 wheat herbicide → review_needed ──────────────
 
   test(
@@ -282,5 +299,56 @@ void main() {
       'review_needed',
     );
     expect(dto.coherenceState, 'cannot_evaluate');
+  });
+
+  test(
+      'COH-BBCH-1: application exists with no BBCH recorded → timing check is cannot_evaluate',
+      () async {
+    final trialId = await makeTrial();
+    await makePurpose(trialId);
+    await makeTreatment(trialId);
+    // Application recorded but growthStageBbchAtApplication is null
+    await db.into(db.trialApplicationEvents).insert(
+          TrialApplicationEventsCompanion.insert(
+            trialId: trialId,
+            applicationDate: DateTime(2026, 4, 1),
+          ),
+        );
+
+    final dto = await coherence(trialId);
+
+    expect(
+      check(dto, 'application_timing_within_claim_window').status,
+      'cannot_evaluate',
+      reason: 'BBCH not recorded → timing cannot be validated',
+    );
+    expect(
+      check(dto, 'application_timing_within_claim_window').reason,
+      contains('BBCH'),
+    );
+  });
+
+  test(
+      'COH-BBCH-2: application with BBCH but no pesticideCategory → timing check is aligned',
+      () async {
+    final trialId = await makeTrial();
+    await makePurpose(trialId);
+    await makeTreatment(trialId);
+    // Application with BBCH but no treatment component category
+    await db.into(db.trialApplicationEvents).insert(
+          TrialApplicationEventsCompanion.insert(
+            trialId: trialId,
+            applicationDate: DateTime(2026, 4, 1),
+            growthStageBbchAtApplication: const Value(25),
+          ),
+        );
+
+    final dto = await coherence(trialId);
+
+    expect(
+      check(dto, 'application_timing_within_claim_window').status,
+      'aligned',
+      reason: 'BBCH recorded, no pesticide category → no profile to fail against',
+    );
   });
 }

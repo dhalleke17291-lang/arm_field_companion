@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../design/app_design_tokens.dart';
+import '../../shared/layout/responsive_layout.dart';
 
 /// Opens a modal bottom sheet with a [DraggableScrollableSheet] using shared
 /// Agnexis styling: rounded top, keyboard-safe inset padding, and optional
@@ -36,8 +37,8 @@ Future<T?> showAppDraggableModalSheet<T>({
 
   final List<double> resolvedSnapSizes;
   if (snap) {
-    final raw = snapSizes ??
-        <double>[minChildSize, initialChildSize, maxChildSize];
+    final raw =
+        snapSizes ?? <double>[minChildSize, initialChildSize, maxChildSize];
     resolvedSnapSizes = raw.toSet().toList()..sort();
     for (final s in resolvedSnapSizes) {
       assert(
@@ -72,8 +73,19 @@ Future<T?> showAppDraggableModalSheet<T>({
         snap: snap,
         snapSizes: snap ? resolvedSnapSizes : null,
         snapAnimationDuration: const Duration(milliseconds: 200),
-        builder: (_, scrollController) =>
-            sheetBuilder(sheetContext, scrollController),
+        builder: (_, scrollController) {
+          final sheet = sheetBuilder(sheetContext, scrollController);
+          final rl = ResponsiveLayout.of(sheetContext);
+          final cap = rl.modalSheetMaxWidth;
+          if (cap.isInfinite) return sheet;
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: cap),
+              child: sheet,
+            ),
+          );
+        },
       ),
     ),
   );

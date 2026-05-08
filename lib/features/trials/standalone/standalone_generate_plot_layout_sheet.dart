@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../../../core/providers.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/trial_review_invalidation.dart';
 import 'generate_standalone_plot_layout_usecase.dart';
 import 'plot_generation_engine.dart';
 
@@ -228,7 +229,10 @@ Future<void> showStandaloneGeneratePlotLayoutDialog({
   if (!context.mounted) return;
   ref.invalidate(plotsForTrialProvider(trial.id));
   ref.invalidate(assignmentsForTrialProvider(trial.id));
+  ref.invalidate(trialAssessmentCompletionProvider(trial.id));
+  ref.invalidate(ratedPlotsCountForTrialProvider(trial.id));
   ref.invalidate(trialReadinessProvider(trial.id));
+  invalidateTrialReviewProviders(ref, trial.id);
   if (result.success) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Plot layout generated')),

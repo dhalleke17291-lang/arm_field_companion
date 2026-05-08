@@ -1,4 +1,19 @@
-# ARM Field Companion — Product Roadmap & Frozen System Map
+# SUPERSEDED — ARM Field Companion Product Roadmap & Frozen System Map
+
+> **Status:** SUPERSEDED.
+>
+> **Historical scope:** This document reflects the app around early March 2026.
+>
+> **Do not use this document for build decisions, architecture review, onboarding,
+> audit preparation, or implementation planning.** The current codebase is far
+> beyond the state described here. In particular, login/user attribution,
+> diagnostics, ARM import, ARM Rating Shell export, XML/PDF/full trial exports,
+> plot-grid overlays, progress/review panels, and the Trial Cognition layer exist
+> in the current product.
+>
+> **Use instead:** [CURRENT_SYSTEM_MAP.md](CURRENT_SYSTEM_MAP.md).
+
+# Historical Content — Product Roadmap & Frozen System Map
 
 **Goal:** Freeze the full system map → decide build phases → avoid future spinal redesign.
 

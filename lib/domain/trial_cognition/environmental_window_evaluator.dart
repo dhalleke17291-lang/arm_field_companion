@@ -28,10 +28,18 @@ class ApplicationEnvironmentalContextDto {
   const ApplicationEnvironmentalContextDto({
     required this.preWindow,
     required this.postWindow,
+    this.unavailableReason,
   });
 
   final EnvironmentalWindowDto preWindow;
   final EnvironmentalWindowDto postWindow;
+
+  /// Null when the application context was resolved successfully.
+  /// Non-null means the windows are intentionally unavailable and must not be
+  /// interpreted as factual weather around an application event.
+  final String? unavailableReason;
+
+  bool get isUnavailable => unavailableReason != null;
 }
 
 // ── Output DTOs ───────────────────────────────────────────────────────────────
@@ -183,8 +191,7 @@ EnvironmentalSeasonSummaryDto computeSeasonSummary(
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
-EnvironmentalWindowDto _buildWindowDto(
-    List<TrialEnvironmentalRecord> records) {
+EnvironmentalWindowDto _buildWindowDto(List<TrialEnvironmentalRecord> records) {
   if (records.isEmpty) {
     return const EnvironmentalWindowDto(
       totalPrecipitationMm: null,

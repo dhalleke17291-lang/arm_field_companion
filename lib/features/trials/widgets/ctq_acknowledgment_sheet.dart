@@ -81,7 +81,6 @@ class _CtqAcknowledgmentSheetState
           behavior: SnackBarBehavior.floating,
         ),
       );
-      ref.invalidate(trialCriticalToQualityProvider(widget.trialId));
       ref.invalidate(trialDecisionSummaryProvider(widget.trialId));
     } finally {
       if (mounted) setState(() => _saving = false);

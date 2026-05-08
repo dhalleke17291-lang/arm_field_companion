@@ -257,7 +257,7 @@ TrialCtqItemDto _evalGpsEvidence(
       factor,
       status: 'unknown',
       evidenceSummary: 'No ratings to check.',
-      reason: 'No rating records exist to evaluate GPS presence.',
+      reason: 'No ratings recorded yet — GPS presence evaluates once ratings exist.',
     );
   }
   if (gpsCount > 0) {
@@ -265,14 +265,14 @@ TrialCtqItemDto _evalGpsEvidence(
       factor,
       status: 'satisfied',
       evidenceSummary: '$gpsCount rating(s) with GPS.',
-      reason: 'GPS evidence is present.',
+      reason: 'GPS location captured in $gpsCount rating(s) — plot provenance confirmed.',
     );
   }
   return _item(
     factor,
     status: 'missing',
     evidenceSummary: 'No GPS captured.',
-    reason: 'No GPS coordinates have been captured for any rating.',
+    reason: 'No GPS captured during rating sessions. Capturing GPS during ratings confirms plot location provenance.',
   );
 }
 
@@ -341,6 +341,18 @@ TrialCtqItemDto _evalApplicationTiming(
     );
   }
 
+  final hasBbch =
+      applications.any((a) => a.growthStageBbchAtApplication != null);
+  if (!hasBbch) {
+    return _item(
+      factor,
+      status: 'review_needed',
+      evidenceSummary: '${applications.length} application record(s); BBCH not captured.',
+      reason:
+          'Application events exist but BBCH at application has not been recorded. Timing cannot be evaluated.',
+    );
+  }
+
   final result =
       evaluateBbchTiming(applications, treatmentComponents, trialCrop);
 
@@ -348,8 +360,9 @@ TrialCtqItemDto _evalApplicationTiming(
     return _item(
       factor,
       status: 'satisfied',
-      evidenceSummary: '${applications.length} application record(s).',
-      reason: 'Application events are present.',
+      evidenceSummary: '${applications.length} application record(s) with BBCH.',
+      reason:
+          'Application timing evidence is present. No window profile is configured for this crop and category combination.',
     );
   }
 
@@ -485,7 +498,7 @@ TrialCtqItemDto _evalDataVariance(
   const highCvThreshold = 50.0;
 
   bool anyComputedCv = false;
-  bool anyHighCv = false;
+  double? worstCv;
 
   for (final vals in groups.values) {
     if (vals.length < minReps) continue;
@@ -498,7 +511,7 @@ TrialCtqItemDto _evalDataVariance(
         (n - 1);
     final cv = (sqrt(variance) / mean.abs()) * 100.0;
     anyComputedCv = true;
-    if (cv >= highCvThreshold) anyHighCv = true;
+    if (worstCv == null || cv > worstCv) worstCv = cv;
   }
 
   if (!anyComputedCv) {
@@ -510,12 +523,15 @@ TrialCtqItemDto _evalDataVariance(
     );
   }
 
-  if (anyHighCv) {
+  if (worstCv != null && worstCv >= highCvThreshold) {
+    final cvStr = worstCv.toStringAsFixed(1);
     return _item(
       factor,
       status: 'review_needed',
-      evidenceSummary: 'High rating variability detected.',
-      reason: 'High rating variability may limit treatment separation.',
+      evidenceSummary: 'High variability detected (CV $cvStr%).',
+      reason: 'Rating variability is $cvStr% — exceeds the ${highCvThreshold.toStringAsFixed(0)}% '
+          'threshold. If this persists at the final assessment, treatment separation may be '
+          'difficult to interpret.',
     );
   }
 
@@ -601,21 +617,40 @@ TrialCtqItemDto _evalUntreatedCheckPressure(
     );
   }
 
+  final repCount = checkValues.length;
   return _item(
     factor,
     status: 'satisfied',
     evidenceSummary:
         'Untreated check mean: ${checkMean.toStringAsFixed(1)}.',
-    reason: 'Untreated check response is present.',
+    reason: 'Untreated check data present across $repCount rep${repCount == 1 ? '' : 's'} (mean: ${checkMean.toStringAsFixed(1)}).',
   );
 }
 
 TrialCtqItemDto _unknownFactor(CtqFactorDefinition factor) {
+  final (summary, reason) = switch (factor.factorKey) {
+    'disease_pressure' => (
+        'No application events recorded.',
+        'No application events recorded — evaluates after applications are confirmed.',
+      ),
+    'crop_stage' => (
+        'Intent not confirmed.',
+        'Intent not confirmed — cannot evaluate crop stage requirements.',
+      ),
+    'rainfall_after_application' => (
+        'No weather records available.',
+        'No weather records available yet — evaluates once weather data is fetched.',
+      ),
+    _ => (
+        'Not evaluated.',
+        'This factor is not evaluated at this stage.',
+      ),
+  };
   return _item(
     factor,
     status: 'unknown',
-    evidenceSummary: 'Not evaluated.',
-    reason: 'This factor is not evaluated at this stage.',
+    evidenceSummary: summary,
+    reason: reason,
   );
 }
 

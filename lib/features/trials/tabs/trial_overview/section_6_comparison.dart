@@ -41,9 +41,35 @@ class _ComparisonBody extends StatelessWidget {
         dto.ctqItems.where((i) => i.factorKey == _kCheckKey).firstOrNull;
 
     if (item == null) {
-      return const Text(
-        'Comparison structure not yet evaluated.',
-        style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText),
+      final treatmentItem = dto.ctqItems
+          .where((i) => i.factorKey == 'treatment_identity')
+          .firstOrNull;
+      if (treatmentItem == null || treatmentItem.status == 'unknown') {
+        return const Text(
+          'Evaluates once treatments are defined.',
+          style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText),
+        );
+      }
+      final (proxyBg, proxyFg, proxyLabel) = switch (treatmentItem.status) {
+        'satisfied' => (
+            AppDesignTokens.successBg,
+            AppDesignTokens.successFg,
+            'Treatments defined',
+          ),
+        _ => (
+            AppDesignTokens.warningBg,
+            AppDesignTokens.warningFg,
+            'No treatments',
+          ),
+      };
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          OverviewStatusChip(label: proxyLabel, bg: proxyBg, fg: proxyFg),
+          const SizedBox(height: AppDesignTokens.spacing8),
+          if (treatmentItem.evidenceSummary.isNotEmpty)
+            OverviewDataRow('Treatments', treatmentItem.evidenceSummary),
+        ],
       );
     }
 

@@ -21,6 +21,8 @@ import '../../../shared/widgets/app_empty_state.dart';
 import '../../../core/utils/check_treatment_helper.dart';
 import '../plot_layout_model.dart';
 import '../../plots/plot_detail_screen.dart';
+import '../../plots/widgets/distribution_view.dart';
+import '../../plots/widgets/progression_view.dart';
 
 void _plotsTabLockDebugPrint(
   Trial trial,
@@ -35,6 +37,8 @@ void _plotsTabLockDebugPrint(
 }
 
 enum _LayoutLayer { treatments, applications, ratings }
+
+enum _PlotAnalysisMode { heatmap, distribution, progression }
 
 const double _kGridMinScale = 0.3;
 const double _kGridMaxScale = 3.0;
@@ -154,9 +158,11 @@ Widget _buildAddRepGuardsRow(
 }) {
   final hasData =
       ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
-  final trialIsArmLinked =
-      ref.watch(armTrialMetadataStreamProvider(trial.id)).valueOrNull?.isArmLinked ==
-          true;
+  final trialIsArmLinked = ref
+          .watch(armTrialMetadataStreamProvider(trial.id))
+          .valueOrNull
+          ?.isArmLinked ==
+      true;
   final enabled = canEditTrialStructure(
     trial,
     hasSessionData: hasData,
@@ -201,10 +207,9 @@ Color _heatMapColor(double value, double min, double max) {
   return Color.lerp(stops[lo], stops[hi], scaled - lo)!;
 }
 
-Color _heatMapTextColor(Color cellColor) =>
-    cellColor.computeLuminance() > 0.2
-        ? AppDesignTokens.primaryText
-        : Colors.white;
+Color _heatMapTextColor(Color cellColor) => cellColor.computeLuminance() > 0.2
+    ? AppDesignTokens.primaryText
+    : Colors.white;
 
 bool _isLowSpread(double min, double max) => max - min < _kHeatMapMinSpread;
 
@@ -212,8 +217,7 @@ bool _isLowSpread(double min, double max) => max - min < _kHeatMapMinSpread;
 ///
 /// Keys are treatment_id. Values: 'applied' if any event has status='applied',
 /// otherwise 'pending' if any event exists. Absent key means no events at all.
-Map<int, String> buildTreatmentAppState(
-    List<TrialApplicationEvent> events) {
+Map<int, String> buildTreatmentAppState(List<TrialApplicationEvent> events) {
   final result = <int, String>{};
   for (final e in events) {
     final tid = e.treatmentId;
@@ -264,8 +268,7 @@ Widget _buildAppTreatmentFilterChips({
             child: FilterChip(
               label: Text('${t.code}$indicator'),
               selected: selectedId == t.id,
-              onSelected: (_) =>
-                  onChanged(selectedId == t.id ? null : t.id),
+              onSelected: (_) => onChanged(selectedId == t.id ? null : t.id),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: VisualDensity.compact,
             ),
@@ -746,8 +749,7 @@ Widget _buildRatingsGridForAssessment({
       ref.watch(assignmentsForTrialProvider(trial.id)).valueOrNull ?? [];
   final treatmentCodeById = {for (final t in treatments) t.id: t.code};
   final treatmentNameById = {
-    for (final t in treatments)
-      t.id: t.name.isNotEmpty ? t.name : t.code,
+    for (final t in treatments) t.id: t.name.isNotEmpty ? t.name : t.code,
   };
   final assignmentByPlot = {for (final a in assignments) a.plotId: a};
 
@@ -856,7 +858,8 @@ Widget _buildRatingsGridForAssessment({
             ),
           Expanded(
             child: InteractiveViewer(
-              key: ValueKey<Object>(Object.hash(activeSession.id, assessmentId)),
+              key:
+                  ValueKey<Object>(Object.hash(activeSession.id, assessmentId)),
               transformationController: panZoomController,
               constrained: false,
               minScale: 0.3,
@@ -867,215 +870,238 @@ Widget _buildRatingsGridForAssessment({
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-              ...sortedReps.map((rep) {
-                final repPlots = List<Plot>.from(byRep[rep]!);
-                repPlots.sort((a, b) =>
-                    (a.fieldColumn ?? 0).compareTo(b.fieldColumn ?? 0));
+                    ...sortedReps.map((rep) {
+                      final repPlots = List<Plot>.from(byRep[rep]!);
+                      repPlots.sort((a, b) =>
+                          (a.fieldColumn ?? 0).compareTo(b.fieldColumn ?? 0));
 
-                // Outlier rep border from intelligence
-                final isOutlierRep = heatMapEnabled &&
-                    rep != null &&
-                    repPlots.any((p) => outlierReps.contains(p.id));
+                      // Outlier rep border from intelligence
+                      final isOutlierRep = heatMapEnabled &&
+                          rep != null &&
+                          repPlots.any((p) => outlierReps.contains(p.id));
 
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: tileSpacing),
-                  child: Container(
-                    decoration: isOutlierRep
-                        ? BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: AppDesignTokens.warningFg
-                                  .withValues(alpha: 0.5),
-                              width: 2,
-                            ),
-                          )
-                        : null,
-                    padding: isOutlierRep ? const EdgeInsets.all(2) : null,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: _kRepLabelWidth,
-                          child: Text(
-                            'Rep ${rep ?? '?'}',
-                            style: _plotDetailsRepLabelStyle(context),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        ...repPlots.map((plot) {
-                          final rating = ratingByPlot[plot.id];
-                          final count = assessmentCountByPlot[plot.id] ?? 0;
-                          final trtId =
-                              assignmentByPlot[plot.id]?.treatmentId ??
-                                  plot.treatmentId;
-                          final trtCode =
-                              trtId != null ? treatmentCodeById[trtId] : null;
-                          final trtName =
-                              trtId != null ? treatmentNameById[trtId] : null;
-
-                          // Heat map mode: gradient color from value
-                          final Color cellColor;
-                          final Color textColor;
-                          final String label;
-                          if (heatMapEnabled) {
-                            final val = (rating?.resultStatus == 'RECORDED')
-                                ? rating?.numericValue
-                                : null;
-                            cellColor = val != null
-                                ? _heatMapColor(val, heatMin, heatMax)
-                                : AppDesignTokens.heatMapEmpty;
-                            textColor = val != null
-                                ? _heatMapTextColor(cellColor)
-                                : AppDesignTokens.secondaryText;
-                            label = val != null ? val.round().toString() : '—';
-                          } else {
-                            cellColor = _ratingCellColor(rating?.resultStatus);
-                            textColor = _ratingTextColor(rating?.resultStatus);
-                            label = _ratingCellLabel(rating);
-                          }
-
-                          return Padding(
-                            padding: const EdgeInsets.only(right: tileSpacing),
-                            child: GestureDetector(
-                              onTap: heatMapEnabled
-                                  ? () => _showPlotDetailSheet(
-                                        context,
-                                        plot: plot,
-                                        rating: rating,
-                                        trtName: trtName,
-                                        statMean: statMean,
-                                      )
-                                  : null,
-                              child: Stack(
-                              children: [
-                                Container(
-                                  width: tileSize,
-                                  height: tileSize,
-                                  decoration: BoxDecoration(
-                                    color: cellColor,
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: rating == null
-                                          ? const Color(0xFFE0DDD6)
-                                          : cellColor,
-                                      width: 1.5,
-                                    ),
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: tileSpacing),
+                        child: Container(
+                          decoration: isOutlierRep
+                              ? BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: AppDesignTokens.warningFg
+                                        .withValues(alpha: 0.5),
+                                    width: 2,
                                   ),
-                                  child: heatMapEnabled
-                                      ? Stack(
-                                          children: [
-                                            // Plot number top-left
-                                            Positioned(
-                                              left: 3,
-                                              top: 2,
-                                              child: Text(
-                                                getDisplayPlotLabel(
-                                                    plot, plots),
-                                                style: TextStyle(
-                                                  fontSize: 8,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: textColor.withValues(
-                                                      alpha: 0.7),
-                                                ),
-                                              ),
+                                )
+                              : null,
+                          padding:
+                              isOutlierRep ? const EdgeInsets.all(2) : null,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: _kRepLabelWidth,
+                                child: Text(
+                                  'Rep ${rep ?? '?'}',
+                                  style: _plotDetailsRepLabelStyle(context),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              ...repPlots.map((plot) {
+                                final rating = ratingByPlot[plot.id];
+                                final count =
+                                    assessmentCountByPlot[plot.id] ?? 0;
+                                final trtId =
+                                    assignmentByPlot[plot.id]?.treatmentId ??
+                                        plot.treatmentId;
+                                final trtCode = trtId != null
+                                    ? treatmentCodeById[trtId]
+                                    : null;
+                                final trtName = trtId != null
+                                    ? treatmentNameById[trtId]
+                                    : null;
+
+                                // Heat map mode: gradient color from value
+                                final Color cellColor;
+                                final Color textColor;
+                                final String label;
+                                if (heatMapEnabled) {
+                                  final val =
+                                      (rating?.resultStatus == 'RECORDED')
+                                          ? rating?.numericValue
+                                          : null;
+                                  cellColor = val != null
+                                      ? _heatMapColor(val, heatMin, heatMax)
+                                      : AppDesignTokens.heatMapEmpty;
+                                  textColor = val != null
+                                      ? _heatMapTextColor(cellColor)
+                                      : AppDesignTokens.secondaryText;
+                                  label = val != null
+                                      ? val.round().toString()
+                                      : '—';
+                                } else {
+                                  cellColor =
+                                      _ratingCellColor(rating?.resultStatus);
+                                  textColor =
+                                      _ratingTextColor(rating?.resultStatus);
+                                  label = _ratingCellLabel(rating);
+                                }
+
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.only(right: tileSpacing),
+                                  child: GestureDetector(
+                                    onTap: heatMapEnabled
+                                        ? () => _showPlotDetailSheet(
+                                              context,
+                                              plot: plot,
+                                              rating: rating,
+                                              trtName: trtName,
+                                              statMean: statMean,
+                                            )
+                                        : null,
+                                    child: Stack(
+                                      children: [
+                                        Container(
+                                          width: tileSize,
+                                          height: tileSize,
+                                          decoration: BoxDecoration(
+                                            color: cellColor,
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: rating == null
+                                                  ? const Color(0xFFE0DDD6)
+                                                  : cellColor,
+                                              width: 1.5,
                                             ),
-                                            // Treatment code top-right
-                                            if (trtCode != null)
-                                              Positioned(
-                                                right: 3,
-                                                top: 2,
+                                          ),
+                                          child: heatMapEnabled
+                                              ? Stack(
+                                                  children: [
+                                                    // Plot number top-left
+                                                    Positioned(
+                                                      left: 3,
+                                                      top: 2,
+                                                      child: Text(
+                                                        getDisplayPlotLabel(
+                                                            plot, plots),
+                                                        style: TextStyle(
+                                                          fontSize: 8,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color: textColor
+                                                              .withValues(
+                                                                  alpha: 0.7),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    // Treatment code top-right
+                                                    if (trtCode != null)
+                                                      Positioned(
+                                                        right: 3,
+                                                        top: 2,
+                                                        child: Text(
+                                                          trtCode,
+                                                          style: TextStyle(
+                                                            fontSize: 8,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            color: textColor
+                                                                .withValues(
+                                                                    alpha: 0.7),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    // Value centered
+                                                    Center(
+                                                      child: Text(
+                                                        label,
+                                                        style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                          color: textColor,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                )
+                                              : Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Text(
+                                                      getDisplayPlotLabel(
+                                                          plot, plots),
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: rating == null
+                                                            ? Colors
+                                                                .grey.shade400
+                                                            : textColor
+                                                                .withValues(
+                                                                alpha: 0.78,
+                                                              ),
+                                                      ),
+                                                    ),
+                                                    if (label.isNotEmpty)
+                                                      Text(
+                                                        label,
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color: textColor,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                  ],
+                                                ),
+                                        ),
+                                        if (!heatMapEnabled && count > 1)
+                                          Positioned(
+                                            top: 3,
+                                            right: 3,
+                                            child: Tooltip(
+                                              message:
+                                                  '$count rating rows for this assessment',
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 4,
+                                                  vertical: 1,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black54,
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
                                                 child: Text(
-                                                  trtCode,
-                                                  style: TextStyle(
+                                                  '+${count - 1}A',
+                                                  style: const TextStyle(
                                                     fontSize: 8,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: textColor
-                                                        .withValues(alpha: 0.7),
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Colors.white,
                                                   ),
                                                 ),
                                               ),
-                                            // Value centered
-                                            Center(
-                                              child: Text(
-                                                label,
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: textColor,
-                                                ),
-                                              ),
                                             ),
-                                          ],
-                                        )
-                                      : Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              getDisplayPlotLabel(plot, plots),
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                                color: rating == null
-                                                    ? Colors.grey.shade400
-                                                    : textColor.withValues(
-                                                        alpha: 0.78,
-                                                      ),
-                                              ),
-                                            ),
-                                            if (label.isNotEmpty)
-                                              Text(
-                                                label,
-                                                style: TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: textColor,
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                          ],
-                                        ),
-                                ),
-                                if (!heatMapEnabled && count > 1)
-                                  Positioned(
-                                    top: 3,
-                                    right: 3,
-                                    child: Tooltip(
-                                      message:
-                                          '$count rating rows for this assessment',
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                          vertical: 1,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black54,
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          '+${count - 1}A',
-                                          style: const TextStyle(
-                                            fontSize: 8,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
                                           ),
-                                        ),
-                                      ),
+                                      ],
                                     ),
                                   ),
-                              ],
-                            ),
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ),
-                );
-              }),
+                                );
+                              }),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
@@ -1088,8 +1114,8 @@ Widget _buildRatingsGridForAssessment({
               child: DecoratedBox(
                 decoration: _plotLayoutLegendPanelDecoration(context),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1315,7 +1341,7 @@ void _showPlotDetailSheet(
               _detailRow(
                 'vs mean',
                 '${(rating.numericValue! - statMean) >= 0 ? '+' : ''}'
-                '${(rating.numericValue! - statMean).toStringAsFixed(1)}',
+                    '${(rating.numericValue! - statMean).toStringAsFixed(1)}',
               ),
             _detailRow(
               'Rater',
@@ -1325,15 +1351,11 @@ void _showPlotDetailSheet(
             ),
             _detailRow(
               'Rated at',
-              rating.ratingTime?.isNotEmpty == true
-                  ? rating.ratingTime!
-                  : '—',
+              rating.ratingTime?.isNotEmpty == true ? rating.ratingTime! : '—',
             ),
             _detailRow(
               'Confidence',
-              rating.confidence?.isNotEmpty == true
-                  ? rating.confidence!
-                  : '—',
+              rating.confidence?.isNotEmpty == true ? rating.confidence! : '—',
             ),
             _detailRow('Status', 'RECORDED'),
             _detailRow('Amended', rating.amended ? 'Yes' : 'No'),
@@ -1559,9 +1581,11 @@ Widget? _standalonePlotsEmptyExtra(
 ) {
   final hasData =
       ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
-  final trialIsArmLinked =
-      ref.watch(armTrialMetadataStreamProvider(trial.id)).valueOrNull?.isArmLinked ==
-          true;
+  final trialIsArmLinked = ref
+          .watch(armTrialMetadataStreamProvider(trial.id))
+          .valueOrNull
+          ?.isArmLinked ==
+      true;
   if (!canEditTrialStructure(
     trial,
     hasSessionData: hasData,
@@ -1670,10 +1694,9 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
   }) {
     final allAssigned =
         dataPlotCount > 0 && assignedDataPlotCount == dataPlotCount;
-    final noneAssigned =
-        dataPlotCount > 0 && assignedDataPlotCount == 0;
+    final noneAssigned = dataPlotCount > 0 && assignedDataPlotCount == 0;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(12, 8, 118, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -2099,8 +2122,11 @@ class _TrialPlotsWorkingSurface extends ConsumerStatefulWidget {
 class _TrialPlotsWorkingSurfaceState
     extends ConsumerState<_TrialPlotsWorkingSurface> {
   bool _armTrialIsLinked(WidgetRef ref) =>
-      ref.watch(armTrialMetadataStreamProvider(widget.trial.id)).valueOrNull?.isArmLinked ==
-          true;
+      ref
+          .watch(armTrialMetadataStreamProvider(widget.trial.id))
+          .valueOrNull
+          ?.isArmLinked ==
+      true;
 
   late bool _showLayoutView;
 
@@ -2144,6 +2170,7 @@ class _TrialPlotsWorkingSurfaceState
   }
 
   _LayoutLayer _layoutLayer = _LayoutLayer.treatments;
+  _PlotAnalysisMode _analysisMode = _PlotAnalysisMode.heatmap;
   int? _selectedAppTreatmentId;
   ApplicationEvent? _selectedAppEvent;
   Session? _selectedRatingSession;
@@ -2280,15 +2307,34 @@ class _TrialPlotsWorkingSurfaceState
     final treatmentAppState = buildTreatmentAppState(applicationsList);
     final trialIsArmLinked = _armTrialIsLinked(ref);
     final displayPlots = _plotsVisibleInPlotsTab(plots);
-    final plotAssignmentsLocked =
-        plotAssignmentsEditLocked(widget.trial, hasSessionData,
-            trialIsArmLinked: trialIsArmLinked);
+    final plotAssignmentsLocked = plotAssignmentsEditLocked(
+        widget.trial, hasSessionData,
+        trialIsArmLinked: trialIsArmLinked);
     const double maxTopSectionHeight = 380;
     final colorScheme = Theme.of(context).colorScheme;
     final unifiedPlotsChrome =
         widget.compactSurroundings && widget.statsStrip != null;
     final toolbarChildren = <Widget>[
-      if (!widget.compactSurroundings) ...[
+      if (widget.compactSurroundings) ...[
+        _buildCompactPlotControlsForDetails(
+          context,
+          ref,
+          displayPlots,
+          hasSessionData,
+          allTrialPlots: plots,
+        ),
+        if (_showLayoutView && _layoutLayer == _LayoutLayer.applications)
+          _buildAppEventSelectorForDetails(context, ref),
+        if (_showLayoutView &&
+            _layoutLayer == _LayoutLayer.applications &&
+            treatments.isNotEmpty)
+          _buildAppTreatmentFilterChips(
+            treatments: treatments,
+            treatmentAppState: treatmentAppState,
+            selectedId: _selectedAppTreatmentId,
+            onChanged: (id) => setState(() => _selectedAppTreatmentId = id),
+          ),
+      ] else ...[
         _buildPlotsHeaderForDetails(context, ref, plots, hasSessionData),
         const SizedBox(height: 12),
         Divider(
@@ -2297,37 +2343,36 @@ class _TrialPlotsWorkingSurfaceState
           color: colorScheme.outlineVariant.withValues(alpha: 0.35),
         ),
         const SizedBox(height: 4),
-      ],
-      if (widget.compactSurroundings && !unifiedPlotsChrome) ...[
-        const SizedBox(height: 2),
-      ],
-      _buildListLayoutToggleForDetails(
-        context,
-        ref,
-        displayPlots,
-        hasSessionData,
-        allTrialPlots: plots,
-      ),
-      if (_showLayoutView) ...[
-        const SizedBox(height: 6),
-        Divider(
-          height: 1,
-          thickness: 1,
-          color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+        _buildListLayoutToggleForDetails(
+          context,
+          ref,
+          displayPlots,
+          hasSessionData,
+          allTrialPlots: plots,
         ),
-        const SizedBox(height: 8),
-        _buildLayerSwitcherForDetails(context),
-        if (_plotLayoutHintDismissed == false) _buildPanZoomHint(context),
-        if (_layoutLayer == _LayoutLayer.applications)
-          _buildAppEventSelectorForDetails(context, ref),
-        if (_layoutLayer == _LayoutLayer.applications && treatments.isNotEmpty)
-          _buildAppTreatmentFilterChips(
-            treatments: treatments,
-            treatmentAppState: treatmentAppState,
-            selectedId: _selectedAppTreatmentId,
-            onChanged: (id) =>
-                setState(() => _selectedAppTreatmentId = id),
+        if (_showLayoutView) ...[
+          const SizedBox(height: 6),
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: colorScheme.outlineVariant.withValues(alpha: 0.35),
           ),
+          const SizedBox(height: 8),
+          _buildLayerSwitcherForDetails(context),
+          if (_layoutLayer == _LayoutLayer.ratings)
+            _buildAnalysisModeSwitcher(context),
+          if (_plotLayoutHintDismissed == false) _buildPanZoomHint(context),
+          if (_layoutLayer == _LayoutLayer.applications)
+            _buildAppEventSelectorForDetails(context, ref),
+          if (_layoutLayer == _LayoutLayer.applications &&
+              treatments.isNotEmpty)
+            _buildAppTreatmentFilterChips(
+              treatments: treatments,
+              treatmentAppState: treatmentAppState,
+              selectedId: _selectedAppTreatmentId,
+              onChanged: (id) => setState(() => _selectedAppTreatmentId = id),
+            ),
+        ],
       ],
     ];
     final toolbarColumn = Column(
@@ -2384,14 +2429,30 @@ class _TrialPlotsWorkingSurfaceState
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        widget.statsStrip!,
+                        Stack(
+                          children: [
+                            widget.statsStrip!,
+                            Positioned(
+                              right: 6,
+                              top: 4,
+                              bottom: 4,
+                              child: _buildCompactHeaderActions(
+                                context,
+                                ref,
+                                displayPlots,
+                                hasSessionData,
+                                allTrialPlots: plots,
+                              ),
+                            ),
+                          ],
+                        ),
                         const Divider(
                           height: 1,
                           thickness: 1,
                           color: AppDesignTokens.borderCrisp,
                         ),
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(2, 4, 2, 6),
+                          padding: const EdgeInsets.fromLTRB(6, 4, 6, 6),
                           child: toolbarColumn,
                         ),
                       ],
@@ -2409,19 +2470,29 @@ class _TrialPlotsWorkingSurfaceState
         if (_showLayoutView)
           Expanded(
             child: _layoutLayer == _LayoutLayer.ratings
-                ? _buildRatingsOverlay(
-                    context: context,
-                    ref: ref,
-                    trial: widget.trial,
-                    plots: displayPlots,
-                    sessions: sessions,
-                    selectedRatingSession: _selectedRatingSession,
-                    onSessionChanged: (s) =>
-                        setState(() => _selectedRatingSession = s),
-                    heatMapEnabled: _heatMapEnabled,
-                    onHeatMapToggled: (v) =>
-                        setState(() => _heatMapEnabled = v),
-                  )
+                ? _analysisMode == _PlotAnalysisMode.distribution
+                    ? DistributionView(
+                        trial: widget.trial,
+                        sessions: sessions,
+                      )
+                    : _analysisMode == _PlotAnalysisMode.progression
+                        ? ProgressionView(
+                            trial: widget.trial,
+                            sessions: sessions,
+                          )
+                        : _buildRatingsOverlay(
+                            context: context,
+                            ref: ref,
+                            trial: widget.trial,
+                            plots: displayPlots,
+                            sessions: sessions,
+                            selectedRatingSession: _selectedRatingSession,
+                            onSessionChanged: (s) =>
+                                setState(() => _selectedRatingSession = s),
+                            heatMapEnabled: _heatMapEnabled,
+                            onHeatMapToggled: (v) =>
+                                setState(() => _heatMapEnabled = v),
+                          )
                 : LayoutBuilder(
                     builder: (context, constraints) {
                       if (!_gridCenterScheduled) {
@@ -2621,6 +2692,359 @@ class _TrialPlotsWorkingSurfaceState
     );
   }
 
+  String _layoutLayerLabel(_LayoutLayer layer) => switch (layer) {
+        _LayoutLayer.treatments => 'Treats',
+        _LayoutLayer.applications => 'Apps',
+        _LayoutLayer.ratings => 'Ratings',
+      };
+
+  IconData _layoutLayerIcon(_LayoutLayer layer) => switch (layer) {
+        _LayoutLayer.treatments => Icons.science,
+        _LayoutLayer.applications => Icons.water_drop,
+        _LayoutLayer.ratings => Icons.bar_chart,
+      };
+
+  String _analysisModeLabel(_PlotAnalysisMode mode) => switch (mode) {
+        _PlotAnalysisMode.heatmap => 'Heat',
+        _PlotAnalysisMode.distribution => 'Distribution',
+        _PlotAnalysisMode.progression => 'Progression',
+      };
+
+  IconData _analysisModeIcon(_PlotAnalysisMode mode) => switch (mode) {
+        _PlotAnalysisMode.heatmap => Icons.local_fire_department_outlined,
+        _PlotAnalysisMode.distribution => Icons.scatter_plot_outlined,
+        _PlotAnalysisMode.progression => Icons.timeline,
+      };
+
+  Widget _compactModeButton({
+    required BuildContext context,
+    required bool selected,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    String? tooltip,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final fg = selected ? AppDesignTokens.primary : scheme.onSurfaceVariant;
+    final bg = selected
+        ? AppDesignTokens.primary.withValues(alpha: 0.12)
+        : Colors.transparent;
+    final border = selected
+        ? AppDesignTokens.primary.withValues(alpha: 0.34)
+        : scheme.outlineVariant.withValues(alpha: 0.42);
+    final child = InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 9),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 17, color: fg),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                color: fg,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return Tooltip(message: tooltip ?? label, child: child);
+  }
+
+  Widget _compactIconButton({
+    required BuildContext context,
+    required bool selected,
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final fg = selected ? AppDesignTokens.primary : scheme.onSurfaceVariant;
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected
+                ? AppDesignTokens.primary.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 19, color: fg),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactPlotControlsForDetails(
+    BuildContext context,
+    WidgetRef ref,
+    List<Plot> plotsForBulkAssign,
+    bool hasSessionData, {
+    required List<Plot> allTrialPlots,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return SizedBox(
+      height: 38,
+      child: Row(
+        children: [
+          Material(
+            color: scheme.surfaceContainerLow.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _compactIconButton(
+                    context: context,
+                    selected: !_showLayoutView,
+                    icon: Icons.view_list_rounded,
+                    tooltip: 'List view',
+                    onTap: () => setState(() => _showLayoutView = false),
+                  ),
+                  _compactIconButton(
+                    context: context,
+                    selected: _showLayoutView,
+                    icon: Icons.grid_view_rounded,
+                    tooltip: 'Layout view',
+                    onTap: () => setState(() => _showLayoutView = true),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (_showLayoutView)
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final layer in _LayoutLayer.values) ...[
+                      _compactModeButton(
+                        context: context,
+                        selected: _layoutLayer == layer,
+                        icon: _layoutLayerIcon(layer),
+                        label: _layoutLayerLabel(layer),
+                        onTap: () => setState(() {
+                          _layoutLayer = layer;
+                          if (_layoutLayer != _LayoutLayer.applications) {
+                            _selectedAppTreatmentId = null;
+                          }
+                        }),
+                      ),
+                      if (layer != _LayoutLayer.values.last)
+                        const SizedBox(width: 6),
+                    ],
+                    if (_layoutLayer == _LayoutLayer.ratings) ...[
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        width: 1,
+                        height: 24,
+                        color: AppDesignTokens.divider,
+                      ),
+                      for (final mode in _PlotAnalysisMode.values) ...[
+                        _compactModeButton(
+                          context: context,
+                          selected: _analysisMode == mode,
+                          icon: _analysisModeIcon(mode),
+                          label: _analysisModeLabel(mode),
+                          tooltip: switch (mode) {
+                            _PlotAnalysisMode.heatmap => 'Heat map',
+                            _PlotAnalysisMode.distribution => 'Distribution',
+                            _PlotAnalysisMode.progression => 'Progression',
+                          },
+                          onTap: () => setState(() => _analysisMode = mode),
+                        ),
+                        if (mode != _PlotAnalysisMode.values.last)
+                          const SizedBox(width: 6),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            )
+          else
+            const Spacer(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactHeaderActions(
+    BuildContext context,
+    WidgetRef ref,
+    List<Plot> plotsForBulkAssign,
+    bool hasSessionData, {
+    required List<Plot> allTrialPlots,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final trialIsArmLinked = _armTrialIsLinked(ref);
+    final plotAssignmentsLocked = plotAssignmentsEditLocked(
+        widget.trial, hasSessionData,
+        trialIsArmLinked: trialIsArmLinked);
+    final guardCount = allTrialPlots.where((p) => p.isGuardRow).length;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (widget.onTreatmentsShortcut != null)
+          IconButton(
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            padding: EdgeInsets.zero,
+            style: IconButton.styleFrom(
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+              foregroundColor: scheme.onSurfaceVariant,
+            ),
+            tooltip: 'Treatments',
+            icon: const Icon(Icons.science_outlined, size: 20),
+            onPressed: widget.onTreatmentsShortcut,
+          ),
+        IconButton(
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          padding: EdgeInsets.zero,
+          style: IconButton.styleFrom(
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+            foregroundColor: scheme.onSurfaceVariant,
+          ),
+          icon: const Icon(Icons.fullscreen, size: 20),
+          tooltip: 'Full screen',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => _PlotsFullScreenPage(
+                  trial: widget.trial,
+                  isLayoutView: _showLayoutView,
+                  initialLayoutLayer: _layoutLayer,
+                  selectedAppEvent: _selectedAppEvent,
+                  appPlotRecords: _appPlotRecords,
+                ),
+              ),
+            );
+          },
+        ),
+        PopupMenuButton<String>(
+          tooltip: 'Tools',
+          icon: const Icon(Icons.more_vert_rounded, size: 20),
+          style: IconButton.styleFrom(
+            foregroundColor: scheme.onSurfaceVariant,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+          ),
+          onSelected: (value) {
+            if (value == 'bulk') {
+              _showBulkAssignSheet(
+                context,
+                ref,
+                widget.trial,
+                plotsForBulkAssign,
+              );
+            } else if (value == 'repGuards') {
+              _runGenerateRepGuardPlots(context, ref, widget.trial.id);
+            } else if (value == 'toggleGuards') {
+              setState(() => _showGuardPlots = !_showGuardPlots);
+            }
+          },
+          itemBuilder: (ctx) => [
+            if (guardCount > 0)
+              CheckedPopupMenuItem<String>(
+                value: 'toggleGuards',
+                checked: _showGuardPlots,
+                child: const Text('Show guard plots'),
+              ),
+            PopupMenuItem<String>(
+              value: 'bulk',
+              enabled: !plotAssignmentsLocked,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.grid_view_rounded,
+                    size: 20,
+                    color: plotAssignmentsLocked
+                        ? AppDesignTokens.iconSubtle
+                        : AppDesignTokens.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(child: Text('Bulk Assign')),
+                ],
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'repGuards',
+              enabled: canEditTrialStructure(
+                widget.trial,
+                hasSessionData: hasSessionData,
+                trialIsArmLinked: trialIsArmLinked,
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.add_moderator_outlined, size: 20),
+                  SizedBox(width: 12),
+                  Expanded(child: Text('Add Rep Guards')),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnalysisModeSwitcher(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 2),
+      child: SegmentedButton<_PlotAnalysisMode>(
+        showSelectedIcon: false,
+        style: const ButtonStyle(
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+          padding: WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          ),
+          minimumSize: WidgetStatePropertyAll(Size(0, 30)),
+        ),
+        segments: const [
+          ButtonSegment(
+            value: _PlotAnalysisMode.heatmap,
+            label: Text('Heat map'),
+          ),
+          ButtonSegment(
+            value: _PlotAnalysisMode.distribution,
+            label: Text('Distribution'),
+          ),
+          ButtonSegment(
+            value: _PlotAnalysisMode.progression,
+            label: Text('Progression'),
+          ),
+        ],
+        selected: {_analysisMode},
+        onSelectionChanged: (val) => setState(() => _analysisMode = val.first),
+      ),
+    );
+  }
+
   Widget _buildLayerSwitcherForDetails(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -2724,8 +3148,7 @@ class _TrialPlotsWorkingSurfaceState
   ) {
     final trial = widget.trial;
     final trialIsArmLinked = _armTrialIsLinked(ref);
-    final structureLocked =
-        !canEditTrialStructure(
+    final structureLocked = !canEditTrialStructure(
       trial,
       hasSessionData: hasSessionData,
       trialIsArmLinked: trialIsArmLinked,
@@ -2824,9 +3247,8 @@ class _TrialPlotsWorkingSurfaceState
     required String label,
     required VoidCallback onPressed,
   }) {
-    final fg = selected
-        ? AppDesignTokens.primary
-        : AppDesignTokens.secondaryText;
+    final fg =
+        selected ? AppDesignTokens.primary : AppDesignTokens.secondaryText;
     return TextButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 20),
@@ -2856,9 +3278,9 @@ class _TrialPlotsWorkingSurfaceState
   }) {
     final cs = Theme.of(context).colorScheme;
     final trialIsArmLinked = _armTrialIsLinked(ref);
-    final plotAssignmentsLocked =
-        plotAssignmentsEditLocked(widget.trial, hasSessionData,
-            trialIsArmLinked: trialIsArmLinked);
+    final plotAssignmentsLocked = plotAssignmentsEditLocked(
+        widget.trial, hasSessionData,
+        trialIsArmLinked: trialIsArmLinked);
     final guardCount = allTrialPlots.where((p) => p.isGuardRow).length;
 
     return Row(
@@ -3073,9 +3495,9 @@ class _TrialPlotsWorkingSurfaceState
     )) {
       _plotsTabLockDebugPrint(widget.trial, hasSessionData, trialIsArmLinked);
     }
-    final plotAssignmentsLocked =
-        plotAssignmentsEditLocked(widget.trial, hasSessionData,
-            trialIsArmLinked: trialIsArmLinked);
+    final plotAssignmentsLocked = plotAssignmentsEditLocked(
+        widget.trial, hasSessionData,
+        trialIsArmLinked: trialIsArmLinked);
     final longPressBlockMessage = !canEditTrialStructure(
       widget.trial,
       hasSessionData: hasSessionData,
@@ -3671,11 +4093,12 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hasSessionData =
         ref.watch(trialHasSessionDataProvider(trial.id)).valueOrNull ?? false;
-    final trialIsArmLinked =
-        ref.watch(armTrialMetadataStreamProvider(trial.id)).valueOrNull?.isArmLinked ==
-            true;
-    final canEditStructure =
-        canEditTrialStructure(
+    final trialIsArmLinked = ref
+            .watch(armTrialMetadataStreamProvider(trial.id))
+            .valueOrNull
+            ?.isArmLinked ==
+        true;
+    final canEditStructure = canEditTrialStructure(
       trial,
       hasSessionData: hasSessionData,
       trialIsArmLinked: trialIsArmLinked,
@@ -3797,8 +4220,8 @@ class _PlotLayoutGrid extends StatelessWidget {
         if (effectiveTid == null) return AppDesignTokens.unassignedColor;
         final idx = treatments.indexWhere((t) => t.id == effectiveTid);
         if (idx < 0) return AppDesignTokens.unassignedColor;
-        final base = AppDesignTokens.treatmentPalette[
-            idx % AppDesignTokens.treatmentPalette.length];
+        final base = AppDesignTokens
+            .treatmentPalette[idx % AppDesignTokens.treatmentPalette.length];
         // Filter chip: dim plots not belonging to the selected treatment.
         if (selectedAppTreatmentId != null &&
             effectiveTid != selectedAppTreatmentId) {
@@ -4221,8 +4644,7 @@ class _PlotGridTileState extends State<_PlotGridTile> {
               highlightColor: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
                 width: double.infinity,
                 alignment: Alignment.center,
                 child: Column(
@@ -4285,9 +4707,8 @@ class _AppBadge extends StatelessWidget {
       width: 14,
       height: 14,
       decoration: BoxDecoration(
-        color: isApplied
-            ? AppDesignTokens.appliedColor
-            : const Color(0xFFEF9F27),
+        color:
+            isApplied ? AppDesignTokens.appliedColor : const Color(0xFFEF9F27),
         shape: BoxShape.circle,
       ),
       child: Icon(
@@ -4322,8 +4743,11 @@ class _PlotsFullScreenPage extends ConsumerStatefulWidget {
 
 class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   bool _armTrialIsLinked(WidgetRef ref) =>
-      ref.watch(armTrialMetadataStreamProvider(widget.trial.id)).valueOrNull?.isArmLinked ==
-          true;
+      ref
+          .watch(armTrialMetadataStreamProvider(widget.trial.id))
+          .valueOrNull
+          ?.isArmLinked ==
+      true;
 
   late _LayoutLayer _layoutLayer;
   int? _selectedAppTreatmentId;
@@ -4441,9 +4865,9 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
               }
               final hasSessionData = hasSessionDataAsync.valueOrNull ?? false;
               final trialIsArmLinked = _armTrialIsLinked(ref);
-              final plotAssignmentsLocked =
-                  plotAssignmentsEditLocked(widget.trial, hasSessionData,
-                      trialIsArmLinked: trialIsArmLinked);
+              final plotAssignmentsLocked = plotAssignmentsEditLocked(
+                  widget.trial, hasSessionData,
+                  trialIsArmLinked: trialIsArmLinked);
               final sessions = sessionsAsync.value ?? [];
               final guardCount = plots.where((p) => p.isGuardRow).length;
               final displayPlots = _plotsVisibleInPlotsTab(plots);
@@ -4568,8 +4992,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                   if (_layoutLayer == _LayoutLayer.applications)
                     _buildAppTreatmentFilterChips(
                       treatments: treatments,
-                      treatmentAppState:
-                          buildTreatmentAppState(trialApplicationsAsync.value ?? []),
+                      treatmentAppState: buildTreatmentAppState(
+                          trialApplicationsAsync.value ?? []),
                       selectedId: _selectedAppTreatmentId,
                       onChanged: (id) =>
                           setState(() => _selectedAppTreatmentId = id),
@@ -4677,7 +5101,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                                             trial: widget.trial,
                                             layer: _layoutLayer,
                                             appPlotRecords: _appPlotRecords,
-                                            treatmentAppState: treatmentAppState,
+                                            treatmentAppState:
+                                                treatmentAppState,
                                             selectedAppTreatmentId:
                                                 _selectedAppTreatmentId,
                                             plotIdToTreatmentId:
@@ -4783,9 +5208,9 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
     )) {
       _plotsTabLockDebugPrint(widget.trial, hasSessionData, trialIsArmLinked);
     }
-    final plotAssignmentsLocked =
-        plotAssignmentsEditLocked(widget.trial, hasSessionData,
-            trialIsArmLinked: trialIsArmLinked);
+    final plotAssignmentsLocked = plotAssignmentsEditLocked(
+        widget.trial, hasSessionData,
+        trialIsArmLinked: trialIsArmLinked);
     final longPressBlockMessage = !canEditTrialStructure(
       widget.trial,
       hasSessionData: hasSessionData,

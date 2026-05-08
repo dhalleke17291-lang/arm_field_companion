@@ -210,6 +210,17 @@ class SignalRepository {
     return rows;
   }
 
+  Stream<List<Signal>> watchOpenSignalsForTrial(int trialId) {
+    final query = _db.select(_db.signals)
+      ..where((s) => s.trialId.equals(trialId))
+      ..where((s) => s.status.isIn(_openStatuses.toList()));
+    return query.watch().map((rows) {
+      final sorted = [...rows];
+      _sortOpenSignals(sorted);
+      return sorted;
+    });
+  }
+
   Future<List<SignalDecisionEvent>> getDecisionHistory(int signalId) async {
     return (_db.select(_db.signalDecisionEvents)
           ..where((e) => e.signalId.equals(signalId))

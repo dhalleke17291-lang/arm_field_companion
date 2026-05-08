@@ -6,6 +6,7 @@ import 'package:csv/csv.dart';
 import 'dart:io';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
+import '../../core/trial_review_invalidation.dart';
 import '../../core/trial_state.dart';
 import 'usecases/import_plots_usecase.dart';
 
@@ -457,5 +458,13 @@ class _ImportPlotsScreenState extends ConsumerState<ImportPlotsScreen> {
         _reviewResult = null;
       }
     });
+    if (result.success) {
+      ref.invalidate(plotsForTrialProvider(widget.trial.id));
+      ref.invalidate(assignmentsForTrialProvider(widget.trial.id));
+      ref.invalidate(trialAssessmentCompletionProvider(widget.trial.id));
+      ref.invalidate(ratedPlotsCountForTrialProvider(widget.trial.id));
+      ref.invalidate(trialReadinessProvider(widget.trial.id));
+      invalidateTrialReviewProviders(ref, widget.trial.id);
+    }
   }
 }

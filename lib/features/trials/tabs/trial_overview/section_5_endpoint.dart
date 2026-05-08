@@ -50,9 +50,42 @@ class _EndpointBody extends StatelessWidget {
         .firstOrNull;
 
     if (endpointItem == null) {
-      return const Text(
-        'Primary endpoint factor not yet evaluated.',
-        style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText),
+      final plotItem = ctq.ctqItems
+          .where((i) => i.factorKey == 'plot_completeness')
+          .firstOrNull;
+      if (plotItem == null || plotItem.status == 'unknown') {
+        return const Text(
+          'Evaluates once analyzable plots and ratings are defined.',
+          style: TextStyle(fontSize: 12, color: AppDesignTokens.secondaryText),
+        );
+      }
+      final (proxyBg, proxyFg, proxyLabel) = switch (plotItem.status) {
+        'satisfied' => (
+            AppDesignTokens.successBg,
+            AppDesignTokens.successFg,
+            'Complete',
+          ),
+        'review_needed' => (
+            AppDesignTokens.partialBg,
+            AppDesignTokens.partialFg,
+            'Partial',
+          ),
+        _ => (
+            AppDesignTokens.warningBg,
+            AppDesignTokens.warningFg,
+            'Missing',
+          ),
+      };
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          OverviewStatusChip(label: proxyLabel, bg: proxyBg, fg: proxyFg),
+          const SizedBox(height: AppDesignTokens.spacing8),
+          if (plotItem.evidenceSummary.isNotEmpty)
+            OverviewDataRow('Ratings', plotItem.evidenceSummary),
+          if (plotItem.reason.isNotEmpty)
+            OverviewDataRow('Detail', plotItem.reason),
+        ],
       );
     }
 

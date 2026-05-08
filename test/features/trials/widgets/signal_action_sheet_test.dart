@@ -1,4 +1,5 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/core/widgets/standard_form_bottom_sheet.dart';
 import 'package:arm_field_companion/domain/signals/signal_models.dart';
 import 'package:arm_field_companion/domain/signals/signal_providers.dart';
 import 'package:arm_field_companion/domain/signals/signal_repository.dart';
@@ -23,10 +24,9 @@ Widget _wrap({
   return ProviderScope(
     overrides: [
       databaseProvider.overrideWithValue(db),
-      signalRepositoryProvider
-          .overrideWith((_) => SignalRepository.attach(db)),
+      signalRepositoryProvider.overrideWith((_) => SignalRepository.attach(db)),
       openSignalsForTrialProvider(trialId).overrideWith(
-        (ref) async => const <Signal>[],
+        (ref) => Stream.value(const <Signal>[]),
       ),
       trialDecisionSummaryProvider(trialId).overrideWith(
         (ref) async => TrialDecisionSummaryDto(
@@ -51,8 +51,7 @@ Widget _wrap({
   );
 }
 
-FilledButton _saveButton(WidgetTester tester) =>
-    tester.widget<FilledButton>(
+FilledButton _saveButton(WidgetTester tester) => tester.widget<FilledButton>(
       find.widgetWithText(FilledButton, 'Record Decision'),
     );
 
@@ -64,10 +63,20 @@ Future<void> _openSheet(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 300));
 }
 
+Future<void> _scrollUntilVisible(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(
+    finder,
+    100,
+    scrollable: find.byType(Scrollable).last,
+  );
+  await tester.pump();
+}
+
 void main() {
   late AppDatabase db;
   late Signal scaleSignal;
   late Signal raterSignal;
+  late Signal criticalSignal;
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -108,40 +117,82 @@ void main() {
     raterSignal = await (db.select(db.signals)
           ..where((s) => s.id.equals(raterId)))
         .getSingle();
+
+    final trialId3 =
+        await db.into(db.trials).insert(TrialsCompanion.insert(name: 'T3'));
+    final criticalId = await repo.raiseSignal(
+      trialId: trialId3,
+      signalType: SignalType.replicationWarning,
+      moment: SignalMoment.two,
+      severity: SignalSeverity.critical,
+      referenceContext: const SignalReferenceContext(treatmentId: 1),
+      consequenceText: 'Raw critical replication text.',
+    );
+    criticalSignal = await (db.select(db.signals)
+          ..where((s) => s.id.equals(criticalId)))
+        .getSingle();
   });
 
   tearDown(() async => db.close());
 
-  group('SignalActionSheet — save button state', () {
+  group('SignalActionSheet — projection language', () {
     testWidgets(
-        'SA-1: Confirm selected with < 10 char reason → save disabled',
+        'uses projected title and summary while keeping raw detail collapsed',
         (tester) async {
       await tester.pumpWidget(_wrap(signal: scaleSignal, db: db));
       await _openSheet(tester);
 
-      await tester.tap(find.textContaining('Confirm'));
+      expect(find.text('Recorded values may need review'), findsOneWidget);
+      expect(
+        find.text(
+            'A recorded value was outside the expected assessment range.'),
+        findsOneWidget,
+      );
+      expect(find.text('Value out of range.'), findsNothing);
+
+      await _scrollUntilVisible(tester, find.text('Original signal detail'));
+      await tester.tap(find.text('Original signal detail'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Value out of range.'), findsOneWidget);
+    });
+
+    testWidgets('uses projection severity label instead of raw Critical',
+        (tester) async {
+      await tester.pumpWidget(_wrap(signal: criticalSignal, db: db));
+      await _openSheet(tester);
+
+      expect(find.text('Needs review before export'), findsOneWidget);
+      expect(find.text('Critical'), findsNothing);
+    });
+  });
+
+  group('SignalActionSheet — save button state', () {
+    testWidgets(
+        'SA-1: Investigate selected with < 10 char reason → save disabled',
+        (tester) async {
+      await tester.pumpWidget(_wrap(signal: scaleSignal, db: db));
+      await _openSheet(tester);
+
+      await _scrollUntilVisible(tester, find.textContaining('Investigate'));
+      await tester.tap(find.textContaining('Investigate'));
       await tester.pump();
       // Scroll the lazy ListView so the TextField below the fold gets built.
-      await tester.drag(find.byType(Scrollable).last, const Offset(0, -300));
-      await tester.pump();
+      await _scrollUntilVisible(tester, find.byType(TextField));
       await tester.enterText(find.byType(TextField), 'short');
       await tester.pump();
 
       expect(_saveButton(tester).onPressed, isNull);
     });
 
-    testWidgets(
-        'SA-2: Confirm selected with ≥ 10 char reason → save enabled',
+    testWidgets('SA-2: Confirm selected with no reason → save enabled',
         (tester) async {
       await tester.pumpWidget(_wrap(signal: scaleSignal, db: db));
       await _openSheet(tester);
 
+      await _scrollUntilVisible(tester, find.textContaining('Confirm'));
       await tester.tap(find.textContaining('Confirm'));
-      await tester.pump();
-      await tester.drag(find.byType(Scrollable).last, const Offset(0, -300));
-      await tester.pump();
-      await tester.enterText(
-          find.byType(TextField), 'Confirmed after field review.');
       await tester.pump();
 
       expect(_saveButton(tester).onPressed, isNotNull);
@@ -151,18 +202,19 @@ void main() {
       await tester.pumpWidget(_wrap(signal: scaleSignal, db: db));
       await _openSheet(tester);
 
+      await _scrollUntilVisible(tester, find.textContaining('Defer'));
       await tester.tap(find.textContaining('Defer'));
       await tester.pump();
 
       expect(_saveButton(tester).onPressed, isNotNull);
     });
 
-    testWidgets(
-        'SA-4: Suppress selected with empty reason → save disabled',
+    testWidgets('SA-4: Suppress selected with empty reason → save disabled',
         (tester) async {
       await tester.pumpWidget(_wrap(signal: scaleSignal, db: db));
       await _openSheet(tester);
 
+      await _scrollUntilVisible(tester, find.textContaining('Suppress'));
       await tester.tap(find.textContaining('Suppress'));
       await tester.pump();
 
@@ -176,27 +228,44 @@ void main() {
       expect(_saveButton(tester).onPressed, isNull);
     });
 
-    testWidgets(
-        'SA-6: Re-rate option only shown for rater_drift signal',
+    testWidgets('SA-6: Re-rate option only shown for rater_drift signal',
         (tester) async {
       await tester.pumpWidget(_wrap(signal: raterSignal, db: db));
       await _openSheet(tester);
 
       // Re-rate is the 5th decision option (below the visible fold).
       // Scroll the lazy ListView so it gets built.
-      await tester.drag(find.byType(Scrollable).last, const Offset(0, -300));
-      await tester.pump();
+      await _scrollUntilVisible(tester, find.textContaining('Re-rate'));
 
       expect(find.textContaining('Re-rate'), findsOneWidget);
     });
 
-    testWidgets(
-        'SA-7: Re-rate option not shown for scale_violation signal',
+    testWidgets('SA-7: Re-rate option not shown for scale_violation signal',
         (tester) async {
       await tester.pumpWidget(_wrap(signal: scaleSignal, db: db));
       await _openSheet(tester);
 
       expect(find.textContaining('Re-rate'), findsNothing);
+    });
+
+    testWidgets(
+        'SA-8: constrained width on tablet-class viewport avoids full-bleed form',
+        (tester) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(size: Size(900, 1200)),
+          child: _wrap(signal: scaleSignal, db: db),
+        ),
+      );
+      await _openSheet(tester);
+      await tester.pump();
+
+      final renderObject =
+          tester.renderObject(find.byType(StandardFormBottomSheetLayout));
+      final rb = renderObject as RenderBox;
+      expect(rb.size.width, lessThanOrEqualTo(561));
+      expect(rb.size.width, greaterThan(200));
+      expect(tester.takeException(), isNull);
     });
   });
 }

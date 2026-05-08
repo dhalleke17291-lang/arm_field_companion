@@ -96,6 +96,9 @@ final trialStoryProvider =
       occurredAt: app.applicationDate,
       title: 'Application',
       subtitle: app.productName ?? '',
+      bbchAtApplication: app.growthStageBbchAtApplication,
+      hasApplicationGps: app.capturedLatitude != null,
+      applicationTemperatureC: app.temperature,
       applicationSummary: ApplicationSummary(
         productName: app.productName,
         rate: app.rate,
@@ -117,6 +120,7 @@ final trialStoryProvider =
       occurredAt: session.startedAt,
       title: session.name,
       subtitle: session.sessionDateLocal,
+      bbchAtSession: session.cropStageBbch,
       activeSignalSummary: ActiveSignalSummary(
         count: signals.length,
         hasCritical: signals

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/providers.dart';
 import 'package:arm_field_companion/data/repositories/ctq_factor_definition_repository.dart';
@@ -376,9 +378,9 @@ void main() {
         lat: 51.5074, lng: -0.1278);
     // photo → satisfies photo_evidence
     await makePhoto(ctx.trialId, plotPk, sessionId);
-    // treatment + application → satisfies treatment_identity, application_timing
+    // treatment + application with BBCH → satisfies treatment_identity, application_timing
     await makeTreatment(ctx.trialId);
-    await makeApplication(ctx.trialId);
+    await makeApplicationWithBbch(ctx.trialId, bbch: 25);
 
     final dto = await evaluate(ctx.trialId);
 
@@ -556,17 +558,33 @@ void main() {
       );
     });
 
-    test('AT-2: events exist, no pesticideCategory on any component → satisfied',
+    test(
+        'AT-2: events exist, no BBCH recorded (regardless of category) → review_needed',
         () async {
       final ctx = await makeSeededTrial();
       final trtId = await makeTreatment(ctx.trialId);
       await makeTreatmentComponent(ctx.trialId, trtId); // no category
-      await makeApplication(ctx.trialId);
+      await makeApplication(ctx.trialId); // no BBCH
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'review_needed');
+      expect(
+        factorItem(dto, 'application_timing')?.reason,
+        contains('BBCH at application has not been recorded'),
+      );
+    });
+
+    test(
+        'AT-2b: events exist, BBCH recorded, no pesticideCategory → satisfied',
+        () async {
+      final ctx = await makeSeededTrial();
+      final trtId = await makeTreatment(ctx.trialId);
+      await makeTreatmentComponent(ctx.trialId, trtId); // no category
+      await makeApplicationWithBbch(ctx.trialId, bbch: 25);
       final dto = await evaluate(ctx.trialId);
       expect(factorItem(dto, 'application_timing')?.status, 'satisfied');
       expect(
         factorItem(dto, 'application_timing')?.reason,
-        'Application events are present.',
+        contains('No window profile is configured'),
       );
     });
 
@@ -891,13 +909,12 @@ void main() {
   // ── CTQ refresh — evaluator reads fresh DB state ──────────────────────────
   //
   // These tests confirm that (a) the evaluator always reads the current DB
-  // state on each call, and (b) the Riverpod provider exposes updated data
-  // after explicit invalidation — validating the fix that adds
-  // ref.invalidate(trialCriticalToQualityProvider) to save paths.
+  // state on each call, and (b) the Riverpod provider exposes updated data from
+  // table streams without requiring save paths to explicitly invalidate it.
 
   group('CTQ-R: refresh after data saves', () {
     test(
-        'CTQ-R1: application_timing transitions from missing to satisfied after application inserted',
+        'CTQ-R1: application_timing is review_needed when application has no BBCH',
         () async {
       final ctx = await makeSeededTrial();
       await makeTreatment(ctx.trialId);
@@ -906,11 +923,25 @@ void main() {
       expect(factorItem(before, 'application_timing')?.status, 'missing',
           reason: 'treatment present but no application yet');
 
+      // Application inserted with no BBCH recorded
       await makeApplication(ctx.trialId);
 
       final after = await evaluate(ctx.trialId);
-      // No pesticideCategory on treatment → evaluateBbchTiming returns null → satisfied
-      expect(factorItem(after, 'application_timing')?.status, 'satisfied');
+      expect(factorItem(after, 'application_timing')?.status, 'review_needed',
+          reason: 'BBCH not captured → timing cannot be validated');
+    });
+
+    test(
+        'CTQ-R1b: application_timing is satisfied when application has BBCH and no window profile',
+        () async {
+      final ctx = await makeSeededTrial();
+      await makeTreatment(ctx.trialId);
+
+      await makeApplicationWithBbch(ctx.trialId, bbch: 25);
+
+      final dto = await evaluate(ctx.trialId);
+      expect(factorItem(dto, 'application_timing')?.status, 'satisfied',
+          reason: 'BBCH recorded, no category → no window profile → satisfied');
     });
 
     test(
@@ -959,7 +990,7 @@ void main() {
     });
 
     test(
-        'CTQ-R4: ProviderContainer returns updated application_timing after invalidation',
+        'CTQ-R4: ProviderContainer streams updated application_timing without invalidation',
         () async {
       final ctx = await makeSeededTrial();
       await makeTreatment(ctx.trialId);
@@ -974,12 +1005,26 @@ void main() {
           .read(trialCriticalToQualityProvider(ctx.trialId).future);
       expect(factorItem(dto1, 'application_timing')?.status, 'missing');
 
-      // Insert application then invalidate — provider must re-query DB
-      await makeApplication(ctx.trialId);
-      container.invalidate(trialCriticalToQualityProvider(ctx.trialId));
+      final updated = Completer<TrialCtqDto>();
+      final sub =
+          container.listen(trialCriticalToQualityProvider(ctx.trialId), (_, next) {
+        next.whenData((dto) {
+          final status = factorItem(dto, 'application_timing')?.status;
+          if (status == 'satisfied' && !updated.isCompleted) {
+            updated.complete(dto);
+          }
+        });
+      });
+      addTearDown(sub.close);
 
-      final dto2 = await container
-          .read(trialCriticalToQualityProvider(ctx.trialId).future);
+      // Insert application with BBCH; provider must stream and re-query DB.
+      await makeApplicationWithBbch(ctx.trialId, bbch: 25);
+
+      final dto2 = await updated.future.timeout(
+        const Duration(seconds: 2),
+        onTimeout: () =>
+            fail('trialCriticalToQualityProvider did not emit application'),
+      );
       expect(factorItem(dto2, 'application_timing')?.status, 'satisfied');
     });
   });

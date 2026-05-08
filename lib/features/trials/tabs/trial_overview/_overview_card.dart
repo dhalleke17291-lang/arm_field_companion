@@ -2,17 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/design/app_design_tokens.dart';
 
-/// Shared card for all ten Trial Overview sections.
+/// Shared card for all ten Trial Review sections.
 class OverviewSectionCard extends StatelessWidget {
   const OverviewSectionCard({
     super.key,
     required this.number,
     required this.title,
+    this.subtitle,
     required this.child,
   });
 
   final int number;
   final String title;
+
+  /// Optional muted one-liner describing the section's role.
+  final String? subtitle;
+
   final Widget child;
 
   @override
@@ -45,6 +50,16 @@ class OverviewSectionCard extends StatelessWidget {
                 color: AppDesignTokens.secondaryText,
               ),
             ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                subtitle!,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ],
             const SizedBox(height: AppDesignTokens.spacing8),
             child,
           ],

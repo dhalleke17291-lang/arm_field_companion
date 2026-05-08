@@ -11,6 +11,7 @@ class TrialPurposeDto {
     this.primaryEndpoint,
     this.treatmentRoles,
     this.knownInterpretationFactors,
+    this.readinessCriteriaSummary,
     required this.missingIntentFields,
     required this.provenanceSummary,
     required this.canDriveReadinessClaims,
@@ -30,6 +31,7 @@ class TrialPurposeDto {
   final String? primaryEndpoint;
   final String? treatmentRoles;
   final String? knownInterpretationFactors;
+  final String? readinessCriteriaSummary;
 
   /// Question keys with no captured answer.
   final List<String> missingIntentFields;

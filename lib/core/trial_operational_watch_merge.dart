@@ -55,6 +55,18 @@ Stream<int> mergeTrialOperationalTableWatches(AppDatabase db, int trialId) {
         .watch(),
     (db.select(db.trials)..where((t) => t.id.equals(trialId))).watch(),
     (db.select(db.treatments)..where((t) => t.trialId.equals(trialId))).watch(),
+    (db.select(db.treatmentComponents)..where((c) => c.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.signals)..where((s) => s.trialId.equals(trialId))).watch(),
+    db.select(db.signalDecisionEvents).watch(),
+    (db.select(db.trialPurposes)..where((p) => p.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.ctqFactorDefinitions)
+          ..where((f) => f.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.ctqFactorAcknowledgments)
+          ..where((a) => a.trialId.equals(trialId)))
+        .watch(),
   ]);
 }
 

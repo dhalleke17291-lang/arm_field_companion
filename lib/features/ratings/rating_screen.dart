@@ -2661,7 +2661,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     );
     ref.invalidate(sessionRatingsProvider(widget.session.id));
     ref.invalidate(ratedPlotPksProvider(widget.session.id));
-    ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
   }
 
   Future<void> _showVoidRatingDialog(
@@ -4576,7 +4575,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     if (result.isSuccess) {
       ref.invalidate(sessionRatingsProvider(widget.session.id));
       ref.invalidate(ratedPlotPksProvider(widget.session.id));
-      ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
       // Assessment consistency check (non-blocking, SnackBar only).
       _runAssessmentConsistencyCheck();
       // _taIdForCurrentAssessment() is null when the provider is still loading;
@@ -5046,7 +5044,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     if (result.success) {
       ref.invalidate(sessionRatingsProvider(widget.session.id));
       ref.invalidate(ratedPlotPksProvider(widget.session.id));
-      ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
     } else {
       if (result.errorMessage == kClosedSessionBlockedMessage) {
         ref.read(diagnosticsStoreProvider).recordError(

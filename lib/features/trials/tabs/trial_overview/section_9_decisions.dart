@@ -6,6 +6,8 @@ import '../../../../core/database/app_database.dart';
 import '../../../../core/design/app_design_tokens.dart';
 import '../../../../core/providers.dart';
 import '../../../../domain/signals/signal_providers.dart';
+import '../../../../domain/signals/signal_review_projection.dart';
+import '../../widgets/signal_action_sheet.dart';
 import '_overview_card.dart';
 
 class Section9Decisions extends ConsumerWidget {
@@ -16,11 +18,13 @@ class Section9Decisions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final decisionsAsync = ref.watch(trialDecisionSummaryProvider(trial.id));
-    final signalsAsync = ref.watch(openSignalsForTrialProvider(trial.id));
+    final signalsAsync =
+        ref.watch(projectedOpenSignalGroupsForTrialProvider(trial.id));
+    final rawSignalsAsync = ref.watch(openSignalsForTrialProvider(trial.id));
 
     return OverviewSectionCard(
       number: 9,
-      title: 'Open Decisions and Unresolved Signals',
+      title: 'Review Items and Decisions',
       child: decisionsAsync.when(
         loading: () => const OverviewSectionLoading(),
         error: (_, __) => const OverviewSectionError(),
@@ -28,13 +32,18 @@ class Section9Decisions extends ConsumerWidget {
           loading: () => const OverviewSectionLoading(),
           error: (_, __) => const OverviewSectionError(),
           data: (signals) {
+            final rawSignalsById = {
+              for (final signal
+                  in rawSignalsAsync.valueOrNull ?? const <Signal>[])
+                signal.id: signal,
+            };
             final hasContent = signals.isNotEmpty ||
                 decisions.signalDecisions.isNotEmpty ||
                 decisions.ctqAcknowledgments.isNotEmpty;
 
             if (!hasContent) {
               return const Text(
-                'No open decisions or unresolved signals.',
+                'No review items or documented decisions.',
                 style: TextStyle(
                   fontSize: 12,
                   color: AppDesignTokens.secondaryText,
@@ -47,7 +56,7 @@ class Section9Decisions extends ConsumerWidget {
               children: [
                 if (signals.isNotEmpty) ...[
                   const Text(
-                    'OPEN SIGNALS',
+                    'NEEDS REVIEW',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
@@ -61,7 +70,11 @@ class Section9Decisions extends ConsumerWidget {
                       padding: const EdgeInsets.only(
                         bottom: AppDesignTokens.spacing8,
                       ),
-                      child: _SignalRow(signal: s),
+                      child: _SignalGroupRow(
+                        group: s,
+                        trialId: trial.id,
+                        rawSignalsById: rawSignalsById,
+                      ),
                     ),
                   ),
                 ],
@@ -125,47 +138,254 @@ class Section9Decisions extends ConsumerWidget {
   }
 }
 
-class _SignalRow extends StatelessWidget {
-  const _SignalRow({required this.signal});
+class _SignalGroupRow extends StatelessWidget {
+  const _SignalGroupRow({
+    required this.group,
+    required this.trialId,
+    required this.rawSignalsById,
+  });
 
-  final Signal signal;
+  final SignalReviewGroupProjection group;
+  final int trialId;
+  final Map<int, Signal> rawSignalsById;
 
-  static String _severityLabel(String s) => switch (s) {
-        'critical' => 'Critical',
-        'review' => 'Review',
-        'info' => 'Info',
-        _ => s,
-      };
+  static (Color, Color) _severityColors(SignalReviewGroupProjection group) {
+    final hasExportBlock = group.memberSignals.any((s) => s.blocksExport);
+    final hasCritical =
+        group.memberSignals.any((s) => s.severity == 'critical');
+    final hasReview = group.memberSignals.any((s) => s.severity == 'review');
 
-  static (Color, Color) _severityColors(String s) => switch (s) {
-        'critical' => (AppDesignTokens.warningBg, AppDesignTokens.warningFg),
-        'review' => (AppDesignTokens.partialBg, AppDesignTokens.partialFg),
-        _ => (AppDesignTokens.emptyBadgeBg, AppDesignTokens.emptyBadgeFg),
-      };
+    return switch ((hasCritical, hasReview, hasExportBlock)) {
+      (true, _, true) => (AppDesignTokens.warningBg, AppDesignTokens.warningFg),
+      (true, _, false) => (
+          AppDesignTokens.partialBg,
+          AppDesignTokens.partialFg
+        ),
+      (_, true, _) => (AppDesignTokens.partialBg, AppDesignTokens.partialFg),
+      _ => (AppDesignTokens.emptyBadgeBg, AppDesignTokens.emptyBadgeFg),
+    };
+  }
+
+  String? get _affectedSummary {
+    final parts = <String>[
+      if (group.affectedAssessmentIds.isNotEmpty)
+        '${group.affectedAssessmentIds.length} assessment${group.affectedAssessmentIds.length == 1 ? '' : 's'}',
+      if (group.affectedSessionIds.isNotEmpty)
+        '${group.affectedSessionIds.length} session${group.affectedSessionIds.length == 1 ? '' : 's'}',
+      if (group.affectedPlotIds.isNotEmpty)
+        '${group.affectedPlotIds.length} plot${group.affectedPlotIds.length == 1 ? '' : 's'}',
+    ];
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
+
+  Signal? _rawSignalFor(SignalReviewProjection member) =>
+      rawSignalsById[member.signalId];
+
+  void _openSignal(BuildContext context, SignalReviewProjection member) {
+    final rawSignal = _rawSignalFor(member);
+    if (rawSignal == null) return;
+    showSignalActionSheet(
+      context,
+      signal: rawSignal,
+      trialId: trialId,
+    );
+  }
+
+  Widget _actionControl(BuildContext context) {
+    if (group.memberSignals.length == 1) {
+      final member = group.memberSignals.single;
+      return TextButton(
+        onPressed: _rawSignalFor(member) == null
+            ? null
+            : () => _openSignal(context, member),
+        child: const Text('Decide'),
+      );
+    }
+
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        title: Text(
+          'Review ${group.signalCount} signals',
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppDesignTokens.primary,
+          ),
+        ),
+        children: group.memberSignals
+            .map(
+              (member) => Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: _rawSignalFor(member) == null
+                      ? null
+                      : () => _openSignal(context, member),
+                  child: Text('Signal #${member.signalId}'),
+                ),
+              ),
+            )
+            .toList(growable: false),
+      ),
+    );
+  }
+
+  Widget _interpretationDetails(BuildContext context) {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        title: const Text(
+          'Review context',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppDesignTokens.secondaryText,
+          ),
+        ),
+        children: [
+          _InterpretationLine(
+            label: 'Why this matters',
+            value: group.familyScientificRole,
+          ),
+          _InterpretationLine(
+            label: 'Effect on results',
+            value: group.familyInterpretationImpact,
+          ),
+          _InterpretationLine(
+            label: 'Question to resolve',
+            value: group.reviewQuestion,
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final (chipBg, chipFg) = _severityColors(signal.severity);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Text(
-            signal.consequenceText,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppDesignTokens.primaryText,
-              height: 1.4,
+    final (chipBg, chipFg) = _severityColors(group);
+    final affectedSummary = _affectedSummary;
+
+    return Container(
+      padding: const EdgeInsets.all(AppDesignTokens.spacing8),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      group.displayTitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppDesignTokens.primaryText,
+                        height: 1.35,
+                      ),
+                    ),
+                    if (group.signalCount > 1)
+                      OverviewStatusChip(
+                        label: '${group.signalCount} signals',
+                        bg: AppDesignTokens.emptyBadgeBg,
+                        fg: AppDesignTokens.emptyBadgeFg,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  group.shortSummary,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppDesignTokens.primaryText,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  group.statusLabel,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppDesignTokens.secondaryText,
+                    height: 1.35,
+                  ),
+                ),
+                if (affectedSummary != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    affectedSummary,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppDesignTokens.secondaryText,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+                _interpretationDetails(context),
+                _actionControl(context),
+              ],
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        OverviewStatusChip(
-          label: _severityLabel(signal.severity),
-          bg: chipBg,
-          fg: chipFg,
-        ),
-      ],
+          const SizedBox(width: 8),
+          OverviewStatusChip(
+            label: group.severityLabel,
+            bg: chipBg,
+            fg: chipFg,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InterpretationLine extends StatelessWidget {
+  const _InterpretationLine({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppDesignTokens.primaryText,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

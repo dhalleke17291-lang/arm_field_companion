@@ -21,6 +21,7 @@ class Section4Ctq extends ConsumerWidget {
     return OverviewSectionCard(
       number: 4,
       title: 'Critical-to-Quality Status',
+      subtitle: 'Required evidence and quality factors',
       child: ctqAsync.when(
         loading: () => const OverviewSectionLoading(),
         error: (_, __) => const OverviewSectionError(),
@@ -30,14 +31,23 @@ class Section4Ctq extends ConsumerWidget {
   }
 }
 
-class _CtqBody extends StatelessWidget {
+class _CtqBody extends StatefulWidget {
   const _CtqBody({required this.dto, required this.trialId});
 
   final TrialCtqDto dto;
   final int trialId;
 
   @override
+  State<_CtqBody> createState() => _CtqBodyState();
+}
+
+class _CtqBodyState extends State<_CtqBody> {
+  bool _showSatisfied = false;
+
+  @override
   Widget build(BuildContext context) {
+    final dto = widget.dto;
+
     final (headerBg, headerFg, headerLabel) = switch (dto.overallStatus) {
       'ready_for_review' => (
           AppDesignTokens.successBg,
@@ -57,20 +67,76 @@ class _CtqBody extends StatelessWidget {
       _ => (
           AppDesignTokens.emptyBadgeBg,
           AppDesignTokens.emptyBadgeFg,
-          'Unknown',
+          'Not evaluated',
         ),
     };
+
+    // Attention items: blocked, missing, unacknowledged review, acknowledged review.
+    final attentionItems = dto.ctqItems
+        .where((i) =>
+            i.isBlocked ||
+            i.status == 'missing' ||
+            i.needsReview)
+        .toList();
+
+    // Satisfied items: collapse by default.
+    final satisfiedItems =
+        dto.ctqItems.where((i) => i.status == 'satisfied').toList();
+
+    // Unknown/not-evaluated items: omit from default view (not actionable).
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         OverviewStatusChip(label: headerLabel, bg: headerBg, fg: headerFg),
-        if (dto.ctqItems.isNotEmpty) ...[
+        if (attentionItems.isNotEmpty) ...[
           const SizedBox(height: AppDesignTokens.spacing8),
-          ...dto.ctqItems.map(
-            (item) => _CtqItemRow(item: item, trialId: trialId),
+          ...attentionItems.map(
+            (item) => _CtqItemRow(item: item, trialId: widget.trialId),
           ),
         ],
+        if (satisfiedItems.isNotEmpty) ...[
+          const SizedBox(height: AppDesignTokens.spacing8),
+          GestureDetector(
+            onTap: () => setState(() => _showSatisfied = !_showSatisfied),
+            child: Row(
+              children: [
+                Text(
+                  _showSatisfied
+                      ? 'Hide satisfied checks'
+                      : 'Show satisfied checks (${satisfiedItems.length})',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppDesignTokens.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  _showSatisfied
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_down,
+                  size: 16,
+                  color: AppDesignTokens.primary,
+                ),
+              ],
+            ),
+          ),
+          if (_showSatisfied) ...[
+            const SizedBox(height: AppDesignTokens.spacing4),
+            ...satisfiedItems.map(
+              (item) => _CtqItemRow(item: item, trialId: widget.trialId),
+            ),
+          ],
+        ],
+        if (attentionItems.isEmpty && satisfiedItems.isEmpty)
+          const Text(
+            'No factors evaluated yet.',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
       ],
     );
   }
@@ -81,6 +147,34 @@ class _CtqItemRow extends StatelessWidget {
 
   final TrialCtqItemDto item;
   final int trialId;
+
+  static String _requiredActionHint(TrialCtqItemDto item) {
+    return switch (item.factorKey) {
+      'plot_completeness' =>
+        'Required: complete ratings for all analyzable plots.',
+      'photo_evidence' => 'Required: add photo evidence.',
+      'gps_evidence' => 'Required: enable GPS capture during rating sessions.',
+      'treatment_identity' => 'Required: define treatments for this trial.',
+      'application_timing' => 'Required: record application events.',
+      'rating_window' => 'Required: record rating assessments.',
+      'rater_consistency' => 'Required: resolve the open rater consistency signal.',
+      _ => 'Required: address this factor before export.',
+    };
+  }
+
+  static String _unknownLabel(TrialCtqItemDto item) {
+    final r = item.reason.toLowerCase();
+    if (r.contains('not applicable') || r.contains('n/a')) {
+      return 'Not applicable yet';
+    }
+    if (r.contains('pending') || r.contains('await')) {
+      return 'Pending data';
+    }
+    if (r.contains('evidence') || r.contains('missing')) {
+      return 'Requires evidence';
+    }
+    return 'Not evaluated';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,12 +207,11 @@ class _CtqItemRow extends StatelessWidget {
       _ => (
           AppDesignTokens.emptyBadgeBg,
           AppDesignTokens.emptyBadgeFg,
-          item.status,
+          _unknownLabel(item),
         ),
     };
 
-    final showAckAction =
-        (item.isBlocked || item.needsReview) && !item.isAcknowledged;
+    final showAckAction = item.needsReview && !item.isAcknowledged;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
@@ -149,6 +242,17 @@ class _CtqItemRow extends StatelessWidget {
                 fontSize: 11,
                 color: AppDesignTokens.secondaryText,
                 height: 1.4,
+              ),
+            ),
+          ],
+          if (item.status == 'missing' || item.isBlocked) ...[
+            const SizedBox(height: AppDesignTokens.spacing4),
+            Text(
+              _requiredActionHint(item),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppDesignTokens.warningFg,
               ),
             ),
           ],

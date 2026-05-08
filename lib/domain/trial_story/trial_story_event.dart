@@ -110,6 +110,22 @@ class TrialStoryEvent {
   /// Seeding-specific payload. Non-null only for seeding events.
   final SeedingSummary? seedingSummary;
 
+  /// BBCH growth stage recorded at session close. Non-null only for session
+  /// events where [Session.cropStageBbch] was captured.
+  final int? bbchAtSession;
+
+  /// BBCH growth stage at application time. Non-null only for application
+  /// events where [TrialApplicationEvent.growthStageBbchAtApplication] was set.
+  final int? bbchAtApplication;
+
+  /// GPS was captured at the time of this application.
+  /// False for non-application events.
+  final bool hasApplicationGps;
+
+  /// Ambient temperature recorded at application (°C).
+  /// Non-null only for application events where [TrialApplicationEvent.temperature] was captured.
+  final double? applicationTemperatureC;
+
   const TrialStoryEvent({
     required this.id,
     required this.type,
@@ -121,5 +137,9 @@ class TrialStoryEvent {
     this.evidenceSummary,
     this.applicationSummary,
     this.seedingSummary,
+    this.bbchAtSession,
+    this.bbchAtApplication,
+    this.hasApplicationGps = false,
+    this.applicationTemperatureC,
   });
 }

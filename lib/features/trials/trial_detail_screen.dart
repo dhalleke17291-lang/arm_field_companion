@@ -14,7 +14,10 @@ import '../../core/diagnostics/diagnostic_finding.dart';
 import '../../core/diagnostics/unified_severity.dart';
 import '../../core/session_state.dart';
 import '../../core/trial_state.dart';
+import '../../core/trial_review_invalidation.dart';
 import '../../core/workspace/workspace_config.dart';
+import '../../core/providers.dart';
+import '../../core/design/app_design_tokens.dart';
 import '../sessions/create_session_screen.dart';
 import '../sessions/session_repository.dart';
 import '../sessions/domain/session_close_attention_summary.dart';
@@ -23,10 +26,9 @@ import '../sessions/domain/session_completeness_report.dart';
 import '../sessions/session_summary_screen.dart';
 import '../plots/plot_queue_screen.dart';
 import 'full_protocol_details_screen.dart';
-import '../../core/providers.dart';
-import '../../core/design/app_design_tokens.dart';
 import 'plot_layout_model.dart';
 import '../diagnostics/trial_readiness.dart';
+import '../../shared/layout/responsive_layout.dart';
 import '../../core/export_guard.dart';
 import '../export/arm_export_preflight_screen.dart';
 import '../export/export_format.dart';
@@ -401,6 +403,20 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       }
       return;
     }
+    final readinessReport =
+        await ref.read(trialReadinessProvider(widget.trial.id).future);
+    if (!readinessReport.canExport) {
+      if (mounted) {
+        _showReadinessSheet(
+          context,
+          ref,
+          widget.trial,
+          readinessReport,
+          showExportAnyway: false,
+        );
+      }
+      return;
+    }
     if (format == ExportFormat.armRatingShell) {
       if (!mounted) return;
       final result = await Navigator.push<String?>(
@@ -463,8 +479,6 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           return;
         }
         final useCase = ref.read(exportTrialUseCaseProvider);
-        final readinessReport =
-            await ref.read(trialReadinessProvider(widget.trial.id).future);
         final bundle = await useCase.execute(
           trial: widget.trial,
           format: format,
@@ -1141,6 +1155,7 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
       ref.invalidate(deletedSessionsProvider);
       ref.invalidate(deletedPlotsProvider);
       ref.invalidate(lastSessionContextProvider);
+      invalidateTrialReviewProviders(ref, trialId);
       final messenger = ScaffoldMessenger.of(context);
       Navigator.of(context).pop();
       messenger.showSnackBar(
@@ -1378,47 +1393,49 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           ),
         ),
         Expanded(
-          child: IndexedStack(
-            index: _selectedTabIndex == _sessionsIndex
-                ? _sessionsIndex
-                : effectiveSelectedIndex,
-            children: [
-              PlotsTab(
-                trial: currentTrial,
-                embeddedInScroll: false,
-                onSelectStackIndex: (index) {
-                  setState(() {
-                    _selectedTabIndex =
-                        _sanitizeTabIndexForTrial(index, currentTrial);
-                  });
-                },
-              ),
-              SeedingTab(trial: currentTrial),
-              ApplicationsTab(trial: currentTrial),
-              AssessmentsTab(trial: currentTrial),
-              TreatmentsTab(trial: currentTrial),
-              PhotosTab(trial: currentTrial),
-              TimelineTab(trial: currentTrial),
-              SessionsView(
-                trial: currentTrial,
-                onBack: () => setState(() {
-                  _selectedTabIndex = _sanitizeTabIndexForTrial(
-                      _previousTabIndex, currentTrial);
-                }),
-              ),
-              _OverviewTabBody(
-                trial: currentTrial,
-                onAttentionTap: _handleAttentionTap,
-                onOpenSessions: () => setState(() {
-                  _previousTabIndex = _selectedTabIndex;
-                  _selectedTabIndex = _sessionsIndex;
-                }),
-              ),
-              // ARM Protocol tab at index 9 — only reachable when ARM-linked.
-              armTabBuilder(currentTrial.id),
-              // Trial Overview intelligence tab at index 10 (Sprint A4).
-              TrialOverviewTab(trial: currentTrial),
-            ],
+          child: ResponsiveBody(
+            child: IndexedStack(
+              index: _selectedTabIndex == _sessionsIndex
+                  ? _sessionsIndex
+                  : effectiveSelectedIndex,
+              children: [
+                PlotsTab(
+                  trial: currentTrial,
+                  embeddedInScroll: false,
+                  onSelectStackIndex: (index) {
+                    setState(() {
+                      _selectedTabIndex =
+                          _sanitizeTabIndexForTrial(index, currentTrial);
+                    });
+                  },
+                ),
+                SeedingTab(trial: currentTrial),
+                ApplicationsTab(trial: currentTrial),
+                AssessmentsTab(trial: currentTrial),
+                TreatmentsTab(trial: currentTrial),
+                PhotosTab(trial: currentTrial),
+                TimelineTab(trial: currentTrial),
+                SessionsView(
+                  trial: currentTrial,
+                  onBack: () => setState(() {
+                    _selectedTabIndex = _sanitizeTabIndexForTrial(
+                        _previousTabIndex, currentTrial);
+                  }),
+                ),
+                _OverviewTabBody(
+                  trial: currentTrial,
+                  onAttentionTap: _handleAttentionTap,
+                  onOpenSessions: () => setState(() {
+                    _previousTabIndex = _selectedTabIndex;
+                    _selectedTabIndex = _sessionsIndex;
+                  }),
+                ),
+                // ARM Protocol tab at index 9 — only reachable when ARM-linked.
+                armTabBuilder(currentTrial.id),
+                // Trial Overview intelligence tab at index 10 (Sprint A4).
+                TrialOverviewTab(trial: currentTrial),
+              ],
+            ),
           ),
         ),
       ],
@@ -2101,9 +2118,8 @@ class _OverviewPlotSummary extends ConsumerWidget {
             final sumPairs = completionMap.values
                 .fold<int>(0, (s, c) => s + c.ratedPlotCount);
             final denomPairs = nAssess * analyzableCount;
-            trialCoverage = denomPairs <= 0
-                ? 0.0
-                : (sumPairs / denomPairs).clamp(0.0, 1.0);
+            trialCoverage =
+                denomPairs <= 0 ? 0.0 : (sumPairs / denomPairs).clamp(0.0, 1.0);
             final pct = (trialCoverage * 100).round();
             coveragePrimaryLine = '$pct% coverage';
             coverageDetailLine = nAssess == 1
@@ -2111,8 +2127,7 @@ class _OverviewPlotSummary extends ConsumerWidget {
                 : '$sumPairs of $denomPairs plot-assessments rated · $completeAssess of $nAssess assessments done';
           }
 
-          final remaining =
-              (analyzableCount - rated).clamp(0, analyzableCount);
+          final remaining = (analyzableCount - rated).clamp(0, analyzableCount);
           final ratedLine = analyzableCount <= 0
               ? '$rated rated · no analyzable plots'
               : '$rated rated · $remaining remaining · $analyzableCount analyzable';
@@ -2159,8 +2174,7 @@ class _OverviewPlotSummary extends ConsumerWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                     height: 1.35,
-                    color:
-                        AppDesignTokens.secondaryText.withValues(alpha: 0.9),
+                    color: AppDesignTokens.secondaryText.withValues(alpha: 0.9),
                   ),
                 ),
               ],
@@ -2214,8 +2228,8 @@ class _TrialInsightsCard extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (insights) {
         if (insights.isEmpty) return const SizedBox.shrink();
-        final hasTrends = insights
-            .any((i) => i.type == InsightType.treatmentTrend);
+        final hasTrends =
+            insights.any((i) => i.type == InsightType.treatmentTrend);
         return _OverviewDashboardCard(
           title: 'Trial insights',
           child: Column(
@@ -2238,8 +2252,7 @@ class _TrialInsightsCard extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 10,
                   height: 1.35,
-                  color:
-                      AppDesignTokens.secondaryText.withValues(alpha: 0.88),
+                  color: AppDesignTokens.secondaryText.withValues(alpha: 0.88),
                 ),
               ),
               const SizedBox(height: 8),
@@ -2279,8 +2292,8 @@ class _TrialInsightsCard extends ConsumerWidget {
         if (!emitted.contains(name)) {
           emitted.add(name);
           if (renderItems.isNotEmpty) {
-            renderItems.add(const Divider(
-                height: 1, color: AppDesignTokens.borderCrisp));
+            renderItems.add(
+                const Divider(height: 1, color: AppDesignTokens.borderCrisp));
           }
           renderItems.add(_buildInsightGroup(groupMap[name]!));
         }
@@ -2476,7 +2489,8 @@ class _TrialIntentCard extends ConsumerWidget {
       data: (dto) {
         final statusLabel = switch (dto.purposeStatus) {
           'confirmed' => 'Confirmed',
-          'partial' => 'Partial — ${dto.missingIntentFields.length} field(s) missing',
+          'partial' =>
+            'Partial — ${dto.missingIntentFields.length} field(s) missing',
           _ => 'Not captured',
         };
 
@@ -2498,8 +2512,8 @@ class _TrialIntentCard extends ConsumerWidget {
                     showTrialIntentSheet(context, ref, trial: trial),
                 style: TextButton.styleFrom(
                   minimumSize: Size.zero,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
@@ -2558,9 +2572,11 @@ class _CurrentSessionHero extends ConsumerWidget {
         ),
         data: (sessions) {
           final open = sessions.where(isSessionOpenForFieldWork).toList();
-          final primary =
-              open.isNotEmpty ? open.first : (sessions.isNotEmpty ? sessions.first : null);
-          final isActive = primary != null && isSessionOpenForFieldWork(primary);
+          final primary = open.isNotEmpty
+              ? open.first
+              : (sessions.isNotEmpty ? sessions.first : null);
+          final isActive =
+              primary != null && isSessionOpenForFieldWork(primary);
 
           // Status pill label + coloring.
           final String statusLabel;
@@ -2789,15 +2805,14 @@ class _NeedsAttentionCard extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.35,
-                    color: AppDesignTokens.secondaryText
-                        .withValues(alpha: 0.85),
+                    color:
+                        AppDesignTokens.secondaryText.withValues(alpha: 0.85),
                   ),
                 ),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
-                    onPressed: () =>
-                        _openCompletenessDashboard(context, trial),
+                    onPressed: () => _openCompletenessDashboard(context, trial),
                     icon: const Icon(Icons.fact_check_outlined, size: 16),
                     label: const Text('View readiness'),
                     style: TextButton.styleFrom(
@@ -2820,14 +2835,12 @@ class _NeedsAttentionCard extends ConsumerWidget {
           );
         }
 
-        final sorted = [...items]
-          ..sort((a, b) => _severityRank(a.severity)
-              .compareTo(_severityRank(b.severity)));
+        final sorted = [...items]..sort((a, b) =>
+            _severityRank(a.severity).compareTo(_severityRank(b.severity)));
         final top = sorted.take(3).toList();
         final remaining = items.length - top.length;
-        final actionableCount = items
-            .where((i) => i.severity != AttentionSeverity.info)
-            .length;
+        final actionableCount =
+            items.where((i) => i.severity != AttentionSeverity.info).length;
 
         return _OverviewDashboardCard(
           title: 'Needs Attention',
@@ -2870,8 +2883,7 @@ class _NeedsAttentionCard extends ConsumerWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
-                  onPressed: () =>
-                      _openCompletenessDashboard(context, trial),
+                  onPressed: () => _openCompletenessDashboard(context, trial),
                   icon: const Icon(Icons.fact_check_outlined, size: 16),
                   label: const Text('Review issues'),
                   style: TextButton.styleFrom(
@@ -2959,8 +2971,12 @@ class _TrialModuleHub extends StatelessWidget {
     // Trial Overview (10) is always shown — Sprint A4.
     const allItems = <(int, IconData, String, TrialTab?)>[
       (_overviewTabIndex, Icons.dashboard_outlined, 'Overview', null),
-      (_trialOverviewTabIndex, Icons.fact_check_outlined, 'Trial Overview',
-          null),
+      (
+        _trialOverviewTabIndex,
+        Icons.fact_check_outlined,
+        'Trial Review',
+        null
+      ),
       (6, Icons.timeline, 'Timeline', TrialTab.timeline),
       (0, Icons.grid_on, 'Plots', TrialTab.plots),
       (1, Icons.agriculture, 'Seeding', TrialTab.seeding),
@@ -2974,8 +2990,12 @@ class _TrialModuleHub extends StatelessWidget {
       ...allItems.where((item) =>
           item.$4 == null || workspaceConfig.visibleTabs.contains(item.$4!)),
       if (isArmLinked)
-        (_armProtocolTabIndex, Icons.biotech_outlined, 'Field Plan',
-            null as TrialTab?),
+        (
+          _armProtocolTabIndex,
+          Icons.biotech_outlined,
+          'Field Plan',
+          null as TrialTab?
+        ),
     ];
 
     return LayoutBuilder(
@@ -3843,8 +3863,8 @@ class SessionsView extends ConsumerWidget {
     if (timing != null && timing.isNotEmpty) {
       parts.add(timing);
     }
-    final stage = _composeCropStage(
-        m.cropStageScale, m.cropStageMaj, m.cropStageMin);
+    final stage =
+        _composeCropStage(m.cropStageScale, m.cropStageMaj, m.cropStageMin);
     if (stage.isNotEmpty) {
       parts.add(stage);
     }
@@ -3913,8 +3933,7 @@ class SessionsView extends ConsumerWidget {
       final userId = await ref.read(currentUserIdProvider.future);
       final armMeta =
           ref.read(armSessionMetadataProvider(session.id)).valueOrNull;
-      final cropStageBbch =
-          int.tryParse(armMeta?.cropStageMaj?.trim() ?? '');
+      final cropStageBbch = int.tryParse(armMeta?.cropStageMaj?.trim() ?? '');
       final started =
           await ref.read(sessionRepositoryProvider).startPlannedSession(
                 session.id,
@@ -3926,6 +3945,7 @@ class SessionsView extends ConsumerWidget {
       ref.invalidate(sessionsForTrialProvider(trial.id));
       ref.invalidate(openSessionProvider(trial.id));
       ref.invalidate(armSessionMetadataProvider(session.id));
+      invalidateTrialReviewProviders(ref, trial.id);
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -4041,6 +4061,7 @@ class SessionsView extends ConsumerWidget {
       ref.invalidate(ratedPlotPksProvider(session.id));
       ref.invalidate(derivedSnapshotForSessionProvider(session.id));
       ref.invalidate(lastSessionContextProvider);
+      invalidateTrialReviewProviders(ref, trialId);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Session moved to Recovery')),
       );
@@ -4552,7 +4573,8 @@ class SessionsView extends ConsumerWidget {
 
     final snap = await ref
         .read(weatherSnapshotRepositoryProvider)
-        .getWeatherSnapshotForParent(kWeatherParentTypeRatingSession, session.id);
+        .getWeatherSnapshotForParent(
+            kWeatherParentTypeRatingSession, session.id);
 
     if (!context.mounted) return;
 

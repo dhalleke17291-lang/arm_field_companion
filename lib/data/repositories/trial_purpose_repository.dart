@@ -139,6 +139,37 @@ class TrialPurposeRepository {
         );
   }
 
+  /// Updates only [regulatoryContext] on the current active purpose row.
+  ///
+  /// Does not create a new version, does not touch [requiresConfirmation],
+  /// [inferredFieldsJson], or any other field. No-op when no active row exists.
+  Future<void> updateRegulatoryContext(int trialId, String value) {
+    return (_db.update(_db.trialPurposes)
+          ..where(
+            (p) => p.trialId.equals(trialId) & p.supersededAt.isNull(),
+          ))
+        .write(TrialPurposesCompanion(
+      regulatoryContext: Value(value),
+      updatedAt: Value(DateTime.now().toUtc()),
+    ));
+  }
+
+  /// Updates only [knownInterpretationFactors] on the current active purpose row.
+  ///
+  /// Does not create a new version, does not touch [regulatoryContext],
+  /// [trialPurpose], [requiresConfirmation], or any other field.
+  /// No-op when no active row exists (e.g. no purpose row written yet).
+  Future<void> updateKnownInterpretationFactors(int trialId, String? json) {
+    return (_db.update(_db.trialPurposes)
+          ..where(
+            (p) => p.trialId.equals(trialId) & p.supersededAt.isNull(),
+          ))
+        .write(TrialPurposesCompanion(
+      knownInterpretationFactors: Value(json),
+      updatedAt: Value(DateTime.now().toUtc()),
+    ));
+  }
+
   Future<void> supersedeTrialPurpose(int purposeId) {
     return (_db.update(_db.trialPurposes)
           ..where((p) => p.id.equals(purposeId)))

@@ -15,6 +15,7 @@ import '../../core/workspace/workspace_config.dart';
 import '../../domain/models/trial_insight.dart';
 import '../../domain/relationships/trial_data_integrity_provider.dart';
 import '../../domain/relationships/trial_evidence_completeness_provider.dart';
+import '../../shared/layout/responsive_layout.dart';
 import 'domain/trial_data_computer.dart';
 import 'widgets/insight_row.dart';
 
@@ -491,25 +492,28 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
         children: [
           _buildSummaryHeader(trial),
           Expanded(
-            child: ListView(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              children: [
-                _buildSection1(trial, config),
-                const SizedBox(height: 12),
-                KeyedSubtree(key: _section2Key, child: _buildSection2(trial)),
-                const SizedBox(height: 12),
-                KeyedSubtree(key: _section3Key, child: _buildSection3(trial)),
-                const SizedBox(height: 12),
-                KeyedSubtree(key: _section4Key, child: _buildSection4(trial)),
-                const SizedBox(height: 12),
-                _buildSection5(trial),
-                const SizedBox(height: 12),
-                _buildSection6(trial),
-                const SizedBox(height: 12),
-                _buildFooter(trial, config),
-                const SizedBox(height: 24),
-              ],
+            child: ResponsiveBody(
+              child: ListView(
+                controller: _scrollController,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                children: [
+                  _buildSection1(trial, config),
+                  const SizedBox(height: 12),
+                  KeyedSubtree(key: _section2Key, child: _buildSection2(trial)),
+                  const SizedBox(height: 12),
+                  KeyedSubtree(key: _section3Key, child: _buildSection3(trial)),
+                  const SizedBox(height: 12),
+                  KeyedSubtree(key: _section4Key, child: _buildSection4(trial)),
+                  const SizedBox(height: 12),
+                  _buildSection5(trial),
+                  const SizedBox(height: 12),
+                  _buildSection6(trial),
+                  const SizedBox(height: 12),
+                  _buildFooter(trial, config),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ],

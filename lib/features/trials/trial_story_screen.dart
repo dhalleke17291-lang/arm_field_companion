@@ -7,6 +7,8 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../domain/signals/signal_providers.dart';
+import '../../domain/signals/signal_review_projection_mapper.dart';
+import '../../domain/trial_cognition/environmental_window_evaluator.dart';
 import '../../domain/trial_cognition/ctq_factor_acknowledgment_dto.dart';
 import '../../domain/trial_cognition/trial_ctq_dto.dart';
 import '../../domain/trial_cognition/trial_decision_summary_dto.dart';
@@ -14,6 +16,7 @@ import '../../domain/trial_cognition/trial_evidence_arc_dto.dart';
 import '../../domain/trial_cognition/trial_purpose_dto.dart';
 import '../../domain/trial_story/trial_story_event.dart';
 import '../../domain/trial_story/trial_story_provider.dart';
+import '../../shared/layout/responsive_layout.dart';
 import 'tabs/trial_intent_sheet.dart';
 import 'widgets/ctq_acknowledgment_sheet.dart';
 import 'widgets/signal_action_sheet.dart';
@@ -59,76 +62,78 @@ class _TrialStoryBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-      children: [
-        // ── Cognition summary ───────────────────────────────────────────────
-        _PurposeCard(trial: trial),
-        const SizedBox(height: AppDesignTokens.spacing12),
-        _EvidenceArcCard(trialId: trial.id),
-        const SizedBox(height: AppDesignTokens.spacing12),
-        _CtqCard(trialId: trial.id),
-        const SizedBox(height: AppDesignTokens.spacing12),
-
-        // ── Open signals ─────────────────────────────────────────────────────
-        _OpenSignalsSection(trialId: trial.id),
-
-        // ── Decisions and reasoning ──────────────────────────────────────────
-        _DecisionsSection(trialId: trial.id),
-
-        // ── Timeline section ────────────────────────────────────────────────
-        const SizedBox(height: AppDesignTokens.spacing12),
-        const Text(
-          'TIMELINE',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.8,
-            color: AppDesignTokens.secondaryText,
-          ),
-        ),
-        const SizedBox(height: AppDesignTokens.spacing8),
-
-        if (events.isEmpty) ...[
-          const SizedBox(height: AppDesignTokens.spacing8),
-          const Text(
-            'No trial story yet',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppDesignTokens.primaryText,
-            ),
-          ),
-          const SizedBox(height: AppDesignTokens.spacing8),
-          const Text(
-            'Seeding, applications, and sessions will appear here '
-            'as the trial is executed.',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppDesignTokens.secondaryText,
-              height: 1.5,
-            ),
-          ),
-        ] else ...[
-          const Text(
-            'Events are shown with current unresolved signal context '
-            'where available.',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppDesignTokens.secondaryText,
-              height: 1.4,
-            ),
-          ),
+    return ResponsiveBody(
+      child: ListView(
+        padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+        children: [
+          // ── Cognition summary ───────────────────────────────────────────────
+          _PurposeCard(trial: trial),
           const SizedBox(height: AppDesignTokens.spacing12),
-          ...events.map(
-            (e) => Padding(
-              padding:
-                  const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
-              child: _TrialStoryEventTile(event: e),
+          _EvidenceArcCard(trialId: trial.id),
+          const SizedBox(height: AppDesignTokens.spacing12),
+          _CtqCard(trialId: trial.id),
+          const SizedBox(height: AppDesignTokens.spacing12),
+
+          // ── Open signals ─────────────────────────────────────────────────────
+          _OpenSignalsSection(trialId: trial.id),
+
+          // ── Decisions and reasoning ──────────────────────────────────────────
+          _DecisionsSection(trialId: trial.id),
+
+          // ── Timeline section ────────────────────────────────────────────────
+          const SizedBox(height: AppDesignTokens.spacing12),
+          const Text(
+            'TIMELINE',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.8,
+              color: AppDesignTokens.secondaryText,
             ),
           ),
+          const SizedBox(height: AppDesignTokens.spacing8),
+
+          if (events.isEmpty) ...[
+            const SizedBox(height: AppDesignTokens.spacing8),
+            const Text(
+              'No trial story yet',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppDesignTokens.primaryText,
+              ),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing8),
+            const Text(
+              'Seeding, applications, and sessions will appear here '
+              'as the trial is executed.',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppDesignTokens.secondaryText,
+                height: 1.5,
+              ),
+            ),
+          ] else ...[
+            const Text(
+              'Events are shown with current unresolved signal context '
+              'where available.',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppDesignTokens.secondaryText,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: AppDesignTokens.spacing12),
+            ...events.map(
+              (e) => Padding(
+                padding:
+                    const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
+                child: _TrialStoryEventTile(event: e, trialId: trial.id),
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -398,8 +403,7 @@ class _CtqBody extends ConsumerWidget {
         _ => AppDesignTokens.primaryText,
       };
 
-  static bool _canAcknowledge(String status) =>
-      status == 'review_needed' || status == 'blocked' || status == 'missing';
+  static bool _canAcknowledge(String status) => status == 'review_needed';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -574,9 +578,8 @@ class _AcknowledgedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateStr = _fmt.format(ack.acknowledgedAt.toLocal());
-    final truncated = ack.reason.length > 60
-        ? '${ack.reason.substring(0, 60)}…'
-        : ack.reason;
+    final truncated =
+        ack.reason.length > 60 ? '${ack.reason.substring(0, 60)}…' : ack.reason;
 
     return Padding(
       padding: const EdgeInsets.only(left: 8, top: 4),
@@ -625,18 +628,6 @@ class _OpenSignalsSection extends ConsumerWidget {
   const _OpenSignalsSection({required this.trialId});
   final int trialId;
 
-  static String _signalTypeLabel(String type) => switch (type) {
-        'scale_violation' => 'Scale violation',
-        'rater_drift' => 'Rater drift',
-        'between_rater_divergence' => 'Rater divergence',
-        'causal_context_flag' => 'Timing window',
-        'aov_prediction' => 'Statistical flag',
-        'replication_warning' => 'Replication warning',
-        'protocol_divergence' => 'Protocol difference',
-        'deviation_declaration' => 'Deviation',
-        _ => type.replaceAll('_', ' '),
-      };
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(openSignalsForTrialProvider(trialId));
@@ -659,67 +650,82 @@ class _OpenSignalsSection extends ConsumerWidget {
             ),
             const SizedBox(height: AppDesignTokens.spacing8),
             ...signals.map(
-              (signal) => Padding(
-                padding:
-                    const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
-                child: GestureDetector(
-                  onTap: () => showSignalActionSheet(
-                    context,
-                    signal: signal,
-                    trialId: trialId,
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(AppDesignTokens.spacing12),
-                    decoration: BoxDecoration(
-                      color: AppDesignTokens.cardSurface,
-                      borderRadius:
-                          BorderRadius.circular(AppDesignTokens.radiusCard),
-                      border: Border.all(color: AppDesignTokens.borderCrisp),
-                      boxShadow: AppDesignTokens.cardShadowRating,
+              (signal) {
+                final projection = projectSignalForReview(signal);
+                return Padding(
+                  padding:
+                      const EdgeInsets.only(bottom: AppDesignTokens.spacing8),
+                  child: GestureDetector(
+                    onTap: () => showSignalActionSheet(
+                      context,
+                      signal: signal,
+                      trialId: trialId,
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _signalTypeLabel(signal.signalType),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.3,
-                                  color: AppDesignTokens.secondaryText,
+                    child: Container(
+                      padding: const EdgeInsets.all(AppDesignTokens.spacing12),
+                      decoration: BoxDecoration(
+                        color: AppDesignTokens.cardSurface,
+                        borderRadius:
+                            BorderRadius.circular(AppDesignTokens.radiusCard),
+                        border: Border.all(color: AppDesignTokens.borderCrisp),
+                        boxShadow: AppDesignTokens.cardShadowRating,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  projection.statusLabel,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                    color: AppDesignTokens.secondaryText,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                signal.consequenceText,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppDesignTokens.primaryText,
-                                  height: 1.4,
+                                const SizedBox(height: 2),
+                                Text(
+                                  projection.displayTitle,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppDesignTokens.primaryText,
+                                    height: 1.4,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                                const SizedBox(height: 2),
+                                Text(
+                                  projection.shortSummary,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppDesignTokens.secondaryText,
+                                    height: 1.4,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: AppDesignTokens.spacing8),
-                        const Text(
-                          'Decide →',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppDesignTokens.primary,
+                          const SizedBox(width: AppDesignTokens.spacing8),
+                          const Text(
+                            'Decide →',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppDesignTokens.primary,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
             const SizedBox(height: AppDesignTokens.spacing4),
           ],
@@ -825,9 +831,8 @@ class _DecisionsSection extends ConsumerWidget {
       for (final d in dto.signalDecisions)
         if (d.note != null && d.note!.isNotEmpty)
           _LedgerEntry(
-            sourceLabel: d.note!.length > 80
-                ? '${d.note!.substring(0, 80)}…'
-                : d.note!,
+            sourceLabel:
+                d.note!.length > 80 ? '${d.note!.substring(0, 80)}…' : d.note!,
             decisionLabel: _decisionLabel(d.eventType),
             timestampMs: d.occurredAt,
             actorName: d.actorName,
@@ -903,9 +908,10 @@ class _Cta extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _TrialStoryEventTile extends StatelessWidget {
-  const _TrialStoryEventTile({required this.event});
+  const _TrialStoryEventTile({required this.event, required this.trialId});
 
   final TrialStoryEvent event;
+  final int trialId;
 
   static final _dateFmt = DateFormat('MMM d, yyyy');
 
@@ -961,6 +967,10 @@ class _TrialStoryEventTile extends StatelessWidget {
                   const SizedBox(height: AppDesignTokens.spacing8),
                   _SessionDetails(event: event),
                 ],
+                if (event.type == TrialStoryEventType.application) ...[
+                  const SizedBox(height: AppDesignTokens.spacing8),
+                  _ApplicationDetails(event: event, trialId: trialId),
+                ],
               ],
             ),
           ),
@@ -1005,6 +1015,11 @@ class _SessionDetails extends StatelessWidget {
                 '${divs.count} protocol difference${divs.count == 1 ? '' : 's'}',
           ),
         if (ev != null) _EvidenceRow(summary: ev),
+        if (event.bbchAtSession != null)
+          _DetailRow(
+            label: 'BBCH ${event.bbchAtSession}',
+            muted: true,
+          ),
       ],
     );
   }
@@ -1042,15 +1057,16 @@ class _EvidenceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final parts = <String>[
-      if (summary.photoCount > 0) 'Photos',
-      if (summary.hasGps) 'GPS',
-      if (summary.hasWeather) 'Weather',
+      if (summary.hasGps) 'GPS confirmed',
+      if (summary.hasWeather) 'Weather captured',
+      if (summary.photoCount > 0)
+        '${summary.photoCount} photo${summary.photoCount == 1 ? '' : 's'}',
     ];
 
     return Padding(
       padding: const EdgeInsets.only(top: 3),
       child: Text(
-        'Evidence: ${parts.isEmpty ? 'None recorded' : parts.join(' · ')}',
+        parts.isEmpty ? 'No evidence captured' : parts.join(' · '),
         style: const TextStyle(
           fontSize: 12,
           color: AppDesignTokens.secondaryText,
@@ -1058,6 +1074,124 @@ class _EvidenceRow extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Application detail block
+// ---------------------------------------------------------------------------
+
+class _ApplicationDetails extends ConsumerWidget {
+  const _ApplicationDetails({required this.event, required this.trialId});
+
+  final TrialStoryEvent event;
+  final int trialId;
+
+  static bool _isFactual(String status) => switch (status.toLowerCase()) {
+        'applied' ||
+        'complete' ||
+        'completed' ||
+        'closed' ||
+        'confirmed' =>
+          true,
+        _ => false,
+      };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appSummary = event.applicationSummary;
+    if (appSummary == null) return const SizedBox.shrink();
+
+    final contextParts = <String>[
+      if (event.bbchAtApplication != null) 'BBCH ${event.bbchAtApplication}',
+      if (event.hasApplicationGps) 'GPS confirmed',
+    ];
+
+    final isFactual = _isFactual(appSummary.status);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (contextParts.isNotEmpty)
+          _DetailRow(label: contextParts.join(' · '), muted: true),
+        if (event.applicationTemperatureC != null)
+          _DetailRow(
+            label: '${event.applicationTemperatureC!.round()}°C at application',
+            muted: true,
+          ),
+        if (isFactual)
+          _AppWindowsRow(trialId: trialId, eventId: event.id)
+        else
+          const _DetailRow(
+            label:
+                'Environmental window available after application is confirmed.',
+            muted: true,
+          ),
+      ],
+    );
+  }
+}
+
+class _AppWindowsRow extends ConsumerWidget {
+  const _AppWindowsRow({required this.trialId, required this.eventId});
+
+  final int trialId;
+  final String eventId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final request = ApplicationEnvironmentalRequest(
+      trialId: trialId,
+      applicationEventId: eventId,
+    );
+    final ctxAsync =
+        ref.watch(applicationEnvironmentalContextProvider(request));
+
+    return ctxAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (ctx) {
+        if (ctx.isUnavailable) {
+          return const _DetailRow(
+            label: 'Environmental window unavailable.',
+            muted: true,
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _WindowCompactRow(label: '72h before', window: ctx.preWindow),
+            _WindowCompactRow(label: '48h after', window: ctx.postWindow),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _WindowCompactRow extends StatelessWidget {
+  const _WindowCompactRow({required this.label, required this.window});
+
+  final String label;
+  final EnvironmentalWindowDto window;
+
+  @override
+  Widget build(BuildContext context) {
+    final noData = window.recordCount == 0;
+    final detail = noData ? 'no records' : _summary(window);
+    return _DetailRow(label: '$label: $detail', muted: true);
+  }
+
+  String _summary(EnvironmentalWindowDto w) {
+    final parts = <String>[];
+    if (w.totalPrecipitationMm != null) {
+      parts.add('${w.totalPrecipitationMm!.toStringAsFixed(1)} mm');
+    }
+    if (w.minTempC != null) {
+      parts.add('min ${w.minTempC!.toStringAsFixed(1)}°C');
+    }
+    if (w.frostFlagPresent) parts.add('frost');
+    return parts.isEmpty ? 'no records' : parts.join(' · ');
   }
 }
 

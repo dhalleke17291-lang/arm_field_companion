@@ -1,4 +1,13 @@
-# What to Do Next
+# SUPERSEDED — What to Do Next
+
+> **Status:** SUPERSEDED.
+>
+> **Historical scope:** This document reflects an earlier implementation state
+> and should not be used for build decisions.
+>
+> **Use instead:** [CURRENT_SYSTEM_MAP.md](CURRENT_SYSTEM_MAP.md).
+
+# Historical Content — What to Do Next
 
 ## Recent work (done)
 

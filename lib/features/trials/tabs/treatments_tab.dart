@@ -11,6 +11,7 @@ import '../../../core/units/unit_switch_mixin.dart';
 import '../../../core/widgets/app_dialog.dart';
 import '../../../core/widgets/loading_error_widgets.dart';
 import '../../../core/widgets/app_standard_widgets.dart';
+import '../../../core/trial_review_invalidation.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../../core/protocol_edit_blocked_exception.dart';
 import 'add_treatment_sheet.dart';
@@ -410,7 +411,9 @@ class TreatmentsTab extends ConsumerWidget {
         restrictedMode: restrictedMode,
         onSaved: () {
           ref.invalidate(treatmentComponentsForTreatmentProvider(treatment.id));
+          ref.invalidate(treatmentComponentsByTreatmentForTrialProvider(trial.id));
           ref.invalidate(treatmentComponentsCountForTrialProvider(trial.id));
+          invalidateTrialReviewProviders(ref, trial.id);
         },
       ),
     );
@@ -558,6 +561,13 @@ class TreatmentsTab extends ConsumerWidget {
                 if (!ctx.mounted) return;
                 if (result.success) {
                   ref.invalidate(treatmentsForTrialProvider(trial.id));
+                  ref.invalidate(
+                    treatmentComponentsByTreatmentForTrialProvider(trial.id),
+                  );
+                  ref.invalidate(
+                    treatmentComponentsCountForTrialProvider(trial.id),
+                  );
+                  invalidateTrialReviewProviders(ref, trial.id);
                   Navigator.pop(ctx);
                 } else {
                   ScaffoldMessenger.of(ctx).showSnackBar(
@@ -613,6 +623,9 @@ class TreatmentsTab extends ConsumerWidget {
     if (result.success) {
       ref.invalidate(treatmentsForTrialProvider(trial.id));
       ref.invalidate(assignmentsForTrialProvider(trial.id));
+      ref.invalidate(treatmentComponentsByTreatmentForTrialProvider(trial.id));
+      ref.invalidate(treatmentComponentsCountForTrialProvider(trial.id));
+      invalidateTrialReviewProviders(ref, trial.id);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Treatment removed')),
       );
@@ -870,6 +883,11 @@ class _TreatmentCompactCardState extends ConsumerState<_TreatmentCompactCard> {
                             treatmentComponentsCountForTrialProvider(
                                 widget.trial.id),
                           );
+                          ref.invalidate(
+                            treatmentComponentsByTreatmentForTrialProvider(
+                                widget.trial.id),
+                          );
+                          invalidateTrialReviewProviders(ref, widget.trial.id);
                         }
                       }
                     },
@@ -1807,6 +1825,8 @@ class _TreatmentComponentsSheetState
       });
     }
     ref.invalidate(treatmentsForTrialProvider(widget.trial.id));
+    ref.invalidate(treatmentComponentsByTreatmentForTrialProvider(widget.trial.id));
+    invalidateTrialReviewProviders(ref, widget.trial.id);
   }
 
   @override
@@ -2145,6 +2165,10 @@ class _TreatmentComponentsSheetState
     ref.invalidate(
       treatmentComponentsCountForTrialProvider(widget.trial.id),
     );
+    ref.invalidate(
+      treatmentComponentsByTreatmentForTrialProvider(widget.trial.id),
+    );
+    invalidateTrialReviewProviders(ref, widget.trial.id);
     await _loadComponents();
   }
 

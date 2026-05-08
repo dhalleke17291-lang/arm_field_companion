@@ -42,7 +42,6 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
   Future<void> _onApplicationDeleted(WidgetRef ref, String eventId) async {
     await ref.read(applicationRepositoryProvider).deleteApplication(eventId);
     ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
-    ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
     await _invalidateSessionTimingForTrialSessions(ref, widget.trial.id);
   }
 
@@ -53,7 +52,6 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
   }) async {
     await ref.read(applicationRepositoryProvider).deleteApplication(eventId);
     ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
-    ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
     await _invalidateSessionTimingForTrialSessions(ref, widget.trial.id);
     if (sheetContext.mounted) Navigator.pop(sheetContext);
   }
@@ -707,7 +705,6 @@ class _ApplicationsTabState extends ConsumerState<ApplicationsTab> {
       }
       unawaited(_captureApplicationWeatherAndGps(e.id, widget.trial.id, appliedAt));
       ref.invalidate(trialApplicationsForTrialProvider(widget.trial.id));
-      ref.invalidate(trialCriticalToQualityProvider(widget.trial.id));
       await _invalidateSessionTimingForTrialSessions(ref, widget.trial.id);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

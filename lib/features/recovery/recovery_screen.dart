@@ -8,6 +8,7 @@ import '../../core/export_guard.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
+import '../../core/trial_review_invalidation.dart';
 import '../../core/widgets/gradient_screen_header.dart';
 import '../../shared/widgets/app_card.dart';
 
@@ -57,6 +58,7 @@ Future<void> _runPlotRestore(
     ref.invalidate(deletedPlotsProvider);
     ref.invalidate(deletedPlotsForTrialRecoveryProvider(plot.trialId));
     ref.invalidate(plotsForTrialProvider(plot.trialId));
+    invalidateTrialReviewProviders(ref, plot.trialId);
     messenger.showSnackBar(
       const SnackBar(content: Text('Plot restored')),
     );
@@ -103,6 +105,7 @@ Future<void> _runSessionRestore(
     ref.invalidate(deletedSessionsProvider);
     ref.invalidate(deletedSessionsForTrialRecoveryProvider(session.trialId));
     ref.invalidate(sessionsForTrialProvider(session.trialId));
+    invalidateTrialReviewProviders(ref, session.trialId);
     messenger.showSnackBar(
       const SnackBar(content: Text('Session restored')),
     );
@@ -156,6 +159,7 @@ Future<void> _runTrialRestore(
     ref.invalidate(plotsForTrialProvider(trial.id));
     ref.invalidate(trialProvider(trial.id));
     ref.invalidate(trialSetupProvider(trial.id));
+    invalidateTrialReviewProviders(ref, trial.id);
     messenger.showSnackBar(
       const SnackBar(content: Text('Trial restored')),
     );

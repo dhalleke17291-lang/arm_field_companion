@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/app_database.dart';
 import '../../../../core/design/app_design_tokens.dart';
 import '../../../../core/providers.dart';
+import '../../../../domain/trial_cognition/regulatory_context_value.dart';
 import '../../../../domain/trial_cognition/trial_intent_inferrer.dart';
 import '../../../../domain/trial_cognition/trial_purpose_dto.dart';
 import '../trial_intent_sheet.dart';
@@ -35,7 +36,6 @@ class Section1Identity extends ConsumerWidget {
             if (existing != null) {
               await purposeRepo.confirmTrialPurpose(existing.id);
               ref.invalidate(trialPurposeProvider(trial.id));
-              ref.invalidate(trialCriticalToQualityProvider(trial.id));
             }
           },
         ),
@@ -328,12 +328,18 @@ class _PurposeSection extends StatelessWidget {
       children: [
         OverviewStatusChip(label: chipLabel, bg: chipBg, fg: chipFg),
         const SizedBox(height: AppDesignTokens.spacing8),
+        if (purpose.trialPurpose != null)
+          OverviewDataRow('Purpose', purpose.trialPurpose!),
         if (purpose.claimBeingTested != null)
           OverviewDataRow('Claim being tested', purpose.claimBeingTested!),
         if (purpose.primaryEndpoint != null)
           OverviewDataRow('Primary endpoint', purpose.primaryEndpoint!),
         if (purpose.regulatoryContext != null)
-          OverviewDataRow('Regulatory context', purpose.regulatoryContext!),
+          OverviewDataRow(
+            'Context',
+            RegulatoryContextValue.labelFor(purpose.regulatoryContext) ??
+                purpose.regulatoryContext!,
+          ),
         if (purpose.provenanceSummary.isNotEmpty)
           OverviewDataRow('Provenance', purpose.provenanceSummary),
         if (!purpose.isConfirmed) ...[

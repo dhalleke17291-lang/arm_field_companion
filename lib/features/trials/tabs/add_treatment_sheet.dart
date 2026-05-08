@@ -5,6 +5,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/design/form_styles.dart';
 import '../../../core/protocol_edit_blocked_exception.dart';
 import '../../../core/providers.dart';
+import '../../../core/trial_review_invalidation.dart';
 import '../../../core/widgets/app_draggable_modal_sheet.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
 
@@ -119,6 +120,7 @@ class _AddTreatmentSheetBodyState extends ConsumerState<_AddTreatmentSheetBody> 
       return;
     }
     ref.invalidate(treatmentsForTrialProvider(widget.trial.id));
+    invalidateTrialReviewProviders(ref, widget.trial.id);
     if (mounted) widget.onDone();
   }
 

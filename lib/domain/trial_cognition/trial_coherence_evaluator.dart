@@ -119,10 +119,12 @@ TrialCoherenceCheckDto _checkPrimaryEndpointAssessment(
     );
   }
 
-  final endpoint = purpose.primaryEndpoint!.toLowerCase();
+  final endpoint = purpose.primaryEndpoint!;
   final hasMatch = assessments.any((a) {
-    final name = a.name.toLowerCase();
-    return endpoint.contains(name) || name.contains(endpoint);
+    return _assessmentMatchesPrimaryEndpoint(
+      assessmentName: a.name,
+      primaryEndpoint: endpoint,
+    );
   });
 
   if (hasMatch) {
@@ -147,6 +149,65 @@ TrialCoherenceCheckDto _checkPrimaryEndpointAssessment(
   );
 }
 
+bool _assessmentMatchesPrimaryEndpoint({
+  required String assessmentName,
+  required String primaryEndpoint,
+}) {
+  final assessment = _normalizeEndpointText(assessmentName);
+  final endpoint = _normalizeEndpointText(primaryEndpoint);
+  if (assessment.isEmpty || endpoint.isEmpty) return false;
+  if (endpoint.contains(assessment) || assessment.contains(endpoint)) {
+    return true;
+  }
+
+  final assessmentTokens = _meaningfulEndpointTokens(assessment);
+  if (assessmentTokens.isEmpty) return false;
+  final endpointTokens = _meaningfulEndpointTokens(endpoint).toSet();
+  if (assessmentTokens.length == 1) {
+    final token = assessmentTokens.single;
+    return token.length >= 5 && endpointTokens.contains(token);
+  }
+  final matched =
+      assessmentTokens.where((token) => endpointTokens.contains(token)).length;
+  return matched == assessmentTokens.length;
+}
+
+String _normalizeEndpointText(String value) {
+  return value
+      .toLowerCase()
+      .replaceAll('%', ' percent ')
+      .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+}
+
+List<String> _meaningfulEndpointTokens(String normalized) {
+  const stopWords = {
+    'a',
+    'an',
+    'and',
+    'at',
+    'between',
+    'by',
+    'comparison',
+    'endpoint',
+    'final',
+    'for',
+    'in',
+    'of',
+    'plots',
+    'plot',
+    'primary',
+    'stage',
+    'the',
+    'to',
+  };
+  return normalized
+      .split(' ')
+      .where((token) => token.isNotEmpty && !stopWords.contains(token))
+      .toList();
+}
+
 // ── Check 2: application timing within claim window ───────────────────────
 
 TrialCoherenceCheckDto _checkApplicationTiming({
@@ -169,6 +230,18 @@ TrialCoherenceCheckDto _checkApplicationTiming({
       reason: treatments.isEmpty
           ? 'No treatments defined — application timing cannot be evaluated.'
           : 'No application events recorded.',
+      sourceFields: sources,
+    );
+  }
+
+  final hasBbch =
+      applications.any((a) => a.growthStageBbchAtApplication != null);
+  if (!hasBbch) {
+    return const TrialCoherenceCheckDto(
+      checkKey: key,
+      label: label,
+      status: 'cannot_evaluate',
+      reason: 'BBCH growth stage was not recorded at any application event.',
       sourceFields: sources,
     );
   }
@@ -389,7 +462,9 @@ TrialCoherenceCheckDto _checkOpenProtocolDivergenceSignals(
     checkKey: key,
     label: label,
     status: 'review_needed',
-    reason: '$count open signal(s) require review. $details',
+    reason: count == 1
+        ? '1 open signal requires review. $details'
+        : '$count open signals require review. $details',
     sourceFields: sources,
   );
 }
