@@ -39,6 +39,7 @@ import '../sessions/arrange_plots_screen.dart';
 import '../sessions/rating_order_sheet.dart';
 import '../sessions/session_summary_screen.dart';
 import '../sessions/session_timing_helper.dart';
+import '../trials/widgets/signal_action_sheet.dart';
 
 /// Status options for the rating result; maps to persisted resultStatus values.
 enum RatingStatus {
@@ -3871,6 +3872,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
   /// Persistent next-action dock: same location, same order, every time.
   /// Save (secondary) + Save & Next (primary); Prev, Jump, Flag below.
   Widget _buildBottomBar(BuildContext context) {
+    final openSignals = ref
+            .watch(openSignalsForTrialProvider(widget.trial.id))
+            .valueOrNull
+            ?.where((s) => s.sessionId == widget.session.id)
+            .toList() ??
+        [];
+    final hasSignals = openSignals.isNotEmpty;
+    final hasCritical = openSignals.any((s) => s.severity == 'critical');
+
     final isLastPlot = _effectiveIsLastPlotForNavigation;
     final isLastAssessment = _assessmentIndex >= widget.assessments.length - 1;
     final isVeryLast = isLastPlot && isLastAssessment;
@@ -4040,6 +4050,53 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                       foregroundColor: AppDesignTokens.secondaryText,
                     ),
                   ),
+                  if (hasSignals) ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () async {
+                        final signal = hasCritical
+                            ? openSignals.firstWhere(
+                                (s) => s.severity == 'critical')
+                            : openSignals.first;
+                        await showSignalActionSheet(
+                          context,
+                          signal: signal,
+                          trialId: widget.trial.id,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppDesignTokens.warningBg,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              size: 14,
+                              color: hasCritical
+                                  ? AppDesignTokens.missedColor
+                                  : AppDesignTokens.warningFg,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${openSignals.length} signal${openSignals.length == 1 ? '' : 's'}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: hasCritical
+                                    ? AppDesignTokens.missedColor
+                                    : AppDesignTokens.warningFg,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
