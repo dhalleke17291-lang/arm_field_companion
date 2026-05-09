@@ -103,10 +103,11 @@ class TrialEnvironmentalRepository {
     double lng,
     DateTime trialCreatedAt,
   ) async {
+    final trialCreatedAtUtc = trialCreatedAt.toUtc();
     final startDate = DateTime.utc(
-      trialCreatedAt.year,
-      trialCreatedAt.month,
-      trialCreatedAt.day,
+      trialCreatedAtUtc.year,
+      trialCreatedAtUtc.month,
+      trialCreatedAtUtc.day,
     );
     final now = DateTime.now().toUtc();
     final yesterday = DateTime.utc(now.year, now.month, now.day)
