@@ -9,6 +9,9 @@ import '../../../core/ui/field_note_timestamp_format.dart';
 import '../../../domain/application_deviation.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../sessions/session_timing_helper.dart';
+import '../../../domain/trial_cognition/environmental_window_evaluator.dart';
+import '../../../domain/trial_story/trial_story_event.dart';
+import '../../../domain/trial_story/trial_story_provider.dart';
 
 enum _TimelineEventType { seeding, application, session, note }
 
@@ -24,6 +27,18 @@ class _TrialTimelineEvent {
     this.ratingSessionId,
     this.noteTimestampCaption,
     this.noteMetaCaption,
+    // Session enrichments from trialStoryProvider
+    this.activeSignalCount,
+    this.hasActiveCriticalSignal = false,
+    this.divergenceCount,
+    this.sessionEvidenceSummary,
+    this.bbchAtSession,
+    // Application enrichments from trialStoryProvider
+    this.applicationEventId,
+    this.isApplied = false,
+    this.bbchAtApplication,
+    this.hasApplicationGps = false,
+    this.applicationTemperatureC,
   });
 
   final DateTime date;
@@ -32,14 +47,20 @@ class _TrialTimelineEvent {
   final String? subtitle;
   final String? timingText;
   final bool beforeFirstApplication;
-  /// True when this application has deviation-flagged products.
   final bool hasDeviation;
-  /// Set for rating sessions only (weather badge).
   final int? ratingSessionId;
-  /// Field note: full date · time line (matches list/detail surfaces).
   final String? noteTimestampCaption;
-  /// Field note: plot / session name / author (matches list/detail surfaces).
   final String? noteMetaCaption;
+  final int? activeSignalCount;
+  final bool hasActiveCriticalSignal;
+  final int? divergenceCount;
+  final EvidenceSummary? sessionEvidenceSummary;
+  final int? bbchAtSession;
+  final String? applicationEventId;
+  final bool isApplied;
+  final int? bbchAtApplication;
+  final bool hasApplicationGps;
+  final double? applicationTemperatureC;
 }
 
 /// Date group: header + events on a continuous vertical rail.
@@ -65,6 +86,7 @@ class TimelineTab extends ConsumerWidget {
     final sessionsAsync = ref.watch(sessionsForTrialProvider(trial.id));
     final notesAsync = ref.watch(notesForTrialProvider(trial.id));
     final plotsAsync = ref.watch(plotsForTrialProvider(trial.id));
+    final storyAsync = ref.watch(trialStoryProvider(trial.id));
 
     return seedingAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -85,6 +107,19 @@ class TimelineTab extends ConsumerWidget {
         final plotIdByPk = {for (final p in plots) p.id: p.plotId};
         final sessionIdToName = {for (final s in sessions) s.id: s.name};
         final seedingDate = seedingEvent?.seedingDate;
+
+        // Build story enrichment lookup maps from trialStoryProvider.
+        final storyEvents = storyAsync.valueOrNull ?? <TrialStoryEvent>[];
+        final storyBySessionId = <int, TrialStoryEvent>{};
+        final storyByAppId = <String, TrialStoryEvent>{};
+        for (final e in storyEvents) {
+          if (e.type == TrialStoryEventType.session) {
+            final id = int.tryParse(e.id);
+            if (id != null) storyBySessionId[id] = e;
+          } else if (e.type == TrialStoryEventType.application) {
+            storyByAppId[e.id] = e;
+          }
+        }
 
         // "Before first application" warning uses first APPLIED date only.
         // A session before a pending (planned) application is not a problem.
@@ -144,6 +179,7 @@ class TimelineTab extends ConsumerWidget {
           final appHasDeviation =
               appDeviations.any((d) => d.exceedsTolerance);
 
+          final appStory = storyByAppId[app.id];
           events.add(_TrialTimelineEvent(
             date: app.applicationDate,
             type: _TimelineEventType.application,
@@ -151,6 +187,11 @@ class TimelineTab extends ConsumerWidget {
             subtitle: appSubtitleParts.join(' · '),
             timingText: timingText,
             hasDeviation: appHasDeviation,
+            applicationEventId: app.id,
+            isApplied: app.status == 'applied',
+            bbchAtApplication: appStory?.bbchAtApplication,
+            hasApplicationGps: appStory?.hasApplicationGps ?? false,
+            applicationTemperatureC: appStory?.applicationTemperatureC,
           ));
         }
 
@@ -175,6 +216,7 @@ class TimelineTab extends ConsumerWidget {
           final beforeFirst = firstApplicationDate != null &&
               !session.startedAt.isAfter(firstApplicationDate) &&
               session.startedAt.isBefore(firstApplicationDate);
+          final sessionStory = storyBySessionId[session.id];
           events.add(_TrialTimelineEvent(
             date: session.startedAt,
             type: _TimelineEventType.session,
@@ -183,6 +225,12 @@ class TimelineTab extends ConsumerWidget {
             timingText: timingText,
             beforeFirstApplication: beforeFirst,
             ratingSessionId: session.id,
+            activeSignalCount: sessionStory?.activeSignalSummary?.count,
+            hasActiveCriticalSignal:
+                sessionStory?.activeSignalSummary?.hasCritical ?? false,
+            divergenceCount: sessionStory?.divergenceSummary?.count,
+            sessionEvidenceSummary: sessionStory?.evidenceSummary,
+            bbchAtSession: sessionStory?.bbchAtSession,
           ));
         }
 
@@ -247,7 +295,7 @@ class TimelineTab extends ConsumerWidget {
           ),
           children: [
             for (var i = 0; i < groups.length; i++) ...[
-              _TimelineDateGroupSection(group: groups[i]),
+              _TimelineDateGroupSection(group: groups[i], trialId: trial.id),
               if (i < groups.length - 1)
                 _IntervalLabel(
                   from: groups[i].date,
@@ -263,9 +311,10 @@ class TimelineTab extends ConsumerWidget {
 
 /// One date group: bold date header + vertical rail with event rows.
 class _TimelineDateGroupSection extends StatelessWidget {
-  const _TimelineDateGroupSection({required this.group});
+  const _TimelineDateGroupSection({required this.group, required this.trialId});
 
   final _TimelineDateGroup group;
+  final int trialId;
 
   @override
   Widget build(BuildContext context) {
@@ -297,6 +346,7 @@ class _TimelineDateGroupSection extends StatelessWidget {
                   isFirst: i == 0,
                   isLast: i == group.events.length - 1,
                   railColor: scheme.outlineVariant,
+                  trialId: trialId,
                 ),
             ],
           ),
@@ -313,12 +363,14 @@ class _TimelineEventRow extends ConsumerWidget {
     required this.isFirst,
     required this.isLast,
     required this.railColor,
+    required this.trialId,
   });
 
   final _TrialTimelineEvent event;
   final bool isFirst;
   final bool isLast;
   final Color railColor;
+  final int trialId;
 
   static const double _railWidth = 2.0;
   static const double _circleSize = 12.0;
@@ -512,6 +564,78 @@ class _TimelineEventRow extends ConsumerWidget {
                               ),
                             ),
                           ],
+                          // ── Session enrichments ──────────────────────────
+                          if (event.type == _TimelineEventType.session) ...[
+                            if (event.activeSignalCount != null &&
+                                event.activeSignalCount! > 0) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                '${event.activeSignalCount} active signal${event.activeSignalCount == 1 ? '' : 's'}${event.hasActiveCriticalSignal ? ' · Critical' : ''}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppDesignTokens.warningFg,
+                                ),
+                              ),
+                            ],
+                            if (event.divergenceCount != null &&
+                                event.divergenceCount! > 0) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                '${event.divergenceCount} protocol deviation${event.divergenceCount == 1 ? '' : 's'}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                            if (event.sessionEvidenceSummary != null) ...[
+                              const SizedBox(height: 2),
+                              _TimelineEvidenceText(
+                                summary: event.sessionEvidenceSummary!,
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ],
+                            if (event.bbchAtSession != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'BBCH ${event.bbchAtSession}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ],
+                          // ── Application enrichments ──────────────────────
+                          if (event.type == _TimelineEventType.application) ...[
+                            if (event.bbchAtApplication != null ||
+                                event.hasApplicationGps ||
+                                event.applicationTemperatureC != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                [
+                                  if (event.bbchAtApplication != null)
+                                    'BBCH ${event.bbchAtApplication}',
+                                  if (event.hasApplicationGps) 'GPS confirmed',
+                                  if (event.applicationTemperatureC != null)
+                                    '${event.applicationTemperatureC!.round()}°C at application',
+                                ].join(' · '),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                            if (event.isApplied &&
+                                event.applicationEventId != null) ...[
+                              const SizedBox(height: 2),
+                              _TimelineAppWindowsRow(
+                                trialId: trialId,
+                                applicationEventId: event.applicationEventId!,
+                              ),
+                            ],
+                          ],
                         ],
                       ),
                     ),
@@ -522,6 +646,88 @@ class _TimelineEventRow extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Evidence summary line for a session tile: "GPS · Weather · 3 photos" or "No evidence captured".
+class _TimelineEvidenceText extends StatelessWidget {
+  const _TimelineEvidenceText({required this.summary, required this.color});
+
+  final EvidenceSummary summary;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = <String>[
+      if (summary.hasGps) 'GPS',
+      if (summary.hasWeather) 'Weather',
+      if (summary.photoCount > 0)
+        '${summary.photoCount} photo${summary.photoCount == 1 ? '' : 's'}',
+    ];
+    return Text(
+      parts.isEmpty ? 'No evidence captured' : parts.join(' · '),
+      style: TextStyle(fontSize: 12, color: color),
+    );
+  }
+}
+
+/// Pre- and post-application environmental windows for an applied application tile.
+class _TimelineAppWindowsRow extends ConsumerWidget {
+  const _TimelineAppWindowsRow({
+    required this.trialId,
+    required this.applicationEventId,
+  });
+
+  final int trialId;
+  final String applicationEventId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final ctxAsync = ref.watch(
+      applicationEnvironmentalContextProvider(
+        ApplicationEnvironmentalRequest(
+          trialId: trialId,
+          applicationEventId: applicationEventId,
+        ),
+      ),
+    );
+    return ctxAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (ctx) {
+        if (ctx.isUnavailable) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _windowLine('72h before', ctx.preWindow, scheme),
+            _windowLine('48h after', ctx.postWindow, scheme),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _windowLine(String label, EnvironmentalWindowDto w, ColorScheme scheme) {
+    final String detail;
+    if (w.recordCount == 0) {
+      detail = 'no records';
+    } else {
+      final parts = <String>[
+        if (w.totalPrecipitationMm != null)
+          '${w.totalPrecipitationMm!.toStringAsFixed(1)} mm',
+        if (w.minTempC != null) 'min ${w.minTempC!.toStringAsFixed(1)}°C',
+        if (w.frostFlagPresent) 'frost',
+      ];
+      detail = parts.isEmpty ? 'no records' : parts.join(' · ');
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Text(
+        '$label: $detail',
+        style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+      ),
     );
   }
 }
