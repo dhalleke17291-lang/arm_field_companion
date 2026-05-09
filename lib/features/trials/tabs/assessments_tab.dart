@@ -483,8 +483,9 @@ class AssessmentsTab extends ConsumerWidget {
     String? checkTreatmentCode,
   ) {
     final p = stat.progress;
-    final checkComparison =
-        computeCheckComparison(stat.treatmentMeans, checkTreatmentCode);
+    final checkComparison = stat.measurementCategory == 'ordinal'
+        ? <String, double>{}
+        : computeCheckComparison(stat.treatmentMeans, checkTreatmentCode);
     final completeness = p.completeness;
     final pctComplete = p.totalPlots > 0
         ? (100 * p.ratedPlots / p.totalPlots).round()

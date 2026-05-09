@@ -204,6 +204,7 @@ class AssessmentStatistics {
     this.anovaResult,
     this.sessionId,
     this.sessionDate,
+    this.measurementCategory = '',
   });
 
   final AssessmentProgress progress;
@@ -225,6 +226,10 @@ class AssessmentStatistics {
   /// ISO-8601 date string from arm_session_metadata. Null for standalone trials
   /// or assessments with no ARM session metadata.
   final String? sessionDate;
+
+  /// Broad measurement category from the assessment definition:
+  /// 'percent', 'count', 'continuous', or 'ordinal'.
+  final String measurementCategory;
 
   bool get hasAnyData => progress.hasAnyData;
   bool get isPreliminary => progress.isPreliminary;
@@ -482,6 +487,7 @@ AssessmentStatistics computeAssessmentStatistics(
   String? assessmentCode,
   int? sessionId,
   String? sessionDate,
+  String measurementCategory = '',
 }) {
   final progress = computeProgress(
     rows,
@@ -534,6 +540,7 @@ AssessmentStatistics computeAssessmentStatistics(
     anovaResult: anova,
     sessionId: sessionId,
     sessionDate: sessionDate,
+    measurementCategory: measurementCategory,
   );
 }
 

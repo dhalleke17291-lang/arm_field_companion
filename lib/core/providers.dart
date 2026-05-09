@@ -566,6 +566,7 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
             totalPlots,
             allReps,
             assessmentCode: ratingType,
+            measurementCategory: def.dataType,
           ),
         ];
         continue;
@@ -586,6 +587,7 @@ final trialAssessmentStatisticsProvider = StreamProvider.autoDispose
             assessmentCode: ratingType,
             sessionId: sid,
             sessionDate: sessionMetaMap[sid]?.armRatingDate,
+            measurementCategory: def.dataType,
           ),
       ];
     }
