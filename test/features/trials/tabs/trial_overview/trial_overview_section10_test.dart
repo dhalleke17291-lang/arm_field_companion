@@ -210,10 +210,10 @@ void main() {
         find.textContaining('Trial is not currently export-ready.'),
         findsOneWidget,
       );
-      expect(find.text('ITEMS REQUIRING ACTION'), findsOneWidget);
+      expect(find.text('ACTION REQUIRED'), findsOneWidget);
       expect(find.textContaining('Primary endpoint data'), findsWidgets);
-      // Moderate risk should appear as a caution
-      expect(find.text('CAUTIONS'), findsOneWidget);
+      // Moderate risk should appear as a caution count chip
+      expect(find.textContaining('caution'), findsWidgets);
     });
 
     testWidgets('S10-W3: subtitle is rendered', (tester) async {
@@ -249,7 +249,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.text('ITEMS REQUIRING ACTION'), findsOneWidget);
+      expect(find.text('ACTION REQUIRED'), findsOneWidget);
       expect(find.text('Recorded values may need review'), findsOneWidget);
       expect(
         find.text(
@@ -485,11 +485,8 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.text('CAUTIONS'), findsOneWidget);
-      expect(
-        find.textContaining('drought stress this season'),
-        findsOneWidget,
-      );
+      // Cautions are now shown as a count chip, not a bullet list.
+      expect(find.textContaining('caution'), findsWidgets);
     });
   });
 }

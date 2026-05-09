@@ -38,6 +38,7 @@ class TrialOverviewTab extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TrialReviewSummaryCard(trial: trial),
+            Section10Readiness(trial: trial),
             Section1Identity(trial: trial),
             Section2Design(trial: trial),
             Section3Arc(trial: trial),
@@ -47,7 +48,6 @@ class TrialOverviewTab extends StatelessWidget {
             Section7Coherence(trial: trial),
             Section8Environmental(trial: trial),
             Section9Decisions(trial: trial),
-            Section10Readiness(trial: trial),
           ],
         ),
       ),

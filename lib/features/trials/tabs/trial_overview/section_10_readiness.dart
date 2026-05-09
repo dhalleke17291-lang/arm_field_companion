@@ -6,7 +6,6 @@ import '../../../../core/design/app_design_tokens.dart';
 import '../../../../core/providers.dart';
 import '../../../../domain/signals/signal_providers.dart';
 import '../../../../domain/signals/signal_review_projection.dart';
-import '../../../../domain/trial_cognition/interpretation_factors_codec.dart';
 import '../../../../domain/trial_cognition/readiness_criteria_codec.dart';
 import '../../widgets/signal_action_sheet.dart';
 import '../../../../domain/trial_cognition/trial_readiness_statement.dart';
@@ -142,7 +141,6 @@ class _ReadinessBody extends ConsumerWidget {
         ? (AppDesignTokens.successBg, AppDesignTokens.successFg)
         : (AppDesignTokens.warningBg, AppDesignTokens.warningFg);
     final whyText = _computeWhyText();
-    final siteContextText = _buildSiteContextText(knownInterpretationFactors);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,17 +159,6 @@ class _ReadinessBody extends ConsumerWidget {
             height: 1.5,
           ),
         ),
-        if (siteContextText != null) ...[
-          const SizedBox(height: AppDesignTokens.spacing8),
-          Text(
-            siteContextText,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppDesignTokens.secondaryText,
-              height: 1.4,
-            ),
-          ),
-        ],
         if (whyText != null) ...[
           const SizedBox(height: AppDesignTokens.spacing8),
           const Text(
@@ -196,12 +183,12 @@ class _ReadinessBody extends ConsumerWidget {
         if (statement.actionItems.isNotEmpty || signalActions.isNotEmpty) ...[
           const SizedBox(height: AppDesignTokens.spacing8),
           const Text(
-            'ITEMS REQUIRING ACTION',
+            'ACTION REQUIRED',
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 10,
               fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-              color: AppDesignTokens.secondaryText,
+              letterSpacing: 0.8,
+              color: AppDesignTokens.warningFg,
             ),
           ),
           const SizedBox(height: AppDesignTokens.spacing4),
@@ -213,51 +200,30 @@ class _ReadinessBody extends ConsumerWidget {
             trialId: trialId,
           ),
         ],
-        if (statement.cautions.isNotEmpty) ...[
-          const SizedBox(height: AppDesignTokens.spacing8),
-          const Text(
-            'CAUTIONS',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-              color: AppDesignTokens.secondaryText,
+        if (statement.cautions.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.info_outline,
+                  size: 14,
+                  color: AppDesignTokens.secondaryText,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  '${statement.cautions.length} caution${statement.cautions.length == 1 ? '' : 's'} — review before interpreting results',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: AppDesignTokens.spacing4),
-          ..._bulletList(statement.cautions),
-        ],
         _CriteriaSection(rawJson: readinessCriteriaSummary),
       ],
     );
-  }
-
-  // TODO: labels duplicated from _kSiteConditionLabels in
-  // trial_interpretation_risk_evaluator.dart — move to shared codec if a
-  // third callsite appears.
-  static const _kSiteLabels = <String, String>{
-    'low_pest_pressure': 'Low pest/disease pressure this season',
-    'high_pest_pressure': 'High pest/disease pressure this season',
-    'drought_stress': 'Drought stress this season',
-    'excessive_rainfall': 'Excessive rainfall during trial period',
-    'frost_risk': 'Frost risk during trial period',
-    'spatial_gradient': 'Spatial gradient in the field',
-    'previous_crop_residue': 'Previous crop residue effects',
-    'atypical_season': 'Atypical season for this region',
-    'drainage_issues': 'Drainage issues noted',
-  };
-
-  static String? _buildSiteContextText(String? raw) {
-    final parsed = InterpretationFactorsCodec.parse(raw);
-    if (parsed == null || parsed.noneSelected) return null;
-    final parts = <String>[];
-    for (final k in parsed.selectedKeys) {
-      final label = _kSiteLabels[k];
-      if (label != null) parts.add(label);
-    }
-    if (parsed.otherText != null) parts.add(parsed.otherText!);
-    if (parts.isEmpty) return null;
-    return 'Site & season context: ${parts.join(' · ')}';
   }
 
   static List<Widget> _bulletList(List<String> items) {
