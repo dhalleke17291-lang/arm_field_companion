@@ -89,10 +89,36 @@ class _InferenceBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final inferred = purpose.inferredPurpose;
-    final sourceLabel = (purpose.inferenceSource ?? '')
-        .replaceAll('_', ' ')
-        .replaceAll('structure', '')
-        .trim();
+    final (bannerTitle, bannerSubtitle) = switch (purpose.inferenceSource) {
+      'arm_structure' => (
+          'Intent partially inferred from ARM structure',
+          'Review the inferred fields below and confirm or edit before export.',
+        ),
+      'standalone_structure' => (
+          'Intent inferred from standalone setup',
+          'Review the inferred fields below and confirm or edit before export.',
+        ),
+      'manual_revelation' when purpose.requiresConfirmation => (
+          'Intent captured — confirmation needed',
+          'Review your responses and confirm intent before export.',
+        ),
+      'protocol_document' => (
+          'Intent captured from protocol document',
+          'Review and confirm before export.',
+        ),
+      'mixed' => (
+          'Intent partially captured',
+          'Some fields were inferred, others entered manually. Review before export.',
+        ),
+      _ when purpose.requiresConfirmation => (
+          'Intent not confirmed',
+          'No intent has been captured for this trial. Add intent before export.',
+        ),
+      _ => (
+          'Intent captured',
+          '',
+        ),
+    };
 
     return Container(
       decoration: BoxDecoration(
@@ -107,13 +133,23 @@ class _InferenceBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Intent inferred from $sourceLabel',
+            bannerTitle,
             style: theme.textTheme.titleSmall?.copyWith(
               color: AppDesignTokens.primaryText,
               fontWeight: FontWeight.w800,
               height: 1.25,
             ),
           ),
+          if (bannerSubtitle.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              bannerSubtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppDesignTokens.secondaryText,
+                height: 1.4,
+              ),
+            ),
+          ],
           const SizedBox(height: AppDesignTokens.spacing12),
           if (inferred != null) ...[
             if (purpose.primaryEndpoint != null)
