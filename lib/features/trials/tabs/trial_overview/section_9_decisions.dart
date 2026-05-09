@@ -123,14 +123,19 @@ class Section9Decisions extends ConsumerWidget {
                   ...decisions.ctqAcknowledgments.map(
                     (a) => Padding(
                       padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        '${a.factorKey.replaceAll('_', ' ')}: '
-                        '${a.reason.length > 80 ? '${a.reason.substring(0, 80)}…' : a.reason}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppDesignTokens.primaryText,
-                          height: 1.4,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${a.factorKey.replaceAll('_', ' ')}:',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppDesignTokens.primaryText,
+                              height: 1.4,
+                            ),
+                          ),
+                          _ExpandableText(text: a.reason, maxChars: 80),
+                        ],
                       ),
                     ),
                   ),
@@ -464,15 +469,55 @@ class _DecisionRow extends StatelessWidget {
           ),
         ),
         if (note != null && note!.isNotEmpty)
+          _ExpandableText(text: note!, maxChars: 120),
+      ],
+    );
+  }
+}
+
+class _ExpandableText extends StatefulWidget {
+  final String text;
+  final int maxChars;
+  const _ExpandableText({required this.text, required this.maxChars});
+
+  @override
+  State<_ExpandableText> createState() => _ExpandableTextState();
+}
+
+class _ExpandableTextState extends State<_ExpandableText> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final needsTruncation = widget.text.length > widget.maxChars;
+    final displayed = _expanded || !needsTruncation
+        ? widget.text
+        : '${widget.text.substring(0, widget.maxChars)}…';
+
+    return GestureDetector(
+      onTap: needsTruncation
+          ? () => setState(() => _expanded = !_expanded)
+          : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            note!.length > 120 ? '${note!.substring(0, 120)}…' : note!,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppDesignTokens.primaryText,
-              height: 1.4,
+            displayed,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppDesignTokens.secondaryText,
+              fontSize: 12,
             ),
           ),
-      ],
+          if (needsTruncation)
+            Text(
+              _expanded ? 'Show less' : 'Show more',
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppDesignTokens.primaryGreen,
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
