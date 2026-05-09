@@ -171,10 +171,9 @@ bool signalBlocksExport(Signal signal) =>
     signal.status == SignalStatus.open.dbValue &&
     signal.severity == SignalSeverity.critical.dbValue;
 
-String? signalBlocksExportReason(Signal signal) =>
-    signalBlocksExport(signal)
-        ? 'Export is blocked until this critical signal is reviewed.'
-        : null;
+String? signalBlocksExportReason(Signal signal) => signalBlocksExport(signal)
+    ? 'Export is blocked until this critical signal is reviewed.'
+    : null;
 
 SignalReviewGroupProjection _projectSignalGroup(
   String groupId,
@@ -201,7 +200,7 @@ SignalReviewGroupProjection _projectSignalGroup(
     statusLabel: _dominantStatusLabel(memberSignals),
     severityLabel: _dominantSeverityLabel(memberSignals),
     signalCount: memberSignals.length,
-    affectedAssessmentIds: const <int>[],
+    affectedAssessmentIds: _affectedAssessmentIds(sortedSignals),
     affectedPlotIds: _sortedUniqueNullable(sortedSignals.map((s) => s.plotId)),
     affectedSessionIds:
         _sortedUniqueNullable(sortedSignals.map((s) => s.sessionId)),
@@ -410,6 +409,17 @@ SignalReferenceContext? _decodeReferenceContext(String raw) {
 List<int> _sortedUniqueNullable(Iterable<int?> values) {
   final unique = values.whereType<int>().toSet().toList()..sort();
   return unique;
+}
+
+List<int> _affectedAssessmentIds(List<Signal> signals) {
+  return _sortedUniqueNullable(
+    signals.where((s) => s.signalType == SignalType.aovPrediction.dbValue).map(
+      (s) {
+        final context = _decodeReferenceContext(s.referenceContext);
+        return int.tryParse(context?.seType ?? '');
+      },
+    ),
+  );
 }
 
 SignalOperationalState _operationalStateForStatus(String status) =>

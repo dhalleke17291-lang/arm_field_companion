@@ -246,6 +246,7 @@ class _SignalGroupRowState extends State<_SignalGroupRow> {
     final (chipBg, chipFg) = _severityColors(group);
     final affectedSummary = _affectedSummary;
     final isMulti = group.memberSignals.length > 1;
+    final title = _displayTitle(group);
 
     return InkWell(
       onTap: () => _handleTap(context),
@@ -270,7 +271,7 @@ class _SignalGroupRowState extends State<_SignalGroupRow> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
-                        group.displayTitle,
+                        title,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -349,9 +350,7 @@ class _SignalGroupRowState extends State<_SignalGroupRow> {
             if (isMulti) ...[
               const SizedBox(width: 8),
               Icon(
-                _expanded
-                    ? Icons.keyboard_arrow_up
-                    : Icons.keyboard_arrow_down,
+                _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                 size: 16,
                 color: AppDesignTokens.secondaryText,
               ),
@@ -360,6 +359,15 @@ class _SignalGroupRowState extends State<_SignalGroupRow> {
         ),
       ),
     );
+  }
+
+  static String _displayTitle(SignalReviewGroupProjection group) {
+    if (group.groupType != 'aov_prediction' ||
+        group.affectedAssessmentIds.isEmpty) {
+      return group.displayTitle;
+    }
+    final ids = group.affectedAssessmentIds.join(', ');
+    return '${group.displayTitle} — assessment $ids';
   }
 }
 
