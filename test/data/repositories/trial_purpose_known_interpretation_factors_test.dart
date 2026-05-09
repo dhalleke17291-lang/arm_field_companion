@@ -26,15 +26,18 @@ void main() {
       trialRepo.createTrial(name: 'T${DateTime.now().microsecondsSinceEpoch}');
 
   group('updateKnownInterpretationFactors', () {
-    test('no-op when no active purpose row exists', () async {
+    test('creates initial purpose row when none exists', () async {
       final trialId = await makeTrial();
+      final json = InterpretationFactorsCodec.serialize([]);
+
       await expectLater(
-        repo.updateKnownInterpretationFactors(
-            trialId, InterpretationFactorsCodec.serialize([])),
+        repo.updateKnownInterpretationFactors(trialId, json),
         completes,
       );
+
       final row = await repo.getCurrentTrialPurpose(trialId);
-      expect(row, isNull);
+      expect(row, isNotNull);
+      expect(row!.knownInterpretationFactors, json);
     });
 
     test('writes JSON string to column', () async {

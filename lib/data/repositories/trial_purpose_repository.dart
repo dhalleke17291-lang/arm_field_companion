@@ -158,7 +158,8 @@ class TrialPurposeRepository {
   ///
   /// Does not create a new version, does not touch [regulatoryContext],
   /// [trialPurpose], [requiresConfirmation], or any other field.
-  /// Creates an initial purpose row if none exists so the write always lands.
+  /// Creates an initial purpose row if none exists so first-session answers are
+  /// preserved instead of being silently dropped by a zero-row update.
   Future<void> updateKnownInterpretationFactors(int trialId, String? json) async {
     // Guard: if no active row exists the update silently matches zero rows.
     // Create the row first so the write is guaranteed to land.
