@@ -223,8 +223,9 @@ TrialRiskFactorDto _factorDataVariability(
       label: label,
       severity: 'high',
       reason:
-          '${matched.name}: CV = $cvStr% (treated plots only) — exceeds high threshold '
-          '(${kCvHighThreshold.toStringAsFixed(0)}%, EPPO PP1/152(4)).',
+          'CV for ${matched.name} is $cvStr% (treated plots only), which exceeds the '
+          '${kCvHighThreshold.toStringAsFixed(0)}% threshold (EPPO PP1/152(4)). '
+          'Review data variability before interpreting results.',
       sourceFields: sources,
     );
   }
@@ -234,8 +235,9 @@ TrialRiskFactorDto _factorDataVariability(
       label: label,
       severity: 'moderate',
       reason:
-          '${matched.name}: CV = $cvStr% (treated plots only) — above review threshold '
-          '(${kCvReviewThreshold.toStringAsFixed(0)}%, EPPO PP1/152(4)).',
+          'CV for ${matched.name} is $cvStr% (treated plots only), which exceeds the '
+          '${kCvReviewThreshold.toStringAsFixed(0)}% review threshold (EPPO PP1/152(4)). '
+          'Review data variability before interpreting results.',
       sourceFields: sources,
     );
   }

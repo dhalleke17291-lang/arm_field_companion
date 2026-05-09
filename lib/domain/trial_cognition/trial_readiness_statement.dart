@@ -154,7 +154,11 @@ TrialReadinessStatement computeTrialReadinessStatement({
         (f) => f.severity == riskLabel,
         orElse: () => elevatedFactors.first,
       );
-      cautions.add('Interpretation risk is $riskLabel — ${worstFactor.reason}');
+      if (worstFactor.factorKey == 'data_variability') {
+        cautions.add(worstFactor.reason);
+      } else {
+        cautions.add('Interpretation risk is $riskLabel — ${worstFactor.reason}');
+      }
     } else {
       reasons.add('Interpretation risk is $riskLabel.');
     }
