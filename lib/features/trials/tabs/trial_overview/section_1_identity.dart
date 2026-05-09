@@ -185,7 +185,7 @@ class _InferenceBanner extends StatelessWidget {
               TextButton(
                 onPressed: onEdit,
                 style: TextButton.styleFrom(
-                  foregroundColor: AppDesignTokens.warningFg,
+                  foregroundColor: AppDesignTokens.primary,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   textStyle: theme.textTheme.labelLarge
