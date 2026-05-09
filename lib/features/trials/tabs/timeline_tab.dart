@@ -10,6 +10,7 @@ import '../../../domain/application_deviation.dart';
 import '../../../shared/widgets/app_empty_state.dart';
 import '../../sessions/session_timing_helper.dart';
 import '../../../domain/trial_cognition/environmental_window_evaluator.dart';
+import '../../../domain/environmental/inter_event_weather_dto.dart';
 import '../../../domain/trial_story/trial_story_event.dart';
 import '../../../domain/trial_story/trial_story_provider.dart';
 
@@ -298,6 +299,7 @@ class TimelineTab extends ConsumerWidget {
               _TimelineDateGroupSection(group: groups[i], trialId: trial.id),
               if (i < groups.length - 1)
                 _IntervalLabel(
+                  trialId: trial.id,
                   from: groups[i].date,
                   to: groups[i + 1].date,
                 ),
@@ -732,29 +734,113 @@ class _TimelineAppWindowsRow extends ConsumerWidget {
   }
 }
 
-/// Shows the number of days between two date groups on the timeline.
-class _IntervalLabel extends StatelessWidget {
-  const _IntervalLabel({required this.from, required this.to});
+/// Shows the number of days between two date groups on the timeline,
+/// with weather corridor pills when notable conditions occurred in the gap.
+class _IntervalLabel extends ConsumerWidget {
+  const _IntervalLabel({
+    required this.trialId,
+    required this.from,
+    required this.to,
+  });
+
+  final int trialId;
   final DateTime from;
   final DateTime to;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final days = to.difference(from).inDays.abs();
     if (days <= 1) return const SizedBox.shrink();
+
+    final weatherAsync = ref.watch(interEventWeatherProvider(
+      InterEventWeatherRequest(trialId: trialId, from: from, to: to),
+    ));
+    final weather = weatherAsync.valueOrNull;
+
     return Padding(
       padding: const EdgeInsets.only(
         left: 40,
         bottom: AppDesignTokens.spacing8,
       ),
-      child: Text(
-        '$days days',
-        style: TextStyle(
-          fontSize: 11,
-          fontStyle: FontStyle.italic,
-          color: AppDesignTokens.secondaryText.withValues(alpha: 0.6),
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$days days',
+            style: TextStyle(
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+              color: AppDesignTokens.secondaryText.withValues(alpha: 0.6),
+            ),
+          ),
+          if (weather != null && weather.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: weather.events.map(_buildPill).toList(),
+              ),
+            ),
+        ],
       ),
     );
   }
+
+  Widget _buildPill(InterEventWeatherEvent event) {
+    final (bg, fg, iconData, label) = switch (event.type) {
+      InterEventWeatherType.rain => (
+          const Color(0xFFDDEEFF),
+          const Color(0xFF1A5276),
+          Icons.water_drop_outlined,
+          '${event.valueMm!.toStringAsFixed(0)} mm rain · ${_fmtRange(event.from, event.to)}',
+        ),
+      InterEventWeatherType.frost => (
+          const Color(0xFFD5F5E3),
+          const Color(0xFF1E5C37),
+          Icons.ac_unit,
+          'Frost risk · ${_fmtRange(event.from, event.to)}',
+        ),
+      InterEventWeatherType.dry => (
+          const Color(0xFFFDEBD0),
+          const Color(0xFF784212),
+          Icons.wb_sunny_outlined,
+          'Dry period · ${_fmtRange(event.from, event.to)}',
+        ),
+    };
+
+    final iconColor = switch (event.type) {
+      InterEventWeatherType.rain => const Color(0xFF2980B9),
+      InterEventWeatherType.frost => const Color(0xFF27AE60),
+      InterEventWeatherType.dry => const Color(0xFFCA6F1E),
+    };
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(iconData, size: 13, color: iconColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(fontSize: 11, color: fg),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _fmtRange(DateTime from, DateTime to) {
+  final fmt = DateFormat('MMM d');
+  final sameDay = from.year == to.year &&
+      from.month == to.month &&
+      from.day == to.day;
+  return sameDay ? fmt.format(from) : '${fmt.format(from)} – ${fmt.format(to)}';
 }

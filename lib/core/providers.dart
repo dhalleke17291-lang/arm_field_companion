@@ -128,6 +128,7 @@ import '../domain/trial_cognition/trial_evidence_arc_dto.dart';
 import '../domain/trial_cognition/trial_ctq_dto.dart';
 import '../domain/trial_cognition/trial_ctq_evaluator.dart';
 import '../domain/trial_cognition/environmental_window_evaluator.dart';
+import '../domain/environmental/inter_event_weather_dto.dart';
 import '../domain/trial_cognition/trial_coherence_dto.dart';
 import '../domain/trial_cognition/trial_coherence_evaluator.dart';
 import '../domain/trial_cognition/trial_interpretation_risk_dto.dart';
@@ -2587,6 +2588,36 @@ final applicationEnvironmentalContextProvider = FutureProvider.autoDispose
     preWindow: computePreApplicationWindow(records, appEvent.applicationDate),
     postWindow: computePostApplicationWindow(records, appEvent.applicationDate),
   );
+});
+
+@immutable
+class InterEventWeatherRequest {
+  final int trialId;
+  final DateTime from;
+  final DateTime to;
+
+  const InterEventWeatherRequest({
+    required this.trialId,
+    required this.from,
+    required this.to,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      other is InterEventWeatherRequest &&
+      other.trialId == trialId &&
+      other.from == from &&
+      other.to == to;
+
+  @override
+  int get hashCode => Object.hash(trialId, from, to);
+}
+
+final interEventWeatherProvider = FutureProvider.autoDispose
+    .family<InterEventWeatherDto, InterEventWeatherRequest>((ref, req) async {
+  final repo = ref.read(trialEnvironmentalRepositoryProvider);
+  final allRecords = await repo.getRecordsForTrial(req.trialId);
+  return computeInterEventWindow(allRecords, req.from, req.to);
 });
 
 /// All researcher-authored decisions and CTQ acknowledgments for a trial,

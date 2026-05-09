@@ -1,7 +1,10 @@
 import '../../core/database/app_database.dart';
+import '../environmental/inter_event_weather_dto.dart';
 
 // Threshold for excessive rainfall flag in a window (mm per window period).
-const double _kExcessiveRainfallMm = 10.0;
+const double kExcessiveRainfallMm = 10.0;
+const int kDryPeriodThresholdDays = 5;
+const double kDryPeriodMaxDailyMm = 1.0;
 
 // ── Request / context types used by providers ─────────────────────────────────
 
@@ -171,7 +174,7 @@ EnvironmentalSeasonSummaryDto computeSeasonSummary(
     final precip = r.dailyPrecipitationMm;
     if (precip != null) {
       totalPrecip = (totalPrecip ?? 0) + precip;
-      if (precip >= _kExcessiveRainfallMm) excessiveRainEvents++;
+      if (precip >= kExcessiveRainfallMm) excessiveRainEvents++;
     }
     final minTemp = r.dailyMinTempC;
     if (minTemp != null && minTemp < 0) frostEvents++;
@@ -187,6 +190,88 @@ EnvironmentalSeasonSummaryDto computeSeasonSummary(
     daysExpected: daysExpected,
     overallConfidence: confidence,
   );
+}
+
+/// Aggregates weather events between two timeline dates for the corridor pills.
+InterEventWeatherDto computeInterEventWindow(
+  List<TrialEnvironmentalRecord> allRecords,
+  DateTime from,
+  DateTime to,
+) {
+  final fromDay = DateTime.utc(from.year, from.month, from.day);
+  final toDay = DateTime.utc(to.year, to.month, to.day);
+  final fromMs = fromDay.millisecondsSinceEpoch;
+  final toMs = toDay.millisecondsSinceEpoch;
+
+  final records = allRecords
+      .where((r) => r.recordDate >= fromMs && r.recordDate <= toMs)
+      .toList()
+    ..sort((a, b) => a.recordDate.compareTo(b.recordDate));
+
+  if (records.isEmpty) return const InterEventWeatherDto(events: []);
+
+  final events = <InterEventWeatherEvent>[];
+
+  // Rain runs — consecutive days with precip > 0, total >= kExcessiveRainfallMm
+  for (final run in _extractRuns(records, (r) => (r.dailyPrecipitationMm ?? 0) > 0)) {
+    final total = run.fold(0.0, (s, r) => s + (r.dailyPrecipitationMm ?? 0));
+    if (total >= kExcessiveRainfallMm) {
+      events.add(InterEventWeatherEvent(
+        type: InterEventWeatherType.rain,
+        from: DateTime.fromMillisecondsSinceEpoch(run.first.recordDate, isUtc: true),
+        to: DateTime.fromMillisecondsSinceEpoch(run.last.recordDate, isUtc: true),
+        valueMm: total,
+      ));
+    }
+  }
+
+  // Frost — any day with minTempC < 0
+  final frostDays = records
+      .where((r) => r.dailyMinTempC != null && r.dailyMinTempC! < 0)
+      .toList();
+  if (frostDays.isNotEmpty) {
+    events.add(InterEventWeatherEvent(
+      type: InterEventWeatherType.frost,
+      from: DateTime.fromMillisecondsSinceEpoch(frostDays.first.recordDate, isUtc: true),
+      to: DateTime.fromMillisecondsSinceEpoch(frostDays.last.recordDate, isUtc: true),
+    ));
+  }
+
+  // Dry period — kDryPeriodThresholdDays+ consecutive days with precip < kDryPeriodMaxDailyMm
+  for (final run in _extractRuns(
+    records,
+    (r) => (r.dailyPrecipitationMm ?? 0) < kDryPeriodMaxDailyMm,
+  )) {
+    if (run.length >= kDryPeriodThresholdDays) {
+      events.add(InterEventWeatherEvent(
+        type: InterEventWeatherType.dry,
+        from: DateTime.fromMillisecondsSinceEpoch(run.first.recordDate, isUtc: true),
+        to: DateTime.fromMillisecondsSinceEpoch(run.last.recordDate, isUtc: true),
+      ));
+    }
+  }
+
+  return InterEventWeatherDto(events: events);
+}
+
+List<List<TrialEnvironmentalRecord>> _extractRuns(
+  List<TrialEnvironmentalRecord> records,
+  bool Function(TrialEnvironmentalRecord) test,
+) {
+  final runs = <List<TrialEnvironmentalRecord>>[];
+  List<TrialEnvironmentalRecord>? current;
+  for (final r in records) {
+    if (test(r)) {
+      (current ??= []).add(r);
+    } else {
+      if (current != null) {
+        runs.add(current);
+        current = null;
+      }
+    }
+  }
+  if (current != null) runs.add(current);
+  return runs;
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -234,7 +319,7 @@ EnvironmentalWindowDto _buildWindowDto(List<TrialEnvironmentalRecord> records) {
     maxTempC: maxTemp,
     frostFlagPresent: hasFrost,
     excessiveRainfallFlag:
-        totalPrecip != null && totalPrecip >= _kExcessiveRainfallMm,
+        totalPrecip != null && totalPrecip >= kExcessiveRainfallMm,
     recordCount: records.length,
     confidence: confidence,
   );
