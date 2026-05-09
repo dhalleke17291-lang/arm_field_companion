@@ -93,12 +93,15 @@ void main() {
   Future<int> session(String name,
           {String date = '2026-04-01',
           String status = 'open',
+          DateTime? startedAt,
           DateTime? endedAt}) =>
       db.into(db.sessions).insert(SessionsCompanion.insert(
             trialId: trialId,
             name: name,
             sessionDateLocal: date,
             status: Value(status),
+            startedAt:
+                startedAt == null ? const Value.absent() : Value(startedAt),
             endedAt: Value(endedAt),
           ));
 
@@ -245,7 +248,8 @@ void main() {
       expect(data.protocolContext.unexpectedCount, 1);
     });
 
-    test('timing divergence when ARM session date differs from planned', () async {
+    test('timing divergence when ARM session date differs from planned',
+        () async {
       final sid = await session('S1', date: '2026-04-05');
       await db.into(db.armSessionMetadata).insert(
             ArmSessionMetadataCompanion.insert(
@@ -467,6 +471,23 @@ void main() {
       expect(data.evidenceRecord.hasTimestamp, isFalse);
     });
 
+    test('derives session duration from started and ended timestamps',
+        () async {
+      final startedAt = DateTime.utc(2026, 4, 1, 12);
+      final endedAt = DateTime.utc(2026, 4, 1, 13, 25);
+      final sid = await session(
+        'S1',
+        status: 'closed',
+        startedAt: startedAt,
+        endedAt: endedAt,
+      );
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.evidenceRecord.sessionDurationMinutes, 85);
+    });
+
     // Locks the semantic: GPS is derived from current, non-deleted ratings only.
     // Superseded or deleted ratings must not contribute hasGps.
     test('non-current rating with GPS is not counted toward hasGps', () async {
@@ -579,8 +600,8 @@ void main() {
       await db.into(db.trialApplicationEvents).insert(
             TrialApplicationEventsCompanion(
               trialId: Value(trialId),
-              applicationDate:
-                  Value(DateTime.now().toUtc().subtract(const Duration(days: 3))),
+              applicationDate: Value(
+                  DateTime.now().toUtc().subtract(const Duration(days: 3))),
               status: const Value('applied'),
             ),
           );
@@ -605,7 +626,8 @@ void main() {
       ));
       expect(saveResult.isSuccess, isTrue);
 
-      final writer = TimingWindowViolationWriter(db, SignalRepository.attach(db));
+      final writer =
+          TimingWindowViolationWriter(db, SignalRepository.attach(db));
       final timingId = await writer.checkAndRaise(
         ratingId: saveResult.rating!.id,
         trialAssessmentId: taId,
@@ -617,7 +639,8 @@ void main() {
           .where((r) => r.signalType == SignalType.causalContextFlag.dbValue)
           .toList();
       expect(timingRows, hasLength(1));
-      expect(timingRows.single.consequenceText, contains('outside the configured biological window'));
+      expect(timingRows.single.consequenceText,
+          contains('outside the configured biological window'));
     });
   });
 
@@ -664,7 +687,8 @@ void main() {
 
   group('cognition section', () {
     // H-1: No purpose → unknown status, all-unknown CTQ.
-    test('no purpose → purposeStatus unknown, purposeStatusLabel Intent not captured',
+    test(
+        'no purpose → purposeStatus unknown, purposeStatusLabel Intent not captured',
         () async {
       final sid = await session('S1');
       final s = await getSession(sid);
@@ -702,7 +726,8 @@ void main() {
     });
 
     // H-3: Partial purpose → missing field labels populated.
-    test('partial purpose → missingIntentFieldLabels lists human-readable names',
+    test(
+        'partial purpose → missingIntentFieldLabels lists human-readable names',
         () async {
       final purposeRepo = TrialPurposeRepository(db);
       // Only claimBeingTested provided; the other three required fields missing.
@@ -717,8 +742,10 @@ void main() {
 
       expect(data.cognition.purposeStatus, 'partial');
       expect(data.cognition.purposeStatusLabel, 'Intent in progress');
-      expect(data.cognition.missingIntentFieldLabels,
-          containsAll(['Trial purpose', 'Primary endpoint', 'Treatment roles']));
+      expect(
+          data.cognition.missingIntentFieldLabels,
+          containsAll(
+              ['Trial purpose', 'Primary endpoint', 'Treatment roles']));
       expect(data.cognition.missingIntentFieldLabels,
           isNot(contains('Claim being tested')));
     });
@@ -773,7 +800,8 @@ void main() {
     });
 
     // H-6: Top attention items limited to 5, ordered blocked → review → missing.
-    test('topCtqAttentionItems contains only actionable items, max 5, in priority order',
+    test(
+        'topCtqAttentionItems contains only actionable items, max 5, in priority order',
         () async {
       final purposeRepo = TrialPurposeRepository(db);
       final ctqRepo = CtqFactorDefinitionRepository(db);
@@ -792,8 +820,7 @@ void main() {
       final s = await getSession(sid);
       final data = await svc.assembleForSession(trial: trial, session: s);
 
-      expect(data.cognition.topCtqAttentionItems.length,
-          lessThanOrEqualTo(5));
+      expect(data.cognition.topCtqAttentionItems.length, lessThanOrEqualTo(5));
       // All returned items must be actionable (no 'unknown' or 'satisfied').
       for (final item in data.cognition.topCtqAttentionItems) {
         expect(
@@ -848,8 +875,8 @@ void main() {
       await svc.assembleForSession(trial: trial, session: s);
 
       expect(FerCognitionSection.disclaimerText, isNotEmpty);
-      expect(FerCognitionSection.disclaimerText,
-          contains('does not determine'));
+      expect(
+          FerCognitionSection.disclaimerText, contains('does not determine'));
       expect(FerCognitionSection.disclaimerText, contains('efficacy'));
       expect(FerCognitionSection.disclaimerText, contains('validity'));
     });

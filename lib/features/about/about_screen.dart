@@ -96,7 +96,6 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final userAsync = ref.watch(currentUserProvider);
     final db = ref.watch(databaseProvider);
     final schema = db.schemaVersion;
@@ -108,114 +107,123 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
       body: SafeArea(
         top: false,
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
           children: [
-            // App identity
-            Text(
-              AppInfo.appName,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            const _BrandCard(),
+            const SizedBox(height: AppDesignTokens.spacing16),
+            const _SectionLabel(
+              title: 'FIELD CONTEXT',
+              subtitle:
+                  'Used for session, rating, edit, and export attribution',
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Professional field trial data collection and execution platform',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppDesignTokens.secondaryText,
-                height: 1.45,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Version + build + device/OS
-            _InfoCard(children: [
-              _InfoRow(
-                label: 'Version',
-                value: pkg != null
-                    ? '${pkg.version} (build ${pkg.buildNumber})'
-                    : AppInfo.appVersion,
-              ),
-              if (AppInfo.hasBuildMetadata)
-                _InfoRow(label: 'Build', value: AppInfo.buildIdentity),
-              if (_deviceLabel != null)
-                _InfoRow(label: 'Device', value: _deviceLabel!),
-              if (_osLabel != null) _InfoRow(label: 'OS', value: _osLabel!),
-              _InfoRow(label: 'Schema', value: 'v$schema'),
-            ]),
-            const SizedBox(height: 16),
-
-            // Current user
-            _InfoCard(children: [
-              userAsync.when(
-                loading: () => const SizedBox.shrink(),
-                error: (e, __) => AppErrorHint(error: e),
-                data: (user) {
-                  if (user == null) {
+            const SizedBox(height: AppDesignTokens.spacing8),
+            _InfoCard(
+              children: [
+                userAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (e, __) => AppErrorHint(error: e),
+                  data: (user) {
+                    if (user == null) {
+                      return _ActionRow(
+                        icon: Icons.person_add_outlined,
+                        label: 'Choose current user',
+                        detail: 'Set the field profile for new work',
+                        onTap: () => _openUserSelection(context),
+                      );
+                    }
                     return _ActionRow(
-                      icon: Icons.person_add_outlined,
-                      label: 'Select User',
+                      icon: Icons.assignment_ind_outlined,
+                      label: user.displayName,
+                      detail: 'Current user for work attribution',
                       onTap: () => _openUserSelection(context),
                     );
-                  }
-                  return _ActionRow(
-                    icon: Icons.swap_horiz,
-                    label: 'Signed in as ${user.displayName}',
-                    onTap: () => _openUserSelection(context),
-                  );
-                },
-              ),
-            ]),
-            const SizedBox(height: 16),
-
-            // Support + diagnostics
-            _InfoCard(children: [
-              _ActionRow(
-                icon: Icons.email_outlined,
-                label: 'Support: dhalleke17291@gmail.com',
-                onTap: () {
-                  Clipboard.setData(
-                    const ClipboardData(text: 'dhalleke17291@gmail.com'),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Email copied')),
-                  );
-                },
-              ),
-              const Divider(height: 1, color: AppDesignTokens.borderCrisp),
-              _ActionRow(
-                icon: Icons.share_outlined,
-                label: 'Share device info',
-                onTap: _shareDeviceInfo,
-              ),
-              const Divider(height: 1, color: AppDesignTokens.borderCrisp),
-              _ActionRow(
-                icon: Icons.bug_report_outlined,
-                label: 'Diagnostics',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => const DiagnosticsScreen(),
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDesignTokens.spacing20),
+            const _SectionLabel(
+              title: 'DEVICE DETAILS',
+              subtitle: 'Useful when sharing a support snapshot',
+            ),
+            const SizedBox(height: AppDesignTokens.spacing8),
+            _InfoCard(
+              children: [
+                _InfoRow(
+                  label: 'Version',
+                  value: pkg != null
+                      ? '${pkg.version} (build ${pkg.buildNumber})'
+                      : AppInfo.appVersion,
+                ),
+                if (AppInfo.hasBuildMetadata)
+                  _InfoRow(label: 'Build', value: AppInfo.buildIdentity),
+                if (_deviceLabel != null)
+                  _InfoRow(label: 'Device', value: _deviceLabel!),
+                if (_osLabel != null) _InfoRow(label: 'OS', value: _osLabel!),
+                _InfoRow(label: 'Schema', value: 'v$schema'),
+              ],
+            ),
+            const SizedBox(height: AppDesignTokens.spacing20),
+            const _SectionLabel(
+              title: 'SUPPORT TOOLS',
+              subtitle:
+                  'Copy support contact, share details, or inspect app health',
+            ),
+            const SizedBox(height: AppDesignTokens.spacing8),
+            _InfoCard(
+              children: [
+                _ActionRow(
+                  icon: Icons.email_outlined,
+                  label: 'Support email',
+                  detail: 'dhalleke17291@gmail.com',
+                  onTap: () {
+                    Clipboard.setData(
+                      const ClipboardData(text: 'dhalleke17291@gmail.com'),
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Email copied')),
+                    );
+                  },
+                ),
+                const Divider(height: 1, color: AppDesignTokens.borderCrisp),
+                _ActionRow(
+                  icon: Icons.share_outlined,
+                  label: 'Share device info',
+                  detail: 'Version, device, OS, schema, and current user',
+                  onTap: _shareDeviceInfo,
+                ),
+                const Divider(height: 1, color: AppDesignTokens.borderCrisp),
+                _ActionRow(
+                  icon: Icons.bug_report_outlined,
+                  label: 'Diagnostics',
+                  detail: 'Support report, checks, and recent app errors',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const DiagnosticsScreen(),
+                    ),
                   ),
                 ),
-              ),
-            ]),
+              ],
+            ),
             const SizedBox(height: 24),
-
-            // Developer credit + copyright
             Text(
-              'Developed by Parminder Singh',
+              'Agnexis · © ${DateTime.now().year}',
               style: TextStyle(
                 fontSize: 12,
-                color: AppDesignTokens.secondaryText.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w600,
+                color: AppDesignTokens.secondaryText.withValues(alpha: 0.62),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
-              '© ${DateTime.now().year} Parminder Singh · All rights reserved',
+              'Developed by Parminder Singh',
               style: TextStyle(
-                fontSize: 11,
-                color: AppDesignTokens.secondaryText.withValues(alpha: 0.55),
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: AppDesignTokens.secondaryText.withValues(alpha: 0.36),
+                letterSpacing: 0.2,
               ),
               textAlign: TextAlign.center,
             ),
@@ -226,12 +234,125 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
   }
 
   void _openUserSelection(BuildContext context) {
-    Navigator.pushAndRemoveUntil(
+    Navigator.push(
       context,
       MaterialPageRoute<void>(
-        builder: (_) => const UserSelectionScreen(),
+        builder: (_) => const UserSelectionScreen(popOnSelect: true),
       ),
-      (route) => false,
+    );
+  }
+}
+
+class _BrandCard extends StatelessWidget {
+  const _BrandCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusLarge),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: AppDesignTokens.cardShadow,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 26,
+            height: 26,
+            child: ClipOval(
+              child: Image.asset(
+                'assets/Branding/splash_logo.png',
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.medium,
+                semanticLabel: 'App logo',
+              ),
+            ),
+          ),
+          const SizedBox(height: AppDesignTokens.spacing4),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              AppInfo.appName.toUpperCase(),
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w300,
+                color: AppDesignTokens.primaryText,
+                letterSpacing: 5.8,
+                height: 1,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppDesignTokens.spacing4),
+          SizedBox(
+            width: 86,
+            height: 1,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppDesignTokens.flagColor.withValues(alpha: 0.62),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppDesignTokens.spacing4),
+          Text(
+            'Professional field trial data collection\nand execution platform',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w400,
+              color: AppDesignTokens.secondaryText.withValues(alpha: 0.82),
+              letterSpacing: 0.3,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.1,
+              color: AppDesignTokens.primary,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.35,
+              fontWeight: FontWeight.w500,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -245,8 +366,9 @@ class _InfoCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusLarge),
         border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: AppDesignTokens.cardShadow,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -264,11 +386,12 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 80,
+            width: 74,
             child: Text(
               label,
               style: const TextStyle(
@@ -297,10 +420,12 @@ class _ActionRow extends StatelessWidget {
   const _ActionRow({
     required this.icon,
     required this.label,
+    required this.detail,
     required this.onTap,
   });
   final IconData icon;
   final String label;
+  final String detail;
   final VoidCallback onTap;
 
   @override
@@ -308,18 +433,44 @@ class _ActionRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: AppDesignTokens.primary),
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppDesignTokens.sectionHeaderBg,
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusSmall),
+              ),
+              child: Icon(icon, size: 21, color: AppDesignTokens.primary),
+            ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppDesignTokens.primaryText,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    detail,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.3,
+                      fontWeight: FontWeight.w500,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                ],
               ),
             ),
             const Icon(Icons.chevron_right,

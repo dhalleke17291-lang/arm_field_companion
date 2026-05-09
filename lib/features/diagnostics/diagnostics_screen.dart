@@ -9,7 +9,6 @@ import '../../core/diagnostics/app_error.dart';
 import '../../core/diagnostics/diagnostics_store.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/providers.dart';
-import '../../features/derived/derived_snapshot_provider.dart';
 import '../../shared/widgets/app_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/diagnostics/reset_app_data.dart';
@@ -117,8 +116,9 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
       buffer.writeln('');
       buffer.writeln('Recent errors: ${store.recentErrors.length}');
       if (store.recentErrors.isNotEmpty) {
-        buffer.writeln(
-            store.recentErrors.map((e) => e.toCopyableReport()).join('\n---\n'));
+        buffer.writeln(store.recentErrors
+            .map((e) => e.toCopyableReport())
+            .join('\n---\n'));
       }
       try {
         await Share.share(
@@ -196,6 +196,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
       backgroundColor: const Color(0xFFF4F1EB),
       appBar: GradientScreenHeader(
         title: 'Diagnostics',
+        subtitle: 'Health checks, audit records, and support tools',
         actions: [
           IconButton(
             icon: const Icon(Icons.file_download_outlined, color: Colors.white),
@@ -219,577 +220,437 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
           ],
         ],
       ),
-      body: SafeArea(top: false, child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // System Status
-          AppCard(
-            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'System Status',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+      body: SafeArea(
+          top: false,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            children: [
+              _SupportSnapshotCard(
+                errorCount: errors.length,
+                onExportReport: () => _exportReport(store),
+              ),
+              const _DiagnosticsSectionHeader(
+                'Checks',
+                subtitle: 'Read-only tools for unusual data or export problems',
+              ),
+              AppCard(
+                padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Data consistency check',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Looks for missing, duplicate, or inconsistent records. Use when export, review, or app behavior seems off.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.68),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed:
+                            _integrityLoading ? null : _runIntegrityChecks,
+                        icon: _integrityLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.health_and_safety_outlined),
+                        label: Text(_integrityLoading
+                            ? 'Checking data...'
+                            : 'Check data consistency'),
+                      ),
+                    ),
+                    if (_integrityIssues != null) ...[
+                      const SizedBox(height: 12),
+                      _IntegrityResultList(issues: _integrityIssues!),
+                    ],
+                  ],
+                ),
+              ),
+              const _DiagnosticsSectionHeader(
+                'Investigate',
+                subtitle: 'Open the existing review screens for record history',
+              ),
+              AppCard(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _DiagnosticsActionRow(
+                      icon: Icons.history_outlined,
+                      title: 'Audit log',
+                      subtitle:
+                          'Full activity history, including deleted and restored items',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const AuditLogScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const _DiagnosticsDivider(),
+                    _DiagnosticsActionRow(
+                      icon: Icons.edit_note_outlined,
+                      title: 'Edited items',
+                      subtitle: 'Review amended and corrected data',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const EditedItemsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              if (errors.isNotEmpty) ...[
+                const _DiagnosticsSectionHeader(
+                  'Recent Errors',
+                  subtitle: 'Shown only for the current app session history',
+                ),
+                AppCard(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _DiagnosticsActionRow(
+                        icon: Icons.copy_all,
+                        title: 'Copy recent errors',
+                        subtitle:
+                            'Copy ${errors.length} error${errors.length == 1 ? '' : 's'} to clipboard',
+                        onTap: () => _copyAllErrors(store),
+                      ),
+                      const _DiagnosticsDivider(),
+                      _DiagnosticsActionRow(
+                        icon: Icons.delete_sweep_outlined,
+                        title: 'Clear recent errors',
+                        subtitle:
+                            'Remove the local error list from this screen',
+                        destructive: true,
+                        onTap: () {
+                          store.clear();
+                          setState(() {});
+                        },
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Expanded(
-                      child: _StatusItem(
-                        icon: Icons.storage_outlined,
-                        label: 'Database',
-                        value: 'Ready',
-                        valueColor: AppDesignTokens.primary,
+                ...errors.take(20).map(
+                      (e) => AppCard(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          leading: Icon(
+                            Icons.error_outline,
+                            color: theme.colorScheme.error,
+                            size: 26,
+                          ),
+                          title: Text(
+                            e.message,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          subtitle: Text(
+                            '${e.timestamp.toIso8601String().substring(0, 19)}${e.code != null ? ' · ${e.code}' : ''}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.6),
+                            ),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.copy),
+                            tooltip: 'Copy report',
+                            onPressed: () => _copyError(e),
+                          ),
+                        ),
                       ),
                     ),
-                    Expanded(
-                      child: _StatusItem(
-                        icon: Icons.health_and_safety_outlined,
-                        label: 'Integrity',
-                        value: _integrityIssues == null
-                            ? 'Run checks'
-                            : _integrityIssues!.isEmpty
-                                ? 'OK'
-                                : 'Issues',
-                        valueColor: _integrityIssues == null
-                            ? AppDesignTokens.secondaryText
-                            : _integrityIssues!.isEmpty
-                                ? AppDesignTokens.primary
-                                : const Color(0xFFB45309),
+              ],
+              const _DiagnosticsSectionHeader(
+                'Advanced',
+                subtitle:
+                    'Specialized layout checks and destructive maintenance',
+              ),
+
+              // RCBD layout audit — read-only scan of standalone RCBD trials
+              AppCard(
+                padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'RCBD layout audit',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Scans custom RCBD trials for duplicate reps, canonical reps, '
+                      'or heavy vertical stripes. Read-only.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.68),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _rcbdScanLoading ? null : _runRcbdScan,
+                        icon: _rcbdScanLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.science_outlined),
+                        label: Text(_rcbdScanLoading
+                            ? 'Scanning...'
+                            : 'Audit RCBD layouts'),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                const Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _StatusItem(
-                        icon: Icons.history_outlined,
-                        label: 'Audit',
-                        value: 'Enabled',
-                        valueColor: AppDesignTokens.primary,
+              ),
+              if (_rcbdScanError != null) ...[
+                const SizedBox(height: 12),
+                AppCard(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    'Scan failed: $_rcbdScanError',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                ),
+              ],
+              if (_rcbdScanReport != null) ...[
+                const SizedBox(height: 12),
+                if (_rcbdScanReport!.isClean)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check,
+                              color: AppDesignTokens.successFg),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _rcbdScanReport!.trialsScanned == 0
+                                  ? 'No custom RCBD trials to scan.'
+                                  : 'No issues found across '
+                                      '${_rcbdScanReport!.trialsScanned} '
+                                      'custom RCBD trial${_rcbdScanReport!.trialsScanned == 1 ? '' : 's'}.',
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Expanded(
-                      child: _StatusItem(
-                        icon: Icons.file_download_outlined,
-                        label: 'Export',
-                        value: 'Available',
-                        valueColor: AppDesignTokens.primary,
+                  )
+                else ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      () {
+                        final total = _rcbdScanReport!.affectedTrials.length;
+                        final scanned = _rcbdScanReport!.trialsScanned;
+                        final hardCount = _rcbdScanReport!.affectedTrials
+                            .where((a) => a.hasHardViolations)
+                            .length;
+                        if (hardCount > 0) {
+                          return '$hardCount of $scanned trial${scanned == 1 ? '' : 's'} '
+                              'with invalid layout. $total total flagged.';
+                        }
+                        return '$total of $scanned trial${scanned == 1 ? '' : 's'} '
+                            'with spatial concerns (all layouts valid).';
+                      }(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.75),
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // Audit log
-          AppCard(
-            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Audit log',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'View and export the full audit history (read-only).',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => const AuditLogScreen(),
+                  ..._rcbdScanReport!.affectedTrials.map(
+                    (audit) => Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(
+                          color: audit.hasHardViolations
+                              ? AppDesignTokens.missedColor
+                                  .withValues(alpha: 0.4)
+                              : AppDesignTokens.warningBorder,
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.history_outlined),
-                    label: const Text('Open audit log'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          AppCard(
-            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Edited Items',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Review amended and corrected data',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => const EditedItemsScreen(),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  audit.hasHardViolations
+                                      ? Icons.error_outline
+                                      : Icons.info_outline,
+                                  size: 20,
+                                  color: audit.hasHardViolations
+                                      ? AppDesignTokens.missedColor
+                                      : AppDesignTokens.warningFg,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        audit.trialName,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      Text(
+                                        audit.hasHardViolations
+                                            ? 'Layout invalid — must regenerate'
+                                            : 'Spatial concern — valid layout',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: audit.hasHardViolations
+                                              ? AppDesignTokens.missedColor
+                                              : AppDesignTokens.warningFg,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (audit.report.hardViolations.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              for (final v in audit.report.hardViolations)
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.only(left: 28, top: 2),
+                                  child: Text(
+                                    '\u2022 $v',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: AppDesignTokens.missedColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                            if (audit.report.softViolations.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              for (final v in audit.report.softViolations)
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.only(left: 28, top: 2),
+                                  child: Text(
+                                    '\u2022 $v',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: AppDesignTokens.secondaryText,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ],
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.edit_note_outlined),
-                    label: const Text('Open edited items'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Derived data (session progress) — surfaces DerivedSnapshot for researchers
-          _DerivedDataSection(),
-
-          const SizedBox(height: 16),
-          // App info
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'App version',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    kAppVersion,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
+              ],
+              const SizedBox(height: 16),
 
-          // Recent errors
-          Text(
-            'Recent errors',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (errors.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'No errors recorded.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-              ),
-            )
-          else
-            ...errors.take(20).map((e) => Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: Icon(
-                      Icons.close,
-                      color: theme.colorScheme.error,
-                      size: 28,
+              // Reset App Data
+              AppCard(
+                padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Reset App Data',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
-                    title: Text(
-                      e.message,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                    subtitle: Text(
-                      '${e.timestamp.toIso8601String().substring(0, 19)}${e.code != null ? ' · ${e.code}' : ''}',
-                      style: TextStyle(
-                        fontSize: 11,
+                    const SizedBox(height: 8),
+                    Text(
+                      'This will permanently delete ALL data stored in this app.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                            theme.colorScheme.onSurface.withValues(alpha: 0.85),
                       ),
                     ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.copy),
-                      tooltip: 'Copy report',
-                      onPressed: () => _copyError(e),
-                    ),
-                  ),
-                )),
-          const SizedBox(height: 24),
-
-          // Integrity checks
-          Text(
-            'Integrity checks',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Read-only checks. No data is modified.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-          const SizedBox(height: 8),
-          FilledButton.icon(
-            onPressed: _integrityLoading ? null : _runIntegrityChecks,
-            icon: _integrityLoading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.health_and_safety_outlined),
-            label:
-                Text(_integrityLoading ? 'Running...' : 'Run integrity checks'),
-          ),
-          if (_integrityIssues != null) ...[
-            const SizedBox(height: 12),
-            if (_integrityIssues!.isEmpty)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.check,
-                          color: AppDesignTokens.successFg),
-                      const SizedBox(width: 12),
-                      Text(
-                        'No issues found.',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              ..._integrityIssues!.map((issue) => Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                size: 20,
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  issue.summary,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                '${issue.count}',
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (issue.detail != null) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              issue.detail!,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurface
-                                    .withValues(alpha: 0.7),
-                              ),
-                            ),
-                          ],
-                        ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'The following will be erased:',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.8),
                       ),
                     ),
-                  )),
-          ],
-          const SizedBox(height: 24),
-
-          // RCBD layout audit — read-only scan of standalone RCBD trials
-          Text(
-            'RCBD layout audit',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Scans custom RCBD trials for canonical reps, duplicate reps, '
-            'or heavy vertical stripes. Protocol-imported '
-            'trials are skipped. Read-only — no data is modified.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-          const SizedBox(height: 8),
-          FilledButton.icon(
-            onPressed: _rcbdScanLoading ? null : _runRcbdScan,
-            icon: _rcbdScanLoading
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.science_outlined),
-            label: Text(_rcbdScanLoading ? 'Scanning...' : 'Audit RCBD layouts'),
-          ),
-          if (_rcbdScanError != null) ...[
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  'Scan failed: $_rcbdScanError',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ),
-            ),
-          ],
-          if (_rcbdScanReport != null) ...[
-            const SizedBox(height: 12),
-            if (_rcbdScanReport!.isClean)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.check,
-                          color: AppDesignTokens.successFg),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _rcbdScanReport!.trialsScanned == 0
-                              ? 'No custom RCBD trials to scan.'
-                              : 'No issues found across '
-                                  '${_rcbdScanReport!.trialsScanned} '
-                                  'custom RCBD trial${_rcbdScanReport!.trialsScanned == 1 ? '' : 's'}.',
-                          style: theme.textTheme.bodyMedium,
-                        ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      '• All trials\n• Treatments\n• Plots\n• Sessions\n• Ratings\n• Assessments\n• Photos\n• Import history\n• Audit records',
+                      style: TextStyle(fontSize: 13, height: 1.4),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'This action cannot be undone.\nUse this only for development or testing.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                        fontWeight: FontWeight.w400,
                       ),
-                    ],
-                  ),
-                ),
-              )
-            else ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  () {
-                    final total = _rcbdScanReport!.affectedTrials.length;
-                    final scanned = _rcbdScanReport!.trialsScanned;
-                    final hardCount = _rcbdScanReport!.affectedTrials
-                        .where((a) => a.hasHardViolations)
-                        .length;
-                    if (hardCount > 0) {
-                      return '$hardCount of $scanned trial${scanned == 1 ? '' : 's'} '
-                          'with invalid layout. $total total flagged.';
-                    }
-                    return '$total of $scanned trial${scanned == 1 ? '' : 's'} '
-                        'with spatial concerns (all layouts valid).';
-                  }(),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
-                  ),
-                ),
-              ),
-              ..._rcbdScanReport!.affectedTrials.map(
-                (audit) => Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    side: BorderSide(
-                      color: audit.hasHardViolations
-                          ? AppDesignTokens.missedColor.withValues(alpha: 0.4)
-                          : AppDesignTokens.warningBorder,
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              audit.hasHardViolations
-                                  ? Icons.error_outline
-                                  : Icons.info_outline,
-                              size: 20,
-                              color: audit.hasHardViolations
-                                  ? AppDesignTokens.missedColor
-                                  : AppDesignTokens.warningFg,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    audit.trialName,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  Text(
-                                    audit.hasHardViolations
-                                        ? 'Layout invalid — must regenerate'
-                                        : 'Spatial concern — valid layout',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
-                                      color: audit.hasHardViolations
-                                          ? AppDesignTokens.missedColor
-                                          : AppDesignTokens.warningFg,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (audit.report.hardViolations.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          for (final v in audit.report.hardViolations)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 28, top: 2),
-                              child: Text(
-                                '\u2022 $v',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppDesignTokens.missedColor,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                        ],
-                        if (audit.report.softViolations.isNotEmpty) ...[
-                          const SizedBox(height: 6),
-                          for (final v in audit.report.softViolations)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 28, top: 2),
-                              child: Text(
-                                '\u2022 $v',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppDesignTokens.secondaryText,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ],
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: _showResetConfirmDialog,
+                      icon: const Icon(Icons.warning_amber, size: 20),
+                      label: const Text('RESET APP DATA'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.colorScheme.error,
+                        side: BorderSide(color: theme.colorScheme.error),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
-          ],
-          const SizedBox(height: 24),
-
-          // Reset App Data
-          AppCard(
-            padding: const EdgeInsets.all(AppDesignTokens.spacing16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Reset App Data',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'This will permanently delete ALL data stored in this app.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'The following will be erased:',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  '• All trials\n• Treatments\n• Plots\n• Sessions\n• Ratings\n• Assessments\n• Photos\n• Import history\n• Audit records',
-                  style: TextStyle(fontSize: 13, height: 1.4),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'This action cannot be undone.\nUse this only for development or testing.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: _showResetConfirmDialog,
-                  icon: const Icon(Icons.warning_amber, size: 20),
-                  label: const Text('RESET APP DATA'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: theme.colorScheme.error,
-                    side: BorderSide(color: theme.colorScheme.error),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      )),
+          )),
     );
   }
 }
@@ -884,12 +745,18 @@ class _ResetConfirmDialogState extends State<_ResetConfirmDialog> {
   }
 }
 
-/// Surfaces DerivedSnapshot (session progress) for researchers on the diagnostics screen.
-/// Split into two widgets so each ref.watch has its own element and disposes cleanly (avoids _dependents.isEmpty).
-class _DerivedDataSection extends ConsumerWidget {
+class _SupportSnapshotCard extends StatelessWidget {
+  const _SupportSnapshotCard({
+    required this.errorCount,
+    required this.onExportReport,
+  });
+
+  final int errorCount;
+  final VoidCallback onExportReport;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final lastSessionAsync = ref.watch(lastSessionContextProvider);
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AppCard(
       padding: const EdgeInsets.all(AppDesignTokens.spacing16),
       child: Column(
@@ -897,50 +764,51 @@ class _DerivedDataSection extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Derived data (session progress)',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+            'Support snapshot',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Read-only session progress from the derived layer. Shown for last continued session.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.7),
-                ),
-          ),
-          const SizedBox(height: 12),
-          lastSessionAsync.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+            'Use this when troubleshooting, sharing app state, or preparing details for support.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
             ),
-            error: (_, __) => const Text('Unable to load last session.'),
-            data: (ctx) {
-              if (ctx == null) {
-                return Text(
-                  'No recent session. Continue a session from home to see derived progress here.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.7),
-                      ),
-                );
-              }
-              return _DerivedSnapshotContent(
-                  trialName: ctx.trial.name,
-                  sessionName: ctx.session.name,
-                  sessionId: ctx.session.id);
-            },
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: _StatusTile(
+                  icon: Icons.error_outline,
+                  label: 'Recent errors',
+                  value: errorCount == 0 ? 'None' : '$errorCount',
+                  valueColor: errorCount == 0
+                      ? AppDesignTokens.successFg
+                      : theme.colorScheme.error,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: _StatusTile(
+                  icon: Icons.info_outline,
+                  label: 'App version',
+                  value: kAppVersion,
+                  valueColor: AppDesignTokens.primaryText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onExportReport,
+              icon: const Icon(Icons.file_download_outlined),
+              label: const Text('Export support report'),
+            ),
           ),
         ],
       ),
@@ -948,71 +816,8 @@ class _DerivedDataSection extends ConsumerWidget {
   }
 }
 
-class _DerivedSnapshotContent extends ConsumerWidget {
-  const _DerivedSnapshotContent({
-    required this.trialName,
-    required this.sessionName,
-    required this.sessionId,
-  });
-
-  final String trialName;
-  final String sessionName;
-  final int sessionId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final snapshotAsync =
-        ref.watch(derivedSnapshotForSessionProvider(sessionId));
-    return snapshotAsync.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 8),
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      ),
-      error: (_, __) => const Text('Unable to load snapshot.'),
-      data: (snapshot) {
-        if (snapshot == null) {
-          return const Text('No snapshot for this session.');
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$trialName · $sessionName',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Plots rated: ${snapshot.ratedPlotCount} / ${snapshot.totalPlotCount} (${snapshot.progressPct.toStringAsFixed(1)}%)',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'calcVersion: ${snapshot.calcVersion}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.6),
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _StatusItem extends StatelessWidget {
-  const _StatusItem({
+class _StatusTile extends StatelessWidget {
+  const _StatusTile({
     required this.icon,
     required this.label,
     required this.value,
@@ -1026,8 +831,13 @@ class _StatusItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.bgWarm.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -1049,7 +859,7 @@ class _StatusItem extends StatelessWidget {
           Text(
             value,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: 15,
               fontWeight: FontWeight.w600,
               color: valueColor,
             ),
@@ -1057,5 +867,281 @@ class _StatusItem extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _DiagnosticsSectionHeader extends StatelessWidget {
+  const _DiagnosticsSectionHeader(this.title, {this.subtitle});
+
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 24, 4, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+              color: AppDesignTokens.primary,
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 3),
+            Text(
+              subtitle!,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.25,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DiagnosticsActionRow extends StatelessWidget {
+  const _DiagnosticsActionRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.destructive = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = destructive
+        ? Theme.of(context).colorScheme.error
+        : AppDesignTokens.primary;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16,
+          vertical: 15,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.08),
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusSmall),
+              ),
+              child: Icon(icon, color: color, size: 21),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 15.5,
+                      height: 1.15,
+                      fontWeight: FontWeight.w600,
+                      color: destructive
+                          ? Theme.of(context).colorScheme.error
+                          : AppDesignTokens.primaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.25,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Icon(
+              Icons.chevron_right,
+              color: AppDesignTokens.secondaryText,
+              size: 22,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DiagnosticsDivider extends StatelessWidget {
+  const _DiagnosticsDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Divider(
+      height: 1,
+      indent: 72,
+      color: AppDesignTokens.divider,
+    );
+  }
+}
+
+class _IntegrityResultList extends StatelessWidget {
+  const _IntegrityResultList({required this.issues});
+
+  final List<IntegrityIssue> issues;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (issues.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppDesignTokens.successBg.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+        ),
+        child: const Row(
+          children: [
+            Icon(
+              Icons.check_circle_outline,
+              color: AppDesignTokens.successFg,
+              size: 20,
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'No data health issues found.',
+                style: TextStyle(
+                  color: AppDesignTokens.successFg,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Column(
+      children: issues.map(
+        (issue) {
+          final colors = _IntegrityIssueColors.forSeverity(
+            issue.severity,
+            theme,
+          );
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colors.background,
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusSmall),
+                border: Border.all(color: colors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        issue.severity == IntegritySeverity.error
+                            ? Icons.error_outline
+                            : Icons.info_outline,
+                        size: 20,
+                        color: colors.foreground,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          issue.summary,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: colors.title,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${issue.count}',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (issue.detail != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      issue.detail!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.72),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ).toList(),
+    );
+  }
+}
+
+class _IntegrityIssueColors {
+  const _IntegrityIssueColors({
+    required this.background,
+    required this.border,
+    required this.foreground,
+    required this.title,
+  });
+
+  final Color background;
+  final Color border;
+  final Color foreground;
+  final Color title;
+
+  static _IntegrityIssueColors forSeverity(
+    IntegritySeverity severity,
+    ThemeData theme,
+  ) {
+    return switch (severity) {
+      IntegritySeverity.error => _IntegrityIssueColors(
+          background: theme.colorScheme.errorContainer.withValues(alpha: 0.42),
+          border: theme.colorScheme.error.withValues(alpha: 0.35),
+          foreground: theme.colorScheme.error,
+          title: AppDesignTokens.primaryText,
+        ),
+      IntegritySeverity.warning => const _IntegrityIssueColors(
+          background: AppDesignTokens.warningBg,
+          border: AppDesignTokens.warningBorder,
+          foreground: AppDesignTokens.warningFg,
+          title: AppDesignTokens.primaryText,
+        ),
+      IntegritySeverity.informational => _IntegrityIssueColors(
+          background: AppDesignTokens.emptyBadgeBg.withValues(alpha: 0.7),
+          border: AppDesignTokens.borderCrisp,
+          foreground: AppDesignTokens.secondaryText,
+          title: AppDesignTokens.primaryText,
+        ),
+    };
   }
 }

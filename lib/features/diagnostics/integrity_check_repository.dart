@@ -12,15 +12,16 @@ class IntegrityCheckRepository {
 
     // Sessions without created_by_user_id (legacy data); live sessions only.
     final sessionsWithoutUser = await (_db.select(_db.sessions)
-          ..where((s) =>
-              s.createdByUserId.isNull() & s.isDeleted.equals(false)))
+          ..where(
+              (s) => s.createdByUserId.isNull() & s.isDeleted.equals(false)))
         .get();
     if (sessionsWithoutUser.isNotEmpty) {
       issues.add(IntegrityIssue(
         code: 'sessions_without_creator',
-        summary: 'Sessions without user attribution',
+        summary: 'Legacy sessions without creator',
         count: sessionsWithoutUser.length,
-        detail: 'Legacy sessions created before user context was added.',
+        detail:
+            'Older sessions were created before user tracking was added. No action needed unless audit attribution is required.',
         severity: IntegritySeverity.informational,
       ));
     }
@@ -49,8 +50,7 @@ class IntegrityCheckRepository {
 
     // Closed sessions with zero current ratings (live sessions and ratings).
     final closedSessions = await (_db.select(_db.sessions)
-          ..where(
-              (s) => s.endedAt.isNotNull() & s.isDeleted.equals(false)))
+          ..where((s) => s.endedAt.isNotNull() & s.isDeleted.equals(false)))
         .get();
     int closedWithZeroRatings = 0;
     final countExpr = _db.ratingRecords.id.count();
@@ -69,7 +69,8 @@ class IntegrityCheckRepository {
         code: 'closed_sessions_no_ratings',
         summary: 'Closed sessions with no ratings',
         count: closedWithZeroRatings,
-        detail: 'Informational: session was closed but has no rating records.',
+        detail:
+            'Session was closed without rating records. No action needed if the session was intentionally empty.',
         severity: IntegritySeverity.informational,
       ));
     }
@@ -104,16 +105,16 @@ class IntegrityCheckRepository {
 
     // Ratings missing provenance (created_app_version) — live rows only.
     final ratingsNoProvenance = await (_db.select(_db.ratingRecords)
-          ..where((r) =>
-              r.createdAppVersion.isNull() & r.isDeleted.equals(false)))
+          ..where(
+              (r) => r.createdAppVersion.isNull() & r.isDeleted.equals(false)))
         .get();
     if (ratingsNoProvenance.isNotEmpty) {
       issues.add(IntegrityIssue(
         code: 'ratings_missing_provenance',
-        summary: 'Ratings without app version (legacy or pre-migration)',
+        summary: 'Legacy ratings without app version',
         count: ratingsNoProvenance.length,
         detail:
-            'Records created before provenance capture; no action required.',
+            'Records were created before app-version tracking was added. No action required.',
         severity: IntegritySeverity.informational,
       ));
     }
@@ -144,9 +145,8 @@ class IntegrityCheckRepository {
     }
 
     // Multiple is_current rows for the same logical key (trial, plot, assessment, session, sub-unit).
-    final duplicateCurrentRows = await _db
-        .customSelect(
-          '''
+    final duplicateCurrentRows = await _db.customSelect(
+      '''
 SELECT trial_id, plot_pk, assessment_id, session_id,
        COALESCE(sub_unit_id, -1) AS sub_unit_key,
        COUNT(*) AS cnt
@@ -155,9 +155,8 @@ WHERE is_current = 1 AND is_deleted = 0
 GROUP BY trial_id, plot_pk, assessment_id, session_id, COALESCE(sub_unit_id, -1)
 HAVING COUNT(*) > 1
 ''',
-          readsFrom: {_db.ratingRecords},
-        )
-        .get();
+      readsFrom: {_db.ratingRecords},
+    ).get();
     if (duplicateCurrentRows.isNotEmpty) {
       final plotPks = duplicateCurrentRows
           .map((row) => row.read<int>('plot_pk'))
@@ -187,17 +186,15 @@ HAVING COUNT(*) > 1
     }
 
     // Duplicate session_assessments rows (same session + assessment link).
-    final duplicateSessionAssessmentGroups = await _db
-        .customSelect(
-          '''
+    final duplicateSessionAssessmentGroups = await _db.customSelect(
+      '''
 SELECT session_id, assessment_id, COUNT(*) AS cnt
 FROM session_assessments
 GROUP BY session_id, assessment_id
 HAVING COUNT(*) > 1
 ''',
-          readsFrom: {_db.sessionAssessments},
-        )
-        .get();
+      readsFrom: {_db.sessionAssessments},
+    ).get();
     if (duplicateSessionAssessmentGroups.isNotEmpty) {
       final sessionIds = duplicateSessionAssessmentGroups
           .map((row) => row.read<int>('session_id'))
@@ -247,17 +244,17 @@ HAVING COUNT(*) > 1
     if (sessionsWithoutCreator.isNotEmpty) {
       issues.add(IntegrityIssue(
         code: 'sessions_without_creator',
-        summary: 'Sessions without user attribution',
+        summary: 'Legacy sessions without creator',
         count: sessionsWithoutCreator.length,
-        detail: 'Legacy sessions created before user context was added.',
+        detail:
+            'Older sessions were created before user tracking was added. No action needed unless audit attribution is required.',
         severity: IntegritySeverity.informational,
       ));
     }
 
     // 2. plots_without_treatment
     final trialPlots = await (_db.select(_db.plots)
-          ..where(
-              (p) => p.trialId.equals(trialId) & p.isDeleted.equals(false)))
+          ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(false)))
         .get();
     if (trialPlots.isNotEmpty) {
       final plotIds = trialPlots.map((p) => p.id).toList();
@@ -305,7 +302,8 @@ HAVING COUNT(*) > 1
         code: 'closed_sessions_no_ratings',
         summary: 'Closed sessions with no ratings',
         count: closedWithZeroRatings,
-        detail: 'Informational: session was closed but has no rating records.',
+        detail:
+            'Session was closed without rating records. No action needed if the session was intentionally empty.',
         severity: IntegritySeverity.informational,
       ));
     }
@@ -363,10 +361,10 @@ WHERE rr.trial_id = ? AND rc.corrected_by_user_id IS NULL
     if (ratingsNoProvenance.isNotEmpty) {
       issues.add(IntegrityIssue(
         code: 'ratings_missing_provenance',
-        summary: 'Ratings without app version (legacy or pre-migration)',
+        summary: 'Legacy ratings without app version',
         count: ratingsNoProvenance.length,
         detail:
-            'Records created before provenance capture; no action required.',
+            'Records were created before app-version tracking was added. No action required.',
         severity: IntegritySeverity.informational,
       ));
     }
@@ -460,8 +458,7 @@ HAVING COUNT(*) > 1
           'More than one session_assessments row for the same session_id and assessment_id. ',
         )
         ..write('Affected session_id values: ${sessionIds.join(", ")}. ')
-        ..write(
-            'Affected assessment_id values: ${assessmentIds.join(", ")}. ');
+        ..write('Affected assessment_id values: ${assessmentIds.join(", ")}. ');
       for (final row in duplicateSaGroups) {
         detail.write(
           '[session=${row.read<int>("session_id")} '

@@ -64,6 +64,7 @@ void main() {
       hasGps: false,
       hasWeather: false,
       hasTimestamp: true,
+      sessionDurationMinutes: null,
     );
     const signals = FerSignalsSection(openSignals: []);
     const completeness = FerCompletenessSection(
@@ -145,6 +146,7 @@ void main() {
           hasGps: true,
           hasWeather: true,
           hasTimestamp: true,
+          sessionDurationMinutes: 75,
         ),
         signals: const FerSignalsSection(
           openSignals: [
@@ -221,6 +223,7 @@ void main() {
           hasGps: false,
           hasWeather: false,
           hasTimestamp: true,
+          sessionDurationMinutes: null,
         ),
         signals: const FerSignalsSection(
           openSignals: [
@@ -305,6 +308,7 @@ void main() {
             hasGps: false,
             hasWeather: false,
             hasTimestamp: true,
+            sessionDurationMinutes: null,
           ),
           signals: const FerSignalsSection(openSignals: []),
           completeness: const FerCompletenessSection(
@@ -420,10 +424,177 @@ void main() {
       // The disclaimer is a static const on FerCognitionSection; the builder
       // renders it from there. Validate its content without PDF text extraction.
       expect(FerCognitionSection.disclaimerText, isNotEmpty);
-      expect(FerCognitionSection.disclaimerText, contains('does not determine'));
+      expect(
+          FerCognitionSection.disclaimerText, contains('does not determine'));
       // Render to confirm no throw.
       final bytes = await FieldExecutionReportPdfBuilder().build(minimal());
       expect(bytes.length, greaterThan(100));
+    });
+
+    test('new title and interpretation boundary constants are present', () {
+      expect(
+        FieldExecutionReportPdfBuilder.titleText,
+        'FIELD EXECUTION REVIEW',
+      );
+      expect(
+        FieldExecutionReportPdfBuilder.interpretationBoundaryText,
+        contains('does not determine biological efficacy'),
+      );
+    });
+
+    test('critical open signals produce review-required verdict', () {
+      final data = FieldExecutionReportData(
+        identity: const FerIdentity(
+          trialId: 4,
+          trialName: 'Critical Trial',
+          protocolNumber: null,
+          crop: 'Wheat',
+          location: null,
+          season: '2026',
+          sessionId: 4,
+          sessionName: 'Session 1',
+          sessionDateLocal: '2026-04-12',
+          sessionStatus: 'closed',
+          raterName: 'Researcher',
+        ),
+        protocolContext: const FerProtocolContext(
+          isArmLinked: false,
+          isArmTrial: false,
+          divergences: [],
+        ),
+        sessionGrid: const FerSessionGrid(
+          dataPlotCount: 16,
+          assessmentCount: 3,
+          rated: 16,
+          unrated: 0,
+          withIssues: 0,
+          edited: 0,
+          flagged: 0,
+        ),
+        evidenceRecord: const FerEvidenceRecord(
+          photoCount: 0,
+          photoIds: [],
+          hasGps: true,
+          hasWeather: true,
+          hasTimestamp: true,
+          sessionDurationMinutes: 64,
+        ),
+        signals: const FerSignalsSection(
+          openSignals: [
+            FerSignalRow(
+              id: 11,
+              signalType: 'scale_violation',
+              severity: 'critical',
+              status: 'open',
+              consequenceText: 'Rating scale review required.',
+              raisedAt: 1745000000000,
+            ),
+          ],
+        ),
+        completeness: const FerCompletenessSection(
+          expectedPlots: 16,
+          completedPlots: 16,
+          incompletePlots: 0,
+          canClose: true,
+          blockerCount: 0,
+          warningCount: 0,
+        ),
+        executionStatement: 'Session complete.',
+        cognition: emptyCognition(),
+        generatedAt: DateTime(2026, 4, 12, 10),
+      );
+
+      expect(
+        FieldExecutionReportPdfBuilder.reviewVerdictStatusForTesting(data),
+        'Review required before export',
+      );
+    });
+
+    test('complete ratings render execution coverage sentence', () {
+      final data = FieldExecutionReportData(
+        identity: const FerIdentity(
+          trialId: 5,
+          trialName: 'Coverage Trial',
+          protocolNumber: null,
+          crop: null,
+          location: null,
+          season: null,
+          sessionId: 5,
+          sessionName: 'Session 1',
+          sessionDateLocal: '2026-04-13',
+          sessionStatus: 'closed',
+          raterName: null,
+        ),
+        protocolContext: const FerProtocolContext(
+          isArmLinked: false,
+          isArmTrial: false,
+          divergences: [],
+        ),
+        sessionGrid: const FerSessionGrid(
+          dataPlotCount: 16,
+          assessmentCount: 3,
+          rated: 16,
+          unrated: 0,
+          withIssues: 0,
+          edited: 0,
+          flagged: 0,
+        ),
+        evidenceRecord: const FerEvidenceRecord(
+          photoCount: 1,
+          photoIds: [1],
+          hasGps: true,
+          hasWeather: true,
+          hasTimestamp: true,
+          sessionDurationMinutes: 50,
+        ),
+        signals: const FerSignalsSection(openSignals: []),
+        completeness: const FerCompletenessSection(
+          expectedPlots: 16,
+          completedPlots: 16,
+          incompletePlots: 0,
+          canClose: true,
+          blockerCount: 0,
+          warningCount: 0,
+        ),
+        executionStatement: 'Session complete.',
+        cognition: emptyCognition(),
+        generatedAt: DateTime(2026, 4, 13, 10),
+      );
+
+      expect(
+        FieldExecutionReportPdfBuilder.executionCoverageSentenceForTesting(
+            data),
+        '16 of 16 planned data plots rated across 3 assessment(s).',
+      );
+    });
+
+    test('provenance GPS state uses presence labels without counts', () {
+      expect(
+        FieldExecutionReportPdfBuilder.evidenceGpsLabelForTesting(
+          const FerEvidenceRecord(
+            photoCount: 0,
+            photoIds: [],
+            hasGps: true,
+            hasWeather: false,
+            hasTimestamp: true,
+            sessionDurationMinutes: null,
+          ),
+        ),
+        'GPS evidence present',
+      );
+      expect(
+        FieldExecutionReportPdfBuilder.evidenceGpsLabelForTesting(
+          const FerEvidenceRecord(
+            photoCount: 0,
+            photoIds: [],
+            hasGps: false,
+            hasWeather: false,
+            hasTimestamp: true,
+            sessionDurationMinutes: null,
+          ),
+        ),
+        'GPS evidence not recorded',
+      );
     });
   });
 }

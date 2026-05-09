@@ -9,9 +9,8 @@ import '../../core/widgets/gradient_screen_header.dart';
 import '../shell/main_shell_screen.dart';
 import 'add_user_screen.dart';
 import 'edit_profile_screen.dart';
-import 'pin_entry_screen.dart';
 
-/// Shown when no current_user_id is set. User taps to select or adds a new user.
+/// Field profile switcher used for execution attribution.
 class UserSelectionScreen extends ConsumerWidget {
   const UserSelectionScreen({super.key, this.popOnSelect = false});
 
@@ -20,113 +19,303 @@ class UserSelectionScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final usersAsync = ref.watch(activeUsersProvider);
-    final addUserFab = FloatingActionButton.extended(
-      onPressed: () => _openAddUser(context, ref),
-      icon: const Icon(Icons.person_add),
-      label: const Text('Add User'),
-    );
 
     return Scaffold(
       backgroundColor: AppDesignTokens.bgWarm,
-      appBar: const GradientScreenHeader(title: 'Select User'),
+      appBar: const GradientScreenHeader(
+        title: 'Current User',
+        subtitle: 'Used for session, rating, edit, and export attribution',
+      ),
       body: SafeArea(
         top: false,
         child: usersAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
-        data: (users) => users.isEmpty
-            ? _buildEmpty(context, ref)
-            : _buildList(context, ref, users),
-      ),
-      ),
-      floatingActionButton: usersAsync.maybeWhen(
-        data: (users) => users.isEmpty ? null : addUserFab,
-        orElse: () => addUserFab,
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (users) => users.isEmpty
+              ? _buildEmpty(context, ref)
+              : _buildList(context, ref, users),
+        ),
       ),
     );
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
-    return Center(
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(AppDesignTokens.spacing24),
+          decoration: BoxDecoration(
+            color: AppDesignTokens.cardSurface,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+            border: Border.all(color: AppDesignTokens.borderCrisp),
+            boxShadow: AppDesignTokens.cardShadow,
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppDesignTokens.primaryTint,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.person_add_alt_1_outlined,
+                  size: 34,
+                  color: AppDesignTokens.primary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Create the first field profile',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppDesignTokens.primaryText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Users keep sessions, ratings, corrections, and backups attributed to the right person.',
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.35,
+                  color: AppDesignTokens.secondaryText,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 22),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => _openAddUser(context, ref),
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Add Field Profile'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildList(BuildContext context, WidgetRef ref, List<User> users) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        _UserSelectionIntroCard(userCount: users.length),
+        const SizedBox(height: AppDesignTokens.spacing16),
+        Container(
+          decoration: BoxDecoration(
+            color: AppDesignTokens.cardSurface,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+            border: Border.all(color: AppDesignTokens.borderCrisp),
+            boxShadow: AppDesignTokens.cardShadow,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              for (var i = 0; i < users.length; i++) ...[
+                if (i > 0) const _UserDivider(),
+                _UserRow(
+                  user: users[i],
+                  onTap: () => _selectUser(context, ref, users[i]),
+                  onLongPress: () => _openEditProfile(context, ref, users[i]),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: AppDesignTokens.spacing16),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => _openAddUser(context, ref),
+            icon: const Icon(Icons.person_add),
+            label: const Text('Add Field Profile'),
+          ),
+        ),
+        const SizedBox(height: AppDesignTokens.spacing8),
+        const Text(
+          'Tip: long-press a field profile to edit its name or initials.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 12,
+            color: AppDesignTokens.secondaryText,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _UserSelectionIntroCard extends StatelessWidget {
+  const _UserSelectionIntroCard({required this.userCount});
+
+  final int userCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: AppDesignTokens.cardShadow,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: AppDesignTokens.primaryTint,
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+            ),
+            child: const Icon(
+              Icons.badge_outlined,
+              color: AppDesignTokens.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: AppDesignTokens.spacing12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$userCount active user${userCount == 1 ? '' : 's'}',
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Select the person currently using the app.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.3,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UserRow extends StatelessWidget {
+  const _UserRow({
+    required this.user,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final User user;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  String get _initials {
+    if (user.initials?.trim().isNotEmpty == true) {
+      return user.initials!.trim().toUpperCase();
+    }
+    if (user.displayName.trim().isNotEmpty) {
+      return user.displayName.trim().substring(0, 1).toUpperCase();
+    }
+    return '?';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      onLongPress: onLongPress,
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDesignTokens.spacing16,
+          vertical: 16,
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.person_off,
-                size: 64, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 16),
-            const Text(
-              'No users yet',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Add a user to get started.',
-              style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () => _openAddUser(context, ref),
-              icon: const Icon(Icons.add),
-              label: const Text('Add User'),
+            Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.successBg,
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusLarge),
+                  ),
+                  child: Text(
+                    _initials,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppDesignTokens.spacing12),
+                Expanded(
+                  child: Text(
+                    user.displayName,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: AppDesignTokens.primaryText,
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 32,
+                  height: 32,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.emptyBadgeBg.withValues(alpha: 0.7),
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusSmall),
+                  ),
+                  child: const Icon(
+                    Icons.chevron_right,
+                    color: AppDesignTokens.secondaryText,
+                    size: 22,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildList(BuildContext context, WidgetRef ref, List<User> users) {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-      itemCount: users.length,
-      itemBuilder: (context, index) {
-        final user = users[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              child: Text(
-                (user.initials?.isNotEmpty == true)
-                    ? user.initials!.toUpperCase()
-                    : user.displayName.isNotEmpty
-                        ? user.displayName.substring(0, 1).toUpperCase()
-                        : '?',
-                style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
-            title: Text(user.displayName,
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle:
-                user.initials?.isNotEmpty == true ? Text(user.initials!) : null,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (user.pinEnabled) ...[
-                  const Icon(
-                    Icons.lock_outline,
-                    size: 16,
-                    color: AppDesignTokens.secondaryText,
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                const Icon(Icons.chevron_right),
-              ],
-            ),
-            onTap: () => _selectUser(context, ref, user),
-            onLongPress: () => _openEditProfile(context, ref, user),
-          ),
-        );
-      },
+class _UserDivider extends StatelessWidget {
+  const _UserDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Divider(
+      height: 1,
+      indent: 80,
+      color: AppDesignTokens.divider,
     );
   }
+}
 
+/// Shown when no current_user_id is set. User taps to select or adds a new user.
+extension _UserSelectionActions on UserSelectionScreen {
   Future<void> _openEditProfile(
     BuildContext context,
     WidgetRef ref,
@@ -161,9 +350,8 @@ class UserSelectionScreen extends ConsumerWidget {
       final trial = await trialRepo.getTrialById(s.trialId);
       if (trial != null) trialNames.add(trial.name);
     }
-    final namesText = trialNames.isNotEmpty
-        ? trialNames.join(', ')
-        : 'an active trial';
+    final namesText =
+        trialNames.isNotEmpty ? trialNames.join(', ') : 'an active trial';
 
     if (!context.mounted) return false;
     await showDialog<void>(
@@ -191,20 +379,10 @@ class UserSelectionScreen extends ConsumerWidget {
   ) async {
     if (!await _warnOpenSessionsOrAllowProceed(context, ref)) return;
     final fresh = await ref.read(userRepositoryProvider).getUserById(
-          user.id,
-        ) ??
+              user.id,
+            ) ??
         user;
     if (!context.mounted) return;
-    if (fresh.pinEnabled &&
-        (fresh.pinHash != null && fresh.pinHash!.isNotEmpty)) {
-      final ok = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PinEntryScreen(user: fresh),
-        ),
-      );
-      if (ok != true) return;
-    }
     await setCurrentUserId(fresh.id);
     ref.invalidate(currentUserIdProvider);
     ref.invalidate(currentUserProvider);

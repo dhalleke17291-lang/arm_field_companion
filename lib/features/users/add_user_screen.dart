@@ -3,7 +3,7 @@ import '../../core/widgets/gradient_screen_header.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers.dart';
 
-/// Minimal add-user flow: display name (required), initials (optional).
+/// Minimal field-profile flow: display name (required), initials (optional).
 /// role_key defaults to technician; not exposed in UI.
 class AddUserScreen extends ConsumerStatefulWidget {
   const AddUserScreen({super.key});
@@ -58,7 +58,10 @@ class _AddUserScreenState extends ConsumerState<AddUserScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F1EB),
-      appBar: const GradientScreenHeader(title: 'Add User'),
+      appBar: const GradientScreenHeader(
+        title: 'Add Field Profile',
+        subtitle: 'Used for field execution attribution',
+      ),
       body: SafeArea(
         top: false,
         child: SingleChildScrollView(
@@ -66,39 +69,39 @@ class _AddUserScreenState extends ConsumerState<AddUserScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Display name *',
-                hintText: 'e.g. Jane Smith',
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Display name *',
+                  hintText: 'e.g. Jane Smith',
+                ),
+                textCapitalization: TextCapitalization.words,
+                enabled: !_saving,
               ),
-              textCapitalization: TextCapitalization.words,
-              enabled: !_saving,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _initialsController,
-              decoration: const InputDecoration(
-                labelText: 'Initials (optional)',
-                hintText: 'e.g. JS',
+              const SizedBox(height: 16),
+              TextField(
+                controller: _initialsController,
+                decoration: const InputDecoration(
+                  labelText: 'Initials (optional)',
+                  hintText: 'e.g. JS',
+                ),
+                textCapitalization: TextCapitalization.characters,
+                maxLength: 8,
+                enabled: !_saving,
               ),
-              textCapitalization: TextCapitalization.characters,
-              maxLength: 8,
-              enabled: !_saving,
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _saving ? null : _save,
-              child: _saving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Save and continue'),
-            ),
-          ],
-        ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _saving ? null : _save,
+                child: _saving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save Field Profile'),
+              ),
+            ],
+          ),
         ),
       ),
     );

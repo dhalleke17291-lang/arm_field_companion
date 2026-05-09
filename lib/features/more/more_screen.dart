@@ -15,19 +15,18 @@ import '../users/user_selection_screen.dart';
 import 'more_backup_actions.dart';
 
 void _openUserSelection(BuildContext context) {
-  Navigator.pushAndRemoveUntil(
+  Navigator.push(
     context,
     MaterialPageRoute<void>(
-      builder: (_) => const UserSelectionScreen(),
+      builder: (_) => const UserSelectionScreen(popOnSelect: true),
     ),
-    (route) => false,
   );
 }
 
 /// Threshold for "stale backup" — nudge the user with a muted amber chip.
 const int _kStaleBackupDays = 7;
 
-/// More tab: settings-style layout (account, diagnostics, backup).
+/// More tab: settings-style layout (field user, diagnostics, backup).
 class MoreScreen extends ConsumerStatefulWidget {
   const MoreScreen({super.key});
 
@@ -308,8 +307,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                 Text(
                   backupReminderModeLabel(mode),
                   style: TextStyle(
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                     color: AppDesignTokens.primaryText,
                   ),
                 ),
@@ -414,80 +412,76 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
       backgroundColor: AppDesignTokens.backgroundSurface,
       appBar: const GradientScreenHeader(
         title: 'More',
+        subtitle: 'Field user, recovery, and backup settings',
         leading: SizedBox(width: 48),
       ),
       body: SafeArea(
         top: false,
         child: ListView(
-          padding: const EdgeInsets.only(top: 4, bottom: 4),
+          padding: const EdgeInsets.fromLTRB(0, 14, 0, 18),
           children: [
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppDesignTokens.borderCrisp),
-              ),
-              color: AppDesignTokens.cardSurface,
-              clipBehavior: Clip.antiAlias,
+            _MoreCard(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   userAsync.when(
                     loading: () => _MoreRow(
                       icon: Icons.person_outline_rounded,
-                      title: 'Change User',
+                      title: 'Current User',
                       subtitle: const Text(
-                        'Select or add a user',
+                        'Used for session and rating attribution',
                         style: TextStyle(
                           fontSize: 13,
                           color: AppDesignTokens.secondaryText,
                         ),
                       ),
                       onTap: () => _openUserSelection(context),
+                      prominent: true,
                     ),
                     error: (_, __) => _MoreRow(
                       icon: Icons.person_add_outlined,
-                      title: 'Select User',
+                      title: 'Current User',
                       subtitle: const Text(
-                        'Sign in to use the app',
+                        'Choose a field profile to attribute work',
                         style: TextStyle(
                           fontSize: 13,
                           color: AppDesignTokens.secondaryText,
                         ),
                       ),
                       onTap: () => _openUserSelection(context),
+                      prominent: true,
                     ),
                     data: (user) => _MoreRow(
                       icon: Icons.person_outline_rounded,
-                      title: 'Change User',
+                      title: 'Current User',
                       subtitle: Text(
                         user != null
-                            ? 'Signed in as ${user.displayName}'
-                            : 'Select or add a user',
+                            ? 'Using app as ${user.displayName}'
+                            : 'Choose a field profile to attribute work',
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppDesignTokens.secondaryText,
                         ),
                       ),
                       onTap: () => _openUserSelection(context),
+                      prominent: true,
+                      statusChip: user != null
+                          ? const _StatusChip(
+                              label: 'Current',
+                              color: AppDesignTokens.successFg,
+                              backgroundColor: AppDesignTokens.successBg,
+                            )
+                          : null,
                     ),
                   ),
-                  const Divider(height: 1, indent: 70),
                 ],
               ),
             ),
-            const _MoreSectionHeader('Data & Diagnostics'),
-            const SizedBox(height: 8),
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppDesignTokens.borderCrisp),
-              ),
-              color: AppDesignTokens.cardSurface,
-              clipBehavior: Clip.antiAlias,
+            const _MoreSectionHeader(
+              'Data & Diagnostics',
+              subtitle: 'Support tools, activity review, and recovery',
+            ),
+            _MoreCard(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -495,7 +489,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                     icon: Icons.analytics_outlined,
                     title: 'Diagnostics',
                     subtitle: const Text(
-                      'Integrity, audit log, derived data',
+                      'Support report, checks and app errors',
                       style: TextStyle(
                         fontSize: 13,
                         color: AppDesignTokens.secondaryText,
@@ -510,7 +504,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                       );
                     },
                   ),
-                  const Divider(height: 1, indent: 70),
+                  const _MoreDivider(),
                   _MoreRow(
                     icon: Icons.restore_from_trash_outlined,
                     title: 'Recovery',
@@ -533,17 +527,11 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                 ],
               ),
             ),
-            const _MoreSectionHeader('Backup'),
-            const SizedBox(height: 8),
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppDesignTokens.borderCrisp),
-              ),
-              color: AppDesignTokens.cardSurface,
-              clipBehavior: Clip.antiAlias,
+            const _MoreSectionHeader(
+              'Backup',
+              subtitle: 'Protect field data before device or app changes',
+            ),
+            _MoreCard(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -557,8 +545,9 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                       if (!mounted) return;
                       await _refreshAfterBackup();
                     },
+                    prominent: true,
                   ),
-                  const Divider(height: 1, indent: 70),
+                  const _MoreDivider(),
                   ..._backupReminderRows(),
                   _MoreRow(
                     icon: Icons.restore_outlined,
@@ -572,7 +561,8 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                     ),
                     onTap: () => runRestoreFlow(context, ref),
                   ),
-                  const Divider(height: 1, indent: 70),
+                  const _MoreDivider(),
+                  const _MoreGroupLabel('Cloud destinations'),
                   _MoreRow(
                     icon: Icons.cloud_outlined,
                     title: 'Google Drive',
@@ -586,8 +576,19 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                       ),
                     ),
                     onTap: () => _onDriveTap(),
+                    statusChip: _isDriveConnected
+                        ? const _StatusChip(
+                            label: 'Connected',
+                            color: AppDesignTokens.successFg,
+                            backgroundColor: AppDesignTokens.successBg,
+                          )
+                        : const _StatusChip(
+                            label: 'Not set up',
+                            color: AppDesignTokens.secondaryText,
+                            backgroundColor: AppDesignTokens.emptyBadgeBg,
+                          ),
                   ),
-                  const Divider(height: 1, indent: 70),
+                  const _MoreDivider(),
                   _MoreRow(
                     icon: Icons.cloud_outlined,
                     title: 'OneDrive',
@@ -601,9 +602,19 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
                       ),
                     ),
                     onTap: () => _onOneDriveTap(),
+                    statusChip: _isOneDriveConnected
+                        ? const _StatusChip(
+                            label: 'Connected',
+                            color: AppDesignTokens.successFg,
+                            backgroundColor: AppDesignTokens.successBg,
+                          )
+                        : const _StatusChip(
+                            label: 'Not set up',
+                            color: AppDesignTokens.secondaryText,
+                            backgroundColor: AppDesignTokens.emptyBadgeBg,
+                          ),
                   ),
-                  if (_hasCachedPassphrase)
-                    const Divider(height: 1, indent: 70),
+                  if (_hasCachedPassphrase) const _MoreDivider(),
                   if (_hasCachedPassphrase)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
@@ -635,23 +646,97 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
 }
 
 class _MoreSectionHeader extends StatelessWidget {
-  const _MoreSectionHeader(this.title);
+  const _MoreSectionHeader(this.title, {this.subtitle});
 
   final String title;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      padding: const EdgeInsets.fromLTRB(20, 26, 20, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+              color: AppDesignTokens.primary,
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 3),
+            Text(
+              subtitle!,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.25,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MoreCard extends StatelessWidget {
+  const _MoreCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: AppDesignTokens.cardShadow,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: child,
+    );
+  }
+}
+
+class _MoreGroupLabel extends StatelessWidget {
+  const _MoreGroupLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 2),
       child: Text(
-        title.toUpperCase(),
+        label.toUpperCase(),
         style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
           letterSpacing: 0.8,
           color: AppDesignTokens.secondaryText,
         ),
       ),
+    );
+  }
+}
+
+class _MoreDivider extends StatelessWidget {
+  const _MoreDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Divider(
+      height: 1,
+      thickness: 1,
+      indent: 76,
+      color: AppDesignTokens.divider,
     );
   }
 }
@@ -662,32 +747,47 @@ class _MoreRow extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.onTap,
+    this.statusChip,
+    this.prominent = false,
   });
 
   final IconData icon;
   final String title;
   final Widget? subtitle;
   final VoidCallback? onTap;
+  final Widget? statusChip;
+  final bool prominent;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: prominent ? 18 : 15,
+        ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: prominent ? 48 : 44,
+              height: prominent ? 48 : 44,
               decoration: BoxDecoration(
-                color: AppDesignTokens.primaryTint,
-                borderRadius: BorderRadius.circular(10),
+                color: prominent
+                    ? AppDesignTokens.sectionHeaderBg
+                    : AppDesignTokens.primaryTint,
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusSmall),
+                border: Border.all(
+                  color: AppDesignTokens.primary.withValues(alpha: 0.08),
+                ),
               ),
               child: Icon(
                 icon,
                 color: AppDesignTokens.primary,
-                size: 20,
+                size: prominent ? 23 : 21,
               ),
             ),
             const SizedBox(width: 14),
@@ -697,25 +797,72 @@ class _MoreRow extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
+                    style: TextStyle(
+                      fontSize: prominent ? 17 : 15.5,
+                      fontWeight: prominent ? FontWeight.w700 : FontWeight.w600,
                       color: AppDesignTokens.primaryText,
+                      height: 1.15,
                     ),
                   ),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 5),
                     subtitle!,
+                  ],
+                  if (statusChip != null) ...[
+                    const SizedBox(height: 8),
+                    statusChip!,
                   ],
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: AppDesignTokens.iconSubtle,
-              size: 20,
+            Container(
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppDesignTokens.emptyBadgeBg.withValues(alpha: 0.65),
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusXSmall),
+              ),
+              child: const Icon(
+                Icons.chevron_right,
+                color: AppDesignTokens.secondaryText,
+                size: 20,
+              ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({
+    required this.label,
+    required this.color,
+    required this.backgroundColor,
+  });
+
+  final String label;
+  final Color color;
+  final Color backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          height: 1.1,
+          fontWeight: FontWeight.w600,
+          color: color,
         ),
       ),
     );

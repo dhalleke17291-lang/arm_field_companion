@@ -77,18 +77,21 @@ class FieldExecutionReportAssemblyService {
         .getSingleOrNull();
 
     // Check if any ARM metadata exists for the trial (determines ARM-trial flag).
-    final armTrialCountFuture = _db.customSelect(
-      'SELECT COUNT(*) AS cnt FROM arm_session_metadata '
-      'WHERE session_id IN '
-      '  (SELECT id FROM sessions WHERE trial_id = ? AND is_deleted = 0)',
-      variables: [drift.Variable.withInt(trial.id)],
-      readsFrom: {_db.armSessionMetadata, _db.sessions},
-    ).getSingle().then((r) => r.read<int>('cnt'));
+    final armTrialCountFuture = _db
+        .customSelect(
+          'SELECT COUNT(*) AS cnt FROM arm_session_metadata '
+          'WHERE session_id IN '
+          '  (SELECT id FROM sessions WHERE trial_id = ? AND is_deleted = 0)',
+          variables: [drift.Variable.withInt(trial.id)],
+          readsFrom: {_db.armSessionMetadata, _db.sessions},
+        )
+        .getSingle()
+        .then((r) => r.read<int>('cnt'));
 
     // Evidence: photos and weather for this session.
     final photosFuture = (_db.select(_db.photos)
-          ..where(
-              (p) => p.sessionId.equals(session.id) & p.isDeleted.equals(false)))
+          ..where((p) =>
+              p.sessionId.equals(session.id) & p.isDeleted.equals(false)))
         .get();
     final weatherFuture = (_db.select(_db.weatherSnapshots)
           ..where((w) => w.parentId.equals(session.id)))
@@ -128,8 +131,8 @@ class FieldExecutionReportAssemblyService {
     );
 
     // ── Section B: Protocol context ───────────────────────────────────────────
-    final protocolContext =
-        _buildProtocolContext(session, armMeta, armTrialCount, ratings, seedingEvent);
+    final protocolContext = _buildProtocolContext(
+        session, armMeta, armTrialCount, ratings, seedingEvent);
 
     // ── Section C: Session grid (hub semantics — data plots only) ─────────────
     final dataPlots = plots.where(isAnalyzablePlot).toList();
@@ -177,10 +180,12 @@ class FieldExecutionReportAssemblyService {
     // GPS presence derived from current, non-deleted ratings only.
     // Superseded (isCurrent=false) or deleted (isDeleted=true) ratings are
     // excluded by getCurrentRatingsForSession and do not count.
-    final hasGps = ratings.any(
-        (r) => r.capturedLatitude != null && r.capturedLongitude != null);
+    final hasGps = ratings
+        .any((r) => r.capturedLatitude != null && r.capturedLongitude != null);
     final hasWeather = sessionWeather.isNotEmpty;
     final hasTimestamp = DateTime.tryParse(session.sessionDateLocal) != null;
+    final sessionDurationMinutes =
+        session.endedAt?.difference(session.startedAt).inMinutes;
 
     final evidenceRecord = FerEvidenceRecord(
       photoCount: sessionPhotos.length,
@@ -188,6 +193,7 @@ class FieldExecutionReportAssemblyService {
       hasGps: hasGps,
       hasWeather: hasWeather,
       hasTimestamp: hasTimestamp,
+      sessionDurationMinutes: sessionDurationMinutes,
     );
 
     // ── Section E: Signals ────────────────────────────────────────────────────

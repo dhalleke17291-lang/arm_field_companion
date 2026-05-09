@@ -144,6 +144,7 @@ class FerEvidenceRecord {
     required this.hasGps,
     required this.hasWeather,
     required this.hasTimestamp,
+    required this.sessionDurationMinutes,
   });
 
   final int photoCount;
@@ -161,6 +162,10 @@ class FerEvidenceRecord {
 
   /// True if [FerIdentity.sessionDateLocal] is a parseable date.
   final bool hasTimestamp;
+
+  /// Session duration derived from existing session started/ended timestamps.
+  /// Null when the session has not been closed or either timestamp is missing.
+  final int? sessionDurationMinutes;
 }
 
 // ── Section E: Signals ────────────────────────────────────────────────────────

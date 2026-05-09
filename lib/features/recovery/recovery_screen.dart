@@ -22,17 +22,6 @@ String _deletedMetadataLine(DateTime? deletedAt, String? deletedBy) {
   return 'Deleted $datePart • $byPart';
 }
 
-const _kSectionHeadingStyle = TextStyle(
-  fontWeight: FontWeight.w600,
-  fontSize: 15,
-  color: AppDesignTokens.primaryText,
-);
-
-const _kEmptyStateStyle = TextStyle(
-  fontSize: 13,
-  color: AppDesignTokens.secondaryText,
-);
-
 Future<void> _runPlotRestore(
   BuildContext context,
   WidgetRef ref,
@@ -229,6 +218,13 @@ class RecoveryScreen extends ConsumerWidget {
             vertical: AppDesignTokens.spacing24,
           ),
           children: [
+            _RecoveryOverviewCard(
+              scoped: scoped,
+              trialsAsync: scoped ? null : trialsAsync,
+              sessionsAsync: sessionsAsync,
+              plotsAsync: plotsAsync,
+            ),
+            const SizedBox(height: AppDesignTokens.spacing16),
             if (!scoped) ...[
               _DeletedTrialsSection(async: trialsAsync),
               const SizedBox(height: AppDesignTokens.spacing16),
@@ -237,6 +233,314 @@ class RecoveryScreen extends ConsumerWidget {
             const SizedBox(height: AppDesignTokens.spacing16),
             _DeletedPlotsSection(async: plotsAsync),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecoveryOverviewCard extends StatelessWidget {
+  const _RecoveryOverviewCard({
+    required this.scoped,
+    required this.trialsAsync,
+    required this.sessionsAsync,
+    required this.plotsAsync,
+  });
+
+  final bool scoped;
+  final AsyncValue<List<Trial>>? trialsAsync;
+  final AsyncValue<List<Session>> sessionsAsync;
+  final AsyncValue<List<Plot>> plotsAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    final trialCount = trialsAsync?.valueOrNull?.length ?? 0;
+    final sessionCount = sessionsAsync.valueOrNull?.length ?? 0;
+    final plotCount = plotsAsync.valueOrNull?.length ?? 0;
+    final isLoading = (trialsAsync?.isLoading ?? false) ||
+        sessionsAsync.isLoading ||
+        plotsAsync.isLoading;
+    final total = trialCount + sessionCount + plotCount;
+
+    return AppCard(
+      padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: total == 0
+                      ? AppDesignTokens.successBg
+                      : AppDesignTokens.warningBg,
+                  borderRadius:
+                      BorderRadius.circular(AppDesignTokens.radiusSmall),
+                ),
+                child: Icon(
+                  total == 0
+                      ? Icons.check_circle_outline
+                      : Icons.restore_from_trash_outlined,
+                  color: total == 0
+                      ? AppDesignTokens.successFg
+                      : AppDesignTokens.warningFg,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: AppDesignTokens.spacing12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isLoading
+                          ? 'Checking Recovery'
+                          : total == 0
+                              ? 'Recovery is clear'
+                              : '$total item${total == 1 ? '' : 's'} in Recovery',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        height: 1.15,
+                        fontWeight: FontWeight.w600,
+                        color: AppDesignTokens.primaryText,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      scoped
+                          ? 'Deleted sessions and plots from this trial appear here until restored.'
+                          : 'Deleted trials, sessions, and plots stay here until restored.',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.3,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppDesignTokens.spacing16),
+          Row(
+            children: [
+              if (!scoped) ...[
+                Expanded(
+                  child: _RecoveryMetricTile(
+                    label: 'Trials',
+                    value: isLoading ? '...' : '$trialCount',
+                  ),
+                ),
+                const SizedBox(width: AppDesignTokens.spacing8),
+              ],
+              Expanded(
+                child: _RecoveryMetricTile(
+                  label: 'Sessions',
+                  value: isLoading ? '...' : '$sessionCount',
+                ),
+              ),
+              const SizedBox(width: AppDesignTokens.spacing8),
+              Expanded(
+                child: _RecoveryMetricTile(
+                  label: 'Plots',
+                  value: isLoading ? '...' : '$plotCount',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecoveryMetricTile extends StatelessWidget {
+  const _RecoveryMetricTile({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDesignTokens.spacing12,
+        vertical: AppDesignTokens.spacing12,
+      ),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.bgWarm.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecoverySectionHeader extends StatelessWidget {
+  const _RecoverySectionHeader({
+    required this.icon,
+    required this.title,
+    required this.count,
+  });
+
+  final IconData icon;
+  final String title;
+  final int? count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: AppDesignTokens.primaryTint,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+          ),
+          child: Icon(icon, size: 18, color: AppDesignTokens.primary),
+        ),
+        const SizedBox(width: AppDesignTokens.spacing12),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+        ),
+        if (count != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: count == 0
+                  ? AppDesignTokens.successBg
+                  : AppDesignTokens.warningBg,
+              borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: count == 0
+                    ? AppDesignTokens.successFg
+                    : AppDesignTokens.warningFg,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _RecoveryEmptyMessage extends StatelessWidget {
+  const _RecoveryEmptyMessage({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDesignTokens.spacing12),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.bgWarm.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.check_circle_outline,
+            size: 20,
+            color: AppDesignTokens.successFg,
+          ),
+          const SizedBox(width: AppDesignTokens.spacing8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppDesignTokens.secondaryText,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecoveryLoadingMessage extends StatelessWidget {
+  const _RecoveryLoadingMessage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: AppDesignTokens.spacing16),
+      child: Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
+}
+
+class _RecoveryErrorMessage extends StatelessWidget {
+  const _RecoveryErrorMessage({required this.error});
+
+  final Object error;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDesignTokens.spacing12),
+      decoration: BoxDecoration(
+        color:
+            Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+      ),
+      child: Text(
+        'Error: $error',
+        style: TextStyle(
+          fontSize: 13,
+          color: Theme.of(context).colorScheme.error,
         ),
       ),
     );
@@ -255,31 +559,19 @@ class _DeletedTrialsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Deleted Trials', style: _kSectionHeadingStyle),
+          _RecoverySectionHeader(
+            icon: Icons.folder_delete_outlined,
+            title: 'Deleted Trials',
+            count: async.valueOrNull?.length,
+          ),
           const SizedBox(height: AppDesignTokens.spacing12),
           async.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppDesignTokens.spacing16),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            ),
-            error: (e, _) => Text(
-              'Error: $e',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppDesignTokens.secondaryText,
-              ),
-            ),
+            loading: () => const _RecoveryLoadingMessage(),
+            error: (e, _) => _RecoveryErrorMessage(error: e),
             data: (trials) {
               if (trials.isEmpty) {
-                return const Text(
-                  'No deleted trials',
-                  style: _kEmptyStateStyle,
+                return const _RecoveryEmptyMessage(
+                  text: 'No deleted trials',
                 );
               }
               return Column(
@@ -423,31 +715,19 @@ class _DeletedSessionsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Deleted Sessions', style: _kSectionHeadingStyle),
+          _RecoverySectionHeader(
+            icon: Icons.event_busy_outlined,
+            title: 'Deleted Sessions',
+            count: async.valueOrNull?.length,
+          ),
           const SizedBox(height: AppDesignTokens.spacing12),
           async.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppDesignTokens.spacing16),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            ),
-            error: (e, _) => Text(
-              'Error: $e',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppDesignTokens.secondaryText,
-              ),
-            ),
+            loading: () => const _RecoveryLoadingMessage(),
+            error: (e, _) => _RecoveryErrorMessage(error: e),
             data: (sessions) {
               if (sessions.isEmpty) {
-                return const Text(
-                  'No deleted sessions',
-                  style: _kEmptyStateStyle,
+                return const _RecoveryEmptyMessage(
+                  text: 'No deleted sessions',
                 );
               }
               return Column(
@@ -812,31 +1092,19 @@ class _DeletedPlotsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Deleted Plots', style: _kSectionHeadingStyle),
+          _RecoverySectionHeader(
+            icon: Icons.grid_off_outlined,
+            title: 'Deleted Plots',
+            count: async.valueOrNull?.length,
+          ),
           const SizedBox(height: AppDesignTokens.spacing12),
           async.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppDesignTokens.spacing16),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            ),
-            error: (e, _) => Text(
-              'Error: $e',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppDesignTokens.secondaryText,
-              ),
-            ),
+            loading: () => const _RecoveryLoadingMessage(),
+            error: (e, _) => _RecoveryErrorMessage(error: e),
             data: (plots) {
               if (plots.isEmpty) {
-                return const Text(
-                  'No deleted plots',
-                  style: _kEmptyStateStyle,
+                return const _RecoveryEmptyMessage(
+                  text: 'No deleted plots',
                 );
               }
               return Column(
