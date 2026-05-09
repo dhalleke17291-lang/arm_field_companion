@@ -35,38 +35,54 @@ class OverviewSectionCard extends StatelessWidget {
         border: Border.all(color: AppDesignTokens.borderCrisp),
         boxShadow: AppDesignTokens.cardShadowRating,
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '$number. $title'.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
-                height: 1.2,
-                color: AppDesignTokens.secondaryText,
-              ),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                subtitle!,
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 1.35,
-                  fontWeight: FontWeight.w500,
-                  color: AppDesignTokens.secondaryText,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(width: 3, color: AppDesignTokens.primaryGreen),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$number. $title',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                    height: 1.2,
+                    color: AppDesignTokens.primaryGreen,
+                  ),
                 ),
-              ),
-            ],
-            const SizedBox(height: AppDesignTokens.spacing12),
-            child,
-          ],
-        ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle!,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.35,
+                      fontWeight: FontWeight.w500,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Container(
+                  height: 1,
+                  color: AppDesignTokens.primaryGreen.withValues(alpha: 0.15),
+                ),
+                const SizedBox(height: 12),
+                child,
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
