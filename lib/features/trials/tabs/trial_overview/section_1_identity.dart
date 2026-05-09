@@ -106,32 +106,23 @@ class _InferenceBanner extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppDesignTokens.warningBg,
+        color: AppDesignTokens.cardSurface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppDesignTokens.warningFg.withValues(alpha: 0.3),
+          color: AppDesignTokens.borderCrisp,
         ),
       ),
       padding: const EdgeInsets.all(AppDesignTokens.spacing16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.auto_awesome,
-                  size: 18, color: AppDesignTokens.warningFg),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Intent inferred from $sourceLabel',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: AppDesignTokens.warningFg,
-                    fontWeight: FontWeight.w800,
-                    height: 1.25,
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            'Intent inferred from $sourceLabel',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: AppDesignTokens.primaryText,
+              fontWeight: FontWeight.w800,
+              height: 1.25,
+            ),
           ),
           const SizedBox(height: AppDesignTokens.spacing12),
           if (inferred != null) ...[
@@ -179,7 +170,7 @@ class _InferenceBanner extends StatelessWidget {
               FilledButton(
                 onPressed: onConfirm,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppDesignTokens.warningFg,
+                  backgroundColor: AppDesignTokens.primary,
                   foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
