@@ -287,6 +287,17 @@ class _SignalGroupRowState extends State<_SignalGroupRow> {
                         ),
                     ],
                   ),
+                  if (group.groupingBasis.isNotEmpty &&
+                      group.groupingBasis.contains('assessment')) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      group.groupingBasis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   OverviewStatusChip(
                     label: group.severityLabel,
