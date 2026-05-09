@@ -291,7 +291,7 @@ class RatingRepository {
             sessionId: Value(sessionId),
             plotPk: Value(plotPk),
             eventType: 'RATING_SAVED',
-            description: 'Rating saved: $resultStatus ${numericValue ?? ""}',
+            description: 'Rating recorded: ${numericValue ?? ""}',
             performedBy: Value(raterName),
             performedByUserId: Value(performedByUserId),
           ),

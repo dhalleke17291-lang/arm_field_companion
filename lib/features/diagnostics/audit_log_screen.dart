@@ -226,6 +226,45 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
     return description.replaceAll(pattern, 'plot $plotLabel');
   }
 
+  static String _auditEventLabel(String eventType) => switch (eventType) {
+        'RATING_SAVED' => 'Rating recorded',
+        'RATING_CORRECTED' => 'Rating corrected',
+        'RATING_UNDONE' => 'Rating undone',
+        'RATING_METADATA_UPDATED' => 'Rating updated',
+        'SESSION_STARTED' => 'Session started',
+        'SESSION_CLOSED' => 'Session closed',
+        'SESSION_DELETED' => 'Session deleted',
+        'SESSION_RESTORED' => 'Session restored',
+        'PHOTO_CAPTURED' => 'Photo added',
+        'PHOTO_DELETED' => 'Photo deleted',
+        'NOTE_CREATED' => 'Note created',
+        'NOTE_UPDATED' => 'Note updated',
+        'NOTE_DELETED' => 'Note deleted',
+        'NOTE_RESTORED' => 'Note restored',
+        'PLOT_DELETED' => 'Plot deleted',
+        'PLOT_RESTORED' => 'Plot restored',
+        'PLOT_EXCLUDED_FROM_ANALYSIS' => 'Plot excluded from analysis',
+        'PLOT_INCLUDED_IN_ANALYSIS' => 'Plot included in analysis',
+        'APPLICATION_EVENT_UPDATED' => 'Application updated',
+        'APPLICATION_GPS_CAPTURED' => 'Application GPS captured',
+        'APPLICATION_WEATHER_CAPTURED' => 'Application weather captured',
+        'TRIAL_APPLICATION_EVENT_CREATED' => 'Application event created',
+        'TRIAL_APPLICATION_EVENT_APPLIED' => 'Application event applied',
+        'TRIAL_APPLICATION_EVENT_UPDATED' => 'Application event updated',
+        'SEEDING_EVENT_COMPLETED' => 'Seeding completed',
+        'SEEDING_EVENT_UPDATED' => 'Seeding updated',
+        'SEEDING_EVENT_UPSERTED' => 'Seeding recorded',
+        'SEEDING_GPS_CAPTURED' => 'Seeding GPS captured',
+        'SEEDING_WEATHER_CAPTURED' => 'Seeding weather captured',
+        'TREATMENT_ASSIGNED' => 'Treatment assigned',
+        'TREATMENT_ASSIGNED_BULK' => 'Treatments assigned',
+        'EXPORT_TRIGGERED' => 'Export triggered',
+        'TRIAL_DELETED' => 'Trial deleted',
+        'TRIAL_RESTORED' => 'Trial restored',
+        'arm_shell_linked' => 'ARM shell linked',
+        _ => eventType,
+      };
+
   /// Format time for list: "11 Mar 2026, 11:10 PM".
   static String _formatDateTime(DateTime at) {
     const months = [
@@ -399,7 +438,7 @@ class _AuditLogScreenState extends ConsumerState<AuditLogScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    e.eventType,
+                                    _auditEventLabel(e.eventType),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14,
