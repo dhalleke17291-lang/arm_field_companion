@@ -113,10 +113,20 @@ class TrialReviewSummaryCard extends ConsumerWidget {
         : decisions.ctqAcknowledgments.length +
             decisions.signalDecisions.length;
 
+    String? siteFactorReason;
+    for (final f in risk.factors) {
+      if (f.factorKey == 'known_site_season_factors' &&
+          f.severity == 'moderate') {
+        siteFactorReason = f.reason;
+        break;
+      }
+    }
+
     return _SummaryCardBody(
       statement: statement,
       openSignalsCount: openSignalsCount,
       documentedDecisionsCount: documentedCount,
+      siteFactorReason: siteFactorReason,
     );
   }
 }
@@ -126,11 +136,13 @@ class _SummaryCardBody extends StatelessWidget {
     required this.statement,
     required this.openSignalsCount,
     required this.documentedDecisionsCount,
+    this.siteFactorReason,
   });
 
   final TrialReadinessStatement statement;
   final int? openSignalsCount;
   final int? documentedDecisionsCount;
+  final String? siteFactorReason;
 
   @override
   Widget build(BuildContext context) {
@@ -172,6 +184,16 @@ class _SummaryCardBody extends StatelessWidget {
               fg: chipFg,
             ),
             const SizedBox(height: AppDesignTokens.spacing12),
+            if (siteFactorReason != null) ...[
+              Text(
+                siteFactorReason!,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+              const SizedBox(height: AppDesignTokens.spacing8),
+            ],
             if (isReady) ...[
               Text(
                 statement.summaryText,

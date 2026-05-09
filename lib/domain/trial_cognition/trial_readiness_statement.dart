@@ -112,9 +112,24 @@ TrialReadinessStatement computeTrialReadinessStatement({
 
   // ── Known site / season risk factor ─────────────────────────────────────
   for (final f in riskDto.factors) {
-    if (f.factorKey == 'known_site_season_factors' &&
-        (f.severity == 'moderate' || f.severity == 'high')) {
-      cautions.add(f.reason);
+    if (f.factorKey == 'known_site_season_factors' && f.severity == 'moderate') {
+      if (parsedFactors != null && !parsedFactors.noneSelected) {
+        final labels = <String>[];
+        for (final k in parsedFactors.selectedKeys) {
+          final text = _kReadinessConditionLabels[k];
+          if (text != null) labels.add(text);
+        }
+        if (parsedFactors.otherText != null) labels.add(parsedFactors.otherText!);
+        if (labels.isNotEmpty) {
+          cautions.add(
+            'Caution: researcher noted ${labels.join(', ')} this season. '
+            'Consider site conditions when interpreting results.',
+          );
+        }
+      } else {
+        // parsedFactors unavailable — use the evaluator's pre-formatted reason.
+        cautions.add(f.reason);
+      }
       break;
     }
   }
