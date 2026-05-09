@@ -11,8 +11,11 @@ import '../../../shared/widgets/app_empty_state.dart';
 import '../../sessions/session_timing_helper.dart';
 import '../../../domain/trial_cognition/environmental_window_evaluator.dart';
 import '../../../domain/environmental/inter_event_weather_dto.dart';
+import '../../../core/widgets/app_draggable_modal_sheet.dart';
+import '../../../domain/signals/signal_providers.dart';
 import '../../../domain/trial_story/trial_story_event.dart';
 import '../../../domain/trial_story/trial_story_provider.dart';
+import '../widgets/signal_action_sheet.dart';
 
 enum _TimelineEventType { seeding, application, session, note }
 
@@ -567,12 +570,35 @@ class _TimelineEventRow extends ConsumerWidget {
                             if (event.activeSignalCount != null &&
                                 event.activeSignalCount! > 0) ...[
                               const SizedBox(height: 4),
-                              Text(
-                                '${event.activeSignalCount} active signal${event.activeSignalCount == 1 ? '' : 's'}${event.hasActiveCriticalSignal ? ' · Critical' : ''}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppDesignTokens.warningFg,
+                              GestureDetector(
+                                onTap: () async {
+                                  if (event.ratingSessionId == null) return;
+                                  final signals = await ref.read(
+                                    openSignalsForSessionProvider(
+                                            event.ratingSessionId!)
+                                        .future,
+                                  );
+                                  if (signals.isEmpty || !context.mounted) {
+                                    return;
+                                  }
+                                  if (signals.length == 1) {
+                                    await showSignalActionSheet(
+                                      context,
+                                      signal: signals.first,
+                                      trialId: trialId,
+                                    );
+                                  } else {
+                                    await _showSignalPickerSheet(
+                                        context, signals, trialId);
+                                  }
+                                },
+                                child: Text(
+                                  '${event.activeSignalCount} active signal${event.activeSignalCount == 1 ? '' : 's'}${event.hasActiveCriticalSignal ? ' · Critical' : ''}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppDesignTokens.warningFg,
+                                  ),
                                 ),
                               ),
                             ],
@@ -878,4 +904,40 @@ String _fmtRange(DateTime from, DateTime to) {
       from.month == to.month &&
       from.day == to.day;
   return sameDay ? fmt.format(from) : '${fmt.format(from)} – ${fmt.format(to)}';
+}
+
+Future<void> _showSignalPickerSheet(
+  BuildContext context,
+  List<Signal> signals,
+  int trialId,
+) async {
+  final signal = await showAppDraggableModalSheet<Signal>(
+    context: context,
+    sheetBuilder: (sheetCtx, scrollController) => ListView.separated(
+      controller: scrollController,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      itemCount: signals.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (_, i) {
+        final s = signals[i];
+        return ListTile(
+          title: Text(s.signalType.replaceAll('_', ' ')),
+          subtitle: Text(
+            s.consequenceText,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: const Icon(
+            Icons.chevron_right,
+            size: 18,
+            color: AppDesignTokens.secondaryText,
+          ),
+          onTap: () => Navigator.of(sheetCtx).pop(s),
+        );
+      },
+    ),
+  );
+  if (signal != null && context.mounted) {
+    await showSignalActionSheet(context, signal: signal, trialId: trialId);
+  }
 }
