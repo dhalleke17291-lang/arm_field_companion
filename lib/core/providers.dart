@@ -2397,16 +2397,33 @@ final trialInterpretationRiskProvider = StreamProvider.autoDispose
     (db.select(db.plots)..where((p) => p.trialId.equals(trialId))).watch(),
     db.select(db.signalDecisionEvents).watch(),
     db.select(db.users).watch(),
+    (db.select(db.trialEnvironmentalRecords)
+          ..where((r) => r.trialId.equals(trialId)))
+        .watch(),
   ]).asyncMap((_) async {
     final coherenceDto = await computeTrialCoherenceDto(
       db: db,
       trialId: trialId,
       signalRepo: signalRepo,
     );
+    final envRepo = ref.read(trialEnvironmentalRepositoryProvider);
+    final allEnvRecords = await envRepo.getRecordsForTrial(trialId);
+    EnvironmentalSeasonSummaryDto? environmentalSummary;
+    if (allEnvRecords.isNotEmpty) {
+      final trial = await (db.select(db.trials)
+            ..where((t) => t.id.equals(trialId)))
+          .getSingleOrNull();
+      environmentalSummary = computeSeasonSummary(
+        allEnvRecords,
+        trial?.createdAt ?? DateTime.now(),
+        trial?.harvestDate ?? DateTime.now(),
+      );
+    }
     return computeTrialInterpretationRiskDto(
       db: db,
       trialId: trialId,
       coherenceDto: coherenceDto,
+      environmentalSummary: environmentalSummary,
     );
   });
 });

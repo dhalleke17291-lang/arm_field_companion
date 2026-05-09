@@ -6,6 +6,7 @@ import '../../core/database/app_database.dart';
 import '../../core/plot_analysis_eligibility.dart';
 import '../../core/utils/check_treatment_helper.dart';
 import '../../features/derived/domain/trial_statistics.dart';
+import 'environmental_window_evaluator.dart';
 import 'interpretation_factors_codec.dart';
 import 'trial_coherence_dto.dart';
 import 'trial_interpretation_risk_dto.dart';
@@ -14,6 +15,7 @@ Future<TrialInterpretationRiskDto> computeTrialInterpretationRiskDto({
   required AppDatabase db,
   required int trialId,
   required TrialCoherenceDto coherenceDto,
+  EnvironmentalSeasonSummaryDto? environmentalSummary,
 }) async {
   final results = await Future.wait([
     // 0: current trial purpose (non-superseded)
@@ -94,6 +96,7 @@ Future<TrialInterpretationRiskDto> computeTrialInterpretationRiskDto({
         purpose, assessments, recordedRatings, analyzablePlots),
     _factorRaterConsistency(raterSignals),
     _factorSiteConditions(parsed),
+    _factorEnvironmentalConditions(environmentalSummary, parsed),
   ];
 
   return TrialInterpretationRiskDto(
@@ -606,6 +609,115 @@ TrialRiskFactorDto _factorSiteConditions(InterpretationFactorsResult? factors) {
     label: label,
     severity: hasModerateSeverity ? 'moderate' : 'none',
     reason: 'Known conditions: ${conditionLabels.join(', ')}.',
+    sourceFields: sources,
+  );
+}
+
+// ── Factor 7: environmental conditions ───────────────────────────────────────
+
+TrialRiskFactorDto _factorEnvironmentalConditions(
+  EnvironmentalSeasonSummaryDto? summary,
+  InterpretationFactorsResult? reportedFactors,
+) {
+  const key = 'environmental_conditions';
+  const label = 'Environmental conditions';
+  const sources = ['trial_environmental_records', 'trial_purposes'];
+
+  if (summary == null) {
+    return const TrialRiskFactorDto(
+      factorKey: key,
+      label: label,
+      severity: 'cannot_evaluate',
+      reason: 'No environmental records available for this trial site.',
+      sourceFields: sources,
+    );
+  }
+
+  final coverage = summary.daysExpected > 0
+      ? summary.daysWithData / summary.daysExpected
+      : 0.0;
+
+  if (coverage < 0.5) {
+    return TrialRiskFactorDto(
+      factorKey: key,
+      label: label,
+      severity: 'cannot_evaluate',
+      reason:
+          'Environmental data covers ${(coverage * 100).toStringAsFixed(0)}% '
+          'of the trial period. Conditions cannot be reliably evaluated.',
+      sourceFields: sources,
+    );
+  }
+
+  final reasons = <String>[];
+  var severity = 'none';
+
+  if (summary.totalExcessiveRainfallEvents > 0) {
+    severity = 'moderate';
+    reasons.add(
+      '${summary.totalExcessiveRainfallEvents} excessive rainfall '
+      '${summary.totalExcessiveRainfallEvents == 1 ? 'event' : 'events'} recorded. '
+      'Review whether post-application conditions affected product uptake or efficacy expression.',
+    );
+  }
+
+  if (summary.totalFrostEvents > 0) {
+    severity = 'moderate';
+    reasons.add(
+      '${summary.totalFrostEvents} frost '
+      '${summary.totalFrostEvents == 1 ? 'event' : 'events'} recorded. '
+      'Review whether frost affected crop response or assessment conditions.',
+    );
+  }
+
+  if (reportedFactors != null &&
+      reportedFactors.selectedKeys.contains('drought_stress') &&
+      (summary.totalPrecipitationMm ?? 0) > 50.0) {
+    severity = 'moderate';
+    reasons.add(
+      'Researcher reported drought stress, but measured precipitation '
+      '(${(summary.totalPrecipitationMm ?? 0).toStringAsFixed(0)} mm) does not confirm dry conditions. '
+      'Review site conditions.',
+    );
+  }
+
+  if (reportedFactors != null &&
+      reportedFactors.selectedKeys.contains('excessive_rainfall') &&
+      summary.totalExcessiveRainfallEvents == 0 &&
+      summary.daysWithData >= 10) {
+    severity = 'moderate';
+    reasons.add(
+      'Researcher reported excessive rainfall, but no excessive rainfall events '
+      'were recorded in measured data. Review site conditions.',
+    );
+  }
+
+  if (reportedFactors != null &&
+      reportedFactors.selectedKeys.contains('frost_risk') &&
+      summary.totalFrostEvents == 0 &&
+      summary.daysWithData >= 10) {
+    reasons.add(
+      'Researcher flagged frost risk, but no frost events were recorded '
+      'in measured data.',
+    );
+  }
+
+  if (reasons.isEmpty) {
+    return const TrialRiskFactorDto(
+      factorKey: key,
+      label: label,
+      severity: 'none',
+      reason:
+          'No notable environmental conditions recorded during the trial period.',
+      sourceFields: sources,
+    );
+  }
+
+  return TrialRiskFactorDto(
+    factorKey: key,
+    label: label,
+    severity: severity,
+    reason: reasons.join(' '),
     sourceFields: sources,
   );
 }

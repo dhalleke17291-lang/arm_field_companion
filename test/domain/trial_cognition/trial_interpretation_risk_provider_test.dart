@@ -7,6 +7,7 @@ import 'package:arm_field_companion/domain/trial_cognition/trial_coherence_dto.d
 import 'package:arm_field_companion/domain/trial_cognition/trial_coherence_evaluator.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_ctq_dto.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_interpretation_risk_dto.dart';
+import 'package:arm_field_companion/domain/trial_cognition/environmental_window_evaluator.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_interpretation_risk_evaluator.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_readiness_statement.dart';
 import 'package:arm_field_companion/features/trials/trial_repository.dart';
@@ -34,12 +35,16 @@ void main() {
   Future<TrialCoherenceDto> coherence(int trialId) =>
       computeTrialCoherenceDto(db: db, trialId: trialId, signalRepo: signalRepo);
 
-  Future<TrialInterpretationRiskDto> risk(int trialId) async {
+  Future<TrialInterpretationRiskDto> risk(
+    int trialId, {
+    EnvironmentalSeasonSummaryDto? environmentalSummary,
+  }) async {
     final coherenceDto = await coherence(trialId);
     return computeTrialInterpretationRiskDto(
       db: db,
       trialId: trialId,
       coherenceDto: coherenceDto,
+      environmentalSummary: environmentalSummary,
     );
   }
 
@@ -508,7 +513,15 @@ void main() {
           ),
         );
 
-    final dto = await risk(trialId);
+    const cleanEnv = EnvironmentalSeasonSummaryDto(
+      totalPrecipitationMm: 30.0,
+      totalFrostEvents: 0,
+      totalExcessiveRainfallEvents: 0,
+      daysWithData: 30,
+      daysExpected: 30,
+      overallConfidence: 'measured',
+    );
+    final dto = await risk(trialId, environmentalSummary: cleanEnv);
 
     for (final f in dto.factors) {
       expect(f.severity, 'none',

@@ -111,14 +111,14 @@ void main() {
       expect(f.reason, contains('Hail damage on NW corner'));
     });
 
-    test('IRK-7: factors list has exactly 6 entries', () async {
+    test('IRK-7: factors list has exactly 7 entries', () async {
       final trialId = await makeTrial();
       final dto = await computeTrialInterpretationRiskDto(
         db: db,
         trialId: trialId,
         coherenceDto: _emptyAligned(),
       );
-      expect(dto.factors.length, 6);
+      expect(dto.factors.length, 7);
     });
   });
 }
