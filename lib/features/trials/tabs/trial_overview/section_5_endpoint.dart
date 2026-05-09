@@ -144,8 +144,31 @@ class _EndpointBody extends StatelessWidget {
             ),
           ),
         ],
-        // TODO(A5): surface per-treatment/per-rep missing ratings once
-        // a granular missing-plot DTO is available from trialEvidenceArcProvider.
+        if (endpointItem.missingPlotGaps.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'Missing ratings',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: AppDesignTokens.secondaryText,
+              letterSpacing: 0.04,
+            ),
+          ),
+          const SizedBox(height: 4),
+          ...endpointItem.missingPlotGaps.map(
+            (gap) => Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                '${gap.treatmentCode} · Rep ${gap.rep} · Plot ${gap.plotId}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

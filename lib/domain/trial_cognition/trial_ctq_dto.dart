@@ -1,5 +1,17 @@
 import 'ctq_factor_acknowledgment_dto.dart';
 
+/// A plot that has no recorded rating — identified by treatment, rep, and plot PK.
+class MissingPlotGap {
+  final String treatmentCode;
+  final int rep;
+  final int plotId;
+  const MissingPlotGap({
+    required this.treatmentCode,
+    required this.rep,
+    required this.plotId,
+  });
+}
+
 /// One CTQ factor evaluation item.
 /// status: unknown | missing | satisfied | review_needed | blocked | not_applicable
 class TrialCtqItemDto {
@@ -13,6 +25,7 @@ class TrialCtqItemDto {
     required this.source,
     this.isAcknowledged = false,
     this.latestAcknowledgment,
+    this.missingPlotGaps = const [],
   });
 
   final String factorKey;
@@ -24,6 +37,10 @@ class TrialCtqItemDto {
   final String source;
   final bool isAcknowledged;
   final CtqFactorAcknowledgmentDto? latestAcknowledgment;
+
+  /// Plots with no recorded rating, grouped by treatment and rep.
+  /// Populated only for completeness-related factors when gaps exist.
+  final List<MissingPlotGap> missingPlotGaps;
 
   bool get isBlocked => status == 'blocked';
   bool get isSatisfied => status == 'satisfied';

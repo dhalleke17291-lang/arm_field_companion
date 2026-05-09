@@ -116,7 +116,7 @@ Future<TrialCtqDto> computeTrialCtqDtoV1(
   for (final factor in factors) {
     final item = switch (factor.factorKey) {
       'plot_completeness' =>
-        _evalPlotCompleteness(factor, analyzablePlots, ratedPlotPks),
+        _evalPlotCompleteness(factor, analyzablePlots, ratedPlotPks, treatments),
       'photo_evidence' => _evalPhotoEvidence(factor, photos),
       'gps_evidence' =>
         _evalGpsEvidence(factor, recordedRatings, gpsCount),
@@ -190,6 +190,7 @@ TrialCtqItemDto _evalPlotCompleteness(
   CtqFactorDefinition factor,
   List<Plot> analyzablePlots,
   Set<int> ratedPlotPks,
+  List<Treatment> treatments,
 ) {
   if (analyzablePlots.isEmpty) {
     return _item(
@@ -202,6 +203,25 @@ TrialCtqItemDto _evalPlotCompleteness(
   final total = analyzablePlots.length;
   final rated =
       ratedPlotPks.intersection(analyzablePlots.map((p) => p.id).toSet()).length;
+
+  final missingGaps = <MissingPlotGap>[];
+  if (rated < total) {
+    final treatmentsById = {for (final t in treatments) t.id: t};
+    for (final plot in analyzablePlots) {
+      if (!ratedPlotPks.contains(plot.id)) {
+        final treatment = plot.treatmentId != null
+            ? treatmentsById[plot.treatmentId]
+            : null;
+        if (treatment != null && plot.rep != null) {
+          missingGaps.add(MissingPlotGap(
+            treatmentCode: treatment.code,
+            rep: plot.rep!,
+            plotId: plot.id,
+          ));
+        }
+      }
+    }
+  }
 
   if (rated == total) {
     return _item(
@@ -216,6 +236,7 @@ TrialCtqItemDto _evalPlotCompleteness(
       status: 'review_needed',
       evidenceSummary: '$rated/$total plots have recorded ratings.',
       reason: 'Rating evidence is partial; review before export.',
+      missingPlotGaps: missingGaps,
     );
   } else {
     return _item(
@@ -223,6 +244,7 @@ TrialCtqItemDto _evalPlotCompleteness(
       status: 'missing',
       evidenceSummary: '0/$total plots rated.',
       reason: 'No plot ratings have been recorded.',
+      missingPlotGaps: missingGaps,
     );
   }
 }
@@ -659,6 +681,7 @@ TrialCtqItemDto _item(
   required String status,
   required String evidenceSummary,
   required String reason,
+  List<MissingPlotGap> missingPlotGaps = const [],
 }) {
   return TrialCtqItemDto(
     factorKey: factor.factorKey,
@@ -668,5 +691,6 @@ TrialCtqItemDto _item(
     evidenceSummary: evidenceSummary,
     reason: reason,
     source: factor.source,
+    missingPlotGaps: missingPlotGaps,
   );
 }
