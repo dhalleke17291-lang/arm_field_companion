@@ -33,7 +33,11 @@ class Section1Identity extends ConsumerWidget {
             final purposeRepo = ref.read(trialPurposeRepositoryProvider);
             final existing = await purposeRepo.getCurrentTrialPurpose(trial.id);
             if (existing != null) {
-              await purposeRepo.confirmTrialPurpose(existing.id);
+              final user = await ref.read(currentUserProvider.future);
+              await purposeRepo.confirmTrialPurpose(
+                existing.id,
+                confirmedBy: user?.displayName,
+              );
               ref.invalidate(trialPurposeProvider(trial.id));
             }
           },
