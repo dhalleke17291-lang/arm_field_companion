@@ -80,9 +80,11 @@ Future<TrialEvidenceArcDto> computeTrialEvidenceArcDto(
       '$n ${n == 1 ? singular : plural}';
   final actualSummary = sessions.isEmpty
       ? 'No sessions.'
-      : '${pl(sessions.length, 'session', 'sessions')} · '
-          '${pl(recordedRatings, 'rating', 'ratings')} · '
-          '${photos.isEmpty ? 'no photos' : pl(photos.length, 'photo', 'photos')}';
+      : [
+          pl(sessions.length, 'session', 'sessions'),
+          pl(recordedRatings, 'rating', 'ratings'),
+          if (photos.isNotEmpty) pl(photos.length, 'photo', 'photos'),
+        ].join(' · ');
 
   return TrialEvidenceArcDto(
     trialId: trialId,
