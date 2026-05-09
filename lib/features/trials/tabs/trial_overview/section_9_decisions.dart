@@ -21,6 +21,11 @@ class Section9Decisions extends ConsumerWidget {
     final signalsAsync =
         ref.watch(projectedOpenSignalGroupsForTrialProvider(trial.id));
     final rawSignalsAsync = ref.watch(openSignalsForTrialProvider(trial.id));
+    final assessmentDefs =
+        ref.watch(assessmentDefinitionsProvider).valueOrNull ?? [];
+    final assessmentNameById = {
+      for (final def in assessmentDefs) def.id: def.name,
+    };
 
     return OverviewSectionCard(
       number: 9,
@@ -74,6 +79,7 @@ class Section9Decisions extends ConsumerWidget {
                         group: s,
                         trialId: trial.id,
                         rawSignalsById: rawSignalsById,
+                        assessmentNameById: assessmentNameById,
                       ),
                     ),
                   ),
@@ -143,11 +149,13 @@ class _SignalGroupRow extends StatefulWidget {
     required this.group,
     required this.trialId,
     required this.rawSignalsById,
+    required this.assessmentNameById,
   });
 
   final SignalReviewGroupProjection group;
   final int trialId;
   final Map<int, Signal> rawSignalsById;
+  final Map<int, String> assessmentNameById;
 
   @override
   State<_SignalGroupRow> createState() => _SignalGroupRowState();
@@ -287,6 +295,18 @@ class _SignalGroupRowState extends State<_SignalGroupRow> {
                         ),
                     ],
                   ),
+                  if (group.affectedAssessmentIds.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      group.affectedAssessmentIds
+                          .map((id) =>
+                              widget.assessmentNameById[id] ?? 'Assessment $id')
+                          .join(', '),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                    ),
+                  ],
                   if (group.groupingBasis.isNotEmpty &&
                       group.groupingBasis.contains('assessment')) ...[
                     const SizedBox(height: 2),
@@ -372,14 +392,8 @@ class _SignalGroupRowState extends State<_SignalGroupRow> {
     );
   }
 
-  static String _displayTitle(SignalReviewGroupProjection group) {
-    if (group.groupType != 'aov_prediction' ||
-        group.affectedAssessmentIds.isEmpty) {
-      return group.displayTitle;
-    }
-    final ids = group.affectedAssessmentIds.join(', ');
-    return '${group.displayTitle} — assessment $ids';
-  }
+  static String _displayTitle(SignalReviewGroupProjection group) =>
+      group.displayTitle;
 }
 
 class _InterpretationLine extends StatelessWidget {
