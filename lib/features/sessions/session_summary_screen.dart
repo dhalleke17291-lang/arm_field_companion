@@ -895,7 +895,8 @@ class _SessionSummaryScreenState extends ConsumerState<SessionSummaryScreen> {
         ref.watch(treatmentsForTrialProvider(widget.trial.id)).valueOrNull ??
             [];
     final treatmentNames = <int, String>{
-      for (final t in treatments) t.id: '${t.code} ${t.name}',
+      for (final t in treatments)
+        t.id: t.name != t.code ? '${t.code} ${t.name}' : t.code,
     };
 
     // Build human-readable assessment names from TrialAssessment metadata
