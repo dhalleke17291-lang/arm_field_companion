@@ -229,7 +229,7 @@ TrialCoherenceCheckDto _checkApplicationTiming({
       status: 'cannot_evaluate',
       reason: treatments.isEmpty
           ? 'No treatments defined — application timing cannot be evaluated.'
-          : 'No application events recorded.',
+          : 'No application events recorded. Add application events to evaluate timing.',
       sourceFields: sources,
     );
   }
@@ -241,7 +241,7 @@ TrialCoherenceCheckDto _checkApplicationTiming({
       checkKey: key,
       label: label,
       status: 'cannot_evaluate',
-      reason: 'BBCH growth stage was not recorded at any application event.',
+      reason: 'BBCH growth stage missing at application. Record BBCH when confirming applications.',
       sourceFields: sources,
     );
   }

@@ -245,7 +245,13 @@ class _CoherenceCheckRow extends StatefulWidget {
 }
 
 class _CoherenceCheckRowState extends State<_CoherenceCheckRow> {
-  bool _expanded = false;
+  late bool _expanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = widget.check.status == 'cannot_evaluate';
+  }
 
   @override
   Widget build(BuildContext context) {
