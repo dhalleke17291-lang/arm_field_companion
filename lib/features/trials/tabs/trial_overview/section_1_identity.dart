@@ -29,18 +29,6 @@ class Section1Identity extends ConsumerWidget {
           trial: trial,
           purpose: dto,
           onIntent: () => showTrialIntentSheet(context, ref, trial: trial),
-          onConfirmIntent: () async {
-            final purposeRepo = ref.read(trialPurposeRepositoryProvider);
-            final existing = await purposeRepo.getCurrentTrialPurpose(trial.id);
-            if (existing != null) {
-              final user = await ref.read(currentUserProvider.future);
-              await purposeRepo.confirmTrialPurpose(
-                existing.id,
-                confirmedBy: user?.displayName,
-              );
-              ref.invalidate(trialPurposeProvider(trial.id));
-            }
-          },
         ),
       ),
     );
@@ -52,13 +40,11 @@ class _IdentityBody extends StatelessWidget {
     required this.trial,
     required this.purpose,
     required this.onIntent,
-    required this.onConfirmIntent,
   });
 
   final Trial trial;
   final TrialPurposeDto purpose;
   final VoidCallback onIntent;
-  final VoidCallback onConfirmIntent;
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +62,7 @@ class _IdentityBody extends StatelessWidget {
         if (purpose.requiresConfirmation)
           _InferenceBanner(
             purpose: purpose,
-            onConfirm: onConfirmIntent,
+            onConfirm: onIntent,
             onEdit: onIntent,
           )
         else
