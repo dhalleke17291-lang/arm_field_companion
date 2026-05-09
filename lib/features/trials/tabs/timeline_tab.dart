@@ -400,17 +400,13 @@ class _TimelineEventRow extends ConsumerWidget {
       _TimelineEventType.session => scheme.tertiary,
       _TimelineEventType.note => scheme.primaryContainer,
     };
-    final hasWeather = event.type == _TimelineEventType.session &&
-            event.ratingSessionId != null
+    final weatherSnapshot = (event.type == _TimelineEventType.session &&
+            event.ratingSessionId != null)
         ? ref
-            .watch(
-              weatherSnapshotForSessionProvider(event.ratingSessionId!),
-            )
-            .maybeWhen(
-              data: (w) => w != null,
-              orElse: () => false,
-            )
-        : false;
+            .watch(weatherSnapshotForSessionProvider(event.ratingSessionId!))
+            .valueOrNull
+        : null;
+    final hasWeather = weatherSnapshot != null;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -607,6 +603,10 @@ class _TimelineEventRow extends ConsumerWidget {
                                   color: scheme.onSurfaceVariant,
                                 ),
                               ),
+                            ],
+                            if (weatherSnapshot != null) ...[
+                              const SizedBox(height: 3),
+                              _WeatherSnapshotLine(snapshot: weatherSnapshot),
                             ],
                           ],
                           // ── Application enrichments ──────────────────────
@@ -833,6 +833,41 @@ class _IntervalLabel extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _WeatherSnapshotLine extends StatelessWidget {
+  final WeatherSnapshot snapshot;
+  const _WeatherSnapshotLine({required this.snapshot});
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = <String>[];
+
+    if (snapshot.temperature != null) {
+      parts.add('${snapshot.temperature!.toStringAsFixed(0)}°${snapshot.temperatureUnit}');
+    }
+
+    if (snapshot.windSpeed != null) {
+      final dir = snapshot.windDirection != null ? ' ${snapshot.windDirection}' : '';
+      parts.add('${snapshot.windSpeed!.toStringAsFixed(0)} ${snapshot.windSpeedUnit}$dir');
+    }
+
+    if (snapshot.cloudCover != null && snapshot.cloudCover!.isNotEmpty) {
+      parts.add(snapshot.cloudCover!);
+    }
+
+    if (parts.isEmpty) return const SizedBox.shrink();
+
+    return Text(
+      parts.join(' · '),
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: AppDesignTokens.secondaryText,
+        fontSize: 11,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
