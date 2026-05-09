@@ -171,7 +171,11 @@ TrialReadinessStatement computeTrialReadinessStatement({
       (riskDto.riskLevel == 'low' || riskDto.riskLevel == 'moderate') &&
       (trialState == 'active' || trialState == 'closed');
 
-  final statusLabel = isReady ? 'Export ready' : 'Not export-ready';
+  final statusLabel = isReady
+      ? 'Export ready'
+      : trialState == 'active'
+          ? 'In progress — review before export'
+          : 'Not export-ready';
   final summaryText = isReady
       ? 'Trial is ready for export and analysis.'
       : 'Trial is not currently export-ready.';

@@ -141,7 +141,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.text('Not export-ready'), findsOneWidget);
+      expect(find.text('In progress — review before export'), findsOneWidget);
       expect(find.text('NEEDS ATTENTION'), findsOneWidget);
       expect(
         find.textContaining('Primary endpoint data'),
