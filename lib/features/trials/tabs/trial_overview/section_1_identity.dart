@@ -128,6 +128,12 @@ class _InferenceBanner extends StatelessWidget {
                 value: inferred.trialType!,
                 confidence: inferred.trialTypeConfidence,
               ),
+            if (inferred.regulatoryContext != null)
+              _InferredField(
+                label: 'Regulatory context',
+                value: _resolveRegulatoryLabel(inferred.regulatoryContext!),
+                confidence: inferred.regulatoryContextConfidence,
+              ),
             if (inferred.treatmentRoles.isNotEmpty)
               _InferredField(
                 label: 'Treatment roles',
@@ -247,6 +253,14 @@ class _InferredField extends StatelessWidget {
     );
   }
 }
+
+String _resolveRegulatoryLabel(String key) => switch (key) {
+      'registration' => 'Regulatory registration',
+      'internalResearch' => 'Internal research',
+      'academic' => 'Academic / extension',
+      'undetermined' => 'Not determined',
+      _ => key,
+    };
 
 // ── Confirmed / manual purpose section ───────────────────────────────────────
 

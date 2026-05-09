@@ -363,14 +363,19 @@ List<InferredTreatmentRole> inferTreatmentRoles(
     String workspaceType) {
   return switch (workspaceType) {
     'glp' => (
-        'PMRA or regulatory submission likely',
+        'registration',
         FieldConfidence.moderate,
-        'Regulatory context inferred from glp workspace — PMRA or regulatory submission likely.',
+        "Regulatory context inferred as registration from 'glp' workspace.",
       ),
     'efficacy' => (
-        'Internal research or market positioning',
+        'internalResearch',
         FieldConfidence.low,
-        'Regulatory context inferred as internal research from efficacy workspace — low confidence.',
+        "Regulatory context inferred as internal research from 'efficacy' workspace — low confidence.",
+      ),
+    'standalone' => (
+        'internalResearch',
+        FieldConfidence.low,
+        'Regulatory context inferred as internal research from custom workspace — low confidence.',
       ),
     _ => (null, FieldConfidence.cannotInfer, null),
   };

@@ -199,6 +199,12 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
       // fieldText(1) carries the display label (or existing trial_purpose text)
       // for backward-compat display on story screen. regulatory_context is the
       // structured key written from the picker.
+      // Preserve arm_structure provenance when editing ARM-inferred intent.
+      final effectiveSourceMode =
+          widget.existing?.sourceMode == TrialPurposeSourceMode.armStructure
+              ? TrialPurposeSourceMode.armStructure
+              : TrialPurposeSourceMode.manualRevelation;
+
       final companion = TrialPurposesCompanion.insert(
         trialId: widget.trial.id,
         claimBeingTested: Value(fieldText(0)),
@@ -207,7 +213,7 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
         primaryEndpoint: Value(fieldText(2)),
         treatmentRoleSummary: Value(fieldText(3)),
         knownInterpretationFactors: Value(fieldText(4)),
-        sourceMode: const Value(TrialPurposeSourceMode.manualRevelation),
+        sourceMode: Value(effectiveSourceMode),
       );
 
       final int newId;
