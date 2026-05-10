@@ -550,7 +550,6 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
                   return _buildEmptyState(
                     context,
                     widget.workspaceFilter,
-                    onImportTrial: () => ImportTrialSheet.show(context),
                   );
                 }
                 final displayed = _deriveDisplayedTrials(
@@ -663,9 +662,8 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
   /// Empty state when no trials exist. Message varies by workspace filter.
   Widget _buildEmptyState(
     BuildContext context,
-    TrialListFilter filter, {
-    required VoidCallback onImportTrial,
-  }) {
+    TrialListFilter filter,
+  ) {
     final scheme = Theme.of(context).colorScheme;
     final (String title, String subtitle) = switch (filter) {
       TrialListFilter.standaloneOnly => (
@@ -716,22 +714,6 @@ class _TrialListScreenState extends ConsumerState<TrialListScreen> {
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.black54,
-              ),
-            ),
-            const SizedBox(height: AppDesignTokens.spacing24),
-            FilledButton.icon(
-              onPressed: onImportTrial,
-              icon: const Icon(Icons.file_download_outlined, size: 22),
-              label: const Text('Import Trial'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDesignTokens.spacing24,
-                  vertical: AppDesignTokens.spacing16,
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
               ),
             ),
           ],
