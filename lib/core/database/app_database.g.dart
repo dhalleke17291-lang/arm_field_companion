@@ -34009,8 +34009,6 @@ class ArmTrialMetadataData extends DataClass
   /// Session used for ARM import ratings; preferred for Rating Shell export.
   /// Plain int (no FK) to avoid Drift circular ref: sessions already reference trials.
   final int? armImportSessionId;
-
-  /// Last ARM Rating Shell (.xlsx) path applied from the shell link workflow.
   final String? armLinkedShellPath;
 
   /// When [armLinkedShellPath] was last applied.
@@ -42062,6 +42060,18 @@ class $TrialPurposesTable extends TrialPurposes
   late final GeneratedColumn<String> inferredFieldsJson =
       GeneratedColumn<String>('inferred_fields_json', aliasedName, true,
           type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _plannedDatByAssessmentMeta =
+      const VerificationMeta('plannedDatByAssessment');
+  @override
+  late final GeneratedColumn<String> plannedDatByAssessment =
+      GeneratedColumn<String>('planned_dat_by_assessment', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _protocolTimingWindowMeta =
+      const VerificationMeta('protocolTimingWindow');
+  @override
+  late final GeneratedColumn<int> protocolTimingWindow = GeneratedColumn<int>(
+      'protocol_timing_window', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _confirmedAtMeta =
       const VerificationMeta('confirmedAt');
   @override
@@ -42121,6 +42131,8 @@ class $TrialPurposesTable extends TrialPurposes
         requiredEvidenceSummary,
         readinessCriteriaSummary,
         inferredFieldsJson,
+        plannedDatByAssessment,
+        protocolTimingWindow,
         confirmedAt,
         confirmedBy,
         requiresConfirmation,
@@ -42225,6 +42237,18 @@ class $TrialPurposesTable extends TrialPurposes
           inferredFieldsJson.isAcceptableOrUnknown(
               data['inferred_fields_json']!, _inferredFieldsJsonMeta));
     }
+    if (data.containsKey('planned_dat_by_assessment')) {
+      context.handle(
+          _plannedDatByAssessmentMeta,
+          plannedDatByAssessment.isAcceptableOrUnknown(
+              data['planned_dat_by_assessment']!, _plannedDatByAssessmentMeta));
+    }
+    if (data.containsKey('protocol_timing_window')) {
+      context.handle(
+          _protocolTimingWindowMeta,
+          protocolTimingWindow.isAcceptableOrUnknown(
+              data['protocol_timing_window']!, _protocolTimingWindowMeta));
+    }
     if (data.containsKey('confirmed_at')) {
       context.handle(
           _confirmedAtMeta,
@@ -42301,6 +42325,11 @@ class $TrialPurposesTable extends TrialPurposes
           data['${effectivePrefix}readiness_criteria_summary']),
       inferredFieldsJson: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}inferred_fields_json']),
+      plannedDatByAssessment: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}planned_dat_by_assessment']),
+      protocolTimingWindow: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}protocol_timing_window']),
       confirmedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}confirmed_at']),
       confirmedBy: attachedDatabase.typeMapping
@@ -42338,6 +42367,16 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
   final String? requiredEvidenceSummary;
   final String? readinessCriteriaSummary;
   final String? inferredFieldsJson;
+
+  /// JSON map of {trialAssessmentId: plannedDat} for standalone deviation detection.
+  /// Keyed by TrialAssessment.id (as string). Null when not specified (ARM trials
+  /// use arm_session_metadata instead). Written by Mode C Q6.
+  final String? plannedDatByAssessment;
+
+  /// Acceptable timing deviation in ±days for standalone protocol checking.
+  /// Null means no window specified — no deviation rows will be generated.
+  /// Written by Mode C Q7.
+  final int? protocolTimingWindow;
   final DateTime? confirmedAt;
   final String? confirmedBy;
 
@@ -42363,6 +42402,8 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
       this.requiredEvidenceSummary,
       this.readinessCriteriaSummary,
       this.inferredFieldsJson,
+      this.plannedDatByAssessment,
+      this.protocolTimingWindow,
       this.confirmedAt,
       this.confirmedBy,
       required this.requiresConfirmation,
@@ -42410,6 +42451,13 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
     }
     if (!nullToAbsent || inferredFieldsJson != null) {
       map['inferred_fields_json'] = Variable<String>(inferredFieldsJson);
+    }
+    if (!nullToAbsent || plannedDatByAssessment != null) {
+      map['planned_dat_by_assessment'] =
+          Variable<String>(plannedDatByAssessment);
+    }
+    if (!nullToAbsent || protocolTimingWindow != null) {
+      map['protocol_timing_window'] = Variable<int>(protocolTimingWindow);
     }
     if (!nullToAbsent || confirmedAt != null) {
       map['confirmed_at'] = Variable<DateTime>(confirmedAt);
@@ -42464,6 +42512,12 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
       inferredFieldsJson: inferredFieldsJson == null && nullToAbsent
           ? const Value.absent()
           : Value(inferredFieldsJson),
+      plannedDatByAssessment: plannedDatByAssessment == null && nullToAbsent
+          ? const Value.absent()
+          : Value(plannedDatByAssessment),
+      protocolTimingWindow: protocolTimingWindow == null && nullToAbsent
+          ? const Value.absent()
+          : Value(protocolTimingWindow),
       confirmedAt: confirmedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(confirmedAt),
@@ -42505,6 +42559,10 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
           serializer.fromJson<String?>(json['readinessCriteriaSummary']),
       inferredFieldsJson:
           serializer.fromJson<String?>(json['inferredFieldsJson']),
+      plannedDatByAssessment:
+          serializer.fromJson<String?>(json['plannedDatByAssessment']),
+      protocolTimingWindow:
+          serializer.fromJson<int?>(json['protocolTimingWindow']),
       confirmedAt: serializer.fromJson<DateTime?>(json['confirmedAt']),
       confirmedBy: serializer.fromJson<String?>(json['confirmedBy']),
       requiresConfirmation:
@@ -42537,6 +42595,9 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
       'readinessCriteriaSummary':
           serializer.toJson<String?>(readinessCriteriaSummary),
       'inferredFieldsJson': serializer.toJson<String?>(inferredFieldsJson),
+      'plannedDatByAssessment':
+          serializer.toJson<String?>(plannedDatByAssessment),
+      'protocolTimingWindow': serializer.toJson<int?>(protocolTimingWindow),
       'confirmedAt': serializer.toJson<DateTime?>(confirmedAt),
       'confirmedBy': serializer.toJson<String?>(confirmedBy),
       'requiresConfirmation': serializer.toJson<int>(requiresConfirmation),
@@ -42562,6 +42623,8 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
           Value<String?> requiredEvidenceSummary = const Value.absent(),
           Value<String?> readinessCriteriaSummary = const Value.absent(),
           Value<String?> inferredFieldsJson = const Value.absent(),
+          Value<String?> plannedDatByAssessment = const Value.absent(),
+          Value<int?> protocolTimingWindow = const Value.absent(),
           Value<DateTime?> confirmedAt = const Value.absent(),
           Value<String?> confirmedBy = const Value.absent(),
           int? requiresConfirmation,
@@ -42603,6 +42666,12 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
         inferredFieldsJson: inferredFieldsJson.present
             ? inferredFieldsJson.value
             : this.inferredFieldsJson,
+        plannedDatByAssessment: plannedDatByAssessment.present
+            ? plannedDatByAssessment.value
+            : this.plannedDatByAssessment,
+        protocolTimingWindow: protocolTimingWindow.present
+            ? protocolTimingWindow.value
+            : this.protocolTimingWindow,
         confirmedAt: confirmedAt.present ? confirmedAt.value : this.confirmedAt,
         confirmedBy: confirmedBy.present ? confirmedBy.value : this.confirmedBy,
         requiresConfirmation: requiresConfirmation ?? this.requiresConfirmation,
@@ -42649,6 +42718,12 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
       inferredFieldsJson: data.inferredFieldsJson.present
           ? data.inferredFieldsJson.value
           : this.inferredFieldsJson,
+      plannedDatByAssessment: data.plannedDatByAssessment.present
+          ? data.plannedDatByAssessment.value
+          : this.plannedDatByAssessment,
+      protocolTimingWindow: data.protocolTimingWindow.present
+          ? data.protocolTimingWindow.value
+          : this.protocolTimingWindow,
       confirmedAt:
           data.confirmedAt.present ? data.confirmedAt.value : this.confirmedAt,
       confirmedBy:
@@ -42682,6 +42757,8 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
           ..write('requiredEvidenceSummary: $requiredEvidenceSummary, ')
           ..write('readinessCriteriaSummary: $readinessCriteriaSummary, ')
           ..write('inferredFieldsJson: $inferredFieldsJson, ')
+          ..write('plannedDatByAssessment: $plannedDatByAssessment, ')
+          ..write('protocolTimingWindow: $protocolTimingWindow, ')
           ..write('confirmedAt: $confirmedAt, ')
           ..write('confirmedBy: $confirmedBy, ')
           ..write('requiresConfirmation: $requiresConfirmation, ')
@@ -42709,6 +42786,8 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
         requiredEvidenceSummary,
         readinessCriteriaSummary,
         inferredFieldsJson,
+        plannedDatByAssessment,
+        protocolTimingWindow,
         confirmedAt,
         confirmedBy,
         requiresConfirmation,
@@ -42735,6 +42814,8 @@ class TrialPurpose extends DataClass implements Insertable<TrialPurpose> {
           other.requiredEvidenceSummary == this.requiredEvidenceSummary &&
           other.readinessCriteriaSummary == this.readinessCriteriaSummary &&
           other.inferredFieldsJson == this.inferredFieldsJson &&
+          other.plannedDatByAssessment == this.plannedDatByAssessment &&
+          other.protocolTimingWindow == this.protocolTimingWindow &&
           other.confirmedAt == this.confirmedAt &&
           other.confirmedBy == this.confirmedBy &&
           other.requiresConfirmation == this.requiresConfirmation &&
@@ -42759,6 +42840,8 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
   final Value<String?> requiredEvidenceSummary;
   final Value<String?> readinessCriteriaSummary;
   final Value<String?> inferredFieldsJson;
+  final Value<String?> plannedDatByAssessment;
+  final Value<int?> protocolTimingWindow;
   final Value<DateTime?> confirmedAt;
   final Value<String?> confirmedBy;
   final Value<int> requiresConfirmation;
@@ -42781,6 +42864,8 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
     this.requiredEvidenceSummary = const Value.absent(),
     this.readinessCriteriaSummary = const Value.absent(),
     this.inferredFieldsJson = const Value.absent(),
+    this.plannedDatByAssessment = const Value.absent(),
+    this.protocolTimingWindow = const Value.absent(),
     this.confirmedAt = const Value.absent(),
     this.confirmedBy = const Value.absent(),
     this.requiresConfirmation = const Value.absent(),
@@ -42804,6 +42889,8 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
     this.requiredEvidenceSummary = const Value.absent(),
     this.readinessCriteriaSummary = const Value.absent(),
     this.inferredFieldsJson = const Value.absent(),
+    this.plannedDatByAssessment = const Value.absent(),
+    this.protocolTimingWindow = const Value.absent(),
     this.confirmedAt = const Value.absent(),
     this.confirmedBy = const Value.absent(),
     this.requiresConfirmation = const Value.absent(),
@@ -42827,6 +42914,8 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
     Expression<String>? requiredEvidenceSummary,
     Expression<String>? readinessCriteriaSummary,
     Expression<String>? inferredFieldsJson,
+    Expression<String>? plannedDatByAssessment,
+    Expression<int>? protocolTimingWindow,
     Expression<DateTime>? confirmedAt,
     Expression<String>? confirmedBy,
     Expression<int>? requiresConfirmation,
@@ -42856,6 +42945,10 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
         'readiness_criteria_summary': readinessCriteriaSummary,
       if (inferredFieldsJson != null)
         'inferred_fields_json': inferredFieldsJson,
+      if (plannedDatByAssessment != null)
+        'planned_dat_by_assessment': plannedDatByAssessment,
+      if (protocolTimingWindow != null)
+        'protocol_timing_window': protocolTimingWindow,
       if (confirmedAt != null) 'confirmed_at': confirmedAt,
       if (confirmedBy != null) 'confirmed_by': confirmedBy,
       if (requiresConfirmation != null)
@@ -42882,6 +42975,8 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
       Value<String?>? requiredEvidenceSummary,
       Value<String?>? readinessCriteriaSummary,
       Value<String?>? inferredFieldsJson,
+      Value<String?>? plannedDatByAssessment,
+      Value<int?>? protocolTimingWindow,
       Value<DateTime?>? confirmedAt,
       Value<String?>? confirmedBy,
       Value<int>? requiresConfirmation,
@@ -42908,6 +43003,9 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
       readinessCriteriaSummary:
           readinessCriteriaSummary ?? this.readinessCriteriaSummary,
       inferredFieldsJson: inferredFieldsJson ?? this.inferredFieldsJson,
+      plannedDatByAssessment:
+          plannedDatByAssessment ?? this.plannedDatByAssessment,
+      protocolTimingWindow: protocolTimingWindow ?? this.protocolTimingWindow,
       confirmedAt: confirmedAt ?? this.confirmedAt,
       confirmedBy: confirmedBy ?? this.confirmedBy,
       requiresConfirmation: requiresConfirmation ?? this.requiresConfirmation,
@@ -42970,6 +43068,13 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
     if (inferredFieldsJson.present) {
       map['inferred_fields_json'] = Variable<String>(inferredFieldsJson.value);
     }
+    if (plannedDatByAssessment.present) {
+      map['planned_dat_by_assessment'] =
+          Variable<String>(plannedDatByAssessment.value);
+    }
+    if (protocolTimingWindow.present) {
+      map['protocol_timing_window'] = Variable<int>(protocolTimingWindow.value);
+    }
     if (confirmedAt.present) {
       map['confirmed_at'] = Variable<DateTime>(confirmedAt.value);
     }
@@ -43009,6 +43114,8 @@ class TrialPurposesCompanion extends UpdateCompanion<TrialPurpose> {
           ..write('requiredEvidenceSummary: $requiredEvidenceSummary, ')
           ..write('readinessCriteriaSummary: $readinessCriteriaSummary, ')
           ..write('inferredFieldsJson: $inferredFieldsJson, ')
+          ..write('plannedDatByAssessment: $plannedDatByAssessment, ')
+          ..write('protocolTimingWindow: $protocolTimingWindow, ')
           ..write('confirmedAt: $confirmedAt, ')
           ..write('confirmedBy: $confirmedBy, ')
           ..write('requiresConfirmation: $requiresConfirmation, ')
@@ -46115,6 +46222,1734 @@ class TrialEnvironmentalRecordsCompanion
   }
 }
 
+class $AssessmentGuidesTable extends AssessmentGuides
+    with TableInfo<$AssessmentGuidesTable, AssessmentGuide> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AssessmentGuidesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _assessmentDefinitionIdMeta =
+      const VerificationMeta('assessmentDefinitionId');
+  @override
+  late final GeneratedColumn<int> assessmentDefinitionId = GeneratedColumn<int>(
+      'assessment_definition_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES assessment_definitions (id) ON DELETE CASCADE'));
+  static const VerificationMeta _trialAssessmentIdMeta =
+      const VerificationMeta('trialAssessmentId');
+  @override
+  late final GeneratedColumn<int> trialAssessmentId = GeneratedColumn<int>(
+      'trial_assessment_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES trial_assessments (id) ON DELETE CASCADE'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const CustomExpression("(strftime('%s','now') * 1000)"));
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, assessmentDefinitionId, trialAssessmentId, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'assessment_guides';
+  @override
+  VerificationContext validateIntegrity(Insertable<AssessmentGuide> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('assessment_definition_id')) {
+      context.handle(
+          _assessmentDefinitionIdMeta,
+          assessmentDefinitionId.isAcceptableOrUnknown(
+              data['assessment_definition_id']!, _assessmentDefinitionIdMeta));
+    }
+    if (data.containsKey('trial_assessment_id')) {
+      context.handle(
+          _trialAssessmentIdMeta,
+          trialAssessmentId.isAcceptableOrUnknown(
+              data['trial_assessment_id']!, _trialAssessmentIdMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AssessmentGuide map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AssessmentGuide(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      assessmentDefinitionId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}assessment_definition_id']),
+      trialAssessmentId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}trial_assessment_id']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $AssessmentGuidesTable createAlias(String alias) {
+    return $AssessmentGuidesTable(attachedDatabase, alias);
+  }
+}
+
+class AssessmentGuide extends DataClass implements Insertable<AssessmentGuide> {
+  final int id;
+
+  /// Lane 1/2: links to the assessment definition (type-wide content).
+  /// Null for Lane 3 (trial-specific customer uploads).
+  final int? assessmentDefinitionId;
+
+  /// Lane 3: links to the specific trial assessment. Null for Lane 1/2.
+  final int? trialAssessmentId;
+  final int createdAt;
+  const AssessmentGuide(
+      {required this.id,
+      this.assessmentDefinitionId,
+      this.trialAssessmentId,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || assessmentDefinitionId != null) {
+      map['assessment_definition_id'] = Variable<int>(assessmentDefinitionId);
+    }
+    if (!nullToAbsent || trialAssessmentId != null) {
+      map['trial_assessment_id'] = Variable<int>(trialAssessmentId);
+    }
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  AssessmentGuidesCompanion toCompanion(bool nullToAbsent) {
+    return AssessmentGuidesCompanion(
+      id: Value(id),
+      assessmentDefinitionId: assessmentDefinitionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assessmentDefinitionId),
+      trialAssessmentId: trialAssessmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(trialAssessmentId),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory AssessmentGuide.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AssessmentGuide(
+      id: serializer.fromJson<int>(json['id']),
+      assessmentDefinitionId:
+          serializer.fromJson<int?>(json['assessmentDefinitionId']),
+      trialAssessmentId: serializer.fromJson<int?>(json['trialAssessmentId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'assessmentDefinitionId': serializer.toJson<int?>(assessmentDefinitionId),
+      'trialAssessmentId': serializer.toJson<int?>(trialAssessmentId),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  AssessmentGuide copyWith(
+          {int? id,
+          Value<int?> assessmentDefinitionId = const Value.absent(),
+          Value<int?> trialAssessmentId = const Value.absent(),
+          int? createdAt}) =>
+      AssessmentGuide(
+        id: id ?? this.id,
+        assessmentDefinitionId: assessmentDefinitionId.present
+            ? assessmentDefinitionId.value
+            : this.assessmentDefinitionId,
+        trialAssessmentId: trialAssessmentId.present
+            ? trialAssessmentId.value
+            : this.trialAssessmentId,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  AssessmentGuide copyWithCompanion(AssessmentGuidesCompanion data) {
+    return AssessmentGuide(
+      id: data.id.present ? data.id.value : this.id,
+      assessmentDefinitionId: data.assessmentDefinitionId.present
+          ? data.assessmentDefinitionId.value
+          : this.assessmentDefinitionId,
+      trialAssessmentId: data.trialAssessmentId.present
+          ? data.trialAssessmentId.value
+          : this.trialAssessmentId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssessmentGuide(')
+          ..write('id: $id, ')
+          ..write('assessmentDefinitionId: $assessmentDefinitionId, ')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, assessmentDefinitionId, trialAssessmentId, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AssessmentGuide &&
+          other.id == this.id &&
+          other.assessmentDefinitionId == this.assessmentDefinitionId &&
+          other.trialAssessmentId == this.trialAssessmentId &&
+          other.createdAt == this.createdAt);
+}
+
+class AssessmentGuidesCompanion extends UpdateCompanion<AssessmentGuide> {
+  final Value<int> id;
+  final Value<int?> assessmentDefinitionId;
+  final Value<int?> trialAssessmentId;
+  final Value<int> createdAt;
+  const AssessmentGuidesCompanion({
+    this.id = const Value.absent(),
+    this.assessmentDefinitionId = const Value.absent(),
+    this.trialAssessmentId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  AssessmentGuidesCompanion.insert({
+    this.id = const Value.absent(),
+    this.assessmentDefinitionId = const Value.absent(),
+    this.trialAssessmentId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  static Insertable<AssessmentGuide> custom({
+    Expression<int>? id,
+    Expression<int>? assessmentDefinitionId,
+    Expression<int>? trialAssessmentId,
+    Expression<int>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (assessmentDefinitionId != null)
+        'assessment_definition_id': assessmentDefinitionId,
+      if (trialAssessmentId != null) 'trial_assessment_id': trialAssessmentId,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  AssessmentGuidesCompanion copyWith(
+      {Value<int>? id,
+      Value<int?>? assessmentDefinitionId,
+      Value<int?>? trialAssessmentId,
+      Value<int>? createdAt}) {
+    return AssessmentGuidesCompanion(
+      id: id ?? this.id,
+      assessmentDefinitionId:
+          assessmentDefinitionId ?? this.assessmentDefinitionId,
+      trialAssessmentId: trialAssessmentId ?? this.trialAssessmentId,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (assessmentDefinitionId.present) {
+      map['assessment_definition_id'] =
+          Variable<int>(assessmentDefinitionId.value);
+    }
+    if (trialAssessmentId.present) {
+      map['trial_assessment_id'] = Variable<int>(trialAssessmentId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssessmentGuidesCompanion(')
+          ..write('id: $id, ')
+          ..write('assessmentDefinitionId: $assessmentDefinitionId, ')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AssessmentGuideAnchorsTable extends AssessmentGuideAnchors
+    with TableInfo<$AssessmentGuideAnchorsTable, AssessmentGuideAnchor> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AssessmentGuideAnchorsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _guideIdMeta =
+      const VerificationMeta('guideId');
+  @override
+  late final GeneratedColumn<int> guideId = GeneratedColumn<int>(
+      'guide_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES assessment_guides (id) ON DELETE CASCADE'));
+  static const VerificationMeta _sortOrderMeta =
+      const VerificationMeta('sortOrder');
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+      'sort_order', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _filePathMeta =
+      const VerificationMeta('filePath');
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+      'file_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _laneMeta = const VerificationMeta('lane');
+  @override
+  late final GeneratedColumn<String> lane = GeneratedColumn<String>(
+      'lane', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _contentTypeMeta =
+      const VerificationMeta('contentType');
+  @override
+  late final GeneratedColumn<String> contentType = GeneratedColumn<String>(
+      'content_type', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _sourceUrlMeta =
+      const VerificationMeta('sourceUrl');
+  @override
+  late final GeneratedColumn<String> sourceUrl = GeneratedColumn<String>(
+      'source_url', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _licenseIdentifierMeta =
+      const VerificationMeta('licenseIdentifier');
+  @override
+  late final GeneratedColumn<String> licenseIdentifier =
+      GeneratedColumn<String>('license_identifier', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _attributionStringMeta =
+      const VerificationMeta('attributionString');
+  @override
+  late final GeneratedColumn<String> attributionString =
+      GeneratedColumn<String>('attribution_string', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _inaturalistObservationIdMeta =
+      const VerificationMeta('inaturalistObservationId');
+  @override
+  late final GeneratedColumn<int> inaturalistObservationId =
+      GeneratedColumn<int>('inaturalist_observation_id', aliasedName, true,
+          type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _inaturalistTaxonIdMeta =
+      const VerificationMeta('inaturalistTaxonId');
+  @override
+  late final GeneratedColumn<int> inaturalistTaxonId = GeneratedColumn<int>(
+      'inaturalist_taxon_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _generationSpecificationMeta =
+      const VerificationMeta('generationSpecification');
+  @override
+  late final GeneratedColumn<String> generationSpecification =
+      GeneratedColumn<String>('generation_specification', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _validatedByMeta =
+      const VerificationMeta('validatedBy');
+  @override
+  late final GeneratedColumn<String> validatedBy = GeneratedColumn<String>(
+      'validated_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _validationDateMeta =
+      const VerificationMeta('validationDate');
+  @override
+  late final GeneratedColumn<String> validationDate = GeneratedColumn<String>(
+      'validation_date', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _citationFullMeta =
+      const VerificationMeta('citationFull');
+  @override
+  late final GeneratedColumn<String> citationFull = GeneratedColumn<String>(
+      'citation_full', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _dateObtainedMeta =
+      const VerificationMeta('dateObtained');
+  @override
+  late final GeneratedColumn<String> dateObtained = GeneratedColumn<String>(
+      'date_obtained', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _dateLastVerifiedMeta =
+      const VerificationMeta('dateLastVerified');
+  @override
+  late final GeneratedColumn<String> dateLastVerified = GeneratedColumn<String>(
+      'date_last_verified', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _customerOrganizationIdMeta =
+      const VerificationMeta('customerOrganizationId');
+  @override
+  late final GeneratedColumn<int> customerOrganizationId = GeneratedColumn<int>(
+      'customer_organization_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _customerConsentRecordIdMeta =
+      const VerificationMeta('customerConsentRecordId');
+  @override
+  late final GeneratedColumn<int> customerConsentRecordId =
+      GeneratedColumn<int>('customer_consent_record_id', aliasedName, true,
+          type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<int> isDeleted = GeneratedColumn<int>(
+      'is_deleted', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const CustomExpression("(strftime('%s','now') * 1000)"));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        guideId,
+        sortOrder,
+        filePath,
+        lane,
+        contentType,
+        sourceUrl,
+        licenseIdentifier,
+        attributionString,
+        inaturalistObservationId,
+        inaturalistTaxonId,
+        generationSpecification,
+        validatedBy,
+        validationDate,
+        citationFull,
+        dateObtained,
+        dateLastVerified,
+        customerOrganizationId,
+        customerConsentRecordId,
+        isDeleted,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'assessment_guide_anchors';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<AssessmentGuideAnchor> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('guide_id')) {
+      context.handle(_guideIdMeta,
+          guideId.isAcceptableOrUnknown(data['guide_id']!, _guideIdMeta));
+    } else if (isInserting) {
+      context.missing(_guideIdMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(_sortOrderMeta,
+          sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta));
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(_filePathMeta,
+          filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta));
+    }
+    if (data.containsKey('lane')) {
+      context.handle(
+          _laneMeta, lane.isAcceptableOrUnknown(data['lane']!, _laneMeta));
+    } else if (isInserting) {
+      context.missing(_laneMeta);
+    }
+    if (data.containsKey('content_type')) {
+      context.handle(
+          _contentTypeMeta,
+          contentType.isAcceptableOrUnknown(
+              data['content_type']!, _contentTypeMeta));
+    } else if (isInserting) {
+      context.missing(_contentTypeMeta);
+    }
+    if (data.containsKey('source_url')) {
+      context.handle(_sourceUrlMeta,
+          sourceUrl.isAcceptableOrUnknown(data['source_url']!, _sourceUrlMeta));
+    }
+    if (data.containsKey('license_identifier')) {
+      context.handle(
+          _licenseIdentifierMeta,
+          licenseIdentifier.isAcceptableOrUnknown(
+              data['license_identifier']!, _licenseIdentifierMeta));
+    }
+    if (data.containsKey('attribution_string')) {
+      context.handle(
+          _attributionStringMeta,
+          attributionString.isAcceptableOrUnknown(
+              data['attribution_string']!, _attributionStringMeta));
+    } else if (isInserting) {
+      context.missing(_attributionStringMeta);
+    }
+    if (data.containsKey('inaturalist_observation_id')) {
+      context.handle(
+          _inaturalistObservationIdMeta,
+          inaturalistObservationId.isAcceptableOrUnknown(
+              data['inaturalist_observation_id']!,
+              _inaturalistObservationIdMeta));
+    }
+    if (data.containsKey('inaturalist_taxon_id')) {
+      context.handle(
+          _inaturalistTaxonIdMeta,
+          inaturalistTaxonId.isAcceptableOrUnknown(
+              data['inaturalist_taxon_id']!, _inaturalistTaxonIdMeta));
+    }
+    if (data.containsKey('generation_specification')) {
+      context.handle(
+          _generationSpecificationMeta,
+          generationSpecification.isAcceptableOrUnknown(
+              data['generation_specification']!, _generationSpecificationMeta));
+    }
+    if (data.containsKey('validated_by')) {
+      context.handle(
+          _validatedByMeta,
+          validatedBy.isAcceptableOrUnknown(
+              data['validated_by']!, _validatedByMeta));
+    }
+    if (data.containsKey('validation_date')) {
+      context.handle(
+          _validationDateMeta,
+          validationDate.isAcceptableOrUnknown(
+              data['validation_date']!, _validationDateMeta));
+    }
+    if (data.containsKey('citation_full')) {
+      context.handle(
+          _citationFullMeta,
+          citationFull.isAcceptableOrUnknown(
+              data['citation_full']!, _citationFullMeta));
+    }
+    if (data.containsKey('date_obtained')) {
+      context.handle(
+          _dateObtainedMeta,
+          dateObtained.isAcceptableOrUnknown(
+              data['date_obtained']!, _dateObtainedMeta));
+    } else if (isInserting) {
+      context.missing(_dateObtainedMeta);
+    }
+    if (data.containsKey('date_last_verified')) {
+      context.handle(
+          _dateLastVerifiedMeta,
+          dateLastVerified.isAcceptableOrUnknown(
+              data['date_last_verified']!, _dateLastVerifiedMeta));
+    }
+    if (data.containsKey('customer_organization_id')) {
+      context.handle(
+          _customerOrganizationIdMeta,
+          customerOrganizationId.isAcceptableOrUnknown(
+              data['customer_organization_id']!, _customerOrganizationIdMeta));
+    }
+    if (data.containsKey('customer_consent_record_id')) {
+      context.handle(
+          _customerConsentRecordIdMeta,
+          customerConsentRecordId.isAcceptableOrUnknown(
+              data['customer_consent_record_id']!,
+              _customerConsentRecordIdMeta));
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AssessmentGuideAnchor map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AssessmentGuideAnchor(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      guideId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}guide_id'])!,
+      sortOrder: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sort_order'])!,
+      filePath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}file_path']),
+      lane: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}lane'])!,
+      contentType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}content_type'])!,
+      sourceUrl: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}source_url']),
+      licenseIdentifier: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}license_identifier']),
+      attributionString: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}attribution_string'])!,
+      inaturalistObservationId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}inaturalist_observation_id']),
+      inaturalistTaxonId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}inaturalist_taxon_id']),
+      generationSpecification: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}generation_specification']),
+      validatedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}validated_by']),
+      validationDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}validation_date']),
+      citationFull: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}citation_full']),
+      dateObtained: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}date_obtained'])!,
+      dateLastVerified: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}date_last_verified']),
+      customerOrganizationId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}customer_organization_id']),
+      customerConsentRecordId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}customer_consent_record_id']),
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}is_deleted'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $AssessmentGuideAnchorsTable createAlias(String alias) {
+    return $AssessmentGuideAnchorsTable(attachedDatabase, alias);
+  }
+}
+
+class AssessmentGuideAnchor extends DataClass
+    implements Insertable<AssessmentGuideAnchor> {
+  final int id;
+  final int guideId;
+  final int sortOrder;
+
+  /// Local file path for stored/cached image bytes.
+  final String? filePath;
+
+  /// calibration_diagram | identification_photo | customer_upload
+  final String lane;
+
+  /// ai_generated_svg | ai_generated_png | inaturalist_photo | customer_photo
+  final String contentType;
+
+  /// Lane 1: specification document URL. Lane 2: iNaturalist observation URL.
+  /// Lane 3: null (customer upload, no external source).
+  final String? sourceUrl;
+
+  /// Lane 1: 'original_work_agnexis'. Lane 2: 'CC-BY-4.0' or 'CC0-1.0'.
+  /// Lane 3: 'customer_grant_v1'.
+  final String? licenseIdentifier;
+
+  /// Required. Rendered visibly in overlay for every anchor — no image without this.
+  final String attributionString;
+
+  /// Lane 2 only.
+  final int? inaturalistObservationId;
+  final int? inaturalistTaxonId;
+
+  /// Lane 1 generation parameters or Lane 2A structured reference metadata.
+  final String? generationSpecification;
+
+  /// Lane 1 only. Diagram validated against cited specification before seeding.
+  final String? validatedBy;
+  final String? validationDate;
+
+  /// Lane 1 only. Full bibliographic citation of the scale specification source.
+  final String? citationFull;
+
+  /// Required. ISO-8601 date content was added to the library.
+  final String dateObtained;
+
+  /// ISO-8601 date of last annual re-verification of source and license status.
+  final String? dateLastVerified;
+
+  /// Lane 3 only. Organization that uploaded this content.
+  final int? customerOrganizationId;
+
+  /// Lane 3 only. Signed consent record reference in document storage.
+  final int? customerConsentRecordId;
+  final int isDeleted;
+  final int createdAt;
+  const AssessmentGuideAnchor(
+      {required this.id,
+      required this.guideId,
+      required this.sortOrder,
+      this.filePath,
+      required this.lane,
+      required this.contentType,
+      this.sourceUrl,
+      this.licenseIdentifier,
+      required this.attributionString,
+      this.inaturalistObservationId,
+      this.inaturalistTaxonId,
+      this.generationSpecification,
+      this.validatedBy,
+      this.validationDate,
+      this.citationFull,
+      required this.dateObtained,
+      this.dateLastVerified,
+      this.customerOrganizationId,
+      this.customerConsentRecordId,
+      required this.isDeleted,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['guide_id'] = Variable<int>(guideId);
+    map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || filePath != null) {
+      map['file_path'] = Variable<String>(filePath);
+    }
+    map['lane'] = Variable<String>(lane);
+    map['content_type'] = Variable<String>(contentType);
+    if (!nullToAbsent || sourceUrl != null) {
+      map['source_url'] = Variable<String>(sourceUrl);
+    }
+    if (!nullToAbsent || licenseIdentifier != null) {
+      map['license_identifier'] = Variable<String>(licenseIdentifier);
+    }
+    map['attribution_string'] = Variable<String>(attributionString);
+    if (!nullToAbsent || inaturalistObservationId != null) {
+      map['inaturalist_observation_id'] =
+          Variable<int>(inaturalistObservationId);
+    }
+    if (!nullToAbsent || inaturalistTaxonId != null) {
+      map['inaturalist_taxon_id'] = Variable<int>(inaturalistTaxonId);
+    }
+    if (!nullToAbsent || generationSpecification != null) {
+      map['generation_specification'] =
+          Variable<String>(generationSpecification);
+    }
+    if (!nullToAbsent || validatedBy != null) {
+      map['validated_by'] = Variable<String>(validatedBy);
+    }
+    if (!nullToAbsent || validationDate != null) {
+      map['validation_date'] = Variable<String>(validationDate);
+    }
+    if (!nullToAbsent || citationFull != null) {
+      map['citation_full'] = Variable<String>(citationFull);
+    }
+    map['date_obtained'] = Variable<String>(dateObtained);
+    if (!nullToAbsent || dateLastVerified != null) {
+      map['date_last_verified'] = Variable<String>(dateLastVerified);
+    }
+    if (!nullToAbsent || customerOrganizationId != null) {
+      map['customer_organization_id'] = Variable<int>(customerOrganizationId);
+    }
+    if (!nullToAbsent || customerConsentRecordId != null) {
+      map['customer_consent_record_id'] =
+          Variable<int>(customerConsentRecordId);
+    }
+    map['is_deleted'] = Variable<int>(isDeleted);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  AssessmentGuideAnchorsCompanion toCompanion(bool nullToAbsent) {
+    return AssessmentGuideAnchorsCompanion(
+      id: Value(id),
+      guideId: Value(guideId),
+      sortOrder: Value(sortOrder),
+      filePath: filePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(filePath),
+      lane: Value(lane),
+      contentType: Value(contentType),
+      sourceUrl: sourceUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceUrl),
+      licenseIdentifier: licenseIdentifier == null && nullToAbsent
+          ? const Value.absent()
+          : Value(licenseIdentifier),
+      attributionString: Value(attributionString),
+      inaturalistObservationId: inaturalistObservationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inaturalistObservationId),
+      inaturalistTaxonId: inaturalistTaxonId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inaturalistTaxonId),
+      generationSpecification: generationSpecification == null && nullToAbsent
+          ? const Value.absent()
+          : Value(generationSpecification),
+      validatedBy: validatedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(validatedBy),
+      validationDate: validationDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(validationDate),
+      citationFull: citationFull == null && nullToAbsent
+          ? const Value.absent()
+          : Value(citationFull),
+      dateObtained: Value(dateObtained),
+      dateLastVerified: dateLastVerified == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dateLastVerified),
+      customerOrganizationId: customerOrganizationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customerOrganizationId),
+      customerConsentRecordId: customerConsentRecordId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customerConsentRecordId),
+      isDeleted: Value(isDeleted),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory AssessmentGuideAnchor.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AssessmentGuideAnchor(
+      id: serializer.fromJson<int>(json['id']),
+      guideId: serializer.fromJson<int>(json['guideId']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      filePath: serializer.fromJson<String?>(json['filePath']),
+      lane: serializer.fromJson<String>(json['lane']),
+      contentType: serializer.fromJson<String>(json['contentType']),
+      sourceUrl: serializer.fromJson<String?>(json['sourceUrl']),
+      licenseIdentifier:
+          serializer.fromJson<String?>(json['licenseIdentifier']),
+      attributionString: serializer.fromJson<String>(json['attributionString']),
+      inaturalistObservationId:
+          serializer.fromJson<int?>(json['inaturalistObservationId']),
+      inaturalistTaxonId: serializer.fromJson<int?>(json['inaturalistTaxonId']),
+      generationSpecification:
+          serializer.fromJson<String?>(json['generationSpecification']),
+      validatedBy: serializer.fromJson<String?>(json['validatedBy']),
+      validationDate: serializer.fromJson<String?>(json['validationDate']),
+      citationFull: serializer.fromJson<String?>(json['citationFull']),
+      dateObtained: serializer.fromJson<String>(json['dateObtained']),
+      dateLastVerified: serializer.fromJson<String?>(json['dateLastVerified']),
+      customerOrganizationId:
+          serializer.fromJson<int?>(json['customerOrganizationId']),
+      customerConsentRecordId:
+          serializer.fromJson<int?>(json['customerConsentRecordId']),
+      isDeleted: serializer.fromJson<int>(json['isDeleted']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'guideId': serializer.toJson<int>(guideId),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'filePath': serializer.toJson<String?>(filePath),
+      'lane': serializer.toJson<String>(lane),
+      'contentType': serializer.toJson<String>(contentType),
+      'sourceUrl': serializer.toJson<String?>(sourceUrl),
+      'licenseIdentifier': serializer.toJson<String?>(licenseIdentifier),
+      'attributionString': serializer.toJson<String>(attributionString),
+      'inaturalistObservationId':
+          serializer.toJson<int?>(inaturalistObservationId),
+      'inaturalistTaxonId': serializer.toJson<int?>(inaturalistTaxonId),
+      'generationSpecification':
+          serializer.toJson<String?>(generationSpecification),
+      'validatedBy': serializer.toJson<String?>(validatedBy),
+      'validationDate': serializer.toJson<String?>(validationDate),
+      'citationFull': serializer.toJson<String?>(citationFull),
+      'dateObtained': serializer.toJson<String>(dateObtained),
+      'dateLastVerified': serializer.toJson<String?>(dateLastVerified),
+      'customerOrganizationId': serializer.toJson<int?>(customerOrganizationId),
+      'customerConsentRecordId':
+          serializer.toJson<int?>(customerConsentRecordId),
+      'isDeleted': serializer.toJson<int>(isDeleted),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  AssessmentGuideAnchor copyWith(
+          {int? id,
+          int? guideId,
+          int? sortOrder,
+          Value<String?> filePath = const Value.absent(),
+          String? lane,
+          String? contentType,
+          Value<String?> sourceUrl = const Value.absent(),
+          Value<String?> licenseIdentifier = const Value.absent(),
+          String? attributionString,
+          Value<int?> inaturalistObservationId = const Value.absent(),
+          Value<int?> inaturalistTaxonId = const Value.absent(),
+          Value<String?> generationSpecification = const Value.absent(),
+          Value<String?> validatedBy = const Value.absent(),
+          Value<String?> validationDate = const Value.absent(),
+          Value<String?> citationFull = const Value.absent(),
+          String? dateObtained,
+          Value<String?> dateLastVerified = const Value.absent(),
+          Value<int?> customerOrganizationId = const Value.absent(),
+          Value<int?> customerConsentRecordId = const Value.absent(),
+          int? isDeleted,
+          int? createdAt}) =>
+      AssessmentGuideAnchor(
+        id: id ?? this.id,
+        guideId: guideId ?? this.guideId,
+        sortOrder: sortOrder ?? this.sortOrder,
+        filePath: filePath.present ? filePath.value : this.filePath,
+        lane: lane ?? this.lane,
+        contentType: contentType ?? this.contentType,
+        sourceUrl: sourceUrl.present ? sourceUrl.value : this.sourceUrl,
+        licenseIdentifier: licenseIdentifier.present
+            ? licenseIdentifier.value
+            : this.licenseIdentifier,
+        attributionString: attributionString ?? this.attributionString,
+        inaturalistObservationId: inaturalistObservationId.present
+            ? inaturalistObservationId.value
+            : this.inaturalistObservationId,
+        inaturalistTaxonId: inaturalistTaxonId.present
+            ? inaturalistTaxonId.value
+            : this.inaturalistTaxonId,
+        generationSpecification: generationSpecification.present
+            ? generationSpecification.value
+            : this.generationSpecification,
+        validatedBy: validatedBy.present ? validatedBy.value : this.validatedBy,
+        validationDate:
+            validationDate.present ? validationDate.value : this.validationDate,
+        citationFull:
+            citationFull.present ? citationFull.value : this.citationFull,
+        dateObtained: dateObtained ?? this.dateObtained,
+        dateLastVerified: dateLastVerified.present
+            ? dateLastVerified.value
+            : this.dateLastVerified,
+        customerOrganizationId: customerOrganizationId.present
+            ? customerOrganizationId.value
+            : this.customerOrganizationId,
+        customerConsentRecordId: customerConsentRecordId.present
+            ? customerConsentRecordId.value
+            : this.customerConsentRecordId,
+        isDeleted: isDeleted ?? this.isDeleted,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  AssessmentGuideAnchor copyWithCompanion(
+      AssessmentGuideAnchorsCompanion data) {
+    return AssessmentGuideAnchor(
+      id: data.id.present ? data.id.value : this.id,
+      guideId: data.guideId.present ? data.guideId.value : this.guideId,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      lane: data.lane.present ? data.lane.value : this.lane,
+      contentType:
+          data.contentType.present ? data.contentType.value : this.contentType,
+      sourceUrl: data.sourceUrl.present ? data.sourceUrl.value : this.sourceUrl,
+      licenseIdentifier: data.licenseIdentifier.present
+          ? data.licenseIdentifier.value
+          : this.licenseIdentifier,
+      attributionString: data.attributionString.present
+          ? data.attributionString.value
+          : this.attributionString,
+      inaturalistObservationId: data.inaturalistObservationId.present
+          ? data.inaturalistObservationId.value
+          : this.inaturalistObservationId,
+      inaturalistTaxonId: data.inaturalistTaxonId.present
+          ? data.inaturalistTaxonId.value
+          : this.inaturalistTaxonId,
+      generationSpecification: data.generationSpecification.present
+          ? data.generationSpecification.value
+          : this.generationSpecification,
+      validatedBy:
+          data.validatedBy.present ? data.validatedBy.value : this.validatedBy,
+      validationDate: data.validationDate.present
+          ? data.validationDate.value
+          : this.validationDate,
+      citationFull: data.citationFull.present
+          ? data.citationFull.value
+          : this.citationFull,
+      dateObtained: data.dateObtained.present
+          ? data.dateObtained.value
+          : this.dateObtained,
+      dateLastVerified: data.dateLastVerified.present
+          ? data.dateLastVerified.value
+          : this.dateLastVerified,
+      customerOrganizationId: data.customerOrganizationId.present
+          ? data.customerOrganizationId.value
+          : this.customerOrganizationId,
+      customerConsentRecordId: data.customerConsentRecordId.present
+          ? data.customerConsentRecordId.value
+          : this.customerConsentRecordId,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssessmentGuideAnchor(')
+          ..write('id: $id, ')
+          ..write('guideId: $guideId, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('filePath: $filePath, ')
+          ..write('lane: $lane, ')
+          ..write('contentType: $contentType, ')
+          ..write('sourceUrl: $sourceUrl, ')
+          ..write('licenseIdentifier: $licenseIdentifier, ')
+          ..write('attributionString: $attributionString, ')
+          ..write('inaturalistObservationId: $inaturalistObservationId, ')
+          ..write('inaturalistTaxonId: $inaturalistTaxonId, ')
+          ..write('generationSpecification: $generationSpecification, ')
+          ..write('validatedBy: $validatedBy, ')
+          ..write('validationDate: $validationDate, ')
+          ..write('citationFull: $citationFull, ')
+          ..write('dateObtained: $dateObtained, ')
+          ..write('dateLastVerified: $dateLastVerified, ')
+          ..write('customerOrganizationId: $customerOrganizationId, ')
+          ..write('customerConsentRecordId: $customerConsentRecordId, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+        id,
+        guideId,
+        sortOrder,
+        filePath,
+        lane,
+        contentType,
+        sourceUrl,
+        licenseIdentifier,
+        attributionString,
+        inaturalistObservationId,
+        inaturalistTaxonId,
+        generationSpecification,
+        validatedBy,
+        validationDate,
+        citationFull,
+        dateObtained,
+        dateLastVerified,
+        customerOrganizationId,
+        customerConsentRecordId,
+        isDeleted,
+        createdAt
+      ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AssessmentGuideAnchor &&
+          other.id == this.id &&
+          other.guideId == this.guideId &&
+          other.sortOrder == this.sortOrder &&
+          other.filePath == this.filePath &&
+          other.lane == this.lane &&
+          other.contentType == this.contentType &&
+          other.sourceUrl == this.sourceUrl &&
+          other.licenseIdentifier == this.licenseIdentifier &&
+          other.attributionString == this.attributionString &&
+          other.inaturalistObservationId == this.inaturalistObservationId &&
+          other.inaturalistTaxonId == this.inaturalistTaxonId &&
+          other.generationSpecification == this.generationSpecification &&
+          other.validatedBy == this.validatedBy &&
+          other.validationDate == this.validationDate &&
+          other.citationFull == this.citationFull &&
+          other.dateObtained == this.dateObtained &&
+          other.dateLastVerified == this.dateLastVerified &&
+          other.customerOrganizationId == this.customerOrganizationId &&
+          other.customerConsentRecordId == this.customerConsentRecordId &&
+          other.isDeleted == this.isDeleted &&
+          other.createdAt == this.createdAt);
+}
+
+class AssessmentGuideAnchorsCompanion
+    extends UpdateCompanion<AssessmentGuideAnchor> {
+  final Value<int> id;
+  final Value<int> guideId;
+  final Value<int> sortOrder;
+  final Value<String?> filePath;
+  final Value<String> lane;
+  final Value<String> contentType;
+  final Value<String?> sourceUrl;
+  final Value<String?> licenseIdentifier;
+  final Value<String> attributionString;
+  final Value<int?> inaturalistObservationId;
+  final Value<int?> inaturalistTaxonId;
+  final Value<String?> generationSpecification;
+  final Value<String?> validatedBy;
+  final Value<String?> validationDate;
+  final Value<String?> citationFull;
+  final Value<String> dateObtained;
+  final Value<String?> dateLastVerified;
+  final Value<int?> customerOrganizationId;
+  final Value<int?> customerConsentRecordId;
+  final Value<int> isDeleted;
+  final Value<int> createdAt;
+  const AssessmentGuideAnchorsCompanion({
+    this.id = const Value.absent(),
+    this.guideId = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.lane = const Value.absent(),
+    this.contentType = const Value.absent(),
+    this.sourceUrl = const Value.absent(),
+    this.licenseIdentifier = const Value.absent(),
+    this.attributionString = const Value.absent(),
+    this.inaturalistObservationId = const Value.absent(),
+    this.inaturalistTaxonId = const Value.absent(),
+    this.generationSpecification = const Value.absent(),
+    this.validatedBy = const Value.absent(),
+    this.validationDate = const Value.absent(),
+    this.citationFull = const Value.absent(),
+    this.dateObtained = const Value.absent(),
+    this.dateLastVerified = const Value.absent(),
+    this.customerOrganizationId = const Value.absent(),
+    this.customerConsentRecordId = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  AssessmentGuideAnchorsCompanion.insert({
+    this.id = const Value.absent(),
+    required int guideId,
+    this.sortOrder = const Value.absent(),
+    this.filePath = const Value.absent(),
+    required String lane,
+    required String contentType,
+    this.sourceUrl = const Value.absent(),
+    this.licenseIdentifier = const Value.absent(),
+    required String attributionString,
+    this.inaturalistObservationId = const Value.absent(),
+    this.inaturalistTaxonId = const Value.absent(),
+    this.generationSpecification = const Value.absent(),
+    this.validatedBy = const Value.absent(),
+    this.validationDate = const Value.absent(),
+    this.citationFull = const Value.absent(),
+    required String dateObtained,
+    this.dateLastVerified = const Value.absent(),
+    this.customerOrganizationId = const Value.absent(),
+    this.customerConsentRecordId = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  })  : guideId = Value(guideId),
+        lane = Value(lane),
+        contentType = Value(contentType),
+        attributionString = Value(attributionString),
+        dateObtained = Value(dateObtained);
+  static Insertable<AssessmentGuideAnchor> custom({
+    Expression<int>? id,
+    Expression<int>? guideId,
+    Expression<int>? sortOrder,
+    Expression<String>? filePath,
+    Expression<String>? lane,
+    Expression<String>? contentType,
+    Expression<String>? sourceUrl,
+    Expression<String>? licenseIdentifier,
+    Expression<String>? attributionString,
+    Expression<int>? inaturalistObservationId,
+    Expression<int>? inaturalistTaxonId,
+    Expression<String>? generationSpecification,
+    Expression<String>? validatedBy,
+    Expression<String>? validationDate,
+    Expression<String>? citationFull,
+    Expression<String>? dateObtained,
+    Expression<String>? dateLastVerified,
+    Expression<int>? customerOrganizationId,
+    Expression<int>? customerConsentRecordId,
+    Expression<int>? isDeleted,
+    Expression<int>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (guideId != null) 'guide_id': guideId,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (filePath != null) 'file_path': filePath,
+      if (lane != null) 'lane': lane,
+      if (contentType != null) 'content_type': contentType,
+      if (sourceUrl != null) 'source_url': sourceUrl,
+      if (licenseIdentifier != null) 'license_identifier': licenseIdentifier,
+      if (attributionString != null) 'attribution_string': attributionString,
+      if (inaturalistObservationId != null)
+        'inaturalist_observation_id': inaturalistObservationId,
+      if (inaturalistTaxonId != null)
+        'inaturalist_taxon_id': inaturalistTaxonId,
+      if (generationSpecification != null)
+        'generation_specification': generationSpecification,
+      if (validatedBy != null) 'validated_by': validatedBy,
+      if (validationDate != null) 'validation_date': validationDate,
+      if (citationFull != null) 'citation_full': citationFull,
+      if (dateObtained != null) 'date_obtained': dateObtained,
+      if (dateLastVerified != null) 'date_last_verified': dateLastVerified,
+      if (customerOrganizationId != null)
+        'customer_organization_id': customerOrganizationId,
+      if (customerConsentRecordId != null)
+        'customer_consent_record_id': customerConsentRecordId,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  AssessmentGuideAnchorsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? guideId,
+      Value<int>? sortOrder,
+      Value<String?>? filePath,
+      Value<String>? lane,
+      Value<String>? contentType,
+      Value<String?>? sourceUrl,
+      Value<String?>? licenseIdentifier,
+      Value<String>? attributionString,
+      Value<int?>? inaturalistObservationId,
+      Value<int?>? inaturalistTaxonId,
+      Value<String?>? generationSpecification,
+      Value<String?>? validatedBy,
+      Value<String?>? validationDate,
+      Value<String?>? citationFull,
+      Value<String>? dateObtained,
+      Value<String?>? dateLastVerified,
+      Value<int?>? customerOrganizationId,
+      Value<int?>? customerConsentRecordId,
+      Value<int>? isDeleted,
+      Value<int>? createdAt}) {
+    return AssessmentGuideAnchorsCompanion(
+      id: id ?? this.id,
+      guideId: guideId ?? this.guideId,
+      sortOrder: sortOrder ?? this.sortOrder,
+      filePath: filePath ?? this.filePath,
+      lane: lane ?? this.lane,
+      contentType: contentType ?? this.contentType,
+      sourceUrl: sourceUrl ?? this.sourceUrl,
+      licenseIdentifier: licenseIdentifier ?? this.licenseIdentifier,
+      attributionString: attributionString ?? this.attributionString,
+      inaturalistObservationId:
+          inaturalistObservationId ?? this.inaturalistObservationId,
+      inaturalistTaxonId: inaturalistTaxonId ?? this.inaturalistTaxonId,
+      generationSpecification:
+          generationSpecification ?? this.generationSpecification,
+      validatedBy: validatedBy ?? this.validatedBy,
+      validationDate: validationDate ?? this.validationDate,
+      citationFull: citationFull ?? this.citationFull,
+      dateObtained: dateObtained ?? this.dateObtained,
+      dateLastVerified: dateLastVerified ?? this.dateLastVerified,
+      customerOrganizationId:
+          customerOrganizationId ?? this.customerOrganizationId,
+      customerConsentRecordId:
+          customerConsentRecordId ?? this.customerConsentRecordId,
+      isDeleted: isDeleted ?? this.isDeleted,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (guideId.present) {
+      map['guide_id'] = Variable<int>(guideId.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (lane.present) {
+      map['lane'] = Variable<String>(lane.value);
+    }
+    if (contentType.present) {
+      map['content_type'] = Variable<String>(contentType.value);
+    }
+    if (sourceUrl.present) {
+      map['source_url'] = Variable<String>(sourceUrl.value);
+    }
+    if (licenseIdentifier.present) {
+      map['license_identifier'] = Variable<String>(licenseIdentifier.value);
+    }
+    if (attributionString.present) {
+      map['attribution_string'] = Variable<String>(attributionString.value);
+    }
+    if (inaturalistObservationId.present) {
+      map['inaturalist_observation_id'] =
+          Variable<int>(inaturalistObservationId.value);
+    }
+    if (inaturalistTaxonId.present) {
+      map['inaturalist_taxon_id'] = Variable<int>(inaturalistTaxonId.value);
+    }
+    if (generationSpecification.present) {
+      map['generation_specification'] =
+          Variable<String>(generationSpecification.value);
+    }
+    if (validatedBy.present) {
+      map['validated_by'] = Variable<String>(validatedBy.value);
+    }
+    if (validationDate.present) {
+      map['validation_date'] = Variable<String>(validationDate.value);
+    }
+    if (citationFull.present) {
+      map['citation_full'] = Variable<String>(citationFull.value);
+    }
+    if (dateObtained.present) {
+      map['date_obtained'] = Variable<String>(dateObtained.value);
+    }
+    if (dateLastVerified.present) {
+      map['date_last_verified'] = Variable<String>(dateLastVerified.value);
+    }
+    if (customerOrganizationId.present) {
+      map['customer_organization_id'] =
+          Variable<int>(customerOrganizationId.value);
+    }
+    if (customerConsentRecordId.present) {
+      map['customer_consent_record_id'] =
+          Variable<int>(customerConsentRecordId.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<int>(isDeleted.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AssessmentGuideAnchorsCompanion(')
+          ..write('id: $id, ')
+          ..write('guideId: $guideId, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('filePath: $filePath, ')
+          ..write('lane: $lane, ')
+          ..write('contentType: $contentType, ')
+          ..write('sourceUrl: $sourceUrl, ')
+          ..write('licenseIdentifier: $licenseIdentifier, ')
+          ..write('attributionString: $attributionString, ')
+          ..write('inaturalistObservationId: $inaturalistObservationId, ')
+          ..write('inaturalistTaxonId: $inaturalistTaxonId, ')
+          ..write('generationSpecification: $generationSpecification, ')
+          ..write('validatedBy: $validatedBy, ')
+          ..write('validationDate: $validationDate, ')
+          ..write('citationFull: $citationFull, ')
+          ..write('dateObtained: $dateObtained, ')
+          ..write('dateLastVerified: $dateLastVerified, ')
+          ..write('customerOrganizationId: $customerOrganizationId, ')
+          ..write('customerConsentRecordId: $customerConsentRecordId, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RatingGuideViewEventsTable extends RatingGuideViewEvents
+    with TableInfo<$RatingGuideViewEventsTable, RatingGuideViewEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RatingGuideViewEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _guideIdMeta =
+      const VerificationMeta('guideId');
+  @override
+  late final GeneratedColumn<int> guideId = GeneratedColumn<int>(
+      'guide_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES assessment_guides (id) ON DELETE CASCADE'));
+  static const VerificationMeta _trialAssessmentIdMeta =
+      const VerificationMeta('trialAssessmentId');
+  @override
+  late final GeneratedColumn<int> trialAssessmentId = GeneratedColumn<int>(
+      'trial_assessment_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES trial_assessments (id) ON DELETE CASCADE'));
+  static const VerificationMeta _sessionIdMeta =
+      const VerificationMeta('sessionId');
+  @override
+  late final GeneratedColumn<int> sessionId = GeneratedColumn<int>(
+      'session_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES sessions (id) ON DELETE CASCADE'));
+  static const VerificationMeta _raterUserIdMeta =
+      const VerificationMeta('raterUserId');
+  @override
+  late final GeneratedColumn<int> raterUserId = GeneratedColumn<int>(
+      'rater_user_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES users (id) ON DELETE SET NULL'));
+  static const VerificationMeta _viewedAtMeta =
+      const VerificationMeta('viewedAt');
+  @override
+  late final GeneratedColumn<int> viewedAt = GeneratedColumn<int>(
+      'viewed_at', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, guideId, trialAssessmentId, sessionId, raterUserId, viewedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'rating_guide_view_events';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<RatingGuideViewEvent> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('guide_id')) {
+      context.handle(_guideIdMeta,
+          guideId.isAcceptableOrUnknown(data['guide_id']!, _guideIdMeta));
+    } else if (isInserting) {
+      context.missing(_guideIdMeta);
+    }
+    if (data.containsKey('trial_assessment_id')) {
+      context.handle(
+          _trialAssessmentIdMeta,
+          trialAssessmentId.isAcceptableOrUnknown(
+              data['trial_assessment_id']!, _trialAssessmentIdMeta));
+    } else if (isInserting) {
+      context.missing(_trialAssessmentIdMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(_sessionIdMeta,
+          sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta));
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('rater_user_id')) {
+      context.handle(
+          _raterUserIdMeta,
+          raterUserId.isAcceptableOrUnknown(
+              data['rater_user_id']!, _raterUserIdMeta));
+    }
+    if (data.containsKey('viewed_at')) {
+      context.handle(_viewedAtMeta,
+          viewedAt.isAcceptableOrUnknown(data['viewed_at']!, _viewedAtMeta));
+    } else if (isInserting) {
+      context.missing(_viewedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RatingGuideViewEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RatingGuideViewEvent(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      guideId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}guide_id'])!,
+      trialAssessmentId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}trial_assessment_id'])!,
+      sessionId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}session_id'])!,
+      raterUserId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}rater_user_id']),
+      viewedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}viewed_at'])!,
+    );
+  }
+
+  @override
+  $RatingGuideViewEventsTable createAlias(String alias) {
+    return $RatingGuideViewEventsTable(attachedDatabase, alias);
+  }
+}
+
+class RatingGuideViewEvent extends DataClass
+    implements Insertable<RatingGuideViewEvent> {
+  final int id;
+  final int guideId;
+  final int trialAssessmentId;
+  final int sessionId;
+  final int? raterUserId;
+
+  /// Unix millisecond timestamp of overlay open (not close).
+  final int viewedAt;
+  const RatingGuideViewEvent(
+      {required this.id,
+      required this.guideId,
+      required this.trialAssessmentId,
+      required this.sessionId,
+      this.raterUserId,
+      required this.viewedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['guide_id'] = Variable<int>(guideId);
+    map['trial_assessment_id'] = Variable<int>(trialAssessmentId);
+    map['session_id'] = Variable<int>(sessionId);
+    if (!nullToAbsent || raterUserId != null) {
+      map['rater_user_id'] = Variable<int>(raterUserId);
+    }
+    map['viewed_at'] = Variable<int>(viewedAt);
+    return map;
+  }
+
+  RatingGuideViewEventsCompanion toCompanion(bool nullToAbsent) {
+    return RatingGuideViewEventsCompanion(
+      id: Value(id),
+      guideId: Value(guideId),
+      trialAssessmentId: Value(trialAssessmentId),
+      sessionId: Value(sessionId),
+      raterUserId: raterUserId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(raterUserId),
+      viewedAt: Value(viewedAt),
+    );
+  }
+
+  factory RatingGuideViewEvent.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RatingGuideViewEvent(
+      id: serializer.fromJson<int>(json['id']),
+      guideId: serializer.fromJson<int>(json['guideId']),
+      trialAssessmentId: serializer.fromJson<int>(json['trialAssessmentId']),
+      sessionId: serializer.fromJson<int>(json['sessionId']),
+      raterUserId: serializer.fromJson<int?>(json['raterUserId']),
+      viewedAt: serializer.fromJson<int>(json['viewedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'guideId': serializer.toJson<int>(guideId),
+      'trialAssessmentId': serializer.toJson<int>(trialAssessmentId),
+      'sessionId': serializer.toJson<int>(sessionId),
+      'raterUserId': serializer.toJson<int?>(raterUserId),
+      'viewedAt': serializer.toJson<int>(viewedAt),
+    };
+  }
+
+  RatingGuideViewEvent copyWith(
+          {int? id,
+          int? guideId,
+          int? trialAssessmentId,
+          int? sessionId,
+          Value<int?> raterUserId = const Value.absent(),
+          int? viewedAt}) =>
+      RatingGuideViewEvent(
+        id: id ?? this.id,
+        guideId: guideId ?? this.guideId,
+        trialAssessmentId: trialAssessmentId ?? this.trialAssessmentId,
+        sessionId: sessionId ?? this.sessionId,
+        raterUserId: raterUserId.present ? raterUserId.value : this.raterUserId,
+        viewedAt: viewedAt ?? this.viewedAt,
+      );
+  RatingGuideViewEvent copyWithCompanion(RatingGuideViewEventsCompanion data) {
+    return RatingGuideViewEvent(
+      id: data.id.present ? data.id.value : this.id,
+      guideId: data.guideId.present ? data.guideId.value : this.guideId,
+      trialAssessmentId: data.trialAssessmentId.present
+          ? data.trialAssessmentId.value
+          : this.trialAssessmentId,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      raterUserId:
+          data.raterUserId.present ? data.raterUserId.value : this.raterUserId,
+      viewedAt: data.viewedAt.present ? data.viewedAt.value : this.viewedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RatingGuideViewEvent(')
+          ..write('id: $id, ')
+          ..write('guideId: $guideId, ')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('raterUserId: $raterUserId, ')
+          ..write('viewedAt: $viewedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, guideId, trialAssessmentId, sessionId, raterUserId, viewedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RatingGuideViewEvent &&
+          other.id == this.id &&
+          other.guideId == this.guideId &&
+          other.trialAssessmentId == this.trialAssessmentId &&
+          other.sessionId == this.sessionId &&
+          other.raterUserId == this.raterUserId &&
+          other.viewedAt == this.viewedAt);
+}
+
+class RatingGuideViewEventsCompanion
+    extends UpdateCompanion<RatingGuideViewEvent> {
+  final Value<int> id;
+  final Value<int> guideId;
+  final Value<int> trialAssessmentId;
+  final Value<int> sessionId;
+  final Value<int?> raterUserId;
+  final Value<int> viewedAt;
+  const RatingGuideViewEventsCompanion({
+    this.id = const Value.absent(),
+    this.guideId = const Value.absent(),
+    this.trialAssessmentId = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.raterUserId = const Value.absent(),
+    this.viewedAt = const Value.absent(),
+  });
+  RatingGuideViewEventsCompanion.insert({
+    this.id = const Value.absent(),
+    required int guideId,
+    required int trialAssessmentId,
+    required int sessionId,
+    this.raterUserId = const Value.absent(),
+    required int viewedAt,
+  })  : guideId = Value(guideId),
+        trialAssessmentId = Value(trialAssessmentId),
+        sessionId = Value(sessionId),
+        viewedAt = Value(viewedAt);
+  static Insertable<RatingGuideViewEvent> custom({
+    Expression<int>? id,
+    Expression<int>? guideId,
+    Expression<int>? trialAssessmentId,
+    Expression<int>? sessionId,
+    Expression<int>? raterUserId,
+    Expression<int>? viewedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (guideId != null) 'guide_id': guideId,
+      if (trialAssessmentId != null) 'trial_assessment_id': trialAssessmentId,
+      if (sessionId != null) 'session_id': sessionId,
+      if (raterUserId != null) 'rater_user_id': raterUserId,
+      if (viewedAt != null) 'viewed_at': viewedAt,
+    });
+  }
+
+  RatingGuideViewEventsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? guideId,
+      Value<int>? trialAssessmentId,
+      Value<int>? sessionId,
+      Value<int?>? raterUserId,
+      Value<int>? viewedAt}) {
+    return RatingGuideViewEventsCompanion(
+      id: id ?? this.id,
+      guideId: guideId ?? this.guideId,
+      trialAssessmentId: trialAssessmentId ?? this.trialAssessmentId,
+      sessionId: sessionId ?? this.sessionId,
+      raterUserId: raterUserId ?? this.raterUserId,
+      viewedAt: viewedAt ?? this.viewedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (guideId.present) {
+      map['guide_id'] = Variable<int>(guideId.value);
+    }
+    if (trialAssessmentId.present) {
+      map['trial_assessment_id'] = Variable<int>(trialAssessmentId.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<int>(sessionId.value);
+    }
+    if (raterUserId.present) {
+      map['rater_user_id'] = Variable<int>(raterUserId.value);
+    }
+    if (viewedAt.present) {
+      map['viewed_at'] = Variable<int>(viewedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RatingGuideViewEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('guideId: $guideId, ')
+          ..write('trialAssessmentId: $trialAssessmentId, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('raterUserId: $raterUserId, ')
+          ..write('viewedAt: $viewedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -46205,6 +48040,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CtqFactorAcknowledgmentsTable(this);
   late final $TrialEnvironmentalRecordsTable trialEnvironmentalRecords =
       $TrialEnvironmentalRecordsTable(this);
+  late final $AssessmentGuidesTable assessmentGuides =
+      $AssessmentGuidesTable(this);
+  late final $AssessmentGuideAnchorsTable assessmentGuideAnchors =
+      $AssessmentGuideAnchorsTable(this);
+  late final $RatingGuideViewEventsTable ratingGuideViewEvents =
+      $RatingGuideViewEventsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -46264,7 +48105,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         ctqFactorDefinitions,
         protocolDocumentReferences,
         ctqFactorAcknowledgments,
-        trialEnvironmentalRecords
+        trialEnvironmentalRecords,
+        assessmentGuides,
+        assessmentGuideAnchors,
+        ratingGuideViewEvents
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -46334,6 +48178,55 @@ abstract class _$AppDatabase extends GeneratedDatabase {
             result: [
               TableUpdate('trial_environmental_records',
                   kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('assessment_definitions',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('assessment_guides', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('trial_assessments',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('assessment_guides', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('assessment_guides',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('assessment_guide_anchors', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('assessment_guides',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('rating_guide_view_events', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('trial_assessments',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('rating_guide_view_events', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('sessions',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('rating_guide_view_events', kind: UpdateKind.delete),
+            ],
+          ),
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('users',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('rating_guide_view_events', kind: UpdateKind.update),
             ],
           ),
         ],
@@ -46662,6 +48555,24 @@ class $$UsersTableFilterComposer
                 $$CtqFactorAcknowledgmentsTableFilterComposer(ComposerState(
                     $state.db,
                     $state.db.ctqFactorAcknowledgments,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter ratingGuideViewEventsRefs(
+      ComposableFilter Function($$RatingGuideViewEventsTableFilterComposer f)
+          f) {
+    final $$RatingGuideViewEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ratingGuideViewEvents,
+            getReferencedColumn: (t) => t.raterUserId,
+            builder: (joinBuilder, parentComposers) =>
+                $$RatingGuideViewEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ratingGuideViewEvents,
                     joinBuilder,
                     parentComposers)));
     return f(composer);
@@ -49902,6 +51813,20 @@ class $$AssessmentDefinitionsTableFilterComposer
                     $state.db.trialAssessments, joinBuilder, parentComposers)));
     return f(composer);
   }
+
+  ComposableFilter assessmentGuidesRefs(
+      ComposableFilter Function($$AssessmentGuidesTableFilterComposer f) f) {
+    final $$AssessmentGuidesTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.assessmentGuides,
+            getReferencedColumn: (t) => t.assessmentDefinitionId,
+            builder: (joinBuilder, parentComposers) =>
+                $$AssessmentGuidesTableFilterComposer(ComposerState($state.db,
+                    $state.db.assessmentGuides, joinBuilder, parentComposers)));
+    return f(composer);
+  }
 }
 
 class $$AssessmentDefinitionsTableOrderingComposer
@@ -50437,6 +52362,38 @@ class $$TrialAssessmentsTableFilterComposer
                 $$ArmAssessmentMetadataTableFilterComposer(ComposerState(
                     $state.db,
                     $state.db.armAssessmentMetadata,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter assessmentGuidesRefs(
+      ComposableFilter Function($$AssessmentGuidesTableFilterComposer f) f) {
+    final $$AssessmentGuidesTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.assessmentGuides,
+            getReferencedColumn: (t) => t.trialAssessmentId,
+            builder: (joinBuilder, parentComposers) =>
+                $$AssessmentGuidesTableFilterComposer(ComposerState($state.db,
+                    $state.db.assessmentGuides, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter ratingGuideViewEventsRefs(
+      ComposableFilter Function($$RatingGuideViewEventsTableFilterComposer f)
+          f) {
+    final $$RatingGuideViewEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ratingGuideViewEvents,
+            getReferencedColumn: (t) => t.trialAssessmentId,
+            builder: (joinBuilder, parentComposers) =>
+                $$RatingGuideViewEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ratingGuideViewEvents,
                     joinBuilder,
                     parentComposers)));
     return f(composer);
@@ -52114,6 +54071,24 @@ class $$SessionsTableFilterComposer
         builder: (joinBuilder, parentComposers) => $$SignalsTableFilterComposer(
             ComposerState(
                 $state.db, $state.db.signals, joinBuilder, parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter ratingGuideViewEventsRefs(
+      ComposableFilter Function($$RatingGuideViewEventsTableFilterComposer f)
+          f) {
+    final $$RatingGuideViewEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ratingGuideViewEvents,
+            getReferencedColumn: (t) => t.sessionId,
+            builder: (joinBuilder, parentComposers) =>
+                $$RatingGuideViewEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ratingGuideViewEvents,
+                    joinBuilder,
+                    parentComposers)));
     return f(composer);
   }
 }
@@ -65178,6 +67153,8 @@ typedef $$TrialPurposesTableCreateCompanionBuilder = TrialPurposesCompanion
   Value<String?> requiredEvidenceSummary,
   Value<String?> readinessCriteriaSummary,
   Value<String?> inferredFieldsJson,
+  Value<String?> plannedDatByAssessment,
+  Value<int?> protocolTimingWindow,
   Value<DateTime?> confirmedAt,
   Value<String?> confirmedBy,
   Value<int> requiresConfirmation,
@@ -65202,6 +67179,8 @@ typedef $$TrialPurposesTableUpdateCompanionBuilder = TrialPurposesCompanion
   Value<String?> requiredEvidenceSummary,
   Value<String?> readinessCriteriaSummary,
   Value<String?> inferredFieldsJson,
+  Value<String?> plannedDatByAssessment,
+  Value<int?> protocolTimingWindow,
   Value<DateTime?> confirmedAt,
   Value<String?> confirmedBy,
   Value<int> requiresConfirmation,
@@ -65242,6 +67221,8 @@ class $$TrialPurposesTableTableManager extends RootTableManager<
             Value<String?> requiredEvidenceSummary = const Value.absent(),
             Value<String?> readinessCriteriaSummary = const Value.absent(),
             Value<String?> inferredFieldsJson = const Value.absent(),
+            Value<String?> plannedDatByAssessment = const Value.absent(),
+            Value<int?> protocolTimingWindow = const Value.absent(),
             Value<DateTime?> confirmedAt = const Value.absent(),
             Value<String?> confirmedBy = const Value.absent(),
             Value<int> requiresConfirmation = const Value.absent(),
@@ -65265,6 +67246,8 @@ class $$TrialPurposesTableTableManager extends RootTableManager<
             requiredEvidenceSummary: requiredEvidenceSummary,
             readinessCriteriaSummary: readinessCriteriaSummary,
             inferredFieldsJson: inferredFieldsJson,
+            plannedDatByAssessment: plannedDatByAssessment,
+            protocolTimingWindow: protocolTimingWindow,
             confirmedAt: confirmedAt,
             confirmedBy: confirmedBy,
             requiresConfirmation: requiresConfirmation,
@@ -65288,6 +67271,8 @@ class $$TrialPurposesTableTableManager extends RootTableManager<
             Value<String?> requiredEvidenceSummary = const Value.absent(),
             Value<String?> readinessCriteriaSummary = const Value.absent(),
             Value<String?> inferredFieldsJson = const Value.absent(),
+            Value<String?> plannedDatByAssessment = const Value.absent(),
+            Value<int?> protocolTimingWindow = const Value.absent(),
             Value<DateTime?> confirmedAt = const Value.absent(),
             Value<String?> confirmedBy = const Value.absent(),
             Value<int> requiresConfirmation = const Value.absent(),
@@ -65311,6 +67296,8 @@ class $$TrialPurposesTableTableManager extends RootTableManager<
             requiredEvidenceSummary: requiredEvidenceSummary,
             readinessCriteriaSummary: readinessCriteriaSummary,
             inferredFieldsJson: inferredFieldsJson,
+            plannedDatByAssessment: plannedDatByAssessment,
+            protocolTimingWindow: protocolTimingWindow,
             confirmedAt: confirmedAt,
             confirmedBy: confirmedBy,
             requiresConfirmation: requiresConfirmation,
@@ -65394,6 +67381,16 @@ class $$TrialPurposesTableFilterComposer
 
   ColumnFilters<String> get inferredFieldsJson => $state.composableBuilder(
       column: $state.table.inferredFieldsJson,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get plannedDatByAssessment => $state.composableBuilder(
+      column: $state.table.plannedDatByAssessment,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get protocolTimingWindow => $state.composableBuilder(
+      column: $state.table.protocolTimingWindow,
       builder: (column, joinBuilders) =>
           ColumnFilters(column, joinBuilders: joinBuilders));
 
@@ -65568,6 +67565,17 @@ class $$TrialPurposesTableOrderingComposer
 
   ColumnOrderings<String> get inferredFieldsJson => $state.composableBuilder(
       column: $state.table.inferredFieldsJson,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get plannedDatByAssessment =>
+      $state.composableBuilder(
+          column: $state.table.plannedDatByAssessment,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get protocolTimingWindow => $state.composableBuilder(
+      column: $state.table.protocolTimingWindow,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -66904,6 +68912,782 @@ class $$TrialEnvironmentalRecordsTableOrderingComposer
   }
 }
 
+typedef $$AssessmentGuidesTableCreateCompanionBuilder
+    = AssessmentGuidesCompanion Function({
+  Value<int> id,
+  Value<int?> assessmentDefinitionId,
+  Value<int?> trialAssessmentId,
+  Value<int> createdAt,
+});
+typedef $$AssessmentGuidesTableUpdateCompanionBuilder
+    = AssessmentGuidesCompanion Function({
+  Value<int> id,
+  Value<int?> assessmentDefinitionId,
+  Value<int?> trialAssessmentId,
+  Value<int> createdAt,
+});
+
+class $$AssessmentGuidesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AssessmentGuidesTable,
+    AssessmentGuide,
+    $$AssessmentGuidesTableFilterComposer,
+    $$AssessmentGuidesTableOrderingComposer,
+    $$AssessmentGuidesTableCreateCompanionBuilder,
+    $$AssessmentGuidesTableUpdateCompanionBuilder> {
+  $$AssessmentGuidesTableTableManager(
+      _$AppDatabase db, $AssessmentGuidesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$AssessmentGuidesTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$AssessmentGuidesTableOrderingComposer(ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int?> assessmentDefinitionId = const Value.absent(),
+            Value<int?> trialAssessmentId = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              AssessmentGuidesCompanion(
+            id: id,
+            assessmentDefinitionId: assessmentDefinitionId,
+            trialAssessmentId: trialAssessmentId,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int?> assessmentDefinitionId = const Value.absent(),
+            Value<int?> trialAssessmentId = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              AssessmentGuidesCompanion.insert(
+            id: id,
+            assessmentDefinitionId: assessmentDefinitionId,
+            trialAssessmentId: trialAssessmentId,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$AssessmentGuidesTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $AssessmentGuidesTable> {
+  $$AssessmentGuidesTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$AssessmentDefinitionsTableFilterComposer get assessmentDefinitionId {
+    final $$AssessmentDefinitionsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.assessmentDefinitionId,
+            referencedTable: $state.db.assessmentDefinitions,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$AssessmentDefinitionsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.assessmentDefinitions,
+                    joinBuilder,
+                    parentComposers)));
+    return composer;
+  }
+
+  $$TrialAssessmentsTableFilterComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableFilterComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  ComposableFilter assessmentGuideAnchorsRefs(
+      ComposableFilter Function($$AssessmentGuideAnchorsTableFilterComposer f)
+          f) {
+    final $$AssessmentGuideAnchorsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.assessmentGuideAnchors,
+            getReferencedColumn: (t) => t.guideId,
+            builder: (joinBuilder, parentComposers) =>
+                $$AssessmentGuideAnchorsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.assessmentGuideAnchors,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+
+  ComposableFilter ratingGuideViewEventsRefs(
+      ComposableFilter Function($$RatingGuideViewEventsTableFilterComposer f)
+          f) {
+    final $$RatingGuideViewEventsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $state.db.ratingGuideViewEvents,
+            getReferencedColumn: (t) => t.guideId,
+            builder: (joinBuilder, parentComposers) =>
+                $$RatingGuideViewEventsTableFilterComposer(ComposerState(
+                    $state.db,
+                    $state.db.ratingGuideViewEvents,
+                    joinBuilder,
+                    parentComposers)));
+    return f(composer);
+  }
+}
+
+class $$AssessmentGuidesTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $AssessmentGuidesTable> {
+  $$AssessmentGuidesTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$AssessmentDefinitionsTableOrderingComposer get assessmentDefinitionId {
+    final $$AssessmentDefinitionsTableOrderingComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.assessmentDefinitionId,
+            referencedTable: $state.db.assessmentDefinitions,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$AssessmentDefinitionsTableOrderingComposer(ComposerState(
+                    $state.db,
+                    $state.db.assessmentDefinitions,
+                    joinBuilder,
+                    parentComposers)));
+    return composer;
+  }
+
+  $$TrialAssessmentsTableOrderingComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableOrderingComposer composer = $state
+        .composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableOrderingComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$AssessmentGuideAnchorsTableCreateCompanionBuilder
+    = AssessmentGuideAnchorsCompanion Function({
+  Value<int> id,
+  required int guideId,
+  Value<int> sortOrder,
+  Value<String?> filePath,
+  required String lane,
+  required String contentType,
+  Value<String?> sourceUrl,
+  Value<String?> licenseIdentifier,
+  required String attributionString,
+  Value<int?> inaturalistObservationId,
+  Value<int?> inaturalistTaxonId,
+  Value<String?> generationSpecification,
+  Value<String?> validatedBy,
+  Value<String?> validationDate,
+  Value<String?> citationFull,
+  required String dateObtained,
+  Value<String?> dateLastVerified,
+  Value<int?> customerOrganizationId,
+  Value<int?> customerConsentRecordId,
+  Value<int> isDeleted,
+  Value<int> createdAt,
+});
+typedef $$AssessmentGuideAnchorsTableUpdateCompanionBuilder
+    = AssessmentGuideAnchorsCompanion Function({
+  Value<int> id,
+  Value<int> guideId,
+  Value<int> sortOrder,
+  Value<String?> filePath,
+  Value<String> lane,
+  Value<String> contentType,
+  Value<String?> sourceUrl,
+  Value<String?> licenseIdentifier,
+  Value<String> attributionString,
+  Value<int?> inaturalistObservationId,
+  Value<int?> inaturalistTaxonId,
+  Value<String?> generationSpecification,
+  Value<String?> validatedBy,
+  Value<String?> validationDate,
+  Value<String?> citationFull,
+  Value<String> dateObtained,
+  Value<String?> dateLastVerified,
+  Value<int?> customerOrganizationId,
+  Value<int?> customerConsentRecordId,
+  Value<int> isDeleted,
+  Value<int> createdAt,
+});
+
+class $$AssessmentGuideAnchorsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $AssessmentGuideAnchorsTable,
+    AssessmentGuideAnchor,
+    $$AssessmentGuideAnchorsTableFilterComposer,
+    $$AssessmentGuideAnchorsTableOrderingComposer,
+    $$AssessmentGuideAnchorsTableCreateCompanionBuilder,
+    $$AssessmentGuideAnchorsTableUpdateCompanionBuilder> {
+  $$AssessmentGuideAnchorsTableTableManager(
+      _$AppDatabase db, $AssessmentGuideAnchorsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$AssessmentGuideAnchorsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$AssessmentGuideAnchorsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> guideId = const Value.absent(),
+            Value<int> sortOrder = const Value.absent(),
+            Value<String?> filePath = const Value.absent(),
+            Value<String> lane = const Value.absent(),
+            Value<String> contentType = const Value.absent(),
+            Value<String?> sourceUrl = const Value.absent(),
+            Value<String?> licenseIdentifier = const Value.absent(),
+            Value<String> attributionString = const Value.absent(),
+            Value<int?> inaturalistObservationId = const Value.absent(),
+            Value<int?> inaturalistTaxonId = const Value.absent(),
+            Value<String?> generationSpecification = const Value.absent(),
+            Value<String?> validatedBy = const Value.absent(),
+            Value<String?> validationDate = const Value.absent(),
+            Value<String?> citationFull = const Value.absent(),
+            Value<String> dateObtained = const Value.absent(),
+            Value<String?> dateLastVerified = const Value.absent(),
+            Value<int?> customerOrganizationId = const Value.absent(),
+            Value<int?> customerConsentRecordId = const Value.absent(),
+            Value<int> isDeleted = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              AssessmentGuideAnchorsCompanion(
+            id: id,
+            guideId: guideId,
+            sortOrder: sortOrder,
+            filePath: filePath,
+            lane: lane,
+            contentType: contentType,
+            sourceUrl: sourceUrl,
+            licenseIdentifier: licenseIdentifier,
+            attributionString: attributionString,
+            inaturalistObservationId: inaturalistObservationId,
+            inaturalistTaxonId: inaturalistTaxonId,
+            generationSpecification: generationSpecification,
+            validatedBy: validatedBy,
+            validationDate: validationDate,
+            citationFull: citationFull,
+            dateObtained: dateObtained,
+            dateLastVerified: dateLastVerified,
+            customerOrganizationId: customerOrganizationId,
+            customerConsentRecordId: customerConsentRecordId,
+            isDeleted: isDeleted,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int guideId,
+            Value<int> sortOrder = const Value.absent(),
+            Value<String?> filePath = const Value.absent(),
+            required String lane,
+            required String contentType,
+            Value<String?> sourceUrl = const Value.absent(),
+            Value<String?> licenseIdentifier = const Value.absent(),
+            required String attributionString,
+            Value<int?> inaturalistObservationId = const Value.absent(),
+            Value<int?> inaturalistTaxonId = const Value.absent(),
+            Value<String?> generationSpecification = const Value.absent(),
+            Value<String?> validatedBy = const Value.absent(),
+            Value<String?> validationDate = const Value.absent(),
+            Value<String?> citationFull = const Value.absent(),
+            required String dateObtained,
+            Value<String?> dateLastVerified = const Value.absent(),
+            Value<int?> customerOrganizationId = const Value.absent(),
+            Value<int?> customerConsentRecordId = const Value.absent(),
+            Value<int> isDeleted = const Value.absent(),
+            Value<int> createdAt = const Value.absent(),
+          }) =>
+              AssessmentGuideAnchorsCompanion.insert(
+            id: id,
+            guideId: guideId,
+            sortOrder: sortOrder,
+            filePath: filePath,
+            lane: lane,
+            contentType: contentType,
+            sourceUrl: sourceUrl,
+            licenseIdentifier: licenseIdentifier,
+            attributionString: attributionString,
+            inaturalistObservationId: inaturalistObservationId,
+            inaturalistTaxonId: inaturalistTaxonId,
+            generationSpecification: generationSpecification,
+            validatedBy: validatedBy,
+            validationDate: validationDate,
+            citationFull: citationFull,
+            dateObtained: dateObtained,
+            dateLastVerified: dateLastVerified,
+            customerOrganizationId: customerOrganizationId,
+            customerConsentRecordId: customerConsentRecordId,
+            isDeleted: isDeleted,
+            createdAt: createdAt,
+          ),
+        ));
+}
+
+class $$AssessmentGuideAnchorsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $AssessmentGuideAnchorsTable> {
+  $$AssessmentGuideAnchorsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get sortOrder => $state.composableBuilder(
+      column: $state.table.sortOrder,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get filePath => $state.composableBuilder(
+      column: $state.table.filePath,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get lane => $state.composableBuilder(
+      column: $state.table.lane,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get contentType => $state.composableBuilder(
+      column: $state.table.contentType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get sourceUrl => $state.composableBuilder(
+      column: $state.table.sourceUrl,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get licenseIdentifier => $state.composableBuilder(
+      column: $state.table.licenseIdentifier,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get attributionString => $state.composableBuilder(
+      column: $state.table.attributionString,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get inaturalistObservationId => $state.composableBuilder(
+      column: $state.table.inaturalistObservationId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get inaturalistTaxonId => $state.composableBuilder(
+      column: $state.table.inaturalistTaxonId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get generationSpecification => $state.composableBuilder(
+      column: $state.table.generationSpecification,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get validatedBy => $state.composableBuilder(
+      column: $state.table.validatedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get validationDate => $state.composableBuilder(
+      column: $state.table.validationDate,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get citationFull => $state.composableBuilder(
+      column: $state.table.citationFull,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get dateObtained => $state.composableBuilder(
+      column: $state.table.dateObtained,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get dateLastVerified => $state.composableBuilder(
+      column: $state.table.dateLastVerified,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get customerOrganizationId => $state.composableBuilder(
+      column: $state.table.customerOrganizationId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get customerConsentRecordId => $state.composableBuilder(
+      column: $state.table.customerConsentRecordId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$AssessmentGuidesTableFilterComposer get guideId {
+    final $$AssessmentGuidesTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.guideId,
+            referencedTable: $state.db.assessmentGuides,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$AssessmentGuidesTableFilterComposer(ComposerState($state.db,
+                    $state.db.assessmentGuides, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$AssessmentGuideAnchorsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $AssessmentGuideAnchorsTable> {
+  $$AssessmentGuideAnchorsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get sortOrder => $state.composableBuilder(
+      column: $state.table.sortOrder,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get filePath => $state.composableBuilder(
+      column: $state.table.filePath,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get lane => $state.composableBuilder(
+      column: $state.table.lane,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get contentType => $state.composableBuilder(
+      column: $state.table.contentType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get sourceUrl => $state.composableBuilder(
+      column: $state.table.sourceUrl,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get licenseIdentifier => $state.composableBuilder(
+      column: $state.table.licenseIdentifier,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get attributionString => $state.composableBuilder(
+      column: $state.table.attributionString,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get inaturalistObservationId => $state.composableBuilder(
+      column: $state.table.inaturalistObservationId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get inaturalistTaxonId => $state.composableBuilder(
+      column: $state.table.inaturalistTaxonId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get generationSpecification =>
+      $state.composableBuilder(
+          column: $state.table.generationSpecification,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get validatedBy => $state.composableBuilder(
+      column: $state.table.validatedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get validationDate => $state.composableBuilder(
+      column: $state.table.validationDate,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get citationFull => $state.composableBuilder(
+      column: $state.table.citationFull,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get dateObtained => $state.composableBuilder(
+      column: $state.table.dateObtained,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get dateLastVerified => $state.composableBuilder(
+      column: $state.table.dateLastVerified,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get customerOrganizationId => $state.composableBuilder(
+      column: $state.table.customerOrganizationId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get customerConsentRecordId => $state.composableBuilder(
+      column: $state.table.customerConsentRecordId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get createdAt => $state.composableBuilder(
+      column: $state.table.createdAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$AssessmentGuidesTableOrderingComposer get guideId {
+    final $$AssessmentGuidesTableOrderingComposer composer = $state
+        .composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.guideId,
+            referencedTable: $state.db.assessmentGuides,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$AssessmentGuidesTableOrderingComposer(ComposerState($state.db,
+                    $state.db.assessmentGuides, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+typedef $$RatingGuideViewEventsTableCreateCompanionBuilder
+    = RatingGuideViewEventsCompanion Function({
+  Value<int> id,
+  required int guideId,
+  required int trialAssessmentId,
+  required int sessionId,
+  Value<int?> raterUserId,
+  required int viewedAt,
+});
+typedef $$RatingGuideViewEventsTableUpdateCompanionBuilder
+    = RatingGuideViewEventsCompanion Function({
+  Value<int> id,
+  Value<int> guideId,
+  Value<int> trialAssessmentId,
+  Value<int> sessionId,
+  Value<int?> raterUserId,
+  Value<int> viewedAt,
+});
+
+class $$RatingGuideViewEventsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RatingGuideViewEventsTable,
+    RatingGuideViewEvent,
+    $$RatingGuideViewEventsTableFilterComposer,
+    $$RatingGuideViewEventsTableOrderingComposer,
+    $$RatingGuideViewEventsTableCreateCompanionBuilder,
+    $$RatingGuideViewEventsTableUpdateCompanionBuilder> {
+  $$RatingGuideViewEventsTableTableManager(
+      _$AppDatabase db, $RatingGuideViewEventsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer: $$RatingGuideViewEventsTableFilterComposer(
+              ComposerState(db, table)),
+          orderingComposer: $$RatingGuideViewEventsTableOrderingComposer(
+              ComposerState(db, table)),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> guideId = const Value.absent(),
+            Value<int> trialAssessmentId = const Value.absent(),
+            Value<int> sessionId = const Value.absent(),
+            Value<int?> raterUserId = const Value.absent(),
+            Value<int> viewedAt = const Value.absent(),
+          }) =>
+              RatingGuideViewEventsCompanion(
+            id: id,
+            guideId: guideId,
+            trialAssessmentId: trialAssessmentId,
+            sessionId: sessionId,
+            raterUserId: raterUserId,
+            viewedAt: viewedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int guideId,
+            required int trialAssessmentId,
+            required int sessionId,
+            Value<int?> raterUserId = const Value.absent(),
+            required int viewedAt,
+          }) =>
+              RatingGuideViewEventsCompanion.insert(
+            id: id,
+            guideId: guideId,
+            trialAssessmentId: trialAssessmentId,
+            sessionId: sessionId,
+            raterUserId: raterUserId,
+            viewedAt: viewedAt,
+          ),
+        ));
+}
+
+class $$RatingGuideViewEventsTableFilterComposer
+    extends FilterComposer<_$AppDatabase, $RatingGuideViewEventsTable> {
+  $$RatingGuideViewEventsTableFilterComposer(super.$state);
+  ColumnFilters<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get viewedAt => $state.composableBuilder(
+      column: $state.table.viewedAt,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  $$AssessmentGuidesTableFilterComposer get guideId {
+    final $$AssessmentGuidesTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.guideId,
+            referencedTable: $state.db.assessmentGuides,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$AssessmentGuidesTableFilterComposer(ComposerState($state.db,
+                    $state.db.assessmentGuides, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialAssessmentsTableFilterComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableFilterComposer composer =
+        $state.composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableFilterComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$SessionsTableFilterComposer get sessionId {
+    final $$SessionsTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sessionId,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableFilterComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get raterUserId {
+    final $$UsersTableFilterComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.raterUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableFilterComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
+class $$RatingGuideViewEventsTableOrderingComposer
+    extends OrderingComposer<_$AppDatabase, $RatingGuideViewEventsTable> {
+  $$RatingGuideViewEventsTableOrderingComposer(super.$state);
+  ColumnOrderings<int> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get viewedAt => $state.composableBuilder(
+      column: $state.table.viewedAt,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  $$AssessmentGuidesTableOrderingComposer get guideId {
+    final $$AssessmentGuidesTableOrderingComposer composer = $state
+        .composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.guideId,
+            referencedTable: $state.db.assessmentGuides,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$AssessmentGuidesTableOrderingComposer(ComposerState($state.db,
+                    $state.db.assessmentGuides, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$TrialAssessmentsTableOrderingComposer get trialAssessmentId {
+    final $$TrialAssessmentsTableOrderingComposer composer = $state
+        .composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.trialAssessmentId,
+            referencedTable: $state.db.trialAssessments,
+            getReferencedColumn: (t) => t.id,
+            builder: (joinBuilder, parentComposers) =>
+                $$TrialAssessmentsTableOrderingComposer(ComposerState($state.db,
+                    $state.db.trialAssessments, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$SessionsTableOrderingComposer get sessionId {
+    final $$SessionsTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.sessionId,
+        referencedTable: $state.db.sessions,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) =>
+            $$SessionsTableOrderingComposer(ComposerState(
+                $state.db, $state.db.sessions, joinBuilder, parentComposers)));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get raterUserId {
+    final $$UsersTableOrderingComposer composer = $state.composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.raterUserId,
+        referencedTable: $state.db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder, parentComposers) => $$UsersTableOrderingComposer(
+            ComposerState(
+                $state.db, $state.db.users, joinBuilder, parentComposers)));
+    return composer;
+  }
+}
+
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
@@ -67028,4 +69812,11 @@ class $AppDatabaseManager {
   $$TrialEnvironmentalRecordsTableTableManager get trialEnvironmentalRecords =>
       $$TrialEnvironmentalRecordsTableTableManager(
           _db, _db.trialEnvironmentalRecords);
+  $$AssessmentGuidesTableTableManager get assessmentGuides =>
+      $$AssessmentGuidesTableTableManager(_db, _db.assessmentGuides);
+  $$AssessmentGuideAnchorsTableTableManager get assessmentGuideAnchors =>
+      $$AssessmentGuideAnchorsTableTableManager(
+          _db, _db.assessmentGuideAnchors);
+  $$RatingGuideViewEventsTableTableManager get ratingGuideViewEvents =>
+      $$RatingGuideViewEventsTableTableManager(_db, _db.ratingGuideViewEvents);
 }

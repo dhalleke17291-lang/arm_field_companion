@@ -134,6 +134,32 @@ TrialCtqDto _ctqWithBlocker({
       overallStatus: 'incomplete',
     );
 
+TrialCtqDto _ctqWithMissing({
+  required String factorKey,
+  required String label,
+  String reason = 'Evidence not yet captured.',
+  String evidenceSummary = 'No evidence.',
+}) =>
+    TrialCtqDto(
+      trialId: 1,
+      ctqItems: [
+        TrialCtqItemDto(
+          factorKey: factorKey,
+          label: label,
+          importance: 'critical',
+          status: 'missing',
+          evidenceSummary: evidenceSummary,
+          reason: reason,
+          source: 'system',
+        ),
+      ],
+      blockerCount: 0,
+      warningCount: 0,
+      reviewCount: 0,
+      satisfiedCount: 0,
+      overallStatus: 'incomplete',
+    );
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -432,6 +458,251 @@ void main() {
         isNot(contains('32%')),
         reason: 'moderate factor reason must not appear when high factor drives risk',
       );
+    });
+
+    // ── D1: missing-state action strings ─────────────────────────────────────
+
+    group('D1: missing-state action strings', () {
+      final cases = <(String, String, String)>[
+        ('plot_completeness',  'Plot Completeness',  'Complete: Plot Completeness'),
+        ('photo_evidence',     'Photo Evidence',     'Add: Photo Evidence'),
+        ('gps_evidence',       'GPS Evidence',       'Enable: GPS Evidence'),
+        ('treatment_identity', 'Treatment Identity', 'Define: Treatment Identity'),
+        ('application_timing', 'Application Timing', 'Record: Application Timing'),
+        ('rating_window',      'Rating Window',      'Record: Rating Window'),
+      ];
+
+      for (final (factorKey, label, expected) in cases) {
+        test('RS-D1-$factorKey: missing $factorKey emits "$expected"', () {
+          final result = computeTrialReadinessStatement(
+            coherenceDto: _coherenceAligned(),
+            riskDto: _riskLow(),
+            ctqDto: _ctqWithMissing(factorKey: factorKey, label: label),
+            trialState: 'active',
+          );
+
+          expect(result.isReadyForExport, isFalse);
+          expect(result.actionItems, contains(expected));
+          expect(
+            result.reasons.any((r) => r.contains(label)),
+            isTrue,
+            reason: 'reasons must include the missing factor label (D1 override #2)',
+          );
+        });
+      }
+
+      test('RS-D1-Order: blockers precede missing, missing precedes review', () {
+        const ctq = TrialCtqDto(
+          trialId: 1,
+          ctqItems: [
+            // Order in input is review, blocker, missing — verifies output order
+            // is severity-descending regardless of input order.
+            TrialCtqItemDto(
+              factorKey: 'application_timing',
+              label: 'Application Timing',
+              importance: 'critical',
+              status: 'review_needed',
+              evidenceSummary: 'Outside acceptable window.',
+              reason: 'Review timing.',
+              source: 'system',
+            ),
+            TrialCtqItemDto(
+              factorKey: 'primary_endpoint_completeness',
+              label: 'Primary endpoint data',
+              importance: 'critical',
+              status: 'blocked',
+              evidenceSummary: '3 of 4 treatments complete.',
+              reason: 'Rep 2 rating for T3 is missing.',
+              source: 'system',
+            ),
+            TrialCtqItemDto(
+              factorKey: 'photo_evidence',
+              label: 'Photo Evidence',
+              importance: 'critical',
+              status: 'missing',
+              evidenceSummary: 'No photos.',
+              reason: 'No photo evidence.',
+              source: 'system',
+            ),
+          ],
+          blockerCount: 1,
+          warningCount: 0,
+          reviewCount: 1,
+          satisfiedCount: 0,
+          overallStatus: 'incomplete',
+        );
+
+        final result = computeTrialReadinessStatement(
+          coherenceDto: _coherenceAligned(),
+          riskDto: _riskLow(),
+          ctqDto: ctq,
+          trialState: 'active',
+        );
+
+        final blockerIdx =
+            result.actionItems.indexWhere((a) => a.startsWith('Resolve:'));
+        final missingIdx =
+            result.actionItems.indexWhere((a) => a.startsWith('Add:'));
+        final reviewIdx =
+            result.actionItems.indexWhere((a) => a.startsWith('Review:'));
+
+        expect(blockerIdx, isNonNegative, reason: 'blocker action expected');
+        expect(missingIdx, isNonNegative, reason: 'missing action expected');
+        expect(reviewIdx,  isNonNegative, reason: 'review action expected');
+        expect(blockerIdx < missingIdx, isTrue,
+            reason: 'blocker must precede missing in actionItems');
+        expect(missingIdx < reviewIdx, isTrue,
+            reason: 'missing must precede review in actionItems');
+      });
+
+      // Pins current behavior: unmapped factorKeys with status == 'missing'
+      // are silently skipped from actionItems and reasons. overallStatus
+      // still prevents export-readiness. If a future change introduces
+      // fallback wording or an assertion for unmapped factors, this test
+      // must be updated to reflect that policy change.
+      test('RS-D1-Unmapped: unmapped missing factor is silently skipped', () {
+        const ctq = TrialCtqDto(
+          trialId: 1,
+          ctqItems: [
+            TrialCtqItemDto(
+              factorKey: 'unmapped_factor_for_test',
+              label: 'Unmapped Factor',
+              importance: 'critical',
+              status: 'missing',
+              evidenceSummary: 'No evidence.',
+              reason: 'Synthetic test fixture.',
+              source: 'system',
+            ),
+          ],
+          blockerCount: 0,
+          warningCount: 0,
+          reviewCount: 0,
+          satisfiedCount: 0,
+          overallStatus: 'incomplete',
+        );
+
+        final result = computeTrialReadinessStatement(
+          coherenceDto: _coherenceAligned(),
+          riskDto: _riskLow(),
+          ctqDto: ctq,
+          trialState: 'active',
+        );
+
+        expect(result.isReadyForExport, isFalse,
+            reason: 'overallStatus != ready_for_review still blocks readiness');
+        expect(
+          result.actionItems.any((a) => a.contains('Unmapped Factor')),
+          isFalse,
+          reason: 'no action string should be emitted for unmapped factorKey',
+        );
+        expect(
+          result.reasons.any((r) => r.contains('Unmapped Factor')),
+          isFalse,
+          reason: 'no reason string should be emitted for unmapped factorKey',
+        );
+      });
+    });
+
+    // ── D2a: high risk no longer blocks readiness ────────────────────────────
+
+    group('D2a: high risk no longer blocks readiness', () {
+      // Pins D2a's behavior change. Before D2a: high data_variability risk
+      // forced isReadyForExport == false via the `riskLevel == 'low' or
+      // 'moderate'` gate. After D2a: high risk surfaces in cautions only and
+      // no longer blocks export-readiness. If this test fails, D2a has been
+      // accidentally reverted or the cautions emission path has regressed.
+      test(
+        'RS-D2a: cognition-ready CTQ + high data_variability → ready with cautions',
+        () {
+          final highVariance = TrialInterpretationRiskDto(
+            riskLevel: 'high',
+            factors: const [
+              TrialRiskFactorDto(
+                factorKey: 'data_variability',
+                label: 'Data variability',
+                severity: 'high',
+                reason: 'CV on primary endpoint assessment is 42%.',
+                sourceFields: [],
+              ),
+            ],
+            computedAt: DateTime(2026, 1, 1),
+          );
+
+          final result = computeTrialReadinessStatement(
+            coherenceDto: _coherenceAligned(),
+            riskDto: highVariance,
+            ctqDto: _ctqReady(),
+            trialState: 'active',
+          );
+
+          expect(result.isReadyForExport, isTrue,
+              reason: 'high risk no longer blocks readiness after D2a');
+          expect(result.actionItems, isEmpty,
+              reason:
+                  'no action items when CTQ ready and risk is the only concern');
+          expect(result.cautions, isNotEmpty,
+              reason:
+                  'high data_variability reason must still surface as caution');
+          expect(
+            result.cautions.any((c) =>
+                c.contains('CV on primary endpoint assessment is 42%.')),
+            isTrue,
+            reason:
+                'cautions must include the high-severity factor reason verbatim',
+          );
+          expect(
+            result.readinessLevel,
+            'ready_with_cautions',
+            reason:
+                'D2a + D2b together: high-variance trial is ready with cautions',
+          );
+        },
+      );
+    });
+
+    // ── D2b: readinessLevel three-state getter ───────────────────────────────
+
+    group('D2b: readinessLevel', () {
+      test('RS-D2b-ready: cognition-ready + empty cautions → "ready"', () {
+        final result = computeTrialReadinessStatement(
+          coherenceDto: _coherenceAligned(),
+          riskDto: _riskLow(),
+          ctqDto: _ctqReady(),
+          trialState: 'active',
+        );
+
+        expect(result.isReadyForExport, isTrue);
+        expect(result.cautions, isEmpty);
+        expect(result.readinessLevel, 'ready');
+      });
+
+      test(
+        'RS-D2b-ready-with-cautions: cognition-ready + non-empty cautions → "ready_with_cautions"',
+        () {
+          final result = computeTrialReadinessStatement(
+            coherenceDto: _coherenceAligned(),
+            riskDto: _riskModerate(),
+            ctqDto: _ctqReady(),
+            trialState: 'active',
+          );
+
+          expect(result.isReadyForExport, isTrue);
+          expect(result.cautions, isNotEmpty);
+          expect(result.readinessLevel, 'ready_with_cautions');
+        },
+      );
+
+      test('RS-D2b-not-ready: !isReadyForExport → "not_ready"', () {
+        final result = computeTrialReadinessStatement(
+          coherenceDto: _coherenceAligned(),
+          riskDto: _riskLow(),
+          ctqDto: _ctqWithBlocker(),
+          trialState: 'active',
+        );
+
+        expect(result.isReadyForExport, isFalse);
+        expect(result.readinessLevel, 'not_ready');
+      });
     });
   });
 }

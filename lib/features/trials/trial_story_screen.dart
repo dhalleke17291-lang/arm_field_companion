@@ -10,6 +10,7 @@ import '../../domain/signals/signal_providers.dart';
 import '../../domain/signals/signal_review_projection_mapper.dart';
 import '../../domain/trial_cognition/environmental_window_evaluator.dart';
 import '../../domain/trial_cognition/trial_decision_summary_dto.dart';
+import '../diagnostics/trial_readiness.dart';
 import '../../domain/trial_story/trial_story_event.dart';
 import '../../domain/trial_story/trial_story_provider.dart';
 import '../../shared/layout/responsive_layout.dart';
@@ -421,45 +422,61 @@ class _StoryStatusBanner extends ConsumerWidget {
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (report) {
-        final ready = report.canExport;
+        // Defensive: `readyWithWarnings` is normally guaranteed warningCount>0
+        // by the TrialReadinessStatus getter, but the `when` guard below makes
+        // the assumption explicit — if upstream drift ever yields
+        // readyWithWarnings with N==0, fall back to the ready copy rather than
+        // render "Export-ready · 0 cautions to review".
+        final (bg, border, fg, icon, text) = switch (report.status) {
+          TrialReadinessStatus.ready => (
+              AppDesignTokens.successBg,
+              AppDesignTokens.successBg,
+              AppDesignTokens.successFg,
+              Icons.check_circle_outline,
+              'Trial is export-ready.',
+            ),
+          TrialReadinessStatus.readyWithWarnings
+              when report.warningCount > 0 =>
+            (
+              AppDesignTokens.warningBg,
+              AppDesignTokens.warningBorder,
+              AppDesignTokens.flagColor,
+              Icons.info_outline,
+              report.warningCount == 1
+                  ? 'Export-ready · 1 caution to review'
+                  : 'Export-ready · ${report.warningCount} cautions to review',
+            ),
+          TrialReadinessStatus.readyWithWarnings => (
+              AppDesignTokens.successBg,
+              AppDesignTokens.successBg,
+              AppDesignTokens.successFg,
+              Icons.check_circle_outline,
+              'Trial is export-ready.',
+            ),
+          TrialReadinessStatus.notReady => (
+              AppDesignTokens.warningBg,
+              AppDesignTokens.warningBorder,
+              AppDesignTokens.warningFg,
+              Icons.info_outline,
+              'Trial is not export-ready — see Trial Review for details.',
+            ),
+        };
         return Container(
           margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: ready
-                ? AppDesignTokens.successBg
-                : AppDesignTokens.warningBg,
-            border: Border.all(
-              color: ready
-                  ? AppDesignTokens.successBg
-                  : AppDesignTokens.warningBorder,
-              width: 0.5,
-            ),
+            color: bg,
+            border: Border.all(color: border, width: 0.5),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             children: [
-              Icon(
-                ready
-                    ? Icons.check_circle_outline
-                    : Icons.info_outline,
-                size: 14,
-                color: ready
-                    ? AppDesignTokens.successFg
-                    : AppDesignTokens.warningFg,
-              ),
+              Icon(icon, size: 14, color: fg),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  ready
-                      ? 'Trial is export-ready.'
-                      : 'Trial is not export-ready — see Trial Review for details.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: ready
-                        ? AppDesignTokens.successFg
-                        : AppDesignTokens.warningFg,
-                  ),
+                  text,
+                  style: TextStyle(fontSize: 12, color: fg),
                 ),
               ),
             ],

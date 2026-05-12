@@ -78,7 +78,8 @@ void main() {
     expect(trials, isEmpty);
   });
 
-  test('successful import leaves trial isArmLinked true after shell copy', () async {
+  test('successful import leaves trial isArmLinked true after shell copy',
+      () async {
     final path = await writeArmShellFixture(
       tempDir.path,
       plotNumbers: const [101, 102],
@@ -116,4 +117,101 @@ void main() {
     expect(arm.armSourceFile, path);
     expect(arm.shellInternalPath, isNotNull);
   });
+
+  test('CONTRO rating type uses WEED_COVER system definition', () async {
+    final trialAssessment = await _importSingleAssessment(
+      db: db,
+      tempDir: tempDir,
+      ratingType: 'CONTRO',
+    );
+
+    final weedCoverId = await _definitionIdByCode(db, 'WEED_COVER');
+    expect(trialAssessment.assessmentDefinitionId, weedCoverId);
+  });
+
+  test('PESINC rating type uses DISEASE_SEV system definition', () async {
+    final trialAssessment = await _importSingleAssessment(
+      db: db,
+      tempDir: tempDir,
+      ratingType: 'PESINC',
+    );
+
+    final diseaseSeverityId = await _definitionIdByCode(db, 'DISEASE_SEV');
+    expect(trialAssessment.assessmentDefinitionId, diseaseSeverityId);
+  });
+
+  test('unknown rating type falls back to shell definition', () async {
+    final trialAssessment = await _importSingleAssessment(
+      db: db,
+      tempDir: tempDir,
+      ratingType: 'LODGIN',
+    );
+
+    final shellDef = await (db.select(db.assessmentDefinitions)
+          ..where(
+            (d) => d.id.equals(trialAssessment.assessmentDefinitionId),
+          ))
+        .getSingle();
+    expect(shellDef.code, startsWith('SHELL_'));
+    expect(shellDef.code, isNot('WEED_COVER'));
+    expect(shellDef.code, isNot('DISEASE_SEV'));
+  });
+
+  test('blank rating type falls back to shell definition', () async {
+    final trialAssessment = await _importSingleAssessment(
+      db: db,
+      tempDir: tempDir,
+      ratingType: '',
+    );
+
+    final shellDef = await (db.select(db.assessmentDefinitions)
+          ..where(
+            (d) => d.id.equals(trialAssessment.assessmentDefinitionId),
+          ))
+        .getSingle();
+    expect(shellDef.code, startsWith('SHELL_'));
+  });
+}
+
+Future<TrialAssessment> _importSingleAssessment({
+  required AppDatabase db,
+  required Directory tempDir,
+  required String ratingType,
+}) async {
+  final path = await writeArmShellFixture(
+    tempDir.path,
+    plotNumbers: const [101, 102],
+    armColumnIds: const ['001EID001'],
+    seNames: const ['AVEFA'],
+    seDescriptions: const ['Percent rating'],
+    ratingDates: const ['1-Jul-26'],
+    ratingTypes: [ratingType],
+  );
+
+  final assignmentRepo = AssignmentRepository(db);
+  final useCase = ImportArmRatingShellUseCase(
+    db: db,
+    trialRepository: TrialRepository(db),
+    plotRepository: PlotRepository(db),
+    treatmentRepository: TreatmentRepository(db, assignmentRepo),
+    trialAssessmentRepository: TrialAssessmentRepository(db),
+    assignmentRepository: assignmentRepo,
+    armColumnMappingRepository: ArmColumnMappingRepository(db),
+    armApplicationsRepository: ArmApplicationsRepository(db),
+  );
+
+  final result = await useCase.execute(path);
+  expect(result.success, isTrue, reason: result.errorMessage);
+  expect(result.trialId, isNotNull);
+
+  return (db.select(db.trialAssessments)
+        ..where((ta) => ta.trialId.equals(result.trialId!)))
+      .getSingle();
+}
+
+Future<int> _definitionIdByCode(AppDatabase db, String code) async {
+  final definition = await (db.select(db.assessmentDefinitions)
+        ..where((d) => d.code.equals(code)))
+      .getSingle();
+  return definition.id;
 }

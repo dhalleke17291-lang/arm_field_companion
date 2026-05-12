@@ -17,6 +17,15 @@ const _kReadinessConditionLabels = <String, String>{
   'drainage_issues': 'drainage issues noted in the trial area',
 };
 
+const _kMissingActionStrings = <String, String>{
+  'plot_completeness': 'Complete: Plot Completeness',
+  'photo_evidence': 'Add: Photo Evidence',
+  'gps_evidence': 'Enable: GPS Evidence',
+  'treatment_identity': 'Define: Treatment Identity',
+  'application_timing': 'Record: Application Timing',
+  'rating_window': 'Record: Rating Window',
+};
+
 class TrialReadinessStatement {
   const TrialReadinessStatement({
     required this.statusLabel,
@@ -43,6 +52,14 @@ class TrialReadinessStatement {
   final List<String> cautions;
 
   final bool isReadyForExport;
+
+  /// Three-state readiness derived from [isReadyForExport] and [cautions].
+  /// Values: 'ready' | 'ready_with_cautions' | 'not_ready'.
+  String get readinessLevel => !isReadyForExport
+      ? 'not_ready'
+      : cautions.isEmpty
+          ? 'ready'
+          : 'ready_with_cautions';
 }
 
 /// Deterministic, pure narrative from the three cognition DTOs and trial state.
@@ -62,6 +79,8 @@ TrialReadinessStatement computeTrialReadinessStatement({
 
   // ── CTQ ──────────────────────────────────────────────────────────────────
   final blockers = ctqDto.ctqItems.where((i) => i.isBlocked).toList();
+  final missingItems =
+      ctqDto.ctqItems.where((i) => i.status == 'missing').toList();
   final unacknowledgedReview =
       ctqDto.ctqItems.where((i) => i.needsReview && !i.isAcknowledged).toList();
 
@@ -71,6 +90,13 @@ TrialReadinessStatement computeTrialReadinessStatement({
     for (final b in blockers) {
       reasons.add('${b.label}: ${b.reason}');
       actions.add('Resolve: ${b.label}');
+    }
+    for (final m in missingItems) {
+      final actionString = _kMissingActionStrings[m.factorKey];
+      if (actionString != null) {
+        reasons.add('${m.label}: ${m.reason}');
+        actions.add(actionString);
+      }
     }
     for (final r in unacknowledgedReview) {
       actions.add('Review: ${r.label}');
@@ -168,7 +194,6 @@ TrialReadinessStatement computeTrialReadinessStatement({
   final isReady = actions.isEmpty &&
       ctqDto.overallStatus == 'ready_for_review' &&
       coherenceDto.coherenceState == 'aligned' &&
-      (riskDto.riskLevel == 'low' || riskDto.riskLevel == 'moderate') &&
       (trialState == 'active' || trialState == 'closed');
 
   final statusLabel = isReady

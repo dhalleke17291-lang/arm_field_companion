@@ -154,6 +154,15 @@ void main() {
         ));
   }
 
+  Future<void> application(DateTime date, {String status = 'applied'}) =>
+      db.into(db.trialApplicationEvents).insert(
+            TrialApplicationEventsCompanion.insert(
+              trialId: trialId,
+              applicationDate: date,
+              status: Value(status),
+            ),
+          );
+
   Future<void> flagPlot(int sessionId, int plotPk) =>
       db.into(db.plotFlags).insert(PlotFlagsCompanion.insert(
             trialId: trialId,
@@ -305,6 +314,190 @@ void main() {
       expect(data.protocolContext.isArmLinked, isTrue);
       expect(data.protocolContext.divergences, isEmpty);
     });
+
+    // ── Standalone protocol timing (SA tests) ────────────────────────────────
+
+    // SA-1: outside window → timing deviation row emitted with correct fields.
+    test(
+        'SA-1: standalone trial with DAA outside window emits timing deviation',
+        () async {
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'WC1', name: 'Weed control', category: 'efficacy'));
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId, assessmentDefinitionId: defId));
+      final aId = await assessment('Weed control');
+      // Application on Apr-01; session on Apr-12 → actualDaa = 11.
+      await application(DateTime(2026, 4, 1));
+      final sid = await session('S1', date: '2026-04-12');
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+              sessionId: sid,
+              assessmentId: aId,
+              trialAssessmentId: Value(taId)));
+      final purposeRepo = TrialPurposeRepository(db);
+      final purposeId = await purposeRepo.createInitialTrialPurpose(
+          trialId: trialId, claimBeingTested: 'Herbicide efficacy.');
+      await (db.update(db.trialPurposes)..where((t) => t.id.equals(purposeId)))
+          .write(TrialPurposesCompanion(
+            plannedDatByAssessment: Value('{"$taId": 7}'),
+            protocolTimingWindow: const Value(3),
+          ));
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.protocolContext.divergences, hasLength(1));
+      final row = data.protocolContext.divergences.single;
+      expect(row.type, FerDivergenceType.timing);
+      // delta = actualDaa(11) - plannedDat(7) = 4
+      expect(row.deltaDays, 4);
+      expect(row.plannedDat, 7);
+      expect(row.actualDat, 11);
+    });
+
+    // SA-2: within window → no deviation rows.
+    test('SA-2: standalone trial with DAA within window has no divergences',
+        () async {
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'WC2', name: 'Weed control', category: 'efficacy'));
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId, assessmentDefinitionId: defId));
+      final aId = await assessment('Weed control');
+      // Application on Apr-01; session on Apr-09 → actualDaa = 8.
+      // Window ±3 with plannedDat=7: |8-7|=1 ≤ 3 → no deviation.
+      await application(DateTime(2026, 4, 1));
+      final sid = await session('S1', date: '2026-04-09');
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+              sessionId: sid,
+              assessmentId: aId,
+              trialAssessmentId: Value(taId)));
+      final purposeRepo = TrialPurposeRepository(db);
+      final purposeId = await purposeRepo.createInitialTrialPurpose(
+          trialId: trialId, claimBeingTested: 'Herbicide efficacy.');
+      await (db.update(db.trialPurposes)..where((t) => t.id.equals(purposeId)))
+          .write(TrialPurposesCompanion(
+            plannedDatByAssessment: Value('{"$taId": 7}'),
+            protocolTimingWindow: const Value(3),
+          ));
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.protocolContext.divergences, isEmpty);
+    });
+
+    // SA-3: null window → short-circuit before map lookup, no deviation rows.
+    test(
+        'SA-3: null protocolTimingWindow short-circuits before JSON parse',
+        () async {
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'WC3', name: 'Weed control', category: 'efficacy'));
+      final taId = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId, assessmentDefinitionId: defId));
+      final aId = await assessment('Weed control');
+      await application(DateTime(2026, 4, 1));
+      final sid = await session('S1', date: '2026-04-12');
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+              sessionId: sid,
+              assessmentId: aId,
+              trialAssessmentId: Value(taId)));
+      final purposeRepo = TrialPurposeRepository(db);
+      final purposeId = await purposeRepo.createInitialTrialPurpose(
+          trialId: trialId, claimBeingTested: 'Herbicide efficacy.');
+      // plannedDatByAssessment is populated but window is null — must short-circuit.
+      await (db.update(db.trialPurposes)..where((t) => t.id.equals(purposeId)))
+          .write(TrialPurposesCompanion(
+            plannedDatByAssessment: Value('{"$taId": 7}'),
+            protocolTimingWindow: const Value(null),
+          ));
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.protocolContext.divergences, isEmpty);
+    });
+
+    // SA-4: assessment absent from JSON map → no crash, no false deviation;
+    //        a second assessment that IS in the map is still evaluated.
+    test(
+        'SA-4: absent assessment ID produces no row, map entries still evaluated',
+        () async {
+      // TA1: in session, NOT in plannedDatByAssessment.
+      final defId1 = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'WC4a', name: 'Weed control A', category: 'efficacy'));
+      final taId1 = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId, assessmentDefinitionId: defId1));
+      final aId1 = await assessment('Weed control A');
+      // TA2: in session AND in plannedDatByAssessment, outside window.
+      final defId2 = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'WC4b', name: 'Disease pressure', category: 'efficacy'));
+      final taId2 = await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: trialId, assessmentDefinitionId: defId2));
+      final aId2 = await assessment('Disease pressure');
+
+      await application(DateTime(2026, 4, 1)); // actualDaa = 11 for Apr-12
+      final sid = await session('S1', date: '2026-04-12');
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+              sessionId: sid, assessmentId: aId1,
+              trialAssessmentId: Value(taId1)));
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+              sessionId: sid, assessmentId: aId2,
+              trialAssessmentId: Value(taId2)));
+
+      final purposeRepo = TrialPurposeRepository(db);
+      final purposeId = await purposeRepo.createInitialTrialPurpose(
+          trialId: trialId, claimBeingTested: 'Herbicide efficacy.');
+      // Only taId2 is in the map; taId1 is intentionally absent.
+      await (db.update(db.trialPurposes)..where((t) => t.id.equals(purposeId)))
+          .write(TrialPurposesCompanion(
+            plannedDatByAssessment: Value('{"$taId2": 7}'),
+            protocolTimingWindow: const Value(3),
+          ));
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      // taId1 absent from map → 0 rows for it; taId2 outside window → 1 row.
+      expect(data.protocolContext.divergences, hasLength(1));
+      expect(data.protocolContext.divergences.single.type,
+          FerDivergenceType.timing);
+    });
+
+    // SA-5: plannedDatByAssessment null (Q6 skipped) → empty divergences, no crash.
+    //        Distinct from SA-3: window IS set, null check hits the JSON map, not window.
+    test(
+        'SA-5: null plannedDatByAssessment with window set returns empty divergences',
+        () async {
+      final sid = await session('S1', date: '2026-04-12');
+      final purposeRepo = TrialPurposeRepository(db);
+      final purposeId = await purposeRepo.createInitialTrialPurpose(
+          trialId: trialId, claimBeingTested: 'Herbicide efficacy.');
+      // Window is set but Q6 was skipped so plannedDatByAssessment is null.
+      await (db.update(db.trialPurposes)..where((t) => t.id.equals(purposeId)))
+          .write(const TrialPurposesCompanion(
+            plannedDatByAssessment: Value(null),
+            protocolTimingWindow: Value(3),
+          ));
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.protocolContext.divergences, isEmpty);
+    });
   });
 
   // ── C. Session grid ──────────────────────────────────────────────────────────
@@ -407,6 +600,41 @@ void main() {
       expect(data.sessionGrid.dataPlotCount, 0);
       expect(data.sessionGrid.assessmentCount, 0);
       expect(data.sessionGrid.rated, 0);
+    });
+  });
+
+  group('assessment timing', () {
+    test('non-ARM session with prior application populates actual DAA',
+        () async {
+      final a = await assessment('Weed control');
+      final sid = await session('S1', date: '2026-04-10');
+      await linkAssessmentToSession(sid, a);
+      await application(DateTime(2026, 4, 1));
+      await application(DateTime(2026, 4, 7));
+      await application(DateTime(2026, 4, 12));
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.protocolContext.isArmTrial, isFalse);
+      expect(data.assessmentTimingRows, hasLength(1));
+      expect(data.assessmentTimingRows.single.assessmentId, a);
+      expect(data.assessmentTimingRows.single.assessmentName, 'Weed control');
+      expect(data.assessmentTimingRows.single.actualDaa, 3);
+    });
+
+    test('session with no prior application keeps actual DAA null', () async {
+      final a = await assessment('Crop vigor');
+      final sid = await session('S1', date: '2026-04-10');
+      await linkAssessmentToSession(sid, a);
+      await application(DateTime(2026, 4, 12));
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.assessmentTimingRows, hasLength(1));
+      expect(data.assessmentTimingRows.single.assessmentName, 'Crop vigor');
+      expect(data.assessmentTimingRows.single.actualDaa, isNull);
     });
   });
 
@@ -879,6 +1107,79 @@ void main() {
           FerCognitionSection.disclaimerText, contains('does not determine'));
       expect(FerCognitionSection.disclaimerText, contains('efficacy'));
       expect(FerCognitionSection.disclaimerText, contains('validity'));
+    });
+
+    // H-9: interpretationRiskFactors is a non-null list when no purpose row.
+    // The evaluator may return cannot_evaluate items even without a purpose;
+    // the field must never be null and each item must have a valid tier.
+    test('interpretationRiskFactors is a non-null list when no purpose row',
+        () async {
+      final sid = await session('S1');
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.cognition.interpretationRiskFactors, isNotNull);
+      for (final f in data.cognition.interpretationRiskFactors) {
+        expect(
+          ['HIGH', 'MEDIUM', 'CANNOT EVALUATE'],
+          contains(f.tier),
+        );
+      }
+    });
+
+    // H-10: knownInterpretationFactors is null when no purpose row.
+    test('knownInterpretationFactors is null when no purpose row', () async {
+      final sid = await session('S1');
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(data.cognition.knownInterpretationFactors, isNull);
+    });
+
+    // H-11: knownInterpretationFactors populated from confirmed purpose.
+    test('knownInterpretationFactors populated when purpose has the field',
+        () async {
+      final purposeRepo = TrialPurposeRepository(db);
+      final purposeId = await purposeRepo.createInitialTrialPurpose(
+        trialId: trialId,
+        claimBeingTested: 'Herbicide efficacy vs check.',
+        trialPurpose: 'Registration.',
+        primaryEndpoint: 'WEED_COUNT.',
+        treatmentRoleSummary: 'T1=check.',
+      );
+      await (db.update(db.trialPurposes)
+            ..where((t) => t.id.equals(purposeId)))
+          .write(const TrialPurposesCompanion(
+            knownInterpretationFactors: Value(
+                'Soil moisture varied between reps; interpret with caution.'),
+          ));
+
+      final sid = await session('S1');
+      final s = await getSession(sid);
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      expect(
+        data.cognition.knownInterpretationFactors,
+        'Soil moisture varied between reps; interpret with caution.',
+      );
+    });
+
+    // H-12: interpretationRiskFactors never contains 'none' severity items.
+    test('interpretationRiskFactors excludes none-severity factors', () async {
+      final sid = await session('S1');
+      final s = await getSession(sid);
+
+      final data = await svc.assembleForSession(trial: trial, session: s);
+
+      for (final f in data.cognition.interpretationRiskFactors) {
+        expect(
+          ['HIGH', 'MEDIUM', 'CANNOT EVALUATE'],
+          contains(f.tier),
+          reason: '${f.label} has unexpected tier: ${f.tier}',
+        );
+      }
     });
   });
 

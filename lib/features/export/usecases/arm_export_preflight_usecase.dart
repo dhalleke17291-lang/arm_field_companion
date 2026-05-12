@@ -234,7 +234,8 @@ class ArmExportPreflightUseCase {
     final photos = await _photoRepository.getPhotosForTrial(trialId);
     final assignments = await _assignmentRepository.getForTrial(trialId);
 
-    final validation = export_validation.ExportValidationService().validate(
+    final validation =
+        await export_validation.ExportValidationService().validate(
       plots: plotsAll,
       assignments: assignments,
       assessments: assessmentDefs.values.toList(),

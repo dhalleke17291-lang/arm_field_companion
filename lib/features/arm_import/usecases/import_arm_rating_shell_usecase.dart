@@ -75,8 +75,7 @@ class DuplicateShellImportException implements Exception {
   final String shellFileName;
   const DuplicateShellImportException(this.shellFileName);
   @override
-  String toString() =>
-      'Shell "$shellFileName" has already been imported. '
+  String toString() => 'Shell "$shellFileName" has already been imported. '
       'Delete the existing trial before importing again.';
 }
 
@@ -145,6 +144,11 @@ class ImportArmRatingShellUseCase {
   final ArmColumnMappingRepository _armColumnMappingRepository;
   final ArmApplicationsRepository _armApplicationsRepository;
   final TrialIntentSeeder? _intentSeeder;
+
+  static const _kRatingTypeToSystemCode = {
+    'CONTRO': 'WEED_COVER',
+    'PESINC': 'DISEASE_SEV',
+  };
 
   /// After [trialId] is committed, if shell copy or final setup fails, remove the
   /// trial so no half-imported draft remains.
@@ -242,12 +246,10 @@ class ImportArmRatingShellUseCase {
 
           final name = sheetRow.treatmentName;
           final type = sheetRow.typeCode;
-          final hasNameOrType =
-              (name != null && name.isNotEmpty) ||
-                  (type != null && type.isNotEmpty);
+          final hasNameOrType = (name != null && name.isNotEmpty) ||
+              (type != null && type.isNotEmpty);
           if (hasNameOrType) {
-            await (_db.update(_db.treatments)
-                  ..where((t) => t.id.equals(trtId)))
+            await (_db.update(_db.treatments)..where((t) => t.id.equals(trtId)))
                 .write(
               TreatmentsCompanion(
                 name: name != null && name.isNotEmpty
@@ -347,7 +349,9 @@ class ImportArmRatingShellUseCase {
             return Value(d);
           }
 
-          final event = await _db.into(_db.trialApplicationEvents).insertReturning(
+          final event = await _db
+              .into(_db.trialApplicationEvents)
+              .insertReturning(
                 TrialApplicationEventsCompanion.insert(
                   trialId: id,
                   applicationDate: appDate,
@@ -442,11 +446,16 @@ class ImportArmRatingShellUseCase {
                   collectBasis: Value(first.collectBasis),
                 ),
               );
+          final systemCode = _kRatingTypeToSystemCode[
+              (first.ratingType ?? '').trim().toUpperCase()];
+          final systemDefId = systemCode != null
+              ? await _findDefinitionByCode(systemCode)
+              : null;
 
           final taId = await _db.into(_db.trialAssessments).insert(
                 TrialAssessmentsCompanion.insert(
                   trialId: id,
-                  assessmentDefinitionId: defId,
+                  assessmentDefinitionId: systemDefId ?? defId,
                   displayNameOverride: Value(name),
                   selectedFromProtocol: const Value(true),
                   selectedManually: const Value(false),
@@ -487,7 +496,8 @@ class ImportArmRatingShellUseCase {
               shellSizeUnit: Value(_firstNonEmpty([first.sizeUnit])),
               shellCollectionBasisUnit:
                   Value(_firstNonEmpty([first.collectionBasisUnit])),
-              shellReportingBasis: Value(_firstNonEmpty([first.reportingBasis])),
+              shellReportingBasis:
+                  Value(_firstNonEmpty([first.reportingBasis])),
               shellReportingBasisUnit:
                   Value(_firstNonEmpty([first.reportingBasisUnit])),
               shellStageScale: Value(_firstNonEmpty([first.stageScale])),
@@ -566,7 +576,8 @@ class ImportArmRatingShellUseCase {
                   startedAt: parsed != null
                       ? Value(parsed.startedAtUtc)
                       : const Value.absent(),
-                  raterName: rater != null ? Value(rater) : const Value.absent(),
+                  raterName:
+                      rater != null ? Value(rater) : const Value.absent(),
                   status: const Value(kSessionStatusPlanned),
                 ),
               );
@@ -586,8 +597,7 @@ class ImportArmRatingShellUseCase {
               cropStageMaj: Value(_firstNonEmpty([repCol.cropStageMaj])),
               cropStageMin: Value(_firstNonEmpty([repCol.cropStageMin])),
               cropStageScale: Value(_firstNonEmpty([repCol.stageScale])),
-              trtEvalInterval:
-                  Value(_firstNonEmpty([repCol.trtEvalInterval])),
+              trtEvalInterval: Value(_firstNonEmpty([repCol.trtEvalInterval])),
               plantEvalInterval: Value(_firstNonEmpty([repCol.datInterval])),
               raterInitials: Value(_firstNonEmpty([repCol.assessedBy])),
             ),
@@ -656,7 +666,7 @@ class ImportArmRatingShellUseCase {
         );
       }
 
-      await _intentSeeder?.seedFromArmImport(plan.trialId);
+      await _intentSeeder?.seedFromArmImportConfirmed(plan.trialId);
 
       return ShellImportResult.ok(
         trialId: plan.trialId,
@@ -774,6 +784,7 @@ ArmApplicationsCompanion _armApplicationsCompanionFromRows({
     if (s == null) return const Value.absent();
     return Value(s);
   }
+
   return ArmApplicationsCompanion.insert(
     trialApplicationEventId: trialApplicationEventId,
     armSheetColumnIndex: Value(armSheetColumnIndex),

@@ -581,3 +581,29 @@ class _CreateSessionScreenState extends ConsumerState<CreateSessionScreen> {
     }
   }
 }
+
+/// Opens [CreateSessionScreen] unless the trial is closed/archived.
+void tryOpenCreateSessionScreen({
+  required BuildContext context,
+  required WidgetRef ref,
+  required Trial trial,
+}) {
+  final latest = ref.read(trialProvider(trial.id)).valueOrNull ?? trial;
+  if (latest.status == kTrialStatusClosed ||
+      latest.status == kTrialStatusArchived) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'This trial is closed — no new sessions can be started. Reopen the trial if further data collection is needed.',
+        ),
+      ),
+    );
+    return;
+  }
+  Navigator.push<void>(
+    context,
+    MaterialPageRoute<void>(
+      builder: (_) => CreateSessionScreen(trial: latest),
+    ),
+  );
+}

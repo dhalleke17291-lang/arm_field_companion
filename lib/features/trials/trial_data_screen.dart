@@ -502,7 +502,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
               child: ListView(
                 controller: _scrollController,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 children: [
                   _buildSection1(trial, config),
                   const SizedBox(height: 12),
@@ -569,11 +569,10 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
             EvidenceCompletenessState.complete
         : null;
 
-    return ColoredBox(
+    return Container(
       color: AppDesignTokens.sectionHeaderBg,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           _summaryRow(
             label: 'Data integrity',
@@ -581,16 +580,18 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
             onTap: integrityTap,
             isClean: integrityAsync.valueOrNull?.isClean,
           ),
-          const Divider(
-              height: 1, thickness: 0.5, color: AppDesignTokens.borderCrisp),
+          const SizedBox(height: AppDesignTokens.spacing8),
           _summaryRow(
             label: 'Evidence completeness',
             suffix: completenessSuffix,
             isClean: completenessIsClean,
           ),
-          const Divider(
-              height: 1, thickness: 0.5, color: AppDesignTokens.borderCrisp),
-          _summaryRow(label: 'Results', suffix: resultsSuffix),
+          const SizedBox(height: AppDesignTokens.spacing8),
+          _summaryRow(
+            label: 'Results',
+            suffix: resultsSuffix,
+            icon: Icons.bar_chart_rounded,
+          ),
         ],
       ),
     );
@@ -602,6 +603,7 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
     VoidCallback? onTap,
     List<String>? issueLines,
     bool? isClean,
+    IconData? icon,
   }) {
     final Color suffixColor;
     if (suffix.endsWith('to review') || suffix.endsWith('found')) {
@@ -625,32 +627,57 @@ class _TrialDataScreenState extends ConsumerState<TrialDataScreen> {
       rowIcon = Icons.info_outline;
       rowIconColor = AppDesignTokens.secondaryText;
     } else {
-      rowIcon = null;
-      rowIconColor = null;
+      rowIcon = icon;
+      rowIconColor = icon == null ? null : AppDesignTokens.primary;
     }
 
-    final row = Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDesignTokens.spacing16,
-        vertical: AppDesignTokens.spacing12,
+    final row = Container(
+      padding: const EdgeInsets.all(AppDesignTokens.spacing12),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: AppDesignTokens.cardShadowRating,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (rowIcon != null) ...[
-            Icon(rowIcon, size: 16, color: rowIconColor),
-            const SizedBox(width: 6),
-          ],
-          Text(
-            '$label: ',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppDesignTokens.secondaryText,
+            Container(
+              width: 30,
+              height: 30,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: (rowIconColor ?? AppDesignTokens.primary)
+                    .withValues(alpha: 0.09),
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusSmall),
+              ),
+              child: Icon(rowIcon, size: 17, color: rowIconColor),
             ),
-          ),
+            const SizedBox(width: AppDesignTokens.spacing12),
+          ],
           Expanded(
-            child: Text(
-              suffix,
-              style: TextStyle(fontSize: 13, color: suffixColor),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: AppDesignTokens.compactActionLabelStyle.copyWith(
+                    fontSize: 12,
+                    height: 1.2,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  suffix,
+                  style: AppDesignTokens.headingStyle(
+                    fontSize: 14,
+                    color: suffixColor,
+                  ).copyWith(height: 1.35),
+                ),
+              ],
             ),
           ),
           if (onTap != null)
@@ -1859,59 +1886,80 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppDesignTokens.cardSurface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
-        side: const BorderSide(color: AppDesignTokens.borderCrisp),
+    final sectionMatch = RegExp(r'^(\d+)\.\s+(.+)$').firstMatch(title);
+    final sectionNumber = sectionMatch?.group(1);
+    final displayTitle = sectionMatch?.group(2) ?? title;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppDesignTokens.cardSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusLarge),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+        boxShadow: AppDesignTokens.cardShadow,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          isCollapsible
-              ? InkWell(
-                  onTap: onToggle,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppDesignTokens.primaryText,
-                            ),
-                          ),
+          InkWell(
+            onTap: isCollapsible ? onToggle : null,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Row(
+                children: [
+                  if (sectionNumber != null) ...[
+                    Container(
+                      width: 28,
+                      height: 28,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppDesignTokens.primaryTint,
+                        borderRadius:
+                            BorderRadius.circular(AppDesignTokens.radiusSmall),
+                        border: Border.all(
+                          color:
+                              AppDesignTokens.primary.withValues(alpha: 0.14),
                         ),
-                        Icon(
-                          expanded
-                              ? Icons.keyboard_arrow_up
-                              : Icons.keyboard_arrow_down,
-                          size: 18,
-                          color: AppDesignTokens.secondaryText,
+                      ),
+                      child: Text(
+                        sectionNumber,
+                        style: AppDesignTokens.compactActionLabelStyle.copyWith(
+                          fontSize: 12,
+                          height: 1,
+                          color: AppDesignTokens.primary,
                         ),
-                      ],
+                      ),
+                    ),
+                    const SizedBox(width: AppDesignTokens.spacing12),
+                  ],
+                  Expanded(
+                    child: Text(
+                      displayTitle,
+                      style: AppDesignTokens.headingStyle(
+                        fontSize: 16,
+                        color: AppDesignTokens.primaryText,
+                      ).copyWith(height: 1.2),
                     ),
                   ),
-                )
-              : Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppDesignTokens.primaryText,
+                  if (isCollapsible)
+                    Icon(
+                      expanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      size: 20,
+                      color: AppDesignTokens.secondaryText,
                     ),
-                  ),
-                ),
+                ],
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Divider(height: 1, color: AppDesignTokens.borderCrisp),
+          ),
           if (!isCollapsible || expanded)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 17),
               child: child,
             ),
         ],
@@ -1929,7 +1977,7 @@ class _FieldRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1937,7 +1985,7 @@ class _FieldRow extends StatelessWidget {
             width: 110,
             child: Text(
               label,
-              style: const TextStyle(
+              style: AppDesignTokens.bodyCrispStyle(
                 fontSize: 13,
                 color: AppDesignTokens.secondaryText,
               ),
@@ -1946,9 +1994,8 @@ class _FieldRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: AppDesignTokens.headingStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w500,
                 color: AppDesignTokens.primaryText,
               ),
             ),
@@ -1967,14 +2014,12 @@ class _GroupHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 6),
+      padding: const EdgeInsets.only(top: 4, bottom: 8),
       child: Text(
         label,
-        style: TextStyle(
+        style: AppDesignTokens.assessmentGroupHeaderStyle.copyWith(
           fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.8,
-          color: AppDesignTokens.secondaryText.withValues(alpha: 0.7),
+          color: AppDesignTokens.secondaryText.withValues(alpha: 0.78),
         ),
       ),
     );
@@ -1987,7 +2032,7 @@ class _SectionDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: 10),
       child: Divider(height: 1, color: AppDesignTokens.borderCrisp),
     );
   }
@@ -2009,7 +2054,7 @@ class _DetailRow extends StatelessWidget {
             width: 80,
             child: Text(
               label,
-              style: const TextStyle(
+              style: AppDesignTokens.bodyCrispStyle(
                 fontSize: 13,
                 color: AppDesignTokens.secondaryText,
               ),
@@ -2018,9 +2063,8 @@ class _DetailRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: AppDesignTokens.headingStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w500,
                 color: AppDesignTokens.primaryText,
               ),
             ),

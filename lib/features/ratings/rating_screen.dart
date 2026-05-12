@@ -1,9 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' as drift;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +15,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
 import '../../core/connectivity/gps_service.dart';
-import '../../core/widgets/photo_thumbnail.dart';
 import '../../core/ui/assessment_display_helper.dart';
 import '../../core/plot_display.dart';
 import '../../core/providers.dart';
@@ -35,11 +35,19 @@ import '../photos/usecases/save_photo_usecase.dart';
 import 'last_value_memory.dart';
 import 'rating_lineage_sheet.dart';
 import 'usecases/save_rating_usecase.dart';
+import 'widgets/assessment_reference_guide_sheet.dart';
+import 'widgets/closed_session_banner.dart';
+import 'widgets/assessment_selector_panel.dart';
+import 'widgets/neighbor_treatment_strip.dart';
+import 'widgets/rating_gps_pill.dart';
+import 'widgets/rating_photo_strip.dart';
+import 'widgets/rating_bottom_bar.dart';
+import 'widgets/walk_order_bar.dart';
 import '../sessions/arrange_plots_screen.dart';
 import '../sessions/rating_order_sheet.dart';
 import '../sessions/session_summary_screen.dart';
 import '../sessions/session_timing_helper.dart';
-import '../trials/widgets/signal_action_sheet.dart';
+import '../trials/assessment_library_system_map.dart';
 
 /// Status options for the rating result; maps to persisted resultStatus values.
 enum RatingStatus {
@@ -51,6 +59,9 @@ enum RatingStatus {
 }
 
 enum _RatingLeaveAction { save, discard, cancel }
+
+const _referenceGuideRuntimeDebug =
+    bool.fromEnvironment('AGNEXIS_REFERENCE_GUIDE_DEBUG');
 
 String _statusDisplayLabel(String value) {
   switch (value) {
@@ -129,6 +140,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
   String _selectedStatus = 'RECORDED';
   bool _userHasInteracted = false;
   bool _isSaving = false;
+  final Set<String> _guideDebugLogKeys = <String>{};
 
   Timer? _clampBorderTimer;
   Timer? _clampMessageTimer;
@@ -189,6 +201,28 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         _gpsLongitude = pos.longitude;
       });
     }
+  }
+
+  Future<void> _openGuide(
+    int trialAssessmentId,
+    int? assessmentDefinitionId,
+  ) async {
+    final userId = await ref.read(currentUserIdProvider.future);
+    if (!mounted) return;
+    await showAssessmentReferenceGuide(
+      context,
+      trialId: widget.trial.id,
+      plotPk: widget.plot.id,
+      assessmentId: _currentAssessment.id,
+      trialAssessmentId: trialAssessmentId,
+      assessmentDefinitionId: assessmentDefinitionId,
+      sessionId: widget.session.id,
+      raterUserId: userId,
+      repo: ref.read(assessmentGuideRepositoryProvider),
+      photoRepository: ref.read(photoRepositoryProvider),
+      onCapturePhoto: _capturePhoto,
+      onRemovePhoto: _removePhotoById,
+    );
   }
 
   Future<void> _loadGpsMode() async {
@@ -485,6 +519,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
             .watch(trialAssessmentsForTrialProvider(widget.trial.id))
             .valueOrNull ??
         <TrialAssessment>[];
+    final sessionAssessmentRows = ref
+            .watch(sessionAssessmentRowsProvider(widget.session.id))
+            .valueOrNull ??
+        <SessionAssessment>[];
+    final sessionTrialAssessmentIdsByAssessmentId = <int, int>{
+      for (final row in sessionAssessmentRows)
+        if (row.trialAssessmentId != null)
+          row.assessmentId: row.trialAssessmentId!,
+    };
     final taByLegacy = <int, TrialAssessment>{};
     final taById = <int, TrialAssessment>{};
     for (final ta in trialAssessments) {
@@ -493,8 +536,27 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
       if (lid != null) taByLegacy[lid] = ta;
     }
 
+    final currentTa = _resolveTrialAssessment(
+      _currentAssessment,
+      taByLegacy,
+      taById,
+      sessionTrialAssessmentIdsByAssessmentId:
+          sessionTrialAssessmentIdsByAssessmentId,
+    );
+    final guideAvailability = ref.watch(hasGuideForAssessmentProvider(
+        (currentTa?.id ?? -1, currentTa?.assessmentDefinitionId)));
+    final hasGuide = guideAvailability.valueOrNull ?? false;
+
     final definitions = ref.watch(assessmentDefinitionsProvider).valueOrNull ??
         <AssessmentDefinition>[];
+    if (kDebugMode && _referenceGuideRuntimeDebug) {
+      _logReferenceGuideRuntimeState(
+        currentTa: currentTa,
+        definitions: definitions,
+        hasGuide: hasGuide,
+        hasGuideProviderState: guideAvailability.toString(),
+      );
+    }
     final liveSession =
         ref.watch(sessionByIdProvider(widget.session.id)).valueOrNull ??
             widget.session;
@@ -661,7 +723,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
             top: false,
             child: Column(
               children: [
-                _buildWalkOrderBar(context),
+                WalkOrderBar(
+                  walkOrderMode: _walkOrderMode,
+                  onTap: () => _showWalkOrderSheet(context),
+                ),
                 if (sessionContextStrip != null)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
@@ -718,8 +783,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final rl =
-                          ResponsiveLayout(constraints.maxWidth);
+                      final rl = ResponsiveLayout(constraints.maxWidth);
                       final bottomPad =
                           MediaQuery.paddingOf(context).bottom + 88;
 
@@ -735,26 +799,83 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
 
                       final leftChildren = <Widget>[
                         _buildContextCard(context),
-                        _buildNeighborAndTreatmentStrip(
-                          context,
-                          sessionRatingsList,
+                        NeighborTreatmentStrip(
+                          assessmentId: _currentAssessment.id,
+                          allPlots: widget.allPlots,
+                          currentPlotIndex: widget.currentPlotIndex,
+                          currentPlotId: widget.plot.id,
+                          sessionRatings: sessionRatingsList,
                         ),
                         if (!isSessionEditable(widget.session))
-                          _buildClosedSessionBanner(context),
-                        _buildAssessmentSelectorPanel(
-                          context,
-                          taByLegacy,
-                          taById,
-                          nonRecordedAssessmentIds,
-                          definitions,
+                          const ClosedSessionBanner(),
+                        AssessmentSelectorPanel(
+                          assessments: widget.assessments,
+                          currentAssessment: _currentAssessment,
+                          taByLegacy: taByLegacy,
+                          taById: taById,
+                          nonRecordedAssessmentIds: nonRecordedAssessmentIds,
+                          definitions: definitions,
+                          aamMap: _aamMap(),
+                          assessmentScrollController:
+                              _assessmentScrollController,
+                          sessionTrialAssessmentIdsByAssessmentId:
+                              sessionTrialAssessmentIdsByAssessmentId,
+                          shellDescription:
+                              _shellDescriptionForCurrentAssessment(
+                            taByLegacy,
+                            taById,
+                            sessionTrialAssessmentIdsByAssessmentId:
+                                sessionTrialAssessmentIdsByAssessmentId,
+                          ),
+                          assessmentDisplayLabel: (assessment, legacy, byId) =>
+                              _ratingAssessmentDisplayLabel(
+                            assessment,
+                            legacy,
+                            byId,
+                            sessionTrialAssessmentIdsByAssessmentId:
+                                sessionTrialAssessmentIdsByAssessmentId,
+                          ),
+                          assessmentChipLabel: (assessment, legacy, byId) =>
+                              _ratingAssessmentChipLabel(
+                            assessment,
+                            legacy,
+                            byId,
+                            sessionTrialAssessmentIdsByAssessmentId:
+                                sessionTrialAssessmentIdsByAssessmentId,
+                          ),
+                          onAssessmentSelected: (index, assessment) {
+                            setState(() {
+                              _assessmentIndex = index;
+                              _currentAssessment = assessment;
+                              _lastSliderSteppedValue = null;
+                              _valueController.clear();
+                              _selectedStatus = 'RECORDED';
+                              _userHasInteracted = false;
+                              _selectedMissingReasons.clear();
+                              _carryForwardBaselineNumeric = null;
+                              _numericValueUserEditedThisVisit = false;
+                              _carryForwardConfirmSuppressedAssessmentId = null;
+                              _carryForwardConfirmSuppressedBaseline = null;
+                            });
+                            _clampValueToEffectiveRange();
+                            _scrollToActiveAssessment();
+                            _loadPriorRating();
+                            _prefillFromLastValue();
+                          },
+                          hasGuide: hasGuide,
+                          onGuideIconTap: currentTa != null
+                              ? () => _openGuide(
+                                    currentTa.id,
+                                    currentTa.assessmentDefinitionId,
+                                  )
+                              : null,
                         ),
                       ];
                       final rightChildren = <Widget>[
                         existingRatingAsync.when(
                           loading: () => const Padding(
                             padding: EdgeInsets.all(48),
-                            child:
-                                Center(child: CircularProgressIndicator()),
+                            child: Center(child: CircularProgressIndicator()),
                           ),
                           error: (e, st) => Padding(
                             padding: const EdgeInsets.all(24),
@@ -763,7 +884,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                           data: (existing) =>
                               _buildRatingArea(context, existing),
                         ),
-                        _buildPhotoStrip(context),
+                        RatingPhotoStrip(
+                          trialId: widget.trial.id,
+                          plotPk: widget.plot.id,
+                          sessionId: widget.session.id,
+                          onCapture: () => _capturePhoto(context),
+                          onPhotoTap: _viewPhoto,
+                        ),
                       ];
 
                       final columnChildren = <Widget>[
@@ -781,12 +908,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                           Expanded(
                             flex: 42,
                             child: SingleChildScrollView(
-                              physics:
-                                  const AlwaysScrollableScrollPhysics(),
+                              physics: const AlwaysScrollableScrollPhysics(),
                               padding: EdgeInsets.only(bottom: bottomPad),
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.stretch,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: leftChildren,
                               ),
                             ),
@@ -805,12 +930,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                           Expanded(
                             flex: 58,
                             child: SingleChildScrollView(
-                              physics:
-                                  const AlwaysScrollableScrollPhysics(),
+                              physics: const AlwaysScrollableScrollPhysics(),
                               padding: EdgeInsets.only(bottom: bottomPad),
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.stretch,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: rightChildren,
                               ),
                             ),
@@ -820,78 +943,32 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                     },
                   ),
                 ),
-                _buildBottomBar(context),
+                RatingBottomBar(
+                  trialId: widget.trial.id,
+                  sessionId: widget.session.id,
+                  isSaving: _isSaving,
+                  editable: isSessionEditable(widget.session),
+                  canGoBack: !_effectiveIsFirstPlotForNavigation,
+                  primaryLabel: _effectiveIsLastPlotForNavigation &&
+                          _assessmentIndex >= widget.assessments.length - 1
+                      ? (_isAtEndOfFilteredSequence
+                          ? 'Finished'
+                          : 'Save & Finish')
+                      : (_assessmentIndex >= widget.assessments.length - 1
+                          ? 'Save & Next Plot'
+                          : 'Save & Next'),
+                  isVeryLast: _effectiveIsLastPlotForNavigation &&
+                      _assessmentIndex >= widget.assessments.length - 1,
+                  onSave: () => _saveRating(context, navigateAfterSave: false),
+                  onSaveAndNext: () => _saveRating(context),
+                  onNavigatePrev: () async {
+                    await _navigatePlot(context, -1);
+                  },
+                  onJumpToPlot: () => _showJumpToPlotDialog(context),
+                  onFlag: () => _showFlagDialog(context),
+                ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildClosedSessionBanner(BuildContext context) {
-    return Material(
-      color: Theme.of(context).colorScheme.errorContainer,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            Icon(Icons.lock,
-                color: Theme.of(context).colorScheme.onErrorContainer,
-                size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                kClosedSessionBlockedMessage,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWalkOrderBar(BuildContext context) {
-    return Material(
-      color: AppDesignTokens.cardSurface,
-      child: InkWell(
-        onTap: () => _showWalkOrderSheet(context),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDesignTokens.spacing16,
-            vertical: 8,
-          ),
-          decoration: const BoxDecoration(
-            border:
-                Border(bottom: BorderSide(color: AppDesignTokens.borderCrisp)),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.directions_walk,
-                  size: 18, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                'Walk order: ',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-              ),
-              Text(
-                SessionWalkOrderStore.labelForMode(_walkOrderMode),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-              ),
-              const Spacer(),
-              Icon(Icons.chevron_right,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ],
           ),
         ),
       ),
@@ -947,7 +1024,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
 
   // ===== Photos (Capture + Save) =====
 
-  Future<void> _capturePhoto(BuildContext context) async {
+  Future<bool> _capturePhoto(BuildContext context) async {
     try {
       final docsDir = await getApplicationDocumentsDirectory();
       final photosDir = Directory('${docsDir.path}/photos');
@@ -978,7 +1055,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         imageQuality: 85,
       );
       if (shot == null) {
-        return;
+        return false;
       }
 
       final userId = await ref.read(currentUserIdProvider.future);
@@ -999,254 +1076,60 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         ),
       );
 
-      if (!mounted || !context.mounted) return;
+      if (!mounted || !context.mounted) return false;
 
       if (!res.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(res.errorMessage ?? 'Failed to save photo')),
         );
-        return;
+        return false;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Photo saved')),
       );
+      return true;
     } catch (e) {
-      if (!mounted || !context.mounted) return;
+      if (!mounted || !context.mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Photo error: $e')),
       );
+      return false;
     }
   }
 
-  Widget _buildPhotoStrip(BuildContext context) {
-    final theme = Theme.of(context);
-    final photosAsync = ref.watch(
-      photosForPlotProvider(
-        PhotosForPlotParams(
-          trialId: widget.trial.id,
-          plotPk: widget.plot.id,
-          sessionId: widget.session.id,
-        ),
-      ),
-    );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 14, bottom: 8),
-            child: Text(
-              'PHOTOS — tap camera to add',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color:
-                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                letterSpacing: 0.3,
-              ),
-            ),
-          ),
-          const Divider(
-            height: 1,
-            thickness: 0.5,
-            color: Color(0xFFE8E5E0),
-          ),
-          const SizedBox(height: 8),
-          photosAsync.when(
-            loading: () {
-              const tileSize = 72.0;
-              return SizedBox(
-                height: tileSize + 24,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildCameraTile(context, tileSize),
-                  ],
-                ),
-              );
-            },
-            error: (e, _) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'Photo load error: $e',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.colorScheme.error,
-                ),
-              ),
-            ),
-            data: (photos) {
-              const tileSize = 72.0;
-              return SizedBox(
-                height: tileSize + 24,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildCameraTile(context, tileSize),
-                      for (var i = 0; i < photos.length; i++) ...[
-                        const SizedBox(width: 8),
-                        _buildPhotoTile(
-                          context,
-                          photos[i],
-                          i + 1,
-                          photos.length,
-                          tileSize,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCameraTile(BuildContext context, double size) {
-    final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.6),
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () => _capturePhoto(context),
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.camera_alt_outlined,
-                size: 28,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Add photo',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+  Future<bool> _removePhotoById(BuildContext context, int photoId) async {
+    try {
+      final userId = await ref.read(currentUserIdProvider.future);
+      final user = await ref.read(currentUserProvider.future);
+      await ref.read(photoRepositoryProvider).softDeletePhoto(
+            photoId,
+            deletedBy: user?.displayName ?? widget.session.raterName,
+            deletedByUserId: userId,
+          );
+      ref.invalidate(
+        photosForPlotProvider(
+          PhotosForPlotParams(
+            trialId: widget.trial.id,
+            plotPk: widget.plot.id,
+            sessionId: widget.session.id,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildPhotoTile(
-    BuildContext context,
-    Photo photo,
-    int index,
-    int totalCount,
-    double size,
-  ) {
-    final theme = Theme.of(context);
-    final timeStr = DateFormat('HH:mm').format(photo.createdAt);
-
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () => _viewPhoto(photo),
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppDesignTokens.borderCrisp),
-            color: theme.colorScheme.surfaceContainerLow,
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              PhotoThumbnail(
-                filePath: photo.filePath,
-                width: size,
-                height: size,
-                borderRadius: 7,
-              ),
-              Positioned(
-                left: 4,
-                top: 4,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.scrim.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '$index/$totalCount',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onPrimary,
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 4,
-                bottom: 4,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.scrim.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    timeStr,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onPrimary,
-                      fontSize: 10,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              if (photo.ratingValue != null)
-                Positioned(
-                  right: 4,
-                  bottom: 4,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppDesignTokens.primary.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${photo.ratingValue!.round()}%',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Photo removed')),
+        );
+      }
+      return true;
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Photo remove error: $e')),
+        );
+      }
+      return false;
+    }
   }
 
   void _viewPhoto(Photo photo) {
@@ -1256,22 +1139,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         builder: (_) => PhotoViewScreen(
           photo: photo,
           onDelete: () async {
-            final userId = await ref.read(currentUserIdProvider.future);
-            final user = await ref.read(currentUserProvider.future);
-            await ref.read(photoRepositoryProvider).softDeletePhoto(
-                  photo.id,
-                  deletedBy: user?.displayName ?? widget.session.raterName,
-                  deletedByUserId: userId,
-                );
-            ref.invalidate(
-              photosForPlotProvider(
-                PhotosForPlotParams(
-                  trialId: widget.trial.id,
-                  plotPk: widget.plot.id,
-                  sessionId: widget.session.id,
-                ),
-              ),
-            );
+            await _removePhotoById(context, photo.id);
           },
         ),
       ),
@@ -1279,11 +1147,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
   }
 
   // ===== UI =====
-
-  // ignore: unused_element - kept for future offline indicator in AppBar or menu
-  Widget _buildOfflineIndicator() {
-    return const SizedBox.shrink();
-  }
 
   void _showRatingOrderSheet(BuildContext context) {
     showModalBottomSheet<void>(
@@ -1571,201 +1434,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
             Positioned(
               bottom: 18,
               right: 10,
-              child: _buildGpsPill(),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// Compact GPS readout anchored to the bottom-right corner of the rating
-  /// plot card. Tap cycles between "capture once at session start" and
-  /// "capture on every save" modes.
-  Widget _buildGpsPill() {
-    final latStr = _gpsLatitude!.toStringAsFixed(_gpsCaptureOnEachSave ? 5 : 3);
-    final lngStr =
-        _gpsLongitude!.toStringAsFixed(_gpsCaptureOnEachSave ? 5 : 3);
-    return Tooltip(
-      message: _gpsCaptureOnEachSave
-          ? 'GPS captured on every save — tap to switch to session-only'
-          : 'GPS captured once at session start — tap to switch to per-save',
-      child: Material(
-        color: AppDesignTokens.successFg.withValues(alpha: 0.14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-          side: BorderSide(
-            color: AppDesignTokens.successFg.withValues(alpha: 0.45),
-            width: 0.75,
-          ),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(999),
-          onTap: _toggleGpsMode,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _gpsCaptureOnEachSave
-                      ? Icons.my_location
-                      : Icons.location_searching,
-                  size: 13,
-                  color: AppDesignTokens.successFg,
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  '$latStr, $lngStr',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppDesignTokens.successFg,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Neighbor values in walk order + treatment running average for the current assessment.
-  Widget _buildNeighborAndTreatmentStrip(
-    BuildContext context,
-    List<RatingRecord> sessionRatings,
-  ) {
-    final assessmentId = _currentAssessment.id;
-    final allPlots = widget.allPlots;
-    final idx = widget.currentPlotIndex;
-
-    // --- Neighbor values (walk order) ---
-    String neighborLabel(int offset) {
-      final ni = idx + offset;
-      if (ni < 0 || ni >= allPlots.length) return '';
-      final p = allPlots[ni];
-      if (p.isGuardRow) return '';
-      final label = getDisplayPlotLabel(p, allPlots);
-      final rating = sessionRatings
-          .where((r) =>
-              r.plotPk == p.id &&
-              r.assessmentId == assessmentId &&
-              r.isCurrent &&
-              !r.isDeleted &&
-              r.resultStatus == 'RECORDED')
-          .toList();
-      final val = rating.isNotEmpty && rating.first.numericValue != null
-          ? _formatNeighborValue(rating.first.numericValue!)
-          : '—';
-      return '$label: $val';
-    }
-
-    final prev = neighborLabel(-1);
-    final next = neighborLabel(1);
-    final hasNeighbors = prev.isNotEmpty || next.isNotEmpty;
-
-    // --- Treatment running average (current session only) ---
-    final plotCtx = ref.watch(plotContextProvider(widget.plot.id));
-    final treatmentCode = plotCtx.valueOrNull?.treatmentCode;
-    final treatmentId = plotCtx.valueOrNull?.treatment?.id;
-
-    String? treatmentAvgText;
-    if (treatmentId != null) {
-      // Find all plots with same treatment from plot context cache
-      final allPlotContexts = <int, int?>{};
-      for (final p in allPlots) {
-        if (p.isGuardRow) continue;
-        final pc = ref.watch(plotContextProvider(p.id)).valueOrNull;
-        if (pc != null) allPlotContexts[p.id] = pc.treatment?.id;
-      }
-      final sameTreatmentPlotPks = allPlotContexts.entries
-          .where((e) => e.value == treatmentId)
-          .map((e) => e.key)
-          .toSet();
-
-      // Get recorded values for this assessment from same-treatment plots
-      final values = <double>[];
-      for (final r in sessionRatings) {
-        if (r.assessmentId == assessmentId &&
-            r.isCurrent &&
-            !r.isDeleted &&
-            r.resultStatus == 'RECORDED' &&
-            r.numericValue != null &&
-            sameTreatmentPlotPks.contains(r.plotPk) &&
-            r.plotPk != widget.plot.id) {
-          values.add(r.numericValue!);
-        }
-      }
-
-      if (values.isNotEmpty) {
-        final avg = values.reduce((a, b) => a + b) / values.length;
-        final code = treatmentCode ?? 'TRT';
-        treatmentAvgText =
-            '$code avg: ${_formatNeighborValue(avg)} (${values.length} rated)';
-      }
-    }
-
-    if (!hasNeighbors && treatmentAvgText == null) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(
-        AppDesignTokens.spacing16,
-        6,
-        AppDesignTokens.spacing16,
-        0,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0EDE8),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (hasNeighbors)
-            Row(
-              children: [
-                Icon(Icons.compare_arrows,
-                    size: 14,
-                    color:
-                        AppDesignTokens.secondaryText.withValues(alpha: 0.7)),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    [prev, next].where((s) => s.isNotEmpty).join('  ·  '),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppDesignTokens.secondaryText,
-                      letterSpacing: 0.2,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          if (hasNeighbors && treatmentAvgText != null)
-            const SizedBox(height: 3),
-          if (treatmentAvgText != null)
-            Row(
-              children: [
-                Icon(Icons.analytics_outlined,
-                    size: 14,
-                    color: AppDesignTokens.primary.withValues(alpha: 0.7)),
-                const SizedBox(width: 6),
-                Text(
-                  treatmentAvgText,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppDesignTokens.primary.withValues(alpha: 0.85),
-                    letterSpacing: 0.2,
-                  ),
-                ),
-              ],
+              child: RatingGpsPill(
+                latitude: _gpsLatitude!,
+                longitude: _gpsLongitude!,
+                captureOnEachSave: _gpsCaptureOnEachSave,
+                onToggleMode: _toggleGpsMode,
+              ),
             ),
         ],
       ),
@@ -1848,172 +1522,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     );
   }
 
-  static String _formatNeighborValue(double v) {
-    if (v == v.roundToDouble()) return v.toInt().toString();
-    return v.toStringAsFixed(1);
-  }
-
-  Widget _buildAssessmentSelectorPanel(
-    BuildContext context,
-    Map<int, TrialAssessment> taByLegacy,
-    Map<int, TrialAssessment> taById,
-    Set<int> nonRecordedAssessmentIds,
-    List<AssessmentDefinition> definitions,
-  ) {
-    final desc = _shellDescriptionForCurrentAssessment(taByLegacy, taById);
-    final methodHints =
-        _buildAssessmentMethodInstructions(context, taByLegacy, definitions);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildAssessmentSelector(
-          context,
-          taByLegacy,
-          taById,
-          nonRecordedAssessmentIds,
-        ),
-        if (desc != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppDesignTokens.spacing16,
-              0,
-              AppDesignTokens.spacing16,
-              6,
-            ),
-            child: Text(
-              desc,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        if (methodHints != null) methodHints,
-      ],
-    );
-  }
-
-  AssessmentDefinition? _definitionForTrialAssessment(
-    TrialAssessment ta,
-    List<AssessmentDefinition> definitions,
-  ) {
-    for (final d in definitions) {
-      if (d.id == ta.assessmentDefinitionId) return d;
-    }
-    return null;
-  }
-
-  Widget? _buildAssessmentMethodInstructions(
-    BuildContext context,
-    Map<int, TrialAssessment> taByLegacy,
-    List<AssessmentDefinition> definitions,
-  ) {
-    final ta = taByLegacy[_currentAssessment.id];
-    if (ta == null) return null;
-    final def = _definitionForTrialAssessment(ta, definitions);
-    final methodOverride = ta.methodOverride?.trim();
-    final methodFromDef = def?.method?.trim();
-    final methodLine = (methodOverride != null && methodOverride.isNotEmpty)
-        ? methodOverride
-        : (methodFromDef != null && methodFromDef.isNotEmpty
-            ? methodFromDef
-            : null);
-
-    final instrOverride = ta.instructionOverride?.trim();
-    // Filter out machine tags (librarySourceId:...) — not user-facing.
-    final instrOverrideClean = (instrOverride != null &&
-            instrOverride.isNotEmpty &&
-            !instrOverride.startsWith('librarySourceId:'))
-        ? instrOverride
-        : null;
-    final instrDef = def?.defaultInstructions?.trim();
-    final instrLine = instrOverrideClean ??
-        (instrDef != null && instrDef.isNotEmpty ? instrDef : null);
-
-    if (methodLine == null && instrLine == null) return null;
-
-    void showFull(String title, String body) {
-      showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(title),
-          content: SingleChildScrollView(child: SelectableText(body)),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    Widget lineBlock(String label, String text) {
-      final overflow = text.length > 120 || text.split('\n').length > 2;
-      final preview =
-          overflow && text.length > 120 ? '${text.substring(0, 120)}…' : text;
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '$label: $preview',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1.35,
-                color: AppDesignTokens.secondaryText,
-              ),
-            ),
-            if (overflow)
-              TextButton(
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                onPressed: () => showFull(label, text),
-                child: const Text('More'),
-              ),
-          ],
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppDesignTokens.spacing16,
-        0,
-        AppDesignTokens.spacing16,
-        8,
-      ),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppDesignTokens.cardSurface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppDesignTokens.borderCrisp),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (methodLine != null) lineBlock('Method', methodLine),
-              if (instrLine != null) lineBlock('Instructions', instrLine),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Unit 5c: per-column ARM duplicate fields live on
-  /// [ArmAssessmentMetadata]. Load the map once per frame; helpers prefer
-  /// AAM and fall back to the [TrialAssessment] columns.
   Map<int, ArmAssessmentMetadataData> _aamMap() {
     return ref
             .watch(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
@@ -2021,33 +1529,136 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         const <int, ArmAssessmentMetadataData>{};
   }
 
+  void _logReferenceGuideRuntimeState({
+    required TrialAssessment? currentTa,
+    required List<AssessmentDefinition> definitions,
+    required bool hasGuide,
+    required String hasGuideProviderState,
+  }) {
+    AssessmentDefinition? def;
+    if (currentTa != null) {
+      for (final candidate in definitions) {
+        if (candidate.id == currentTa.assessmentDefinitionId) {
+          def = candidate;
+          break;
+        }
+      }
+    }
+    final canonicalFromVisibleAssessment = canonicalSystemAssessmentCode(
+      name: _assessmentPillLabel(_currentAssessment),
+      dataType: _currentAssessment.dataType,
+      unit: _currentAssessment.unit,
+      scaleMin: _currentAssessment.minValue,
+      scaleMax: _currentAssessment.maxValue,
+    );
+    final canonicalFromDefinition = def == null
+        ? null
+        : canonicalSystemAssessmentCode(
+            name: def.name,
+            dataType: def.dataType,
+            unit: def.unit,
+            scaleMin: def.scaleMin,
+            scaleMax: def.scaleMax,
+            category: def.category,
+          );
+    final key = [
+      widget.trial.id,
+      widget.session.id,
+      _currentAssessment.id,
+      _currentAssessment.name,
+      currentTa?.id,
+      currentTa?.assessmentDefinitionId,
+      hasGuide,
+      hasGuideProviderState,
+    ].join('|');
+    if (!_guideDebugLogKeys.add(key)) return;
+
+    unawaited(() async {
+      final diagnostics = await ref
+          .read(assessmentGuideRepositoryProvider)
+          .diagnoseGuideAvailability(
+            trialAssessmentId: currentTa?.id ?? -1,
+            assessmentDefinitionId: currentTa?.assessmentDefinitionId,
+          );
+      final aam = currentTa == null ? null : _aamMap()[currentTa.id];
+      debugPrint(
+        '[ReferenceGuideRuntime] ${jsonEncode({
+              'trialId': widget.trial.id,
+              'trialName': widget.trial.name,
+              'workspaceType': widget.trial.workspaceType,
+              'crop': widget.trial.crop,
+              'sessionId': widget.session.id,
+              'visibleAssessmentId': _currentAssessment.id,
+              'visibleAssessmentName': _currentAssessment.name,
+              'visibleAssessmentUnit': _currentAssessment.unit,
+              'visibleAssessmentDataType': _currentAssessment.dataType,
+              'visibleAssessmentScaleMin': _currentAssessment.minValue,
+              'visibleAssessmentScaleMax': _currentAssessment.maxValue,
+              'trialAssessmentId': currentTa?.id,
+              'trialAssessmentAssessmentDefinitionId':
+                  currentTa?.assessmentDefinitionId,
+              'trialAssessmentLegacyAssessmentId':
+                  currentTa?.legacyAssessmentId,
+              'trialAssessmentDisplayNameOverride':
+                  currentTa?.displayNameOverride,
+              'trialAssessmentPestName': currentTa?.pestName,
+              'trialAssessmentEppoCodeLocal': currentTa?.eppoCodeLocal,
+              'armSeDescription': aam?.seDescription,
+              'armSeName': aam?.seName,
+              'armPestCode': aam?.pestCode,
+              'resolvedDefinitionId': def?.id,
+              'resolvedDefinitionCode': def?.code,
+              'resolvedDefinitionName': def?.name,
+              'resolvedDefinitionUnit': def?.unit,
+              'resolvedDefinitionDataType': def?.dataType,
+              'resolvedDefinitionScaleMin': def?.scaleMin,
+              'resolvedDefinitionScaleMax': def?.scaleMax,
+              'canonicalSystemAssessmentCodeFromVisibleAssessment':
+                  canonicalFromVisibleAssessment,
+              'canonicalSystemAssessmentCodeFromDefinition':
+                  canonicalFromDefinition,
+              'hasGuideForAssessmentProviderValue': hasGuide,
+              'hasGuideForAssessmentProviderState': hasGuideProviderState,
+              'resolverDiagnostics': diagnostics.toLogMap(),
+            })}',
+        wrapWidth: 2048,
+      );
+    }());
+  }
+
   String? _shellDescriptionForCurrentAssessment(
-      Map<int, TrialAssessment> taByLegacy, Map<int, TrialAssessment> taById) {
-    final ta = _resolveTrialAssessment(_currentAssessment, taByLegacy, taById);
+    Map<int, TrialAssessment> taByLegacy,
+    Map<int, TrialAssessment> taById, {
+    Map<int, int> sessionTrialAssessmentIdsByAssessmentId = const {},
+  }) {
+    final ta = _resolveTrialAssessment(
+      _currentAssessment,
+      taByLegacy,
+      taById,
+      sessionTrialAssessmentIdsByAssessmentId:
+          sessionTrialAssessmentIdsByAssessmentId,
+    );
     if (ta == null) return null;
     return AssessmentDisplayHelper.description(ta, aam: _aamMap()[ta.id]);
   }
 
-  /// Resolves a legacy [Assessment] bridge row to its [TrialAssessment].
-  /// Priority: 1) legacyAssessmentId lookup, 2) extract TA id from bridge
-  /// name "... — TA{id}", 3) match by assessment definition id.
   TrialAssessment? _resolveTrialAssessment(
     Assessment assessment,
     Map<int, TrialAssessment> taByLegacy,
-    Map<int, TrialAssessment> taById,
-  ) {
-    // 1) Direct link via legacyAssessmentId.
+    Map<int, TrialAssessment> taById, {
+    Map<int, int> sessionTrialAssessmentIdsByAssessmentId = const {},
+  }) {
+    final sessionTaId = sessionTrialAssessmentIdsByAssessmentId[assessment.id];
+    if (sessionTaId != null && taById.containsKey(sessionTaId)) {
+      return taById[sessionTaId];
+    }
     final ta = taByLegacy[assessment.id];
     if (ta != null) return ta;
-    // 2) Extract TA id from bridge name pattern.
     final match = RegExp(r'— TA(\d+)$').firstMatch(assessment.name);
     if (match != null) {
       final taId = int.tryParse(match.group(1)!);
       if (taId != null && taById.containsKey(taId)) return taById[taId];
     }
-    // 3) Fuzzy match: compare stripped assessment name against
-    //    displayNameOverride or AAM seDescription (v61 moved the SE
-    //    fields onto arm_assessment_metadata).
     final stripped = _assessmentPillLabel(assessment).toLowerCase().trim();
     if (stripped.isNotEmpty) {
       final aamMap = _aamMap();
@@ -2062,112 +1673,47 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     return null;
   }
 
-  String _ratingAssessmentDisplayLabel(Assessment assessment,
-      Map<int, TrialAssessment> taByLegacy, Map<int, TrialAssessment> taById) {
-    final bridgeName = _assessmentPillLabel(assessment);
-    final ta = _resolveTrialAssessment(assessment, taByLegacy, taById);
-    if (ta == null) return bridgeName;
-    // Pass the legacy bridge name as the fallback so shell-less assessments
-    // show their definition name (e.g. "Weed Control") instead of the generic
-    // "Assessment {id}" default.
-    return AssessmentDisplayHelper.compactName(
-      ta,
-      fallback: bridgeName,
-      aam: _aamMap()[ta.id],
-    );
-  }
-
-  String _ratingAssessmentChipLabel(Assessment assessment,
-      Map<int, TrialAssessment> taByLegacy, Map<int, TrialAssessment> taById) {
-    final bridgeName = _assessmentPillLabel(assessment);
-    final ta = _resolveTrialAssessment(assessment, taByLegacy, taById);
-    if (ta == null) return bridgeName;
-    return AssessmentDisplayHelper.compactName(
-      ta,
-      fallback: bridgeName,
-      aam: _aamMap()[ta.id],
-    );
-  }
-
-  Widget _buildAssessmentSelector(
-    BuildContext context,
+  String _ratingAssessmentDisplayLabel(
+    Assessment assessment,
     Map<int, TrialAssessment> taByLegacy,
-    Map<int, TrialAssessment> taById,
-    Set<int> nonRecordedAssessmentIds,
-  ) {
-    if (widget.assessments.length == 1) {
-      final showIssue =
-          nonRecordedAssessmentIds.contains(_currentAssessment.id);
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(
-            AppDesignTokens.spacing16, 10, AppDesignTokens.spacing16, 6),
-        child: Row(
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: const BoxDecoration(
-                color: AppDesignTokens.primary,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: AppDesignTokens.spacing8),
-            Text(
-              _ratingAssessmentDisplayLabel(
-                  _currentAssessment, taByLegacy, taById),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppDesignTokens.primaryText,
-              ),
-            ),
-            if (_currentAssessment.unit != null) ...[
-              const SizedBox(width: 6),
-              Text(
-                '· ${_currentAssessment.unit}',
-                style: const TextStyle(
-                    fontSize: 13, color: AppDesignTokens.secondaryText),
-              ),
-            ],
-            if (showIssue) ...[
-              const SizedBox(width: 6),
-              const Icon(
-                Icons.warning_amber_rounded,
-                size: 20,
-                color: AppDesignTokens.warningFg,
-              ),
-            ],
-          ],
-        ),
-      );
-    }
+    Map<int, TrialAssessment> taById, {
+    Map<int, int> sessionTrialAssessmentIdsByAssessmentId = const {},
+  }) {
+    final bridgeName = _assessmentPillLabel(assessment);
+    final ta = _resolveTrialAssessment(
+      assessment,
+      taByLegacy,
+      taById,
+      sessionTrialAssessmentIdsByAssessmentId:
+          sessionTrialAssessmentIdsByAssessmentId,
+    );
+    if (ta == null) return bridgeName;
+    return AssessmentDisplayHelper.compactName(
+      ta,
+      fallback: bridgeName,
+      aam: _aamMap()[ta.id],
+    );
+  }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppDesignTokens.spacing16, 10, AppDesignTokens.spacing16, 6),
-      child: SizedBox(
-        height: 32,
-        child: SingleChildScrollView(
-          controller: _assessmentScrollController,
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (var index = 0;
-                  index < widget.assessments.length;
-                  index++) ...[
-                if (index > 0) const SizedBox(width: 6),
-                _buildAssessmentChip(
-                  context,
-                  index,
-                  taByLegacy,
-                  taById,
-                  nonRecordedAssessmentIds,
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
+  String _ratingAssessmentChipLabel(
+    Assessment assessment,
+    Map<int, TrialAssessment> taByLegacy,
+    Map<int, TrialAssessment> taById, {
+    Map<int, int> sessionTrialAssessmentIdsByAssessmentId = const {},
+  }) {
+    final bridgeName = _assessmentPillLabel(assessment);
+    final ta = _resolveTrialAssessment(
+      assessment,
+      taByLegacy,
+      taById,
+      sessionTrialAssessmentIdsByAssessmentId:
+          sessionTrialAssessmentIdsByAssessmentId,
+    );
+    if (ta == null) return bridgeName;
+    return AssessmentDisplayHelper.compactName(
+      ta,
+      fallback: bridgeName,
+      aam: _aamMap()[ta.id],
     );
   }
 
@@ -2187,82 +1733,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
       return name.substring(0, name.length - suffix.length).trim();
     }
     return name;
-  }
-
-  Widget _buildAssessmentChip(
-    BuildContext context,
-    int index,
-    Map<int, TrialAssessment> taByLegacy,
-    Map<int, TrialAssessment> taById,
-    Set<int> nonRecordedAssessmentIds,
-  ) {
-    final assessment = widget.assessments[index];
-    final isSelected = assessment.id == _currentAssessment.id;
-    final label = _ratingAssessmentChipLabel(assessment, taByLegacy, taById);
-    final showIssueIndicator = nonRecordedAssessmentIds.contains(assessment.id);
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _assessmentIndex = index;
-          _currentAssessment = assessment;
-          _lastSliderSteppedValue = null;
-          _valueController.clear();
-          _selectedStatus = 'RECORDED';
-          _userHasInteracted = false;
-          _selectedMissingReasons.clear();
-          _carryForwardBaselineNumeric = null;
-          _numericValueUserEditedThisVisit = false;
-          _carryForwardConfirmSuppressedAssessmentId = null;
-          _carryForwardConfirmSuppressedBaseline = null;
-        });
-        _clampValueToEffectiveRange();
-        _scrollToActiveAssessment();
-        _loadPriorRating();
-        _prefillFromLastValue();
-      },
-      child: Container(
-        height: isSelected ? 32 : 28,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 10 : 8,
-          vertical: 0,
-        ),
-        constraints: const BoxConstraints(maxWidth: 168),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppDesignTokens.primary
-              : AppDesignTokens.cardSurface,
-          borderRadius: BorderRadius.circular(isSelected ? 16 : 14),
-          border: Border.all(color: AppDesignTokens.borderCrisp),
-        ),
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: isSelected ? 13 : 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color:
-                      isSelected ? Colors.white : AppDesignTokens.secondaryText,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (showIssueIndicator) ...[
-              const SizedBox(width: 4),
-              Icon(
-                Icons.warning_amber_rounded,
-                size: 14,
-                color: isSelected ? Colors.white : AppDesignTokens.warningFg,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
   }
 
   void _prefillFromLastValue() {
@@ -2539,7 +2009,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                   // GLP: always required. GEP/Efficacy: required only
                   // on closed sessions. Standalone: optional (auto-filled
                   // if empty).
-                  final config = safeConfigFromString(widget.trial.workspaceType);
+                  final config =
+                      safeConfigFromString(widget.trial.workspaceType);
                   final isGlp = config.isGlp;
                   final isStandalone = config.isStandalone;
                   final sessionClosed = widget.session.endedAt != null;
@@ -2632,11 +2103,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
   }
 
   void _invalidateRatingStreamsAfterVoid() {
-    final taList =
-        ref.read(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
-            <TrialAssessment>[];
-    final aamData =
-        ref.read(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
+    final taList = ref
+            .read(trialAssessmentsForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        <TrialAssessment>[];
+    final aamData = ref
+            .read(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
             .valueOrNull ??
         <int, ArmAssessmentMetadataData>{};
     TrialAssessment? voidTa;
@@ -2646,9 +2118,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         break;
       }
     }
-    final voidNumSubs = voidTa != null
-        ? (aamData[voidTa.id]?.numSubsamples ?? 1)
-        : 1;
+    final voidNumSubs =
+        voidTa != null ? (aamData[voidTa.id]?.numSubsamples ?? 1) : 1;
     ref.invalidate(
       currentRatingProvider(
         CurrentRatingParams(
@@ -3869,243 +3340,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     );
   }
 
-  /// Persistent next-action dock: same location, same order, every time.
-  /// Save (secondary) + Save & Next (primary); Prev, Jump, Flag below.
-  Widget _buildBottomBar(BuildContext context) {
-    final openSignals = ref
-            .watch(openSignalsForTrialProvider(widget.trial.id))
-            .valueOrNull
-            ?.where((s) => s.sessionId == widget.session.id)
-            .toList() ??
-        [];
-    final hasSignals = openSignals.isNotEmpty;
-    final hasCritical = openSignals.any((s) => s.severity == 'critical');
-
-    final isLastPlot = _effectiveIsLastPlotForNavigation;
-    final isLastAssessment = _assessmentIndex >= widget.assessments.length - 1;
-    final isVeryLast = isLastPlot && isLastAssessment;
-    final canGoBack = !_effectiveIsFirstPlotForNavigation;
-
-    // Dynamic primary button label
-    String primaryLabel;
-    if (isVeryLast) {
-      primaryLabel = _isAtEndOfFilteredSequence ? 'Finished' : 'Save & Finish';
-    } else if (isLastAssessment) {
-      primaryLabel = 'Save & Next Plot';
-    } else {
-      primaryLabel = 'Save & Next';
-    }
-
-    final editable = isSessionEditable(widget.session);
-
-    return SafeArea(
-      top: false,
-      bottom: true,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        decoration: const BoxDecoration(
-          color: AppDesignTokens.cardSurface,
-          border: Border(top: BorderSide(color: AppDesignTokens.borderCrisp)),
-          boxShadow: [
-            BoxShadow(
-              color: AppDesignTokens.shadowMedium,
-              blurRadius: 8,
-              offset: Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Main actions: Save (outlined) + Save & Next (primary, dominant)
-            Row(
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: SizedBox(
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: _isSaving || !editable
-                          ? null
-                          : () =>
-                              _saveRating(context, navigateAfterSave: false),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppDesignTokens.primary,
-                        side: const BorderSide(
-                            color: AppDesignTokens.borderCrisp),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        'Save',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        softWrap: false,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppDesignTokens.spacing8),
-                Expanded(
-                  flex: 2,
-                  child: SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: _isSaving || !editable
-                          ? null
-                          : () => _saveRating(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppDesignTokens.primary,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: AppDesignTokens.divider,
-                        elevation: 0,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: _isSaving
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    primaryLabel,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Icon(
-                                  isVeryLast
-                                      ? Icons.check_circle_outline
-                                      : Icons.arrow_forward,
-                                  size: 18,
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            // Secondary: Prev, Jump, Flag (small) — centered as a group
-            Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextButton.icon(
-                    onPressed: canGoBack
-                        ? () async {
-                            await _navigatePlot(context, -1);
-                          }
-                        : null,
-                    icon: const Icon(Icons.arrow_back, size: 18),
-                    label: const Text('Prev', style: TextStyle(fontSize: 13)),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppDesignTokens.secondaryText,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: const Size(0, 36),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton.icon(
-                    onPressed: () => _showJumpToPlotDialog(context),
-                    icon: const Icon(Icons.search, size: 18),
-                    label: const Text('Jump', style: TextStyle(fontSize: 13)),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppDesignTokens.secondaryText,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: const Size(0, 36),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: () => _showFlagDialog(context),
-                    icon: const Icon(Icons.flag_outlined, size: 20),
-                    tooltip: 'Flag plot',
-                    style: IconButton.styleFrom(
-                      foregroundColor: AppDesignTokens.secondaryText,
-                    ),
-                  ),
-                  if (hasSignals) ...[
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () async {
-                        final signal = hasCritical
-                            ? openSignals.firstWhere(
-                                (s) => s.severity == 'critical')
-                            : openSignals.first;
-                        await showSignalActionSheet(
-                          context,
-                          signal: signal,
-                          trialId: widget.trial.id,
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppDesignTokens.warningBg,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.warning_amber_rounded,
-                              size: 14,
-                              color: hasCritical
-                                  ? AppDesignTokens.missedColor
-                                  : AppDesignTokens.warningFg,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${openSignals.length} signal${openSignals.length == 1 ? '' : 's'}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: hasCritical
-                                    ? AppDesignTokens.missedColor
-                                    : AppDesignTokens.warningFg,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _showJumpToPlotDialog(BuildContext context) async {
     if (widget.allPlots.isEmpty) return;
     final controller = TextEditingController();
@@ -4198,13 +3432,14 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
 
   /// ARM rating-type prefix for signals (e.g. CONTRO); standalone trials → LOCAL.
   String _ratingTypePrefixForScaleSignal() {
-    final taList =
-        ref.read(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
-            <TrialAssessment>[];
-    final aamData =
-        ref.read(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
-                .valueOrNull ??
-            <int, ArmAssessmentMetadataData>{};
+    final taList = ref
+            .read(trialAssessmentsForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        <TrialAssessment>[];
+    final aamData = ref
+            .read(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        <int, ArmAssessmentMetadataData>{};
     for (final ta in taList) {
       if (ta.legacyAssessmentId == _currentAssessment.id) {
         final rt = aamData[ta.id]?.ratingType?.trim();
@@ -4218,9 +3453,20 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
   /// Returns the TrialAssessment.id for the current assessment, or null when
   /// this is a standalone (non-ARM) trial.
   int? _taIdForCurrentAssessment() {
-    final taList =
-        ref.read(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
-            <TrialAssessment>[];
+    final sessionRows = ref
+            .read(sessionAssessmentRowsProvider(widget.session.id))
+            .valueOrNull ??
+        <SessionAssessment>[];
+    for (final row in sessionRows) {
+      if (row.assessmentId == _currentAssessment.id &&
+          row.trialAssessmentId != null) {
+        return row.trialAssessmentId;
+      }
+    }
+    final taList = ref
+            .read(trialAssessmentsForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        <TrialAssessment>[];
     for (final ta in taList) {
       if (ta.legacyAssessmentId == _currentAssessment.id) return ta.id;
     }
@@ -4230,11 +3476,12 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
   /// Returns the 1-based sub-unit ID to tag this save with, or null when the
   /// current assessment is whole-plot (numSubsamples ≤ 1).
   int? _activeSubUnitId() {
-    final taList =
-        ref.read(trialAssessmentsForTrialProvider(widget.trial.id)).valueOrNull ??
-            <TrialAssessment>[];
-    final aamData =
-        ref.read(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
+    final taList = ref
+            .read(trialAssessmentsForTrialProvider(widget.trial.id))
+            .valueOrNull ??
+        <TrialAssessment>[];
+    final aamData = ref
+            .read(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
             .valueOrNull ??
         <int, ArmAssessmentMetadataData>{};
     for (final ta in taList) {
@@ -4373,8 +3620,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
-                  onPressed:
-                      canSave ? () => Navigator.pop(ctx, controller.text.trim()) : null,
+                  onPressed: canSave
+                      ? () => Navigator.pop(ctx, controller.text.trim())
+                      : null,
                   child: const Text('Save'),
                 ),
               ],
@@ -4519,8 +3767,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                 'Numeric rating outside declared scale; value clamped before save.',
             raisedBy: userId,
           );
-          numericValue =
-              enteredBeforeClamp.clamp(_effectiveMin, _effectiveMax);
+          numericValue = enteredBeforeClamp.clamp(_effectiveMin, _effectiveMax);
           if (numericValue != enteredBeforeClamp) {
             messenger?.showSnackBar(
               SnackBar(
@@ -4636,21 +3883,28 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
       _runAssessmentConsistencyCheck();
       // _taIdForCurrentAssessment() is null when the provider is still loading;
       // fall back to the rating row in case SaveRatingUseCase starts writing it.
-      final taId = _taIdForCurrentAssessment() ?? result.rating!.trialAssessmentId;
+      final taId =
+          _taIdForCurrentAssessment() ?? result.rating!.trialAssessmentId;
       // openSignalsForSessionProvider is invalidated inside .then() so FER /
       // export never reads the signal list before the timing signal has landed.
       unawaited(
         TimingWindowViolationWriter(
           ref.read(databaseProvider),
           ref.read(signalRepositoryProvider),
-        ).checkAndRaise(
+        )
+            .checkAndRaise(
           ratingId: result.rating!.id,
           trialAssessmentId: taId,
-        ).then<void>((_) {
-          if (mounted) ref.invalidate(openSignalsForSessionProvider(widget.session.id));
+        )
+            .then<void>((_) {
+          if (mounted) {
+            ref.invalidate(openSignalsForSessionProvider(widget.session.id));
+          }
         }).catchError((Object e) {
           debugPrint('[TimingWindowViolationWriter] save: $e');
-          if (mounted) ref.invalidate(openSignalsForSessionProvider(widget.session.id));
+          if (mounted) {
+            ref.invalidate(openSignalsForSessionProvider(widget.session.id));
+          }
         }),
       );
       if (numericValue != null) {
@@ -5369,116 +4623,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PhotoViewerScreen extends StatefulWidget {
-  final List<Photo> photos;
-  final int initialIndex;
-
-  const _PhotoViewerScreen({
-    required this.photos,
-    required this.initialIndex,
-  });
-
-  @override
-  State<_PhotoViewerScreen> createState() => _PhotoViewerScreenState();
-}
-
-class _PhotoViewerScreenState extends State<_PhotoViewerScreen> {
-  late final PageController _controller;
-  late int _index;
-
-  @override
-  void initState() {
-    super.initState();
-    _index = widget.initialIndex;
-    _controller = PageController(initialPage: widget.initialIndex);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final photos = widget.photos;
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: Text('${_index + 1}/${photos.length}'),
-      ),
-      body: SafeArea(
-        child: PageView.builder(
-          controller: _controller,
-          itemCount: photos.length,
-          onPageChanged: (i) => setState(() => _index = i),
-          itemBuilder: (context, i) {
-            final p = photos[i];
-            final file = File(p.filePath);
-            final exists = file.existsSync();
-
-            return Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: exists
-                          ? InteractiveViewer(
-                              child: Image.file(file,
-                                  fit: BoxFit.contain,
-                                  semanticLabel: 'Plot photo full view',
-                                  cacheWidth: 1200),
-                            )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.broken_image,
-                                    size: 60, color: Colors.white70),
-                                const SizedBox(height: 10),
-                                const Text('File not found',
-                                    style: TextStyle(color: Colors.white70)),
-                                const SizedBox(height: 6),
-                                Text(
-                                  p.filePath,
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                      fontSize: 12, color: Colors.white54),
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    p.filePath,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: Colors.white70),
-                  ),
-                  if (p.caption != null && p.caption!.trim().isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      'Caption: ${p.caption}',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, color: Colors.white),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
         ),
       ),
     );

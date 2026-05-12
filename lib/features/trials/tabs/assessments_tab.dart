@@ -18,6 +18,7 @@ import '../../derived/domain/trial_statistics.dart';
 import '../widgets/trajectory_chart.dart';
 import 'assessment_results_screen.dart';
 import 'add_assessment_sheet.dart';
+import 'customer_guide_management_sheet.dart';
 /// Assessments tab for trial detail: library + custom assessments list.
 class AssessmentsTab extends ConsumerWidget {
   const AssessmentsTab({super.key, required this.trial});
@@ -266,6 +267,16 @@ class AssessmentsTab extends ConsumerWidget {
                       isGlp,
                       checkCode,
                       selectedSessionId: selectedSessionId,
+                    ),
+                    onManageGuide: () => showCustomerGuideManagementSheet(
+                      context,
+                      ref,
+                      ta: ta,
+                      assessmentLabel: AssessmentDisplayHelper.compactName(
+                        ta,
+                        def: def,
+                        aam: aamMap[ta.id],
+                      ),
                     ),
                   );
                 }),
@@ -1090,6 +1101,7 @@ class _AssessmentCard extends StatefulWidget {
     required this.aam,
     required this.seDesc,
     required this.buildStatSlot,
+  this.onManageGuide,
   });
 
   final int displayNumber;
@@ -1100,6 +1112,7 @@ class _AssessmentCard extends StatefulWidget {
   final ArmAssessmentMetadataData? aam;
   final String? seDesc;
   final Widget Function(int? selectedSessionId) buildStatSlot;
+  final VoidCallback? onManageGuide;
 
   @override
   State<_AssessmentCard> createState() => _AssessmentCardState();
@@ -1262,6 +1275,28 @@ class _AssessmentCardState extends State<_AssessmentCard> {
                         ),
                       ),
                     ),
+                  if (widget.onManageGuide != null) ...[
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: widget.onManageGuide,
+                        icon: const Icon(
+                          Icons.photo_library_outlined,
+                          size: 14,
+                        ),
+                        label: const Text('Reference guide'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppDesignTokens.primary,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 0, vertical: 2),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          textStyle: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ),
+                  ],
                   if (widget.dateLabels.isNotEmpty) ...[
                     const Padding(
                       padding: EdgeInsets.only(top: 8),

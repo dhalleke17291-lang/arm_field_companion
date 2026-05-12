@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import '../design/app_design_tokens.dart';
-import '../../features/photos/photo_repository.dart' show thumbnailPathFor;
+import '../../features/photos/photo_repository.dart'
+    show PhotoRepository, thumbnailPathFor;
 
 /// Async-safe photo thumbnail that avoids synchronous file I/O on the
 /// main thread. Prefers on-disk thumbnail when available, falls back to
@@ -51,24 +52,24 @@ class _PhotoThumbnailState extends State<PhotoThumbnail> {
     }
   }
 
-  void _resolve() {
-    final thumbPath = thumbnailPathFor(widget.filePath);
-    File(thumbPath).exists().then((thumbExists) {
-      if (!mounted) return;
-      if (thumbExists) {
-        setState(() {
-          _state = _ThumbState.thumbnail;
-          _resolvedPath = thumbPath;
-        });
-        return;
-      }
-      File(widget.filePath).exists().then((origExists) {
-        if (!mounted) return;
-        setState(() {
-          _state = origExists ? _ThumbState.original : _ThumbState.missing;
-          _resolvedPath = origExists ? widget.filePath : null;
-        });
+  Future<void> _resolve() async {
+    final absolutePath =
+        await PhotoRepository.resolvePhotoPath(widget.filePath);
+    final thumbPath = thumbnailPathFor(absolutePath);
+    final thumbExists = await File(thumbPath).exists();
+    if (!mounted) return;
+    if (thumbExists) {
+      setState(() {
+        _state = _ThumbState.thumbnail;
+        _resolvedPath = thumbPath;
       });
+      return;
+    }
+    final origExists = await File(absolutePath).exists();
+    if (!mounted) return;
+    setState(() {
+      _state = origExists ? _ThumbState.original : _ThumbState.missing;
+      _resolvedPath = origExists ? absolutePath : null;
     });
   }
 

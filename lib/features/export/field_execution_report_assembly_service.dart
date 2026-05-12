@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' as drift;
 
 import '../../core/database/app_database.dart';
@@ -6,13 +8,16 @@ import '../../data/repositories/ctq_factor_definition_repository.dart';
 import '../../data/repositories/seeding_repository.dart';
 import '../../data/repositories/trial_purpose_repository.dart';
 import '../../domain/signals/signal_repository.dart';
+import '../../domain/trial_cognition/trial_coherence_evaluator.dart';
 import '../../domain/trial_cognition/trial_ctq_dto.dart';
 import '../../domain/trial_cognition/trial_ctq_evaluator.dart';
 import '../../domain/trial_cognition/trial_evidence_arc_evaluator.dart';
+import '../../domain/trial_cognition/trial_interpretation_risk_evaluator.dart';
 import '../../features/plots/plot_repository.dart';
 import '../../features/ratings/rating_repository.dart';
 import '../../features/sessions/domain/session_completeness_report.dart';
 import '../../features/sessions/session_repository.dart';
+import '../../features/sessions/session_timing_helper.dart';
 import '../../features/sessions/usecases/compute_session_completeness_usecase.dart';
 import 'field_execution_report_data.dart';
 
@@ -68,6 +73,10 @@ class FieldExecutionReportAssemblyService {
     final assessmentsFuture = _sessionRepo.getSessionAssessments(session.id);
     final signalsFuture = _signalRepo.getOpenSignalsForSession(session.id);
     final seedingFuture = _seedingRepo.getSeedingEventForTrial(trial.id);
+    final applicationsFuture = (_db.select(_db.trialApplicationEvents)
+          ..where((a) => a.trialId.equals(trial.id))
+          ..orderBy([(a) => drift.OrderingTerm.asc(a.applicationDate)]))
+        .get();
 
     // ARM session metadata — queried directly from core DB to respect the
     // ARM separation boundary (no import of ArmColumnMappingRepository).
@@ -102,6 +111,20 @@ class FieldExecutionReportAssemblyService {
           ..where((f) => f.sessionId.equals(session.id)))
         .get();
 
+    // Trial purpose — needed by both deviation detection (Section B) and
+    // cognition section (Section H). Loaded once here, passed to both.
+    final purposeFuture = _purposeRepo.getCurrentTrialPurpose(trial.id);
+
+    // Raw session assessment rows — needed for trialAssessmentId lookup in
+    // the standalone protocol deviation path.
+    final sessionAssessmentRowsFuture = (_db.select(_db.sessionAssessments)
+          ..where((sa) => sa.sessionId.equals(session.id))
+          ..orderBy([
+            (sa) => drift.OrderingTerm.asc(sa.sortOrder),
+            (sa) => drift.OrderingTerm.asc(sa.id),
+          ]))
+        .get();
+
     // ── Await all ────────────────────────────────────────────────────────────
     final plots = await plotsFuture;
     final ratings = await ratingsFuture;
@@ -109,11 +132,14 @@ class FieldExecutionReportAssemblyService {
     final assessments = await assessmentsFuture;
     final openSignals = await signalsFuture;
     final seedingEvent = await seedingFuture;
+    final applications = await applicationsFuture;
     final armMeta = await armMetaFuture;
     final armTrialCount = await armTrialCountFuture;
     final sessionPhotos = await photosFuture;
     final sessionWeather = await weatherFuture;
     final sessionFlags = await flagsFuture;
+    final purpose = await purposeFuture;
+    final sessionAssessmentRows = await sessionAssessmentRowsFuture;
 
     // ── Section A: Identity ───────────────────────────────────────────────────
     final identity = FerIdentity(
@@ -132,7 +158,15 @@ class FieldExecutionReportAssemblyService {
 
     // ── Section B: Protocol context ───────────────────────────────────────────
     final protocolContext = _buildProtocolContext(
-        session, armMeta, armTrialCount, ratings, seedingEvent);
+      session,
+      armMeta,
+      armTrialCount,
+      ratings,
+      seedingEvent,
+      applications,
+      purpose,
+      sessionAssessmentRows,
+    );
 
     // ── Section C: Session grid (hub semantics — data plots only) ─────────────
     final dataPlots = plots.where(isAnalyzablePlot).toList();
@@ -169,6 +203,12 @@ class FieldExecutionReportAssemblyService {
       withIssues: withIssues,
       edited: edited,
       flagged: flagged,
+    );
+    final assessmentTimingRows = _buildAssessmentTimingRows(
+      session: session,
+      assessments: assessments,
+      seedingEvent: seedingEvent,
+      applications: applications,
     );
 
     // ── Section D: Evidence record ─────────────────────────────────────────────
@@ -229,12 +269,13 @@ class FieldExecutionReportAssemblyService {
       completeness: completeness,
     );
 
-    final cognition = await _assembleCognitionSection(trial.id);
+    final cognition = await _assembleCognitionSection(trial.id, purpose: purpose);
 
     return FieldExecutionReportData(
       identity: identity,
       protocolContext: protocolContext,
       sessionGrid: sessionGrid,
+      assessmentTimingRows: assessmentTimingRows,
       evidenceRecord: evidenceRecord,
       signals: signals,
       completeness: completeness,
@@ -252,16 +293,100 @@ class FieldExecutionReportAssemblyService {
     int armTrialCount,
     List<RatingRecord> ratings,
     SeedingEvent? seedingEvent,
+    List<TrialApplicationEvent> applications,
+    TrialPurpose? purpose,
+    List<SessionAssessment> sessionAssessmentRows,
   ) {
     final isArmTrial = armTrialCount > 0;
     final isArmLinked = armMeta != null;
     final divergences = <FerProtocolDivergenceRow>[];
 
     if (!isArmTrial) {
-      return const FerProtocolContext(
+      // Short-circuit: null window means no protocol timing constraint declared.
+      // No JSON parsing, no map lookups, no delta computation.
+      final window = purpose?.protocolTimingWindow;
+      if (window == null) {
+        return const FerProtocolContext(
+          isArmLinked: false,
+          isArmTrial: false,
+          divergences: [],
+        );
+      }
+
+      final rawJson = purpose?.plannedDatByAssessment;
+      if (rawJson == null || rawJson.isEmpty) {
+        return const FerProtocolContext(
+          isArmLinked: false,
+          isArmTrial: false,
+          divergences: [],
+        );
+      }
+
+      Map<String, dynamic> plannedMap;
+      try {
+        plannedMap = jsonDecode(rawJson) as Map<String, dynamic>;
+      } catch (_) {
+        return const FerProtocolContext(
+          isArmLinked: false,
+          isArmTrial: false,
+          divergences: [],
+        );
+      }
+      if (plannedMap.isEmpty) {
+        return const FerProtocolContext(
+          isArmLinked: false,
+          isArmTrial: false,
+          divergences: [],
+        );
+      }
+
+      // Compute actual DAA from session timing context (same logic as
+      // _buildAssessmentTimingRows — one value for the whole session).
+      final sessionDate = _tryParseDateOnly(session.sessionDateLocal);
+      final priorApplications = sessionDate == null
+          ? <TrialApplicationEvent>[]
+          : applications
+              .where((a) =>
+                  a.status == 'applied' &&
+                  !_dateOnly(a.applicationDate).isAfter(sessionDate))
+              .toList();
+      final timing = sessionDate == null
+          ? null
+          : buildSessionTimingContext(
+              sessionStartedAt: sessionDate,
+              cropStageBbch: session.cropStageBbch,
+              seeding: seedingEvent,
+              applications: priorApplications,
+            );
+      final actualDaa = timing?.daysAfterLastApp;
+
+      for (final sa in sessionAssessmentRows) {
+        final taId = sa.trialAssessmentId;
+        if (taId == null) continue;
+        final raw = plannedMap[taId.toString()];
+        if (raw == null) continue; // Graceful: assessment not in plan, no row.
+        final plannedDat = switch (raw) {
+          int i => i,
+          num n => n.toInt(),
+          String s => int.tryParse(s),
+          _ => null,
+        };
+        if (plannedDat == null || actualDaa == null) continue;
+        final delta = actualDaa - plannedDat;
+        if (delta.abs() > window) {
+          divergences.add(FerProtocolDivergenceRow(
+            type: FerDivergenceType.timing,
+            deltaDays: delta,
+            actualDat: actualDaa,
+            plannedDat: plannedDat,
+          ));
+        }
+      }
+
+      return FerProtocolContext(
         isArmLinked: false,
         isArmTrial: false,
-        divergences: [],
+        divergences: divergences,
       );
     }
 
@@ -322,6 +447,47 @@ class FieldExecutionReportAssemblyService {
       divergences: divergences,
     );
   }
+
+  List<FerAssessmentTimingRow> _buildAssessmentTimingRows({
+    required Session session,
+    required List<Assessment> assessments,
+    required SeedingEvent? seedingEvent,
+    required List<TrialApplicationEvent> applications,
+  }) {
+    final sessionDate = _tryParseDateOnly(session.sessionDateLocal);
+    final priorApplications = sessionDate == null
+        ? <TrialApplicationEvent>[]
+        : applications
+            .where((a) =>
+                a.status == 'applied' &&
+                !_dateOnly(a.applicationDate).isAfter(sessionDate))
+            .toList();
+    final timing = sessionDate == null
+        ? null
+        : buildSessionTimingContext(
+            sessionStartedAt: sessionDate,
+            cropStageBbch: session.cropStageBbch,
+            seeding: seedingEvent,
+            applications: priorApplications,
+          );
+    return assessments
+        .map((a) => FerAssessmentTimingRow(
+              assessmentId: a.id,
+              assessmentName: a.name,
+              actualDaa: timing?.daysAfterLastApp,
+            ))
+        .toList();
+  }
+
+  DateTime? _tryParseDateOnly(String raw) {
+    if (raw.isEmpty) return null;
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+    return _dateOnly(parsed);
+  }
+
+  DateTime _dateOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
 
   FerCompletenessSection _mapCompleteness(SessionCompletenessReport report) {
     final blockerCount = report.issues
@@ -384,8 +550,10 @@ class FieldExecutionReportAssemblyService {
 
   // ── Section H: Cognition ─────────────────────────────────────────────────────
 
-  Future<FerCognitionSection> _assembleCognitionSection(int trialId) async {
-    final purpose = await _purposeRepo.getCurrentTrialPurpose(trialId);
+  Future<FerCognitionSection> _assembleCognitionSection(
+    int trialId, {
+    required TrialPurpose? purpose,
+  }) async {
     final arcDto = await computeTrialEvidenceArcDto(_db, trialId);
 
     final missingFields = _computeMissingFields(purpose);
@@ -437,6 +605,25 @@ class FieldExecutionReportAssemblyService {
             ))
         .toList();
 
+    // Interpretation risk — requires coherence as input.
+    final coherenceDto = await computeTrialCoherenceDto(
+      db: _db,
+      trialId: trialId,
+      signalRepo: _signalRepo,
+    );
+    final riskDto = await computeTrialInterpretationRiskDto(
+      db: _db,
+      trialId: trialId,
+      coherenceDto: coherenceDto,
+    );
+    final riskFactors = riskDto.factors
+        .where((f) => f.severity != 'none')
+        .map((f) => FerRiskFactorItem(
+              label: f.label,
+              tier: _riskTierLabel(f.severity),
+            ))
+        .toList();
+
     return FerCognitionSection(
       purposeStatus: purposeStatus,
       purposeStatusLabel: _purposeStatusLabel(purposeStatus),
@@ -456,8 +643,16 @@ class FieldExecutionReportAssemblyService {
       reviewCount: ctqDto.reviewCount,
       satisfiedCount: ctqDto.satisfiedCount,
       topCtqAttentionItems: topItems,
+      knownInterpretationFactors: purpose?.knownInterpretationFactors,
+      interpretationRiskFactors: riskFactors,
     );
   }
+
+  static String _riskTierLabel(String severity) => switch (severity) {
+        'high' => 'HIGH',
+        'moderate' => 'MEDIUM',
+        _ => 'CANNOT EVALUATE',
+      };
 
   // ── Label helpers (FER-specific; independent of Trial Story widget labels) ───
 

@@ -18,6 +18,8 @@ import 'package:arm_field_companion/data/repositories/assignment_repository.dart
 import 'package:arm_field_companion/data/repositories/seeding_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
 import 'package:arm_field_companion/data/repositories/weather_snapshot_repository.dart';
+import 'package:arm_field_companion/domain/signals/signal_models.dart';
+import 'package:arm_field_companion/domain/signals/signal_repository.dart';
 import 'package:arm_field_companion/features/export/evidence_report_assembly_service.dart';
 import 'package:arm_field_companion/features/photos/photo_repository.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
@@ -46,6 +48,7 @@ void main() {
       weatherSnapshotRepository: WeatherSnapshotRepository(db),
       seedingRepository: SeedingRepository(db),
       photoRepository: PhotoRepository(db),
+      signalRepository: SignalRepository.attach(db),
       db: db,
     );
     trialId = await TrialRepository(db)
@@ -78,14 +81,28 @@ void main() {
             name: name,
           ));
 
-  Future<int> session(String name, {DateTime? endedAt, int? bbch}) =>
+  Future<int> session(
+    String name, {
+    DateTime? endedAt,
+    int? bbch,
+    String sessionDateLocal = '2026-03-01',
+  }) =>
       db.into(db.sessions).insert(SessionsCompanion.insert(
             trialId: trialId,
             name: name,
-            sessionDateLocal: '2026-03-01',
+            sessionDateLocal: sessionDateLocal,
             endedAt: Value(endedAt),
             cropStageBbch: Value(bbch),
           ));
+
+  Future<int> application(DateTime applicationDate) =>
+      db.into(db.trialApplicationEvents).insert(
+            TrialApplicationEventsCompanion.insert(
+              trialId: trialId,
+              applicationDate: applicationDate,
+              status: const Value('applied'),
+            ),
+          );
 
   Future<void> rating(
     int plotPk,
@@ -308,6 +325,46 @@ void main() {
       expect(names, containsAll(['Alice', 'Bob']));
     });
 
+    test('marks rater drift when signal exists for a participated session',
+        () async {
+      final p = await plot('101', rep: 1);
+      final a = await assessment('A');
+      final s = await session('S1');
+      const consequence =
+          'Variability noted during session close review for this rater.';
+      await rating(p, a, s, value: 80, rater: 'Alice');
+      await SignalRepository.attach(db).raiseSignal(
+        trialId: trialId,
+        sessionId: s,
+        signalType: SignalType.raterDrift,
+        moment: SignalMoment.three,
+        severity: SignalSeverity.review,
+        referenceContext: const SignalReferenceContext(),
+        consequenceText: consequence,
+      );
+
+      final data = await svc.assembleForTrial(trial);
+      final rater =
+          data.integrity.raterSummaries.firstWhere((r) => r.name == 'Alice');
+      expect(rater.raterDriftDetected, isTrue);
+      expect(rater.driftSeverity, SignalSeverity.review.dbValue);
+      expect(rater.driftConsequence, consequence);
+    });
+
+    test('does not mark rater drift when no rater signals exist', () async {
+      final p = await plot('101', rep: 1);
+      final a = await assessment('A');
+      final s = await session('S1');
+      await rating(p, a, s, value: 80, rater: 'Alice');
+
+      final data = await svc.assembleForTrial(trial);
+      final rater =
+          data.integrity.raterSummaries.firstWhere((r) => r.name == 'Alice');
+      expect(rater.raterDriftDetected, isFalse);
+      expect(rater.driftSeverity, isNull);
+      expect(rater.driftConsequence, isNull);
+    });
+
     test('records amendments in integrity section', () async {
       final p = await plot('101', rep: 1);
       final a = await assessment('A');
@@ -324,6 +381,95 @@ void main() {
       expect(data.integrity.ratingsWithGps, 0);
       expect(data.integrity.raterSummaries, isEmpty);
       expect(data.integrity.amendments, isEmpty);
+    });
+  });
+
+  group('raw data appendix', () {
+    test('populates rawDataRows with mapped rating fields', () async {
+      final t = await treatment('T1');
+      final p = await plot('101', rep: 2, treatmentId: t);
+      final a = await assessment('Weed control');
+      final s = await session('S1', sessionDateLocal: '2026-03-05');
+      await application(DateTime(2026, 3, 1));
+      await rating(p, a, s, value: 87.5, rater: 'Alice');
+
+      final data = await svc.assembleForTrial(trial);
+      expect(data.rawDataTruncated, isFalse);
+      expect(data.rawDataTotalCount, 1);
+      final row = data.rawDataRows.single;
+      expect(row.sessionName, 'S1');
+      expect(row.plotCode, '101');
+      expect(row.rep, 2);
+      expect(row.treatmentCode, 'T1');
+      expect(row.assessmentName, 'Weed control');
+      expect(row.ratingValue, 87.5);
+      expect(row.dat, 4);
+      expect(row.raterName, 'Alice');
+    });
+
+    test('sorts rows by session, plot, then assessment', () async {
+      final t = await treatment('T1');
+      final p2 = await plot('102', rep: 1, treatmentId: t);
+      final p1 = await plot('101', rep: 1, treatmentId: t);
+      final b = await assessment('B rating');
+      final a = await assessment('A rating');
+      final s2 = await session('B session');
+      final s1 = await session('A session');
+      await rating(p2, b, s2, value: 1);
+      await rating(p2, a, s1, value: 2);
+      await rating(p1, b, s1, value: 3);
+
+      final data = await svc.assembleForTrial(trial);
+      expect(
+        data.rawDataRows
+            .map((r) => '${r.sessionName}|${r.plotCode}|${r.assessmentName}')
+            .toList(),
+        [
+          'A session|101|B rating',
+          'A session|102|A rating',
+          'B session|102|B rating',
+        ],
+      );
+    });
+
+    test('sets rawDataTruncated false within cap', () async {
+      final p = await plot('101', rep: 1);
+      final a = await assessment('A');
+      final s = await session('S1');
+      await rating(p, a, s, value: 80);
+
+      final data = await svc.assembleForTrial(trial);
+      expect(data.rawDataTruncated, isFalse);
+      expect(data.rawDataTotalCount, 1);
+      expect(data.rawDataRows, hasLength(1));
+    });
+
+    test('sets rawDataTruncated true when rows exceed 2000', () async {
+      final a = await assessment('A');
+      final s = await session('S1');
+      for (var i = 0; i < 2001; i++) {
+        final p = await plot('${1000 + i}', rep: 1);
+        await rating(p, a, s, value: i.toDouble());
+      }
+
+      final data = await svc.assembleForTrial(trial);
+      expect(data.rawDataTruncated, isTrue);
+      expect(data.rawDataTotalCount, 2001);
+      expect(data.rawDataRows, hasLength(2000));
+    });
+
+    test('assessment names resolve from map and DAT can be null', () async {
+      final p = await plot('101', rep: 1);
+      final a = await assessment('Crop vigor');
+      final s = await session('S1');
+      await rating(p, a, s, value: 12, rater: null);
+
+      final data = await svc.assembleForTrial(trial);
+      final row = data.rawDataRows.single;
+      expect(row.assessmentName, 'Crop vigor');
+      expect(row.assessmentName, isNot('Assessment $a'));
+      expect(row.dat, isNull);
+      expect(row.raterName, isNull);
     });
   });
 

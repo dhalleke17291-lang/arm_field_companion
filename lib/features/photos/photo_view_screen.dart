@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/design/app_design_tokens.dart';
+import 'photo_repository.dart';
 
 /// Full-screen single photo viewer with filename bar and long-press delete.
-class PhotoViewScreen extends StatelessWidget {
+class PhotoViewScreen extends StatefulWidget {
   final Photo photo;
   final VoidCallback? onDelete;
 
@@ -16,17 +17,43 @@ class PhotoViewScreen extends StatelessWidget {
     this.onDelete,
   });
 
-  static String _fileName(String path) {
-    final parts = path.split('/');
-    return parts.isNotEmpty ? parts.last : path;
+  @override
+  State<PhotoViewScreen> createState() => _PhotoViewScreenState();
+}
+
+class _PhotoViewScreenState extends State<PhotoViewScreen> {
+  File? _file;
+  bool _exists = false;
+
+  static String _fileName(String filePath) {
+    final parts = filePath.split('/');
+    return parts.isNotEmpty ? parts.last : filePath;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _resolve();
+  }
+
+  Future<void> _resolve() async {
+    final absolutePath =
+        await PhotoRepository.resolvePhotoPath(widget.photo.filePath);
+    final file = File(absolutePath);
+    final exists = await file.exists();
+    if (!mounted) return;
+    setState(() {
+      _file = file;
+      _exists = exists;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final file = File(photo.filePath);
-    final exists = file.existsSync();
-    final fileName = _fileName(photo.filePath);
+    final file = _file;
+    final exists = _exists;
+    final fileName = _fileName(widget.photo.filePath);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -58,7 +85,7 @@ class PhotoViewScreen extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           Center(
-            child: exists
+            child: exists && file != null
                 ? GestureDetector(
                     onLongPress: () => _confirmDelete(context),
                     child: InteractiveViewer(
@@ -82,7 +109,7 @@ class PhotoViewScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'File not found',
+                        file == null ? '' : 'File not found',
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -116,7 +143,7 @@ class PhotoViewScreen extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (onDelete != null)
+                      if (widget.onDelete != null)
                         TextButton.icon(
                           onPressed: () => _confirmDelete(context),
                           icon: Icon(
@@ -167,8 +194,8 @@ class PhotoViewScreen extends StatelessWidget {
         ],
       ),
     );
-    if (confirmed == true && context.mounted && onDelete != null) {
-      onDelete!();
+    if (confirmed == true && context.mounted && widget.onDelete != null) {
+      widget.onDelete!();
       if (context.mounted) {
         Navigator.pop(context);
       }

@@ -327,6 +327,16 @@ Future<void> runFieldExecutionReportExport(
             children: [
               const Text('Field Execution Report generated.'),
               const SizedBox(height: AppDesignTokens.spacing8),
+              Text(
+                'For trial-wide provenance and audit evidence across all '
+                'sessions, export the Trial Evidence Record from the trial '
+                'detail screen.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: AppDesignTokens.spacing8),
               const Text('Saved to:',
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),

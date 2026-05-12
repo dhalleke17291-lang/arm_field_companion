@@ -11,6 +11,7 @@ import '../../plots/plot_repository.dart';
 import '../../../data/repositories/assignment_repository.dart';
 import '../../../data/repositories/treatment_repository.dart';
 import '../../assessments/assessment_library.dart';
+import '../assessment_library_system_map.dart';
 import '../trial_repository.dart';
 import 'plot_generation_engine.dart';
 
@@ -42,8 +43,10 @@ class StandaloneWizardAssessmentInput {
   final double? scaleMin;
   final double? scaleMax;
   final String dataType;
+
   /// When set, [insertCustom] uses a `LIB_*` code and [addToTrial] stores the library breadcrumb.
   final String? curatedLibraryEntryId;
+
   /// Assessment definition category (curated discipline); defaults to `custom` when null.
   final String? definitionCategory;
 }
@@ -76,8 +79,10 @@ class CreateStandaloneTrialWizardInput {
   final String experimentalDesign;
   final List<StandaloneWizardTreatmentInput> treatments;
   final int repCount;
+
   /// Data plots per rep (>= treatment count).
   final int plotsPerRep;
+
   /// Guard plots at each end of every rep (0 = none).
   final int guardRowsPerRep;
   final double? plotLengthM;
@@ -132,6 +137,7 @@ class CreateStandaloneTrialWizardUseCase {
   final AssignmentRepository _assignmentRepository;
   final AssessmentDefinitionRepository _definitionRepository;
   final TrialAssessmentRepository _trialAssessmentRepository;
+
   final TrialIntentSeeder? intentSeeder;
 
   Future<CreateStandaloneTrialWizardResult> execute(
@@ -139,7 +145,8 @@ class CreateStandaloneTrialWizardUseCase {
   ) async {
     final name = input.trialName.trim();
     if (name.isEmpty) {
-      return CreateStandaloneTrialWizardResult.failure('Trial name must not be empty');
+      return CreateStandaloneTrialWizardResult.failure(
+          'Trial name must not be empty');
     }
     // Check for duplicate name (case-insensitive)
     if (await _trialRepository.trialNameExists(name)) {
@@ -149,15 +156,18 @@ class CreateStandaloneTrialWizardUseCase {
     }
 
     if (input.treatments.length < 2) {
-      return CreateStandaloneTrialWizardResult.failure('At least two treatments are required');
+      return CreateStandaloneTrialWizardResult.failure(
+          'At least two treatments are required');
     }
     for (final t in input.treatments) {
       if (t.code.trim().isEmpty) {
-        return CreateStandaloneTrialWizardResult.failure('Each treatment needs a code');
+        return CreateStandaloneTrialWizardResult.failure(
+            'Each treatment needs a code');
       }
     }
     if (input.repCount < 1 || input.repCount > 50) {
-      return CreateStandaloneTrialWizardResult.failure('Reps must be between 1 and 50');
+      return CreateStandaloneTrialWizardResult.failure(
+          'Reps must be between 1 and 50');
     }
     final tCount = input.treatments.length;
     if (input.experimentalDesign == PlotGenerationEngine.designRcbd &&
@@ -172,7 +182,8 @@ class CreateStandaloneTrialWizardUseCase {
       );
     }
     if (input.guardRowsPerRep < 0 || input.guardRowsPerRep > 3) {
-      return CreateStandaloneTrialWizardResult.failure('Guards per rep end must be 0–3');
+      return CreateStandaloneTrialWizardResult.failure(
+          'Guards per rep end must be 0–3');
     }
 
     try {
@@ -295,31 +306,46 @@ class CreateStandaloneTrialWizardUseCase {
                   a.definitionCategory!.trim().isNotEmpty)
               ? a.definitionCategory!.trim()
               : 'custom';
-          final defId = await _definitionRepository.insertCustom(
-            code: code,
+          Future<int> insertCustomDefinition() {
+            return _definitionRepository.insertCustom(
+              code: code,
+              name: n,
+              category: category,
+              dataType: a.dataType,
+              unit: a.unit?.trim().isEmpty ?? true ? null : a.unit!.trim(),
+              scaleMin: a.scaleMin,
+              scaleMax: a.scaleMax,
+              assessmentMethod: null,
+              cropPart: null,
+              timingCode: null,
+              daysAfterTreatment: null,
+              timingDescription: null,
+              validMin: null,
+              validMax: null,
+              eppoCode: null,
+            );
+          }
+
+          final systemCode = canonicalSystemAssessmentCode(
+            libraryEntryId: fromLibrary ? libId : null,
             name: n,
-            category: category,
             dataType: a.dataType,
-            unit: a.unit?.trim().isEmpty ?? true ? null : a.unit!.trim(),
+            unit: a.unit,
             scaleMin: a.scaleMin,
             scaleMax: a.scaleMax,
-            assessmentMethod: null,
-            cropPart: null,
-            timingCode: null,
-            daysAfterTreatment: null,
-            timingDescription: null,
-            validMin: null,
-            validMax: null,
-            eppoCode: null,
+            category: category,
           );
+          final systemDef = systemCode != null
+              ? await _definitionRepository.getByCode(systemCode)
+              : null;
+          final defId = systemDef?.id ?? await insertCustomDefinition();
           await _trialAssessmentRepository.addToTrial(
             trialId: trialId,
             assessmentDefinitionId: defId,
             displayNameOverride: n,
             selectedManually: true,
-            instructionOverride: fromLibrary
-                ? curatedLibraryInstructionTag(libId)
-                : null,
+            instructionOverride:
+                fromLibrary ? curatedLibraryInstructionTag(libId) : null,
           );
         }
 
@@ -333,7 +359,8 @@ class CreateStandaloneTrialWizardUseCase {
     } on DuplicateTrialException catch (e) {
       return CreateStandaloneTrialWizardResult.failure(e.toString());
     } catch (e) {
-      return CreateStandaloneTrialWizardResult.failure('Could not create trial: $e');
+      return CreateStandaloneTrialWizardResult.failure(
+          'Could not create trial: $e');
     }
   }
 }

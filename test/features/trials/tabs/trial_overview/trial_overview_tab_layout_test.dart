@@ -1,14 +1,14 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/providers.dart';
+import 'package:arm_field_companion/core/workspace/workspace_config.dart';
 import 'package:arm_field_companion/domain/signals/signal_providers.dart';
-import 'package:arm_field_companion/domain/trial_cognition/ctq_factor_acknowledgment_dto.dart';
+import 'package:arm_field_companion/domain/signals/signal_review_projection.dart';
 import 'package:arm_field_companion/domain/trial_cognition/environmental_window_evaluator.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_coherence_dto.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_ctq_dto.dart';
-import 'package:arm_field_companion/domain/trial_cognition/trial_decision_summary_dto.dart';
-import 'package:arm_field_companion/domain/trial_cognition/trial_evidence_arc_dto.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_interpretation_risk_dto.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_purpose_dto.dart';
+import 'package:arm_field_companion/domain/trial_cognition/trial_readiness_statement.dart';
 import 'package:arm_field_companion/features/trials/tabs/trial_overview/trial_overview_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,138 +25,234 @@ Trial _trial({int id = 1}) => Trial(
       isDeleted: false,
     );
 
+TrialReadinessStatement _statement({
+  List<String> actionItems = const [],
+  List<String> cautions = const [],
+}) =>
+    TrialReadinessStatement(
+      statusLabel: actionItems.isEmpty
+          ? 'Export ready'
+          : 'In progress — review before export',
+      summaryText: actionItems.isEmpty
+          ? 'Trial is ready for export and analysis.'
+          : 'Trial is not currently export-ready.',
+      reasons: const [],
+      actionItems: List.unmodifiable(actionItems),
+      cautions: List.unmodifiable(cautions),
+      isReadyForExport: actionItems.isEmpty,
+    );
+
 TrialPurposeDto _purpose() => const TrialPurposeDto(
       trialId: 1,
-      purposeStatus: 'unknown',
+      purposeStatus: 'confirmed',
       claimBeingTested: null,
       missingIntentFields: [],
       provenanceSummary: 'test',
-      canDriveReadinessClaims: false,
+      canDriveReadinessClaims: true,
     );
 
-TrialEvidenceArcDto _arc() => const TrialEvidenceArcDto(
+TrialCtqItemDto _photoEvidenceMissing() => const TrialCtqItemDto(
+      factorKey: 'photo_evidence',
+      label: 'Photo Evidence',
+      importance: 'critical',
+      status: 'missing',
+      evidenceSummary: 'No plot photos captured.',
+      reason: 'Photo evidence is required before export.',
+      source: 'system',
+    );
+
+TrialCtqDto _ctq([List<TrialCtqItemDto> items = const []]) => TrialCtqDto(
       trialId: 1,
-      evidenceState: 'no_evidence',
-      plannedEvidenceSummary: '',
-      actualEvidenceSummary: '',
-      missingEvidenceItems: [],
-      evidenceAnchors: [],
-      riskFlags: [],
+      ctqItems: items,
+      blockerCount: items.where((item) => item.status == 'blocked').length,
+      warningCount: items.where((item) => item.status == 'missing').length,
+      reviewCount: items.where((item) => item.status == 'review_needed').length,
+      satisfiedCount: items.where((item) => item.status == 'satisfied').length,
+      overallStatus: items.isEmpty ? 'ready_for_review' : 'review_needed',
     );
 
-const _ctq = TrialCtqDto(
-  trialId: 1,
-  ctqItems: [],
-  blockerCount: 0,
-  warningCount: 0,
-  reviewCount: 0,
-  satisfiedCount: 0,
-  overallStatus: 'unknown',
+TrialCoherenceDto _coherence() => TrialCoherenceDto(
+      coherenceState: 'aligned',
+      checks: const [
+        TrialCoherenceCheckDto(
+          checkKey: 'design_alignment',
+          label: 'Design alignment',
+          status: 'aligned',
+          reason: '',
+          sourceFields: [],
+        ),
+      ],
+      computedAt: DateTime(2026, 1, 1),
+    );
+
+TrialInterpretationRiskDto _risk({
+  List<TrialRiskFactorDto> factors = const [],
+}) =>
+    TrialInterpretationRiskDto(
+      riskLevel: factors.any((factor) => factor.severity == 'high')
+          ? 'high'
+          : factors.any((factor) => factor.severity == 'moderate')
+              ? 'moderate'
+              : 'low',
+      factors: factors,
+      computedAt: DateTime(2026, 1, 1),
+    );
+
+const _highRisk = TrialRiskFactorDto(
+  factorKey: 'data_variability',
+  label: 'Data variability',
+  severity: 'high',
+  reason: 'Primary endpoint data variability HIGH.',
+  sourceFields: [],
 );
 
-final _coh = TrialCoherenceDto(
-  coherenceState: 'aligned',
-  checks: const [],
-  computedAt: DateTime.utc(2026, 1, 1),
-);
-
-final _risk = TrialInterpretationRiskDto(
-  riskLevel: 'low',
-  factors: const [],
-  computedAt: DateTime.utc(2026, 1, 1),
-);
-
-const _env = EnvironmentalSeasonSummaryDto(
-  totalPrecipitationMm: null,
-  totalFrostEvents: 0,
-  totalExcessiveRainfallEvents: 0,
-  daysWithData: 0,
-  daysExpected: 1,
-  overallConfidence: 'unavailable',
-);
+EnvironmentalSeasonSummaryDto _environment({
+  String confidence = 'measured',
+}) =>
+    EnvironmentalSeasonSummaryDto(
+      totalPrecipitationMm: 12,
+      totalFrostEvents: 0,
+      totalExcessiveRainfallEvents: 0,
+      daysWithData: 10,
+      daysExpected: 10,
+      overallConfidence: confidence,
+    );
 
 Widget _wrapSized({
   required double width,
   required double height,
   required Trial trial,
+  TrialReadinessStatement? statement,
+  TrialCtqDto? ctq,
+  TrialInterpretationRiskDto? risk,
+  void Function(TrialTab tab)? onSwitchTab,
 }) {
+  final resolvedStatement = statement ?? _statement();
   return MediaQuery(
     data: MediaQueryData(size: Size(width, height)),
     child: ProviderScope(
       overrides: [
         environmentalEnsureTodayBackgroundEnabledProvider
             .overrideWithValue(false),
+        trialReadinessStatementProvider((
+          trialId: trial.id,
+          trialState: trial.status,
+        )).overrideWith((_) => AsyncValue.data(resolvedStatement)),
+        amendedRatingCountForTrialProvider(trial.id)
+            .overrideWith((_) => Stream.value(0)),
         trialPurposeProvider(trial.id).overrideWith(
-          (ref) => Stream.value(_purpose()),
-        ),
-        trialEvidenceArcProvider(trial.id).overrideWith(
-          (ref) => Stream.value(_arc()),
+          (_) => Stream.value(_purpose()),
         ),
         trialCriticalToQualityProvider(trial.id).overrideWith(
-          (ref) => Stream.value(_ctq),
+          (_) => Stream.value(ctq ?? _ctq()),
         ),
         trialCoherenceProvider(trial.id).overrideWith(
-          (ref) => Stream.value(_coh),
+          (_) => Stream.value(_coherence()),
         ),
         trialInterpretationRiskProvider(trial.id).overrideWith(
-          (ref) => Stream.value(_risk),
+          (_) => Stream.value(risk ?? _risk()),
         ),
-        trialEnvironmentalSummaryProvider(trial.id).overrideWith(
-          (ref) => Stream.value(_env),
-        ),
-        trialApplicationsForTrialProvider(trial.id).overrideWith(
-          (ref) => Stream.value(const <TrialApplicationEvent>[]),
+        projectedOpenSignalGroupsForTrialProvider(trial.id).overrideWith(
+          (_) => Stream.value(const <SignalReviewGroupProjection>[]),
         ),
         openSignalsForTrialProvider(trial.id).overrideWith(
-          (ref) => Stream.value(<Signal>[]),
+          (_) => Stream.value(const <Signal>[]),
         ),
-        trialDecisionSummaryProvider(trial.id).overrideWith(
-          (ref) async => TrialDecisionSummaryDto(
-            trialId: trial.id,
-            signalDecisions: const [],
-            ctqAcknowledgments: const <CtqFactorAcknowledgmentDto>[],
-            hasAnyResearcherReasoning: false,
-          ),
+        trialEnvironmentalSummaryProvider(trial.id).overrideWith(
+          (_) => Stream.value(_environment()),
         ),
-        treatmentsForTrialProvider(trial.id).overrideWith(
-          (ref) => Stream.value(const <Treatment>[]),
+        trialEnvironmentalProvenanceProvider(trial.id).overrideWith(
+          (_) => Stream.value(null),
         ),
-        plotsForTrialProvider(trial.id).overrideWith(
-          (ref) => Stream.value(const <Plot>[]),
-        ),
-        armTrialMetadataStreamProvider(trial.id).overrideWith(
-          (ref) => Stream.value(null),
+        assessmentDefinitionsProvider.overrideWith(
+          (_) => Stream.value(const <AssessmentDefinition>[]),
         ),
       ],
       child: MaterialApp(
         home: Scaffold(
-          body: TrialOverviewTab(trial: trial),
+          body: TrialOverviewTab(
+            trial: trial,
+            onSwitchTab: onSwitchTab,
+          ),
         ),
       ),
     ),
   );
 }
 
+void _expectTextOrder(WidgetTester tester, List<String> labels) {
+  var previousY = double.negativeInfinity;
+  for (final label in labels) {
+    final y = tester.getTopLeft(find.text(label)).dy;
+    expect(y, greaterThan(previousY), reason: '$label should render in order.');
+    previousY = y;
+  }
+}
+
 void main() {
-  group('TrialOverviewTab responsive smoke', () {
-    testWidgets('phone viewport: no synchronous exceptions during layout', (
+  group('TrialOverviewTab responsive layout', () {
+    testWidgets('phone and tablet viewports have no synchronous exceptions', (
       WidgetTester tester,
     ) async {
       final trial = _trial();
-      await tester
-          .pumpWidget(_wrapSized(width: 390, height: 844, trial: trial));
+
+      await tester.pumpWidget(
+        _wrapSized(width: 390, height: 844, trial: trial),
+      );
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(
+        _wrapSized(width: 834, height: 1194, trial: trial),
+      );
       await tester.pump(const Duration(seconds: 1));
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('tablet viewport: no synchronous exceptions during layout', (
+    testWidgets('renders the four Trial Review blocks in order', (
       WidgetTester tester,
     ) async {
       final trial = _trial();
-      await tester
-          .pumpWidget(_wrapSized(width: 834, height: 1194, trial: trial));
-      await tester.pump(const Duration(seconds: 1));
-      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(_wrapSized(
+        width: 390,
+        height: 844,
+        trial: trial,
+        statement: _statement(
+          actionItems: const ['Add: Photo Evidence'],
+          cautions: const ['Known site or season context needs review.'],
+        ),
+        ctq: _ctq([_photoEvidenceMissing()]),
+        risk: _risk(factors: const [_highRisk]),
+      ));
+      await tester.pumpAndSettle();
+
+      _expectTextOrder(tester, const [
+        'In progress — review before export',
+        'Photo Evidence',
+        'Data variability',
+        'Show all checks (1 satisfied, 1 pending)',
+      ]);
+    });
+
+    testWidgets('passes onSwitchTab through to RequiredBlock', (
+      WidgetTester tester,
+    ) async {
+      final trial = _trial();
+      TrialTab? selectedTab;
+      await tester.pumpWidget(_wrapSized(
+        width: 390,
+        height: 844,
+        trial: trial,
+        statement: _statement(actionItems: const ['Add: Photo Evidence']),
+        ctq: _ctq([_photoEvidenceMissing()]),
+        onSwitchTab: (tab) => selectedTab = tab,
+      ));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Photos'));
+      await tester.pump();
+
+      expect(selectedTab, TrialTab.photos);
     });
   });
 }

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,15 +13,35 @@ import '../../../domain/trial_cognition/regulatory_context_value.dart';
 import '../../../shared/layout/responsive_layout.dart';
 
 /// Opens the Mode C intent revelation sheet for [trial].
-/// Resolves the current purpose and current user before showing.
+/// Resolves the current purpose, current user, ARM status, and (for standalone
+/// trials) the active assessment list before showing. Nothing is fetched
+/// inside the sheet widget itself.
 Future<void> showTrialIntentSheet(
   BuildContext context,
   WidgetRef ref, {
   required Trial trial,
 }) async {
   final purposeRepo = ref.read(trialPurposeRepositoryProvider);
-  final existing = await purposeRepo.getCurrentTrialPurpose(trial.id);
-  final user = await ref.read(currentUserProvider.future);
+  final existingFuture = purposeRepo.getCurrentTrialPurpose(trial.id);
+  final userFuture = ref.read(currentUserProvider.future);
+  // ARM status lives in arm_trial_metadata, not on the Trial row.
+  final armMetaFuture =
+      ref.read(armTrialMetadataStreamProvider(trial.id).future);
+
+  final existing = await existingFuture;
+  final user = await userFuture;
+  final armMeta = await armMetaFuture;
+  final isArmTrial = armMeta?.isArmLinked ?? false;
+
+  // For standalone trials, load the active assessment list for Q6/Q7.
+  // ARM trials skip Q6/Q7 — no fetch needed.
+  List<(TrialAssessment, AssessmentDefinition)> activeAssessments = const [];
+  if (!isArmTrial) {
+    final allPairs = await ref
+        .read(trialAssessmentsWithDefinitionsForTrialProvider(trial.id).future);
+    activeAssessments = [for (final p in allPairs) if (p.$1.isActive) p];
+  }
+
   if (!context.mounted) return;
 
   await showModalBottomSheet<void>(
@@ -39,6 +61,8 @@ Future<void> showTrialIntentSheet(
         trial: trial,
         existing: existing,
         capturedBy: user?.displayName,
+        isArmTrial: isArmTrial,
+        activeAssessments: activeAssessments,
       );
       if (maxW.isInfinite) return sheet;
       return Align(
@@ -74,46 +98,85 @@ class _TrialIntentSheet extends ConsumerStatefulWidget {
     required this.trial,
     required this.existing,
     required this.capturedBy,
+    required this.isArmTrial,
+    required this.activeAssessments,
   });
 
   final Trial trial;
   final TrialPurpose? existing;
   final String? capturedBy;
 
+  /// True when the trial has ARM shell metadata. Q6/Q7 are skipped for ARM trials.
+  final bool isArmTrial;
+
+  /// Active trial assessments for Q6 (planned DAT per assessment).
+  /// Empty for ARM trials and standalone trials with no active assessments.
+  final List<(TrialAssessment, AssessmentDefinition)> activeAssessments;
+
   @override
   ConsumerState<_TrialIntentSheet> createState() => _TrialIntentSheetState();
 }
 
 class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
-  static const int _totalQuestions = 5;
+  // ARM trials: 5 questions. Standalone with assessments: 7 (adds Q6 DAT + Q7 window).
+  late final int _totalQuestions;
 
   late final PageController _pageController;
-  late final List<TextEditingController> _controllers;
+  late final List<TextEditingController> _controllers; // indices 0–4
   late final List<bool> _hadExisting;
 
   /// Structured commercial context selection — maps to regulatory_context column.
-  /// Null means no selection yet. Initialized from existing?.regulatoryContext.
   String? _selectedRegulatoryContext;
+
+  /// Q6: planned DAT controllers keyed by TrialAssessment.id.
+  late final Map<int, TextEditingController> _plannedDatControllers;
+
+  /// Q7: acceptable timing deviation in ±days.
+  late final TextEditingController _windowController;
 
   var _pageIndex = 0;
   var _submitting = false;
 
+  // Whether Q6/Q7 pages are active for this session.
+  bool get _hasProtocolPages =>
+      !widget.isArmTrial && widget.activeAssessments.isNotEmpty;
+
   @override
   void initState() {
     super.initState();
+    _totalQuestions = _hasProtocolPages ? 7 : 5;
     _pageController = PageController();
     _controllers = List.generate(
-      _totalQuestions,
+      5,
       (i) => TextEditingController(
         text: _existingAnswer(widget.existing, i) ?? '',
       ),
     );
     _hadExisting = List.generate(
-      _totalQuestions,
+      5,
       (i) => (_existingAnswer(widget.existing, i) ?? '').isNotEmpty,
     );
-    // Picker initial selection from structured column (not free-text trial_purpose).
     _selectedRegulatoryContext = widget.existing?.regulatoryContext;
+
+    // Q6: parse existing plannedDatByAssessment JSON to pre-fill controllers.
+    Map<String, dynamic> existingDat = {};
+    final rawDat = widget.existing?.plannedDatByAssessment;
+    if (rawDat != null && rawDat.isNotEmpty) {
+      try {
+        existingDat = jsonDecode(rawDat) as Map<String, dynamic>;
+      } catch (_) {}
+    }
+    _plannedDatControllers = {
+      for (final p in widget.activeAssessments)
+        p.$1.id: TextEditingController(
+          text: existingDat[p.$1.id.toString()]?.toString() ?? '',
+        ),
+    };
+
+    // Q7: pre-fill from existing protocolTimingWindow.
+    _windowController = TextEditingController(
+      text: widget.existing?.protocolTimingWindow?.toString() ?? '',
+    );
   }
 
   @override
@@ -122,6 +185,10 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
     for (final c in _controllers) {
       c.dispose();
     }
+    for (final c in _plannedDatControllers.values) {
+      c.dispose();
+    }
+    _windowController.dispose();
     super.dispose();
   }
 
@@ -184,6 +251,19 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
     );
   }
 
+  String? _buildPlannedDatJson() {
+    final map = <String, int>{};
+    for (final p in widget.activeAssessments) {
+      final val =
+          int.tryParse(_plannedDatControllers[p.$1.id]?.text.trim() ?? '');
+      if (val != null) map[p.$1.id.toString()] = val;
+    }
+    return map.isEmpty ? null : jsonEncode(map);
+  }
+
+  int? _parseWindow() =>
+      int.tryParse(_windowController.text.trim());
+
   Future<void> _onConfirm() async {
     if (_submitting) return;
     setState(() => _submitting = true);
@@ -196,10 +276,9 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
         return s.isEmpty ? null : s;
       }
 
-      // fieldText(1) carries the display label (or existing trial_purpose text)
-      // for backward-compat display on story screen. regulatory_context is the
-      // structured key written from the picker.
-      // Preserve arm_structure provenance when editing ARM-inferred intent.
+      final plannedDatJson = _hasProtocolPages ? _buildPlannedDatJson() : null;
+      final window = _hasProtocolPages ? _parseWindow() : null;
+
       final effectiveSourceMode =
           widget.existing?.sourceMode == TrialPurposeSourceMode.armStructure
               ? TrialPurposeSourceMode.armStructure
@@ -214,6 +293,8 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
         treatmentRoleSummary: Value(fieldText(3)),
         knownInterpretationFactors: Value(fieldText(4)),
         sourceMode: Value(effectiveSourceMode),
+        plannedDatByAssessment: Value(plannedDatJson),
+        protocolTimingWindow: Value(window),
       );
 
       final int newId;
@@ -227,6 +308,8 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
           treatmentRoleSummary: fieldText(3),
           knownInterpretationFactors: fieldText(4),
           sourceMode: TrialPurposeSourceMode.manualRevelation,
+          plannedDatByAssessment: plannedDatJson,
+          protocolTimingWindow: window,
         );
       } else {
         newId = await purposeRepo.createNewTrialPurposeVersion(
@@ -235,17 +318,19 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
         );
       }
 
-      await purposeRepo.confirmTrialPurpose(newId, confirmedBy: widget.capturedBy);
+      await purposeRepo.confirmTrialPurpose(newId,
+          confirmedBy: widget.capturedBy);
 
-      await ref.read(ctqFactorDefinitionRepositoryProvider)
+      await ref
+          .read(ctqFactorDefinitionRepositoryProvider)
           .seedDefaultCtqFactorsForPurpose(
-        trialId: widget.trial.id,
-        trialPurposeId: newId,
-      );
+            trialId: widget.trial.id,
+            trialPurposeId: newId,
+          );
 
       ref.invalidate(trialPurposeProvider(widget.trial.id));
 
-      for (var i = 0; i < _totalQuestions; i++) {
+      for (var i = 0; i < 5; i++) {
         if (_controllers[i].text.trim().isNotEmpty) {
           await _writeEvent(
             questionIndex: i,
@@ -278,7 +363,7 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
                 controller: _pageController,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  for (var i = 0; i < _totalQuestions; i++)
+                  for (var i = 0; i < 5; i++)
                     if (i == 1)
                       _PickerQuestionPage(
                         questionIndex: i,
@@ -301,9 +386,33 @@ class _TrialIntentSheetState extends ConsumerState<_TrialIntentSheet> {
                         onBack: _goBack,
                         isFirst: i == 0,
                       ),
+                  if (_hasProtocolPages) ...[
+                    _PlannedDatPage(
+                      questionIndex: 5,
+                      totalQuestions: _totalQuestions,
+                      assessmentPairs: widget.activeAssessments,
+                      controllers: _plannedDatControllers,
+                      onNext: _advancePage,
+                      onSkip: _advancePage,
+                      onBack: _goBack,
+                    ),
+                    _TimingWindowPage(
+                      questionIndex: 6,
+                      totalQuestions: _totalQuestions,
+                      controller: _windowController,
+                      onNext: _advancePage,
+                      onSkip: _advancePage,
+                      onBack: _goBack,
+                    ),
+                  ],
                   _ReviewPage(
                     controllers: _controllers,
                     selectedRegulatoryContext: _selectedRegulatoryContext,
+                    plannedDatJson: _hasProtocolPages
+                        ? _buildPlannedDatJson()
+                        : null,
+                    assessmentPairs: widget.activeAssessments,
+                    protocolWindow: _hasProtocolPages ? _parseWindow() : null,
                     onBack: _goBack,
                     onConfirm: _submitting ? null : _onConfirm,
                   ),
@@ -681,12 +790,281 @@ class _QuestionPage extends StatelessWidget {
   }
 }
 
+// ── Planned DAT per assessment (Q6) ──────────────────────────────────────────
+
+class _PlannedDatPage extends StatelessWidget {
+  const _PlannedDatPage({
+    required this.questionIndex,
+    required this.totalQuestions,
+    required this.assessmentPairs,
+    required this.controllers,
+    required this.onNext,
+    required this.onSkip,
+    required this.onBack,
+  });
+
+  final int questionIndex;
+  final int totalQuestions;
+  final List<(TrialAssessment, AssessmentDefinition)> assessmentPairs;
+  final Map<int, TextEditingController> controllers;
+  final VoidCallback onNext;
+  final VoidCallback onSkip;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            FormStyles.formSheetHorizontalPadding,
+            AppDesignTokens.spacing8,
+            FormStyles.formSheetHorizontalPadding,
+            0,
+          ),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: onBack,
+                icon: const Icon(Icons.arrow_back, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'Back',
+                color: AppDesignTokens.secondaryText,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${questionIndex + 1} of $totalQuestions',
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: AppDesignTokens.secondaryText),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              FormStyles.formSheetHorizontalPadding,
+              AppDesignTokens.spacing16,
+              FormStyles.formSheetHorizontalPadding,
+              AppDesignTokens.spacing16,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'When is each assessment planned to be rated? (days after treatment)',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primaryText,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: AppDesignTokens.spacing4),
+                Text(
+                  'Enter the planned days after the last application for each assessment.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppDesignTokens.secondaryText,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: AppDesignTokens.spacing16),
+                for (final p in assessmentPairs) ...[
+                  _AssessmentDatRow(
+                    name: p.$1.displayNameOverride ?? p.$2.name,
+                    controller: controllers[p.$1.id]!,
+                  ),
+                  const SizedBox(height: AppDesignTokens.spacing12),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            FormStyles.formSheetHorizontalPadding,
+            AppDesignTokens.spacing12,
+            FormStyles.formSheetHorizontalPadding,
+            AppDesignTokens.spacing16,
+          ),
+          child: Row(
+            children: [
+              TextButton(onPressed: onSkip, child: const Text('Skip')),
+              const Spacer(),
+              FilledButton(onPressed: onNext, child: const Text('Next →')),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AssessmentDatRow extends StatelessWidget {
+  const _AssessmentDatRow({
+    required this.name,
+    required this.controller,
+  });
+
+  final String name;
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Text(
+            name,
+            style: theme.textTheme.bodyMedium
+                ?.copyWith(color: AppDesignTokens.primaryText),
+          ),
+        ),
+        const SizedBox(width: AppDesignTokens.spacing12),
+        SizedBox(
+          width: 72,
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            decoration: FormStyles.inputDecoration(hintText: 'DAT'),
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Timing window (Q7) ────────────────────────────────────────────────────────
+
+class _TimingWindowPage extends StatelessWidget {
+  const _TimingWindowPage({
+    required this.questionIndex,
+    required this.totalQuestions,
+    required this.controller,
+    required this.onNext,
+    required this.onSkip,
+    required this.onBack,
+  });
+
+  final int questionIndex;
+  final int totalQuestions;
+  final TextEditingController controller;
+  final VoidCallback onNext;
+  final VoidCallback onSkip;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            FormStyles.formSheetHorizontalPadding,
+            AppDesignTokens.spacing8,
+            FormStyles.formSheetHorizontalPadding,
+            0,
+          ),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: onBack,
+                icon: const Icon(Icons.arrow_back, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'Back',
+                color: AppDesignTokens.secondaryText,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${questionIndex + 1} of $totalQuestions',
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: AppDesignTokens.secondaryText),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              FormStyles.formSheetHorizontalPadding,
+              AppDesignTokens.spacing16,
+              FormStyles.formSheetHorizontalPadding,
+              AppDesignTokens.spacing16,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'How many days of deviation from the planned date is acceptable?',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primaryText,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: AppDesignTokens.spacing4),
+                Text(
+                  'Sessions rated within ±N days of the planned date will not be flagged as deviations.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppDesignTokens.secondaryText,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: AppDesignTokens.spacing16),
+                SizedBox(
+                  width: 120,
+                  child: TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    decoration: FormStyles.inputDecoration(hintText: '±days'),
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            FormStyles.formSheetHorizontalPadding,
+            AppDesignTokens.spacing12,
+            FormStyles.formSheetHorizontalPadding,
+            AppDesignTokens.spacing16,
+          ),
+          child: Row(
+            children: [
+              TextButton(onPressed: onSkip, child: const Text('Skip')),
+              const Spacer(),
+              FilledButton(onPressed: onNext, child: const Text('Next →')),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ── Review page ───────────────────────────────────────────────────────────────
 
 class _ReviewPage extends StatelessWidget {
   const _ReviewPage({
     required this.controllers,
     required this.selectedRegulatoryContext,
+    required this.plannedDatJson,
+    required this.assessmentPairs,
+    required this.protocolWindow,
     required this.onBack,
     required this.onConfirm,
   });
@@ -695,6 +1073,15 @@ class _ReviewPage extends StatelessWidget {
 
   /// Structured commercial context key from the picker (may be null if skipped).
   final String? selectedRegulatoryContext;
+
+  /// JSON string from Q6, or null if ARM trial / skipped.
+  final String? plannedDatJson;
+
+  /// Active assessment pairs passed from Q6 (for computing configured count).
+  final List<(TrialAssessment, AssessmentDefinition)> assessmentPairs;
+
+  /// Parsed window from Q7, or null if ARM trial / skipped.
+  final int? protocolWindow;
 
   final VoidCallback onBack;
   final VoidCallback? onConfirm;
@@ -728,10 +1115,60 @@ class _ReviewPage extends StatelessWidget {
               FormStyles.formSheetHorizontalPadding,
               AppDesignTokens.spacing16,
             ),
-            itemCount: ModeCQuestionKeys.all.length,
+            itemCount: ModeCQuestionKeys.all.length +
+                (assessmentPairs.isNotEmpty ? 1 : 0),
             separatorBuilder: (_, __) =>
                 const Divider(height: AppDesignTokens.spacing24),
             itemBuilder: (_, i) {
+              // Protocol timing summary row (Q6/Q7) — appended after Q1–Q5.
+              if (i == ModeCQuestionKeys.all.length) {
+                final configuredCount = plannedDatJson == null
+                    ? 0
+                    : (jsonDecode(plannedDatJson!) as Map).length;
+                final datSummary = configuredCount == 0
+                    ? '— skipped'
+                    : '$configuredCount of ${assessmentPairs.length} assessments configured';
+                final windowSummary = protocolWindow == null
+                    ? '— skipped'
+                    : '±$protocolWindow days';
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Protocol timing',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppDesignTokens.secondaryText,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Planned DAT: $datSummary',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: configuredCount == 0
+                            ? AppDesignTokens.secondaryText
+                            : AppDesignTokens.primaryText,
+                        fontStyle: configuredCount == 0
+                            ? FontStyle.italic
+                            : FontStyle.normal,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Deviation window: $windowSummary',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: protocolWindow == null
+                            ? AppDesignTokens.secondaryText
+                            : AppDesignTokens.primaryText,
+                        fontStyle: protocolWindow == null
+                            ? FontStyle.italic
+                            : FontStyle.normal,
+                      ),
+                    ),
+                  ],
+                );
+              }
+
               // Index 1 is the commercial context picker — display the
               // selected label as its own row, not the free-text trial_purpose.
               if (i == 1) {

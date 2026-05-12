@@ -482,7 +482,7 @@ class ReportPdfBuilderService {
 
       final tableRows = <pw.TableRow>[
         pw.TableRow(
-          decoration: const pw.BoxDecoration(color: _kHeaderBg),
+          decoration: const pw.BoxDecoration(color: _kPrimaryColor),
           children: [
             _tableHeaderCell('Treatment'),
             _tableHeaderCell('Mean', rightAlign: true),
@@ -870,7 +870,7 @@ class ReportPdfBuilderService {
             },
             children: [
               pw.TableRow(
-                decoration: const pw.BoxDecoration(color: _kHeaderBg),
+                decoration: const pw.BoxDecoration(color: _kPrimaryColor),
                 children: [
                   _tableHeaderCell('Product'),
                   _tableHeaderCell('Rate'),
@@ -931,7 +931,7 @@ class ReportPdfBuilderService {
         },
         children: [
           pw.TableRow(
-            decoration: const pw.BoxDecoration(color: _kHeaderBg),
+            decoration: const pw.BoxDecoration(color: _kPrimaryColor),
             children: [
               _tableHeaderCell('Plot ID'),
               _tableHeaderCell('Rep', rightAlign: true),
@@ -941,7 +941,7 @@ class ReportPdfBuilderService {
           ...sorted.asMap().entries.map((e) {
             final i = e.key;
             final p = e.value;
-            final bg = i.isEven ? PdfColors.white : _kHeaderBg;
+            final bg = i.isEven ? PdfColors.white : PdfColors.grey100;
             return pw.TableRow(
               decoration: pw.BoxDecoration(color: bg),
               children: [
@@ -1034,7 +1034,7 @@ class ReportPdfBuilderService {
         },
         children: [
           pw.TableRow(
-            decoration: const pw.BoxDecoration(color: _kHeaderBg),
+            decoration: const pw.BoxDecoration(color: _kPrimaryColor),
             children: [
               _tableHeaderCell('Date'),
               _tableHeaderCell('Product'),
@@ -1042,18 +1042,24 @@ class ReportPdfBuilderService {
               _tableHeaderCell('Applied At'),
             ],
           ),
-          ...ev.map((a) => pw.TableRow(
-                children: [
-                  _tableCell(dateFormat.format(a.applicationDate)),
-                  _tableCell(a.productName),
-                  _applicationStatusCell(a.status),
-                  _tableCell(
-                    a.appliedAt != null
-                        ? dateFormat.format(a.appliedAt!)
-                        : _emDashPlaceholder,
+          ...ev.asMap().entries.map((e) {
+                final a = e.value;
+                return pw.TableRow(
+                  decoration: pw.BoxDecoration(
+                    color: e.key.isOdd ? PdfColors.grey100 : PdfColors.white,
                   ),
-                ],
-              )),
+                  children: [
+                    _tableCell(dateFormat.format(a.applicationDate)),
+                    _tableCell(a.productName),
+                    _applicationStatusCell(a.status),
+                    _tableCell(
+                      a.appliedAt != null
+                          ? dateFormat.format(a.appliedAt!)
+                          : _emDashPlaceholder,
+                    ),
+                  ],
+                );
+              }),
         ],
       ),
     );
@@ -1093,19 +1099,22 @@ class ReportPdfBuilderService {
         },
         children: [
           pw.TableRow(
-            decoration: const pw.BoxDecoration(color: _kHeaderBg),
+            decoration: const pw.BoxDecoration(color: _kPrimaryColor),
             children: [
               _tableHeaderCell('Name'),
               _tableHeaderCell('Date'),
               _tableHeaderCell('Status'),
             ],
           ),
-          ...data.sessions.map(
-            (s) => pw.TableRow(
+          ...data.sessions.asMap().entries.map(
+            (e) => pw.TableRow(
+              decoration: pw.BoxDecoration(
+                color: e.key.isOdd ? PdfColors.grey100 : PdfColors.white,
+              ),
               children: [
-                _tableCell(s.name),
-                _tableCell(s.sessionDateLocal),
-                _sessionStatusCell(s.status),
+                _tableCell(e.value.name),
+                _tableCell(e.value.sessionDateLocal),
+                _sessionStatusCell(e.value.status),
               ],
             ),
           ),
@@ -1171,11 +1180,7 @@ class ReportPdfBuilderService {
       padding: const pw.EdgeInsets.symmetric(vertical: 4),
       child: pw.Text(
         text,
-        style: pw.TextStyle(
-          fontSize: _kFontSizeBody,
-          fontStyle: pw.FontStyle.italic,
-          color: _kTextSecondary,
-        ),
+        style: const pw.TextStyle(fontSize: 7, color: _kTextSecondary),
       ),
     );
   }
@@ -1239,11 +1244,10 @@ class ReportPdfBuilderService {
               ),
             ),
             pw.Text(
-              'AGNEXIS',
+              'Page ${context.pageNumber} of ${context.pagesCount}',
               style: const pw.TextStyle(
                 fontSize: _kFontSizeCaption,
                 color: _kTextSecondary,
-                letterSpacing: 2,
               ),
             ),
           ],
@@ -1253,28 +1257,24 @@ class ReportPdfBuilderService {
   }
 
   pw.Widget _sectionHeader(String title) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-      children: [
-        pw.Container(
-          decoration: const pw.BoxDecoration(
-            color: _kHeaderBg,
-            border: pw.Border(
-              left: pw.BorderSide(color: _kPrimaryColor, width: 3),
-            ),
-          ),
-          padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 10),
-          child: pw.Text(
-            title,
-            style: pw.TextStyle(
-              fontSize: _kFontSizeH1,
-              fontWeight: pw.FontWeight.bold,
-              color: _kPrimaryColor,
-            ),
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: _kSpaceSM),
+      child: pw.Container(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: const pw.BoxDecoration(
+          color: _kPrimaryColor,
+          borderRadius: pw.BorderRadius.all(pw.Radius.circular(3)),
+        ),
+        child: pw.Text(
+          title.toUpperCase(),
+          style: pw.TextStyle(
+            fontSize: 10,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.white,
+            letterSpacing: 0.5,
           ),
         ),
-        pw.SizedBox(height: _kSpaceSM),
-      ],
+      ),
     );
   }
 
@@ -1399,7 +1399,7 @@ class ReportPdfBuilderService {
             },
             children: [
               pw.TableRow(
-                decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                decoration: const pw.BoxDecoration(color: _kPrimaryColor),
                 children: [
                   _tableHeaderCell('Treatment'),
                   _tableHeaderCell('Mean', rightAlign: true),
@@ -1408,13 +1408,16 @@ class ReportPdfBuilderService {
                   _tableHeaderCell('n', rightAlign: true),
                 ],
               ),
-              ...summaryRows.map((row) => pw.TableRow(
+              ...summaryRows.asMap().entries.map((e) => pw.TableRow(
+                    decoration: pw.BoxDecoration(
+                      color: e.key.isOdd ? PdfColors.grey100 : PdfColors.white,
+                    ),
                     children: [
-                      _tableCell(row.treatment),
-                      _tableCell(_formatMean(row.mean), rightAlign: true),
-                      _tableCell(_formatMean(row.min), rightAlign: true),
-                      _tableCell(_formatMean(row.max), rightAlign: true),
-                      _tableCell('${row.n}', rightAlign: true),
+                      _tableCell(e.value.treatment),
+                      _tableCell(_formatMean(e.value.mean), rightAlign: true),
+                      _tableCell(_formatMean(e.value.min), rightAlign: true),
+                      _tableCell(_formatMean(e.value.max), rightAlign: true),
+                      _tableCell('${e.value.n}', rightAlign: true),
                     ],
                   )),
             ],
@@ -1443,8 +1446,7 @@ class ReportPdfBuilderService {
         },
         children: [
           pw.TableRow(
-            decoration: const pw.BoxDecoration(
-                color: PdfColors.grey200),
+            decoration: const pw.BoxDecoration(color: _kPrimaryColor),
             children: [
               _tableHeaderCell('Plot', rightAlign: false),
               _tableHeaderCell('Rep', rightAlign: true),
@@ -1452,13 +1454,15 @@ class ReportPdfBuilderService {
               _tableHeaderCell('Value', rightAlign: true),
             ],
           ),
-          ...rows.map((r) => pw.TableRow(
+          ...rows.asMap().entries.map((e) => pw.TableRow(
+                decoration: pw.BoxDecoration(
+                  color: e.key.isOdd ? PdfColors.grey100 : PdfColors.white,
+                ),
                 children: [
-                  _tableCell(r.plotId),
-                  _tableCell(r.rep.toString(),
-                      rightAlign: true),
-                  _tableCell(r.treatmentCode),
-                  _tableCell(r.value, rightAlign: true),
+                  _tableCell(e.value.plotId),
+                  _tableCell(e.value.rep.toString(), rightAlign: true),
+                  _tableCell(e.value.treatmentCode),
+                  _tableCell(e.value.value, rightAlign: true),
                 ],
               )),
         ],
@@ -1560,7 +1564,7 @@ class ReportPdfBuilderService {
         },
         children: [
           pw.TableRow(
-            decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+            decoration: const pw.BoxDecoration(color: _kPrimaryColor),
             children: [
               _tableHeaderCell('Grp'),
               _tableHeaderCell('Treatment'),
@@ -1568,12 +1572,15 @@ class ReportPdfBuilderService {
               _tableHeaderCell('n', rightAlign: true),
             ],
           ),
-          ...anova.treatmentMeansWithLetters.map((m) => pw.TableRow(
+          ...anova.treatmentMeansWithLetters.asMap().entries.map((e) => pw.TableRow(
+                decoration: pw.BoxDecoration(
+                  color: e.key.isOdd ? PdfColors.grey100 : PdfColors.white,
+                ),
                 children: [
-                  _tableCell(m.letter),
-                  _tableCell(m.treatmentCode),
-                  _tableCell(_formatMean(m.mean), rightAlign: true),
-                  _tableCell('${m.n}', rightAlign: true),
+                  _tableCell(e.value.letter),
+                  _tableCell(e.value.treatmentCode),
+                  _tableCell(_formatMean(e.value.mean), rightAlign: true),
+                  _tableCell('${e.value.n}', rightAlign: true),
                 ],
               )),
         ],
@@ -1607,7 +1614,11 @@ class ReportPdfBuilderService {
 pw.Widget _tableHeaderCell(String text, {bool rightAlign = false}) {
   final child = pw.Text(
     text,
-    style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+    style: pw.TextStyle(
+      fontSize: 8,
+      fontWeight: pw.FontWeight.bold,
+      color: PdfColors.white,
+    ),
   );
   return pw.Padding(
     padding: const pw.EdgeInsets.all(6),

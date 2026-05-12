@@ -1,16 +1,9 @@
-import 'dart:convert';
-
 import 'package:arm_field_companion/core/database/app_database.dart';
-import 'package:arm_field_companion/data/repositories/application_product_repository.dart';
-import 'package:arm_field_companion/data/repositories/application_repository.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
-import 'package:arm_field_companion/data/repositories/notes_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
 import 'package:arm_field_companion/data/repositories/weather_snapshot_repository.dart';
 import 'package:arm_field_companion/domain/intelligence/trial_intelligence_service.dart';
 import 'package:arm_field_companion/domain/models/trial_insight.dart';
-import 'package:arm_field_companion/features/export/export_trial_json_usecase.dart';
-import 'package:arm_field_companion/features/photos/photo_repository.dart';
 import 'package:arm_field_companion/features/plots/plot_repository.dart';
 import 'package:arm_field_companion/features/ratings/rating_repository.dart';
 import 'package:arm_field_companion/features/ratings/usecases/save_rating_usecase.dart';
@@ -33,24 +26,6 @@ TrialIntelligenceService _buildService(AppDatabase db) {
     assignmentRepository: assignmentRepo,
     treatmentRepository: TreatmentRepository(db, assignmentRepo),
     weatherSnapshotRepository: WeatherSnapshotRepository(db),
-  );
-}
-
-ExportTrialJsonUseCase _buildJsonExport(AppDatabase db) {
-  final assignmentRepo = AssignmentRepository(db);
-  final treatmentRepo = TreatmentRepository(db, assignmentRepo);
-  return ExportTrialJsonUseCase(
-    plotRepository: PlotRepository(db),
-    treatmentRepository: treatmentRepo,
-    applicationRepository: ApplicationRepository(db),
-    applicationProductRepository: ApplicationProductRepository(db),
-    sessionRepository: SessionRepository(db),
-    assignmentRepository: assignmentRepo,
-    ratingRepository: RatingRepository(db),
-    notesRepository: NotesRepository(db),
-    photoRepository: PhotoRepository(db),
-    weatherSnapshotRepository: WeatherSnapshotRepository(db),
-    intelligenceService: _buildService(db),
   );
 }
 
@@ -364,27 +339,6 @@ void main() {
           reason: 'Intelligence took ${sw.elapsed}');
     });
 
-    test('JSON export <5s at 200x10 scale', () async {
-      final seed = await _seedTrial(db,
-          treatmentCount: 10, reps: 10, sessionCount: 3);
-      final trial = await (db.select(db.trials)
-            ..where((t) => t.id.equals(seed.trialId)))
-          .getSingle();
-
-      final sw = Stopwatch()..start();
-      final jsonStr = await _buildJsonExport(db).buildJson(trial: trial);
-      sw.stop();
-
-      expect(jsonStr, isNotEmpty);
-      final parsed = json.decode(jsonStr);
-      expect(parsed, isA<Map>());
-      // ignore: avoid_print
-      print('JSON export (10×10×3): ${sw.elapsedMilliseconds} ms, '
-          '${jsonStr.length} chars');
-      expect(sw.elapsed.inSeconds, lessThan(5),
-          reason: 'JSON export took ${sw.elapsed}');
-    });
-
     test('session summary compose <100ms', () async {
       final seed = await _seedTrial(db, treatmentCount: 10, reps: 10);
       final trial = await (db.select(db.trials)
@@ -420,61 +374,6 @@ void main() {
     });
   });
 
-  // ===== JSON Export Validation =====
-
-  group('JSON export completeness', () {
-    test('all sections present, empty arrays not missing keys', () async {
-      final seed = await _seedTrial(db, sessionCount: 2);
-      final trial = await (db.select(db.trials)
-            ..where((t) => t.id.equals(seed.trialId)))
-          .getSingle();
-      final jsonStr = await _buildJsonExport(db).buildJson(trial: trial);
-      final parsed = json.decode(jsonStr) as Map<String, dynamic>;
-      final trialData = parsed['trial'] as Map<String, dynamic>;
-
-      final requiredKeys = [
-        'name', 'site', 'design', 'treatments', 'applications',
-        'sessions', 'fieldNotes', 'photosManifest', 'completeness',
-        'insights',
-      ];
-      for (final key in requiredKeys) {
-        expect(trialData.containsKey(key), isTrue,
-            reason: 'Missing key: $key');
-      }
-    });
-
-    test('insights in JSON match computed insights', () async {
-      final seed = await _seedTrial(db, sessionCount: 3, reps: 5);
-      final trial = await (db.select(db.trials)
-            ..where((t) => t.id.equals(seed.trialId)))
-          .getSingle();
-
-      final directInsights = await _buildService(db)
-          .computeInsights(trialId: seed.trialId, treatments: seed.treatments);
-      final jsonStr = await _buildJsonExport(db).buildJson(trial: trial);
-      final parsed = json.decode(jsonStr) as Map<String, dynamic>;
-      final jsonInsights =
-          (parsed['trial'] as Map)['insights'] as List;
-
-      expect(jsonInsights.length, directInsights.length,
-          reason: 'JSON insight count should match direct computation');
-    });
-
-    test('JSON is valid parseable JSON', () async {
-      final seed = await _seedTrial(db, sessionCount: 2);
-      final trial = await (db.select(db.trials)
-            ..where((t) => t.id.equals(seed.trialId)))
-          .getSingle();
-      final jsonStr = await _buildJsonExport(db).buildJson(trial: trial);
-
-      // Must not throw
-      final parsed = json.decode(jsonStr);
-      expect(parsed, isA<Map>());
-
-      // Round-trip: re-encode and re-parse
-      final reEncoded = json.encode(parsed);
-      final reParsed = json.decode(reEncoded);
-      expect(reParsed, isA<Map>());
-    });
-  });
+  // JSON export checks removed. The deleted export was an
+  // internal proprietary format with no declared consumer or external schema.
 }

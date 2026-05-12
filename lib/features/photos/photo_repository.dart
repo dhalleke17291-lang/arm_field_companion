@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import '../../core/database/app_database.dart';
 import '../../domain/evidence/evidence_anchor_repository.dart';
 
@@ -41,6 +43,22 @@ class PhotoRepository {
 
   PhotoRepository(this._db);
 
+  /// Resolves a stored photo path to an absolute path using the current
+  /// documents directory. Handles both legacy absolute paths (which embed an
+  /// iOS sandbox UUID that may have rotated) and new filename-only values by
+  /// extracting the basename and rejoining with the current docs/photos dir.
+  ///
+  /// The [docsDir] parameter exists for testing — pass a fake directory to
+  /// avoid hitting path_provider in unit tests.
+  static Future<String> resolvePhotoPath(
+    String storedPath, {
+    Directory? docsDir,
+  }) async {
+    final filename = path.basename(storedPath);
+    final dir = docsDir ?? await getApplicationDocumentsDirectory();
+    return path.join(dir.path, 'photos', filename);
+  }
+
   Future<Photo> savePhoto({
     required int trialId,
     required int plotPk,
@@ -59,7 +77,7 @@ class PhotoRepository {
               trialId: trialId,
               plotPk: plotPk,
               sessionId: sessionId,
-              filePath: finalPath,
+              filePath: path.basename(finalPath),
               tempPath: Value(tempPath),
               status: const Value('pending'),
               caption: Value(caption),

@@ -325,8 +325,7 @@ class ExportTrialUseCase {
     }
 
     final exportTimestamp = DateTime.now().toUtc().toIso8601String();
-    final armAligned =
-        format == ExportFormat.armHandoff || format == ExportFormat.zipBundle;
+    final armAligned = format == ExportFormat.armHandoff;
     final utf8BomForExcel = format == ExportFormat.flatCsv;
 
     final plots = await _plotRepository.getPlotsForTrial(trialPk);
@@ -356,7 +355,8 @@ class ExportTrialUseCase {
             export_validation.AssessmentDefinition(id: a.id, name: a.name);
       }
     }
-    final validation = export_validation.ExportValidationService().validate(
+    final validation =
+        await export_validation.ExportValidationService().validate(
       plots: plots,
       assignments: assignments,
       assessments: assessmentDefs.values.toList(),
@@ -1839,7 +1839,9 @@ class ExportTrialUseCase {
       final batch = scheduled.sublist(i, math.min(i + 10, scheduled.length));
       for (final item in batch) {
         try {
-          final file = File(item.photo.filePath);
+          final absolutePath =
+              await PhotoRepository.resolvePhotoPath(item.photo.filePath);
+          final file = File(absolutePath);
           if (await file.exists()) {
             final bytes = await file.readAsBytes();
             archive.addFile(ArchiveFile(

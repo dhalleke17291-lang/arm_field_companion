@@ -31,58 +31,78 @@ class OverviewSectionCard extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: AppDesignTokens.cardSurface,
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusLarge),
         border: Border.all(color: AppDesignTokens.borderCrisp),
-        boxShadow: AppDesignTokens.cardShadowRating,
+        boxShadow: AppDesignTokens.cardShadow,
       ),
       clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          Positioned(
-            left: 0,
-            top: 0,
-            bottom: 0,
-            child: Container(width: 3, color: AppDesignTokens.primaryGreen),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-            child: Column(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 15),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  '$number. $title',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                    height: 1.2,
-                    color: AppDesignTokens.primaryGreen,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle!,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.35,
-                      fontWeight: FontWeight.w500,
-                      color: AppDesignTokens.secondaryText,
+                Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.primaryTint,
+                    borderRadius:
+                        BorderRadius.circular(AppDesignTokens.radiusSmall),
+                    border: Border.all(
+                      color: AppDesignTokens.primary.withValues(alpha: 0.14),
                     ),
                   ),
-                ],
-                const SizedBox(height: 8),
-                Container(
-                  height: 1,
-                  color: AppDesignTokens.primaryGreen.withValues(alpha: 0.15),
+                  child: Text(
+                    '$number',
+                    style: AppDesignTokens.compactActionLabelStyle.copyWith(
+                      fontSize: 12,
+                      height: 1,
+                      color: AppDesignTokens.primary,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                child,
+                const SizedBox(width: AppDesignTokens.spacing12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppDesignTokens.headingStyle(
+                          fontSize: 14,
+                          color: AppDesignTokens.primaryText,
+                        ).copyWith(height: 1.2),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle!,
+                          style: AppDesignTokens.bodyCrispStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppDesignTokens.secondaryText,
+                          ).copyWith(height: 1.35),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 10),
+            Container(
+              height: 1,
+              color: AppDesignTokens.borderCrisp,
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
       ),
     );
   }
@@ -112,7 +132,12 @@ class OverviewSectionError extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Text(
       'Unable to load.',
-      style: TextStyle(fontSize: 14, color: AppDesignTokens.secondaryText),
+      style: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        letterSpacing: 0.15,
+        color: AppDesignTokens.secondaryText,
+      ),
     );
   }
 }
@@ -132,26 +157,23 @@ class OverviewDataRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 150,
+            width: 136,
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 15,
-                height: 1.3,
-                fontWeight: FontWeight.w600,
+              style: AppDesignTokens.bodyCrispStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
                 color: AppDesignTokens.secondaryText,
-              ),
+              ).copyWith(height: 1.3),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 15,
-                height: 1.3,
-                fontWeight: FontWeight.w700,
+              style: AppDesignTokens.headingStyle(
+                fontSize: 13,
                 color: AppDesignTokens.primaryText,
-              ),
+              ).copyWith(height: 1.3),
             ),
           ),
         ],
@@ -176,17 +198,15 @@ class OverviewStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(AppDesignTokens.radiusChip),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 13,
+        style: AppDesignTokens.compactActionLabelStyle.copyWith(
           height: 1.15,
-          fontWeight: FontWeight.w700,
           color: fg,
         ),
       ),

@@ -24,7 +24,7 @@
 | 10 | `RecoveryScreen` | Recovery export actions | Recovery `.zip` |
 | 11 | `MoreScreen` / backup flow | `Backup` → encrypted file | `.agnexis` (share) |
 
-Additional formats appear as `ExportFormat` enum values (`lib/features/export/export_format.dart`): `flatCsv`, `armHandoff`, `zipBundle`, `pdfReport`, `evidenceReport`, `trialReport`, `armRatingShell`, `jsonExport` — surfaced on the trial export sheet where workspace rules allow (`exportFormatsForTrialSheet` in `lib/core/workspace/workspace_config.dart`).
+Additional formats appear as `ExportFormat` enum values (`lib/features/export/export_format.dart`): `flatCsv`, `armHandoff`, `pdfReport`, `evidenceReport`, `trialReport`, `armRatingShell` — surfaced on the trial export sheet where workspace rules allow (`exportFormatsForTrialSheet` in `lib/core/workspace/workspace_config.dart`).
 
 ---
 
@@ -38,14 +38,13 @@ Additional formats appear as `ExportFormat` enum values (`lib/features/export/ex
    - `ExportFormat.evidenceReport` → `ExportEvidenceReportUseCase.execute` (~427–434).
    - `ExportFormat.trialReport` → `ExportTrialReportUseCase.execute` (~437–444).
    - Other formats → `ExportTrialUseCase.execute` (~447–454); flat CSV branch writes multiple files then `Share.shareXFiles` (~456–501).
-3. **Output formats:** Per selected `ExportFormat` (CSV multi-file, ZIP, PDF variants, JSON, xlsx for rating shell).
+3. **Output formats:** Per selected `ExportFormat` (CSV multi-file, ZIP, PDF variants, xlsx for rating shell).
 4. **Output filenames:** See Part 2A (trial PDF `AGQ_…`, flat CSV `${safeBase}_export_$timestamp_${name}.csv` at lines 460–488, etc.).
 5. **Output structure:**
    - **Flat CSV:** Nine files listed in `trial_detail_screen.dart` lines 465–485 (`observations` … `data_dictionary`); schemas defined in `ExportTrialUseCase` data dictionary builder (`lib/features/export/export_trial_usecase.dart`, extensive `data_dictionary.csv` rows ~685+).
    - **ZIP / handoff:** See `_buildArmHandoffPackage` (`export_trial_usecase.dart` ~1752–1916): `README.txt`, CSV set, `arm_mapping.csv`, `import_guide.csv`, `validation_report.csv`, optional `statistics.csv`, `weather.csv`, `photos/…`.
    - **Field Report PDF:** `ReportPdfBuilderService._buildResearch` (`lib/features/export/report_pdf_builder_service.dart` ~584–619): cover, then sections Site Description, Treatments, Plot Layout, Seeding, Applications, Sessions, Assessment Results, Photos.
    - **Evidence / Trial Report PDF:** Separate builders (`export_evidence_report_usecase.dart`, `export_trial_report_usecase.dart`, `trial_report_pdf_builder.dart`).
-   - **JSON:** Structured map from `ExportTrialJsonUseCase.buildJson` (`lib/features/export/export_trial_json_usecase.dart` ~99–134).
    - **Rating shell xlsx:** Written by `ExportArmRatingShellUseCase` + `ArmValueInjector` (see entry 4).
 6. **User-facing options:** Readiness sheet / precheck dialogs before export; ARM rating shell uses full preflight + optional enrichment dialog (see Part 2B); `ExportFormat.armRatingShell` blocked with snackbar if not ARM-linked (`trial_detail_screen.dart` ~374–382).
 7. **Output location:** Mostly `getTemporaryDirectory()` for share-first artifacts (PDF, JSON, flat CSV in trial detail, rating shell); ZIP handoff uses temp (`export_trial_usecase.dart` ~1913–1914).
@@ -204,7 +203,6 @@ Additional formats appear as `ExportFormat` enum values (`lib/features/export/ex
 | `AGQ_${safeName}_$timestamp.pdf` | `lib/features/export/export_trial_pdf_report_usecase.dart` | 60–64 | Field Report PDF |
 | `AGQ_${safeName}_$timestamp.zip` | `lib/features/export/export_trial_usecase.dart` | 1911–1914 | Handoff / photo ZIP |
 | `${safeBase}_export_$timestamp_${name}.csv` | `lib/features/trials/trial_detail_screen.dart` | 460–488 | Flat CSV bundle |
-| `TrialExport_${safeName}_$timestamp.json` | `lib/features/export/export_trial_json_usecase.dart` | 142–144 | JSON |
 | `Evidence_${safeName}_$timestamp.pdf` | `lib/features/export/export_evidence_report_usecase.dart` | 28–32 | Evidence PDF |
 | `TrialReport_${safeName}_$timestamp.pdf` | `lib/features/export/export_trial_report_usecase.dart` | 95 | Trial Report PDF |
 | `AFC_export_…session_….csv` | `lib/features/export/domain/export_session_csv_usecase.dart` | 193–195 | Session CSV |
@@ -516,8 +514,8 @@ Researchers see database/table/column names and assume a bug or internal tool le
 
 #### Current behavior (code)
 
-- `ExportTrialUseCase.execute` sets `armAligned = (format == ExportFormat.armHandoff || format == ExportFormat.zipBundle)` (`export_trial_usecase.dart` ~327–328). **Both** formats take the **same** branch: `_buildArmHandoffPackage` + `Share.shareXFiles` with text `'${trial.name} – Import Assistant package'` (~524–537).
-- **No second code path** for `zipBundle` vs `armHandoff` in this file (grep shows a single `armAligned` use). **ZIP contents are identical** for both enum values: same CSV set, README, mapping, validation, photos, optional weather (`~1752–1916`).
+- `ExportTrialUseCase.execute` sets `armAligned = (format == ExportFormat.armHandoff)` (`export_trial_usecase.dart` ~327–328). That branch calls `_buildArmHandoffPackage` + `Share.shareXFiles` with text `'${trial.name} – Import Assistant package'` (~524–537).
+- The former duplicate ZIP export was removed; the remaining ZIP-like trial export path is `armHandoff`.
 - UI strings differ only in `ExportFormatDetails` (`export_format.dart` ~26–30, ~46–50): labels **Complete Data Package** vs **Data + Photos (ZIP)** and different marketing descriptions.
 
 #### User-facing problem
@@ -527,7 +525,7 @@ Two options imply different products; **behavior is the same** — violates expe
 #### Design proposals (pick one)
 
 1. **Consolidate:** Single ZIP export label, e.g. **Trial data package (ZIP)**; one description listing CSVs + photos + mapping + validation.
-2. **Differentiate in code:** If product truly wants two products, **split implementation** (e.g. photos optional only for `zipBundle`, or handoff excludes statistics for ARM — today statistics already omitted when `trialIsArmLinked` in bundle ~492–495, 1793–1795).
+2. **Differentiate in code:** If product truly wants two products, **split implementation** (e.g. photos optional only for a separate package export, or handoff excludes statistics for ARM — today statistics already omitted when `trialIsArmLinked` in bundle ~492–495, 1793–1795).
 3. **Deprecate one enum:** Migrate workspaces to one `ExportFormat`; remove the other after a release.
 
 #### Effort
@@ -537,7 +535,7 @@ Two options imply different products; **behavior is the same** — violates expe
 
 #### Dependencies
 
-- Workspace defaults (`workspace_config.dart` lists **both** for variety/efficacy/glp ~144–148, 182–186, 222–226; standalone lists only `zipBundle` among ZIP-like ~265–267).
+- Workspace defaults list `armHandoff` for variety/efficacy/glp; standalone has no ZIP-like trial export after duplicate removal.
 
 ---
 
@@ -677,9 +675,9 @@ If the trial is already linked to the **same** shell path as selected, or there 
 
 **Result: Confirmed — same branch, same package builder.**
 
-- `armAligned = (format == ExportFormat.armHandoff || format == ExportFormat.zipBundle)` (`export_trial_usecase.dart` ~327–328).
+- `armAligned = (format == ExportFormat.armHandoff)` (`export_trial_usecase.dart` ~327–328).
 - When `armAligned`, the same `_buildArmHandoffPackage(...)` and same `Share.shareXFiles` text (`'${trial.name} – Import Assistant package'`) run (~514–537).
-- **No** additional `if (format == ExportFormat.zipBundle)` diverges inside this file (`grep` only hits line 328 for those enums).
+- The former duplicate ZIP enum value has been removed, leaving `armHandoff` as the only package branch.
 
 **Near-identical output:** Bundle contents depend on trial data (e.g. `statisticsCsv` null for ARM-linked trials ~492–495, 1793–1795), not on which of the two enum values was selected.
 
@@ -932,4 +930,3 @@ Two complementary changes, both small.
 - **Fix 2 (prevents silent failures in the link flow).** In [arm_shell_link_usecase.dart:168-177](lib/features/export/domain/arm_shell_link_usecase.dart#L168-L177), stop silently swallowing `storeShell` exceptions. At minimum, surface them as a diagnostic so the user learns the link succeeded but storage didn't. Ideally, treat a `storeShell` failure during link as a blocker — the link flow's entire purpose is to put the shell somewhere the app can reach, and failing silently only re-introduces the exact picker-at-export condition we're trying to eliminate.
 
 After both are in, the user flow *import shell → rate → export → save* has no picker on any path that reaches a successful import, on any install state where the sandbox file survives.
-

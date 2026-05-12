@@ -12,10 +12,13 @@ import '../../data/repositories/assignment_repository.dart';
 import '../../data/repositories/seeding_repository.dart';
 import '../../data/repositories/treatment_repository.dart';
 import '../../data/repositories/weather_snapshot_repository.dart';
+import '../../domain/signals/signal_models.dart';
+import '../../domain/signals/signal_repository.dart';
 import '../photos/photo_repository.dart';
 import '../plots/plot_repository.dart';
 import '../ratings/rating_repository.dart';
 import '../sessions/session_repository.dart';
+import '../sessions/session_timing_helper.dart';
 import 'evidence_report_data.dart';
 
 /// Assembles [EvidenceReportData] from existing repositories.
@@ -31,6 +34,7 @@ class EvidenceReportAssemblyService {
     required WeatherSnapshotRepository weatherSnapshotRepository,
     required SeedingRepository seedingRepository,
     required PhotoRepository photoRepository,
+    required SignalRepository signalRepository,
     required AppDatabase db,
   })  : _plotRepo = plotRepository,
         _treatmentRepo = treatmentRepository,
@@ -41,6 +45,7 @@ class EvidenceReportAssemblyService {
         _weatherRepo = weatherSnapshotRepository,
         _seedingRepo = seedingRepository,
         _photoRepo = photoRepository,
+        _signalRepo = signalRepository,
         _db = db;
 
   final PlotRepository _plotRepo;
@@ -52,6 +57,7 @@ class EvidenceReportAssemblyService {
   final WeatherSnapshotRepository _weatherRepo;
   final SeedingRepository _seedingRepo;
   final PhotoRepository _photoRepo;
+  final SignalRepository _signalRepo;
   final AppDatabase _db;
 
   Future<EvidenceReportData> assembleForTrial(Trial trial) async {
@@ -66,6 +72,10 @@ class EvidenceReportAssemblyService {
     final assignmentsFuture = _assignmentRepo.getForTrial(trialId);
     final weatherFuture = _weatherRepo.getWeatherSnapshotsForTrial(trialId);
     final seedingFuture = _seedingRepo.getSeedingEventForTrial(trialId);
+    final signalsFuture = _signalRepo.getOpenSignalsForTrial(trialId);
+    final assessmentsFuture = (_db.select(_db.assessments)
+          ..where((a) => a.trialId.equals(trialId)))
+        .get();
 
     final plots = await plotsFuture;
     final treatments = await treatmentsFuture;
@@ -74,8 +84,17 @@ class EvidenceReportAssemblyService {
     final assignments = await assignmentsFuture;
     final weatherSnapshots = await weatherFuture;
     final seedingEvent = await seedingFuture;
+    final raterDriftSignals = (await signalsFuture)
+        .where((s) => s.signalType == SignalType.raterDrift.dbValue)
+        .toList();
+    final assessmentNames = {
+      for (final assessment in await assessmentsFuture)
+        assessment.id: assessment.name,
+    };
 
     final dataPlots = plots.where(isAnalyzablePlot).toList();
+    final dataPlotIds = dataPlots.map((p) => p.id).toSet();
+    final plotMap = {for (final p in plots) p.id: p};
     final treatmentMap = {for (final t in treatments) t.id: t};
     final assignmentByPlot = {for (final a in assignments) a.plotId: a};
 
@@ -194,10 +213,37 @@ class EvidenceReportAssemblyService {
     final allCorrections = <RatingCorrection>[];
     final evidenceSessions = <EvidenceSession>[];
     final sessionTimestamps = <SessionTimestampDistribution>[];
+    final allRawDataRows = <EvidenceRawDataRow>[];
 
     for (final s in sessions) {
       final ratings = await _ratingRepo.getCurrentRatingsForSession(s.id);
       allRatings.addAll(ratings);
+      final sessionDat = _sessionDat(
+        session: s,
+        seedingEvent: seedingEvent,
+        applications: applications,
+      );
+
+      for (final r in ratings) {
+        if (!dataPlotIds.contains(r.plotPk)) continue;
+        final plot = plotMap[r.plotPk];
+        if (plot == null) continue;
+        final treatmentId = assignmentByPlot[plot.id]?.treatmentId ??
+            plot.treatmentId ??
+            -1;
+        final treatmentCode = treatmentMap[treatmentId]?.code ?? '-';
+        allRawDataRows.add(EvidenceRawDataRow(
+          plotCode: plot.plotId,
+          rep: plot.rep ?? 0,
+          treatmentCode: treatmentCode,
+          assessmentName:
+              assessmentNames[r.assessmentId] ?? 'Assessment ${r.assessmentId}',
+          sessionName: s.name,
+          ratingValue: r.numericValue,
+          dat: sessionDat,
+          raterName: r.raterName,
+        ));
+      }
 
       final ratedPks = ratings.map((r) => r.plotPk).toSet();
       final editedPks = ratings
@@ -298,11 +344,8 @@ class EvidenceReportAssemblyService {
           orElse: () => sessions.first);
       final plot = plots.where((p) => p.id == r.plotPk).firstOrNull;
       final plotLabel = plot != null ? getDisplayPlotLabel(plot, plots) : '?';
-      // Get assessment name
-      final assessRows = await ((_db.select(_db.assessments))
-            ..where((a) => a.id.equals(r.assessmentId)))
-          .get();
-      final assessName = assessRows.isNotEmpty ? assessRows.first.name : '?';
+      final assessName =
+          assessmentNames[r.assessmentId] ?? 'Assessment ${r.assessmentId}';
 
       amendments.add(EvidenceAmendment(
         plotLabel: plotLabel,
@@ -379,7 +422,8 @@ class EvidenceReportAssemblyService {
         .toList();
 
     // Rater summaries
-    final raterMap = <String, ({int count, Set<String> sessions})>{};
+    final raterMap =
+        <String, ({int count, Set<String> sessions, Set<int> sessionIds})>{};
     for (final r in allRatings) {
       final rater = r.raterName ?? 'Unknown rater';
       final session = sessions
@@ -387,18 +431,28 @@ class EvidenceReportAssemblyService {
           .firstOrNull
           ?.name ?? '?';
       final entry = raterMap[rater] ??
-          (count: 0, sessions: <String>{});
+          (count: 0, sessions: <String>{}, sessionIds: <int>{});
       raterMap[rater] = (
         count: entry.count + 1,
         sessions: entry.sessions..add(session),
+        sessionIds: entry.sessionIds..add(r.sessionId),
       );
     }
     final raterSummaries = raterMap.entries
-        .map((e) => EvidenceRater(
-              name: e.key,
-              ratingCount: e.value.count,
-              sessionNames: e.value.sessions.toList(),
-            ))
+        .map((e) {
+          final driftSignal = raterDriftSignals
+              .where((s) => s.sessionId != null)
+              .where((s) => e.value.sessionIds.contains(s.sessionId))
+              .firstOrNull;
+          return EvidenceRater(
+            name: e.key,
+            ratingCount: e.value.count,
+            sessionNames: e.value.sessions.toList(),
+            raterDriftDetected: driftSignal != null,
+            driftSeverity: driftSignal?.severity,
+            driftConsequence: driftSignal?.consequenceText,
+          );
+        })
         .toList();
 
     final integrity = EvidenceDataIntegrity(
@@ -423,6 +477,7 @@ class EvidenceReportAssemblyService {
       treatments: treatments,
       assignmentByPlot: assignmentByPlot,
       treatmentMap: treatmentMap,
+      assessmentNames: assessmentNames,
     );
 
     // ── 9. Weather records ──
@@ -444,7 +499,6 @@ class EvidenceReportAssemblyService {
     // ── 10. Photos ──
     final trialPhotos = await _photoRepo.getPhotosForTrial(trialId);
     final sessionMap = {for (final s in sessions) s.id: s};
-    final plotMap = {for (final p in plots) p.id: p};
     final evidencePhotos = <EvidencePhoto>[];
 
     // Limit to 50 photos max to keep PDF size reasonable
@@ -458,7 +512,9 @@ class EvidenceReportAssemblyService {
       // Read file bytes for thumbnail
       List<int>? imageBytes;
       try {
-        final file = File(photo.filePath);
+        final absolutePath =
+            await PhotoRepository.resolvePhotoPath(photo.filePath);
+        final file = File(absolutePath);
         if (await file.exists()) {
           imageBytes = await file.readAsBytes();
         }
@@ -491,6 +547,20 @@ class EvidenceReportAssemblyService {
       seeding: seeding,
     );
 
+    allRawDataRows.sort((a, b) {
+      final sessionCompare = a.sessionName.compareTo(b.sessionName);
+      if (sessionCompare != 0) return sessionCompare;
+      final plotCompare = a.plotCode.compareTo(b.plotCode);
+      if (plotCompare != 0) return plotCompare;
+      return a.assessmentName.compareTo(b.assessmentName);
+    });
+    const rawDataCap = 2000;
+    final rawDataTotalCount = allRawDataRows.length;
+    final rawDataTruncated = rawDataTotalCount > rawDataCap;
+    final rawDataRows = rawDataTruncated
+        ? allRawDataRows.take(rawDataCap).toList()
+        : allRawDataRows;
+
     return EvidenceReportData(
       identity: identity,
       timeline: timeline,
@@ -502,6 +572,9 @@ class EvidenceReportAssemblyService {
       outliers: outliers,
       photos: evidencePhotos,
       weatherRecords: weatherRecords,
+      rawDataRows: rawDataRows,
+      rawDataTruncated: rawDataTruncated,
+      rawDataTotalCount: rawDataTotalCount,
       completenessScore: completenessScore,
       generatedAt: DateTime.now(),
       appVersion: AppInfo.appVersion,
@@ -557,6 +630,37 @@ class EvidenceReportAssemblyService {
     return events;
   }
 
+  int? _sessionDat({
+    required Session session,
+    required SeedingEvent? seedingEvent,
+    required List<TrialApplicationEvent> applications,
+  }) {
+    final sessionDate = _tryParseDateOnly(session.sessionDateLocal);
+    if (sessionDate == null) return null;
+    final priorApplications = applications
+        .where((a) =>
+            a.status == 'applied' &&
+            !_dateOnly(a.applicationDate).isAfter(sessionDate))
+        .toList();
+    final timing = buildSessionTimingContext(
+      sessionStartedAt: sessionDate,
+      cropStageBbch: session.cropStageBbch,
+      seeding: seedingEvent,
+      applications: priorApplications,
+    );
+    return timing.daysAfterLastApp;
+  }
+
+  DateTime? _tryParseDateOnly(String raw) {
+    if (raw.isEmpty) return null;
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return null;
+    return _dateOnly(parsed);
+  }
+
+  DateTime _dateOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
   List<EvidenceOutlier> _computeOutliers({
     required List<Plot> dataPlots,
     required List<Plot> allPlots,
@@ -565,6 +669,7 @@ class EvidenceReportAssemblyService {
     required List<Treatment> treatments,
     required Map<int, Assignment> assignmentByPlot,
     required Map<int, Treatment> treatmentMap,
+    required Map<int, String> assessmentNames,
   }) {
     // Build plot → treatment map
     final plotTreatment = <int, int>{};
@@ -613,14 +718,7 @@ class EvidenceReportAssemblyService {
 
           final r = ratingMap[(plot.id, assessId)]!;
           final trt = treatmentMap[entry.key];
-          // Check assessment name
-          String assessName = '?';
-          for (final rating in allRatings) {
-            if (rating.assessmentId == assessId) {
-              assessName = 'Assessment $assessId';
-              break;
-            }
-          }
+          final assessName = assessmentNames[assessId] ?? 'Assessment $assessId';
 
           outliers.add(EvidenceOutlier(
             plotLabel: getDisplayPlotLabel(plot, allPlots),

@@ -46,6 +46,14 @@ const double _kGridMaxScale = 3.0;
 /// Left gutter for "Rep n" labels — same width on layout grid and ratings overlay.
 const double _kRepLabelWidth = 52.0;
 
+/// Shared plot layout geometry for Treats / Apps / Ratings.
+const double _kPlotLayoutCellSize = 56.0;
+const double _kPlotLayoutCellSpacing = 6.0;
+const double _kPlotLayoutRowGap = 8.0;
+const double _kPlotLayoutCellRadius = 10.0;
+const double _kPlotLayoutHorizontalPadding = 24.0;
+const double _kPlotLayoutWidthBuffer = 8.0;
+
 /// Plot-number badge on the plots list (keep compact; large squares dominate the row).
 const double _kPlotListLeadingBadgeSize = 34.0;
 
@@ -212,6 +220,39 @@ Color _heatMapTextColor(Color cellColor) => cellColor.computeLuminance() > 0.2
     : Colors.white;
 
 bool _isLowSpread(double min, double max) => max - min < _kHeatMapMinSpread;
+
+int _plotLayoutMaxColumnCount(List<Plot> plots) {
+  final blocks = buildRepBasedLayout(plots);
+  var columnCount = 0;
+  for (final block in blocks) {
+    for (final row in block.repRows) {
+      if (row.plots.length > columnCount) {
+        columnCount = row.plots.length;
+      }
+    }
+  }
+  return columnCount;
+}
+
+double _plotLayoutContentWidth(List<Plot> plots, double viewportWidth) {
+  final columnCount = _plotLayoutMaxColumnCount(plots);
+  final rowContentWidth = columnCount > 0
+      ? _kRepLabelWidth +
+          _kPlotLayoutCellSpacing +
+          columnCount * _kPlotLayoutCellSize +
+          (columnCount - 1) * _kPlotLayoutCellSpacing
+      : viewportWidth;
+  final totalGridWidth =
+      rowContentWidth + _kPlotLayoutHorizontalPadding + _kPlotLayoutWidthBuffer;
+  return totalGridWidth > viewportWidth ? totalGridWidth : viewportWidth;
+}
+
+@visibleForTesting
+double plotLayoutContentWidthForTesting(
+  List<Plot> plots,
+  double viewportWidth,
+) =>
+    _plotLayoutContentWidth(plots, viewportWidth);
 
 /// Builds a treatment-level application state map from canonical event stream.
 ///
@@ -480,12 +521,54 @@ class _PlotLayoutRatingsOverlayState
   /// above the clipped area — not a data / zero-value issue.
   final TransformationController _ratingsPanZoomController =
       TransformationController();
+  final GlobalKey _ratingsViewportKey = GlobalKey();
+  final GlobalKey _ratingsContentKey = GlobalKey();
+  bool _ratingsGridCenterScheduled = false;
 
   void _resetRatingsLayoutViewport() {
+    _ratingsGridCenterScheduled = false;
+  }
+
+  void _scheduleRatingsLayoutCenter(List<Plot> plots) {
+    if (_ratingsGridCenterScheduled) return;
+    _ratingsGridCenterScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _ratingsPanZoomController.value = Matrix4.identity();
+      _centerRatingsGridOnFirstFrame(plots);
     });
+  }
+
+  void _centerRatingsGridOnFirstFrame(List<Plot> plots) {
+    if (!mounted) return;
+    final viewportBox =
+        _ratingsViewportKey.currentContext?.findRenderObject() as RenderBox?;
+    if (viewportBox == null || !viewportBox.hasSize) return;
+    final viewportWidth = viewportBox.size.width;
+    final viewportHeight = viewportBox.size.height;
+    final gridBox =
+        _ratingsContentKey.currentContext?.findRenderObject() as RenderBox?;
+    double gridWidth;
+    double gridHeight;
+    if (gridBox != null && gridBox.hasSize) {
+      gridWidth = gridBox.size.width;
+      gridHeight = gridBox.size.height;
+    } else {
+      final blocks = buildRepBasedLayout(plots);
+      final columnCount = _plotLayoutMaxColumnCount(plots);
+      var rowCount = 0;
+      for (final block in blocks) {
+        rowCount += block.repRows.length;
+      }
+      if (columnCount == 0) return;
+      gridWidth = _plotLayoutContentWidth(plots, viewportWidth);
+      gridHeight =
+          rowCount * (_kPlotLayoutCellSize + 2 + _kPlotLayoutRowGap) + 24;
+    }
+    final dx =
+        gridWidth > viewportWidth ? 0.0 : (viewportWidth - gridWidth) / 2;
+    final dy =
+        gridHeight > viewportHeight ? 0.0 : (viewportHeight - gridHeight) / 2;
+    _ratingsPanZoomController.value = Matrix4.identity()
+      ..translateByDouble(dx, dy, 0.0, 1.0);
   }
 
   @override
@@ -720,6 +803,10 @@ class _PlotLayoutRatingsOverlayState
                       assessmentId: resolvedAssessmentId,
                       heatMapEnabled: widget.heatMapEnabled,
                       panZoomController: _ratingsPanZoomController,
+                      viewportKey: _ratingsViewportKey,
+                      contentKey: _ratingsContentKey,
+                      scheduleCenter: () =>
+                          _scheduleRatingsLayoutCenter(widget.plots),
                     ),
                   ),
                 ],
@@ -741,6 +828,9 @@ Widget _buildRatingsGridForAssessment({
   required int assessmentId,
   required bool heatMapEnabled,
   required TransformationController panZoomController,
+  required GlobalKey viewportKey,
+  required GlobalKey contentKey,
+  required VoidCallback scheduleCenter,
 }) {
   final ratingsAsync = ref.watch(sessionRatingsProvider(activeSession.id));
   final treatments =
@@ -823,21 +913,6 @@ Widget _buildRatingsGridForAssessment({
         }
       }
 
-      final byRep = <int?, List<Plot>>{};
-      for (final p in plots) {
-        byRep.putIfAbsent(p.rep, () => []).add(p);
-      }
-
-      final sortedReps = byRep.keys.toList()
-        ..sort((a, b) {
-          if (a == null) return 1;
-          if (b == null) return -1;
-          return a.compareTo(b);
-        });
-
-      const tileSize = 56.0;
-      const tileSpacing = 6.0;
-
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -857,254 +932,112 @@ Widget _buildRatingsGridForAssessment({
               ),
             ),
           Expanded(
-            child: InteractiveViewer(
-              key:
-                  ValueKey<Object>(Object.hash(activeSession.id, assessmentId)),
-              transformationController: panZoomController,
-              constrained: false,
-              minScale: 0.3,
-              maxScale: 3.0,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ...sortedReps.map((rep) {
-                      final repPlots = List<Plot>.from(byRep[rep]!);
-                      repPlots.sort((a, b) =>
-                          (a.fieldColumn ?? 0).compareTo(b.fieldColumn ?? 0));
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                scheduleCenter();
+                final size = MediaQuery.sizeOf(context);
+                final viewportWidth =
+                    constraints.maxWidth.isFinite && constraints.maxWidth > 0
+                        ? constraints.maxWidth
+                        : size.width;
+                final gridContentWidth =
+                    _plotLayoutContentWidth(plots, viewportWidth);
+                return SizedBox(
+                  key: viewportKey,
+                  width: viewportWidth,
+                  height: constraints.maxHeight,
+                  child: InteractiveViewer(
+                    key: ValueKey<Object>(
+                      Object.hash(activeSession.id, assessmentId),
+                    ),
+                    transformationController: panZoomController,
+                    boundaryMargin: EdgeInsets.zero,
+                    constrained: false,
+                    minScale: _kGridMinScale,
+                    maxScale: _kGridMaxScale,
+                    panEnabled: true,
+                    scaleEnabled: true,
+                    child: SizedBox(
+                      key: contentKey,
+                      width: gridContentWidth,
+                      child: _SharedPlotLayoutGridBody(
+                        plots: plots,
+                        cellBuilder: (context, plot, displayLabel) {
+                          final rating = ratingByPlot[plot.id];
+                          final count = assessmentCountByPlot[plot.id] ?? 0;
+                          final trtId =
+                              assignmentByPlot[plot.id]?.treatmentId ??
+                                  plot.treatmentId;
+                          final trtCode =
+                              trtId != null ? treatmentCodeById[trtId] : null;
+                          final trtName =
+                              trtId != null ? treatmentNameById[trtId] : null;
 
-                      // Outlier rep border from intelligence
-                      final isOutlierRep = heatMapEnabled &&
-                          rep != null &&
-                          repPlots.any((p) => outlierReps.contains(p.id));
+                          final Color cellColor;
+                          final Color textColor;
+                          final String label;
+                          if (heatMapEnabled) {
+                            final val = (rating?.resultStatus == 'RECORDED')
+                                ? rating?.numericValue
+                                : null;
+                            cellColor = val != null
+                                ? _heatMapColor(val, heatMin, heatMax)
+                                : AppDesignTokens.heatMapEmpty;
+                            textColor = val != null
+                                ? _heatMapTextColor(cellColor)
+                                : AppDesignTokens.secondaryText;
+                            label = val != null ? val.round().toString() : '—';
+                          } else {
+                            cellColor = _ratingCellColor(rating?.resultStatus);
+                            textColor = _ratingTextColor(rating?.resultStatus);
+                            label = _ratingCellLabel(rating);
+                          }
 
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: tileSpacing),
-                        child: Container(
-                          decoration: isOutlierRep
-                              ? BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: AppDesignTokens.warningFg
-                                        .withValues(alpha: 0.5),
-                                    width: 2,
-                                  ),
-                                )
-                              : null,
-                          padding:
-                              isOutlierRep ? const EdgeInsets.all(2) : null,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: _kRepLabelWidth,
-                                child: Text(
-                                  'Rep ${rep ?? '?'}',
-                                  style: _plotDetailsRepLabelStyle(context),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                          return _RatingPlotGridTile(
+                            plotLabel: displayLabel,
+                            cellColor: cellColor,
+                            textColor: textColor,
+                            valueLabel: label,
+                            heatMapEnabled: heatMapEnabled,
+                            treatmentCode: trtCode,
+                            duplicateCount: count,
+                            onTap: heatMapEnabled
+                                ? () => _showPlotDetailSheet(
+                                      context,
+                                      plot: plot,
+                                      rating: rating,
+                                      trtName: trtName,
+                                      statMean: statMean,
+                                    )
+                                : null,
+                          );
+                        },
+                        rowWrapper: (context, rep, repPlots, row) {
+                          final isOutlierRep = heatMapEnabled &&
+                              repPlots.any((p) => outlierReps.contains(p.id));
+                          if (!isOutlierRep) return row;
+                          return DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(
+                                _kPlotLayoutCellRadius,
                               ),
-                              ...repPlots.map((plot) {
-                                final rating = ratingByPlot[plot.id];
-                                final count =
-                                    assessmentCountByPlot[plot.id] ?? 0;
-                                final trtId =
-                                    assignmentByPlot[plot.id]?.treatmentId ??
-                                        plot.treatmentId;
-                                final trtCode = trtId != null
-                                    ? treatmentCodeById[trtId]
-                                    : null;
-                                final trtName = trtId != null
-                                    ? treatmentNameById[trtId]
-                                    : null;
-
-                                // Heat map mode: gradient color from value
-                                final Color cellColor;
-                                final Color textColor;
-                                final String label;
-                                if (heatMapEnabled) {
-                                  final val =
-                                      (rating?.resultStatus == 'RECORDED')
-                                          ? rating?.numericValue
-                                          : null;
-                                  cellColor = val != null
-                                      ? _heatMapColor(val, heatMin, heatMax)
-                                      : AppDesignTokens.heatMapEmpty;
-                                  textColor = val != null
-                                      ? _heatMapTextColor(cellColor)
-                                      : AppDesignTokens.secondaryText;
-                                  label = val != null
-                                      ? val.round().toString()
-                                      : '—';
-                                } else {
-                                  cellColor =
-                                      _ratingCellColor(rating?.resultStatus);
-                                  textColor =
-                                      _ratingTextColor(rating?.resultStatus);
-                                  label = _ratingCellLabel(rating);
-                                }
-
-                                return Padding(
-                                  padding:
-                                      const EdgeInsets.only(right: tileSpacing),
-                                  child: GestureDetector(
-                                    onTap: heatMapEnabled
-                                        ? () => _showPlotDetailSheet(
-                                              context,
-                                              plot: plot,
-                                              rating: rating,
-                                              trtName: trtName,
-                                              statMean: statMean,
-                                            )
-                                        : null,
-                                    child: Stack(
-                                      children: [
-                                        Container(
-                                          width: tileSize,
-                                          height: tileSize,
-                                          decoration: BoxDecoration(
-                                            color: cellColor,
-                                            borderRadius:
-                                                BorderRadius.circular(6),
-                                            border: Border.all(
-                                              color: rating == null
-                                                  ? const Color(0xFFE0DDD6)
-                                                  : cellColor,
-                                              width: 1.5,
-                                            ),
-                                          ),
-                                          child: heatMapEnabled
-                                              ? Stack(
-                                                  children: [
-                                                    // Plot number top-left
-                                                    Positioned(
-                                                      left: 3,
-                                                      top: 2,
-                                                      child: Text(
-                                                        getDisplayPlotLabel(
-                                                            plot, plots),
-                                                        style: TextStyle(
-                                                          fontSize: 8,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color: textColor
-                                                              .withValues(
-                                                                  alpha: 0.7),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    // Treatment code top-right
-                                                    if (trtCode != null)
-                                                      Positioned(
-                                                        right: 3,
-                                                        top: 2,
-                                                        child: Text(
-                                                          trtCode,
-                                                          style: TextStyle(
-                                                            fontSize: 8,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                            color: textColor
-                                                                .withValues(
-                                                                    alpha: 0.7),
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    // Value centered
-                                                    Center(
-                                                      child: Text(
-                                                        label,
-                                                        style: TextStyle(
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.w800,
-                                                          color: textColor,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                )
-                                              : Column(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    Text(
-                                                      getDisplayPlotLabel(
-                                                          plot, plots),
-                                                      style: TextStyle(
-                                                        fontSize: 10,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color: rating == null
-                                                            ? Colors
-                                                                .grey.shade400
-                                                            : textColor
-                                                                .withValues(
-                                                                alpha: 0.78,
-                                                              ),
-                                                      ),
-                                                    ),
-                                                    if (label.isNotEmpty)
-                                                      Text(
-                                                        label,
-                                                        style: TextStyle(
-                                                          fontSize: 13,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          color: textColor,
-                                                        ),
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                  ],
-                                                ),
-                                        ),
-                                        if (!heatMapEnabled && count > 1)
-                                          Positioned(
-                                            top: 3,
-                                            right: 3,
-                                            child: Tooltip(
-                                              message:
-                                                  '$count rating rows for this assessment',
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 4,
-                                                  vertical: 1,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.black54,
-                                                  borderRadius:
-                                                      BorderRadius.circular(4),
-                                                ),
-                                                child: Text(
-                                                  '+${count - 1}A',
-                                                  style: const TextStyle(
-                                                    fontSize: 8,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
+                              border: Border.all(
+                                color: AppDesignTokens.warningFg
+                                    .withValues(alpha: 0.5),
+                                width: 2,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(2),
+                              child: row,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           if (heatMapEnabled) ...[
@@ -2222,10 +2155,9 @@ class _TrialPlotsWorkingSurfaceState
         }
       }
       if (columnCount == 0) return;
-      const double rowHeight = 58.0;
-      const double rowSpacing = 6.0;
-      gridWidth = columnCount * 56.0;
-      gridHeight = rowCount * (rowHeight + rowSpacing) + 24;
+      const rowHeight = _kPlotLayoutCellSize + 2;
+      gridWidth = _plotLayoutContentWidth(plots, viewportWidth);
+      gridHeight = rowCount * (rowHeight + _kPlotLayoutRowGap) + 24;
     }
     if (mounted) {
       setState(() {
@@ -2510,33 +2442,8 @@ class _TrialPlotsWorkingSurfaceState
                               constraints.maxHeight > 0
                           ? constraints.maxHeight
                           : size.height;
-                      final blocks = buildRepBasedLayout(plots);
-                      int columnCount = 0;
-                      for (final block in blocks) {
-                        for (final row in block.repRows) {
-                          if (row.plots.length > columnCount) {
-                            columnCount = row.plots.length;
-                          }
-                        }
-                      }
-                      const double repLabelW = 52.0;
-                      const double tileSpace = 6.0;
-                      const double cellW = 56.0;
-                      const double gridHorizontalPadding = 24.0;
-                      const double gridWidthBuffer = 8.0;
-                      final double rowContentWidth = columnCount > 0
-                          ? repLabelW +
-                              tileSpace +
-                              columnCount * cellW +
-                              (columnCount - 1) * tileSpace
-                          : viewportWidth;
-                      final double totalGridWidth = rowContentWidth +
-                          gridHorizontalPadding +
-                          gridWidthBuffer;
                       final double gridContentWidth =
-                          totalGridWidth > viewportWidth
-                              ? totalGridWidth
-                              : viewportWidth;
+                          _plotLayoutContentWidth(displayPlots, viewportWidth);
                       final plotIdToTreatmentIdMap = {
                         for (var a in assignmentsList) a.plotId: a.treatmentId
                       };
@@ -4147,6 +4054,153 @@ class _PlotDetailsEmptyContent extends ConsumerWidget {
 
 /// Bird's-eye grid: plot position (layout number) and treatment assignment are separate.
 /// Order is always by rep and plot position; never by treatment.
+typedef _PlotLayoutCellBuilder = Widget Function(
+  BuildContext context,
+  Plot plot,
+  String displayLabel,
+);
+
+typedef _PlotLayoutRowWrapper = Widget Function(
+  BuildContext context,
+  int repNumber,
+  List<Plot> repPlots,
+  Widget row,
+);
+
+class _SharedPlotLayoutGridBody extends StatelessWidget {
+  const _SharedPlotLayoutGridBody({
+    required this.plots,
+    required this.cellBuilder,
+    this.plotLabelContextPlots,
+    this.rowWrapper,
+  });
+
+  final List<Plot> plots;
+  final List<Plot>? plotLabelContextPlots;
+  final _PlotLayoutCellBuilder cellBuilder;
+  final _PlotLayoutRowWrapper? rowWrapper;
+
+  @override
+  Widget build(BuildContext context) {
+    final labelPlots = plotLabelContextPlots ?? plots;
+    final blocks = buildRepBasedLayout(plots);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final hasBoundedHeight =
+            constraints.maxHeight.isFinite && constraints.maxHeight > 0;
+        final contentHeight =
+            hasBoundedHeight ? constraints.maxHeight - 16 : null;
+        final column = Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (blocks.length > 1)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 6),
+                child: Text(
+                  'Field Layout — Rep-based',
+                  style: TextStyle(
+                    color: AppDesignTokens.secondaryText,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ...blocks.expand((block) {
+              final blockHeader = blocks.length > 1
+                  ? [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8, bottom: 4),
+                        child: Text(
+                          'Block ${block.blockIndex}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ]
+                  : <Widget>[];
+              final repRows = block.repRows.reversed.map((repRow) {
+                const rowHeight = _kPlotLayoutCellSize + 2;
+                final row = SizedBox(
+                  height: rowHeight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: _kRepLabelWidth,
+                        height: rowHeight,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Rep ${repRow.repNumber}',
+                            style: _plotDetailsRepLabelStyle(context),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: _kPlotLayoutCellSpacing),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (var i = 0; i < repRow.plots.length; i++) ...[
+                            if (i > 0)
+                              const SizedBox(
+                                width: _kPlotLayoutCellSpacing,
+                              ),
+                            SizedBox(
+                              width: _kPlotLayoutCellSize,
+                              height: _kPlotLayoutCellSize,
+                              child: cellBuilder(
+                                context,
+                                repRow.plots[i],
+                                getDisplayPlotLabel(
+                                    repRow.plots[i], labelPlots),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+                final wrapped = rowWrapper?.call(
+                      context,
+                      repRow.repNumber,
+                      repRow.plots,
+                      row,
+                    ) ??
+                    row;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: _kPlotLayoutRowGap),
+                  child: wrapped,
+                );
+              });
+              return [...blockHeader, ...repRows];
+            }),
+          ],
+        );
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: contentHeight != null && contentHeight > 0
+              ? SizedBox(
+                  height: contentHeight,
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    clipBehavior: Clip.hardEdge,
+                    child: column,
+                  ),
+                )
+              : column,
+        );
+      },
+    );
+  }
+}
+
 class _PlotLayoutGrid extends StatelessWidget {
   final List<Plot> plots;
 
@@ -4394,134 +4448,23 @@ class _PlotLayoutGrid extends StatelessWidget {
     return treatmentAppState![tid];
   }
 
-  static const double _tileSpacing = 6.0;
-  // ignore: unused_field - kept for consistency with fixed 56px cell size
-  static const double _minTileSize = 56.0;
-  // ignore: unused_field - kept for consistency with fixed 56px cell size
-  static const double _maxTileSize = 56.0;
-  // ignore: unused_field - kept for consistency with fixed 56px cell size
-  static const double _tileSizeScale = 1.0;
-  static const double _minCellSize = 56.0;
-  // ignore: unused_field - kept for consistency with fixed 56px cell size
-  static const double _maxCellSize = 56.0;
-
   Widget _buildRepBasedGrid(
       BuildContext context, Map<int, Treatment> treatmentMap) {
-    final labelPlots = plotLabelContextPlots ?? plots;
-    final blocks = buildRepBasedLayout(plots);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final hasBoundedHeight =
-            constraints.maxHeight.isFinite && constraints.maxHeight > 0;
-        final contentHeight =
-            hasBoundedHeight ? constraints.maxHeight - 16 : null;
-        final column = Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (blocks.length > 1)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 6),
-                child: Text(
-                  'Field Layout — Rep-based',
-                  style: TextStyle(
-                      color: AppDesignTokens.secondaryText, fontSize: 11),
-                ),
-              ),
-            ...blocks.expand((block) {
-              final blockHeader = blocks.length > 1
-                  ? [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8, bottom: 4),
-                        child: Text(
-                          'Block ${block.blockIndex}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    ]
-                  : <Widget>[];
-              final repRows = block.repRows.reversed.map((repRow) {
-                const cellSize = _minCellSize;
-                const rowHeight = _minCellSize + 2;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: SizedBox(
-                    height: rowHeight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: _kRepLabelWidth,
-                          height: rowHeight,
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'Rep ${repRow.repNumber}',
-                              style: _plotDetailsRepLabelStyle(context),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: _tileSpacing),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (var i = 0; i < repRow.plots.length; i++) ...[
-                              if (i > 0) const SizedBox(width: _tileSpacing),
-                              SizedBox(
-                                width: cellSize,
-                                height: cellSize,
-                                child: _PlotGridTile(
-                                  plot: repRow.plots[i],
-                                  treatmentMap: treatmentMap,
-                                  treatments: treatments,
-                                  trial: trial,
-                                  tileColor:
-                                      _tileColorFor(context, repRow.plots[i]),
-                                  treatmentIdOverride: plotIdToTreatmentId?[
-                                          repRow.plots[i].id] ??
-                                      repRow.plots[i].treatmentId,
-                                  displayLabel: getDisplayPlotLabel(
-                                      repRow.plots[i], labelPlots),
-                                  onLongPress: onLongPressPlot != null
-                                      ? () => onLongPressPlot!(repRow.plots[i])
-                                      : null,
-                                  appLayerBadge: _appBadgeFor(
-                                      repRow.plots[i], plotIdToTreatmentId),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              });
-              return [...blockHeader, ...repRows];
-            }),
-          ],
-        );
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: contentHeight != null && contentHeight > 0
-              ? SizedBox(
-                  height: contentHeight,
-                  child: SingleChildScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    clipBehavior: Clip.hardEdge,
-                    child: column,
-                  ),
-                )
-              : column,
-        );
-      },
+    return _SharedPlotLayoutGridBody(
+      plots: plots,
+      plotLabelContextPlots: plotLabelContextPlots,
+      cellBuilder: (context, plot, displayLabel) => _PlotGridTile(
+        plot: plot,
+        treatmentMap: treatmentMap,
+        treatments: treatments,
+        trial: trial,
+        tileColor: _tileColorFor(context, plot),
+        treatmentIdOverride: plotIdToTreatmentId?[plot.id] ?? plot.treatmentId,
+        displayLabel: displayLabel,
+        onLongPress:
+            onLongPressPlot != null ? () => onLongPressPlot!(plot) : null,
+        appLayerBadge: _appBadgeFor(plot, plotIdToTreatmentId),
+      ),
     );
   }
 }
@@ -4613,7 +4556,7 @@ class _PlotGridTileState extends State<_PlotGridTile> {
         Container(
           decoration: BoxDecoration(
             color: widget.tileColor,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(_kPlotLayoutCellRadius),
             border: Border.all(
               color: _pressed ? pressedBorderColor : borderColor,
               width: 1,
@@ -4642,7 +4585,7 @@ class _PlotGridTileState extends State<_PlotGridTile> {
               ),
               splashColor: Colors.white.withValues(alpha: 0.2),
               highlightColor: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(_kPlotLayoutCellRadius),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
                 width: double.infinity,
@@ -4687,6 +4630,180 @@ class _PlotGridTileState extends State<_PlotGridTile> {
             top: 3,
             right: 3,
             child: _AppBadge(status: widget.appLayerBadge!),
+          ),
+      ],
+    );
+  }
+}
+
+class _RatingPlotGridTile extends StatefulWidget {
+  const _RatingPlotGridTile({
+    required this.plotLabel,
+    required this.cellColor,
+    required this.textColor,
+    required this.valueLabel,
+    required this.heatMapEnabled,
+    this.treatmentCode,
+    this.duplicateCount = 0,
+    this.onTap,
+  });
+
+  final String plotLabel;
+  final Color cellColor;
+  final Color textColor;
+  final String valueLabel;
+  final bool heatMapEnabled;
+  final String? treatmentCode;
+  final int duplicateCount;
+  final VoidCallback? onTap;
+
+  @override
+  State<_RatingPlotGridTile> createState() => _RatingPlotGridTileState();
+}
+
+class _RatingPlotGridTileState extends State<_RatingPlotGridTile> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final pressedBorderColor = scheme.primary.withValues(alpha: 0.55);
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              color: widget.cellColor,
+              borderRadius: BorderRadius.circular(_kPlotLayoutCellRadius),
+              border: Border.all(
+                color: _pressed
+                    ? pressedBorderColor
+                    : Colors.white.withValues(alpha: 0.24),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: _pressed ? 0.2 : 0.12),
+                  blurRadius: _pressed ? 8 : 4,
+                  offset: Offset(0, _pressed ? 3 : 2),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onTap,
+                onHighlightChanged: (highlighted) {
+                  setState(() => _pressed = highlighted);
+                },
+                splashColor: Colors.white.withValues(alpha: 0.2),
+                highlightColor: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(_kPlotLayoutCellRadius),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+                  child: widget.heatMapEnabled
+                    ? Stack(
+                        children: [
+                          Positioned(
+                            left: 0,
+                            top: 0,
+                            child: Text(
+                              widget.plotLabel,
+                              style: TextStyle(
+                                fontSize: 8,
+                                fontWeight: FontWeight.w700,
+                                color: widget.textColor.withValues(alpha: 0.72),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (widget.treatmentCode != null)
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Text(
+                                widget.treatmentCode!,
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w700,
+                                  color:
+                                      widget.textColor.withValues(alpha: 0.72),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          Center(
+                            child: Text(
+                              widget.valueLabel,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: widget.textColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            widget.plotLabel,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: widget.textColor.withValues(alpha: 0.78),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            textAlign: TextAlign.center,
+                          ),
+                          if (widget.valueLabel.isNotEmpty)
+                            Text(
+                              widget.valueLabel,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: widget.textColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                        ],
+                      ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (!widget.heatMapEnabled && widget.duplicateCount > 1)
+          Positioned(
+            top: 3,
+            right: 3,
+            child: Tooltip(
+              message:
+                  '${widget.duplicateCount} rating rows for this assessment',
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '+${widget.duplicateCount - 1}A',
+                  style: const TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
           ),
       ],
     );
@@ -4806,11 +4923,9 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
         }
       }
       if (columnCount == 0) return;
-      const double cellWidth = 56.0;
-      const double rowHeight = 58.0;
-      const double rowSpacing = 6.0;
-      gridWidth = columnCount * cellWidth;
-      gridHeight = rowCount * (rowHeight + rowSpacing) + 24;
+      const rowHeight = _kPlotLayoutCellSize + 2;
+      gridWidth = _plotLayoutContentWidth(plots, viewportWidth);
+      gridHeight = rowCount * (rowHeight + _kPlotLayoutRowGap) + 24;
     }
     final dx = (viewportWidth - gridWidth) / 2;
     final dy = (viewportHeight - gridHeight) / 2;
@@ -5044,35 +5159,9 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                                           constraints.maxHeight > 0
                                       ? constraints.maxHeight
                                       : size.height;
-                              final blocks = buildRepBasedLayout(displayPlots);
-                              int columnCount = 0;
-                              for (final block in blocks) {
-                                for (final row in block.repRows) {
-                                  if (row.plots.length > columnCount) {
-                                    columnCount = row.plots.length;
-                                  }
-                                }
-                              }
-                              const double repLabelW = 52.0;
-                              const double tileSpace = 6.0;
-                              const double cellW = 56.0;
-                              const double gridHorizontalPadding =
-                                  24.0; // 12 + 12 from Padding in _buildRepBasedGrid
-                              const double gridWidthBuffer =
-                                  8.0; // avoid last column clipping from rounding
-                              final double rowContentWidth = columnCount > 0
-                                  ? repLabelW +
-                                      tileSpace +
-                                      columnCount * cellW +
-                                      (columnCount - 1) * tileSpace
-                                  : viewportWidth;
-                              final double totalGridWidth = rowContentWidth +
-                                  gridHorizontalPadding +
-                                  gridWidthBuffer;
                               final double gridContentWidth =
-                                  totalGridWidth > viewportWidth
-                                      ? totalGridWidth
-                                      : viewportWidth;
+                                  _plotLayoutContentWidth(
+                                      displayPlots, viewportWidth);
                               final treatmentAppState = buildTreatmentAppState(
                                   trialApplicationsAsync.value ?? []);
                               return ClipRect(

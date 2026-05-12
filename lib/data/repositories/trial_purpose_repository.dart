@@ -19,6 +19,22 @@ class TrialPurposeRepository {
         .getSingleOrNull();
   }
 
+  /// Returns the newest non-superseded row only if its status is 'confirmed'.
+  /// Used by ARM import to guard against re-seeding when a confirmed row exists,
+  /// while still allowing the import to proceed when only a draft row is present.
+  Future<TrialPurpose?> getConfirmedTrialPurpose(int trialId) {
+    return (_db.select(_db.trialPurposes)
+          ..where(
+            (p) =>
+                p.trialId.equals(trialId) &
+                p.supersededAt.isNull() &
+                p.status.equals('confirmed'),
+          )
+          ..orderBy([(p) => OrderingTerm.desc(p.version)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
   Stream<TrialPurpose?> watchCurrentTrialPurpose(int trialId) {
     final q = _db.select(_db.trialPurposes)
       ..where(
@@ -32,6 +48,7 @@ class TrialPurposeRepository {
   Future<int> createInitialTrialPurpose({
     required int trialId,
     String status = 'draft',
+    int requiresConfirmation = 1,
     String sourceMode = 'manual_revelation',
     String? claimBeingTested,
     String? trialPurpose,
@@ -39,11 +56,15 @@ class TrialPurposeRepository {
     String? primaryEndpoint,
     String? treatmentRoleSummary,
     String? knownInterpretationFactors,
+    String? inferredFieldsJson,
+    String? plannedDatByAssessment,
+    int? protocolTimingWindow,
   }) {
     return _db.into(_db.trialPurposes).insert(
           TrialPurposesCompanion.insert(
             trialId: trialId,
             status: Value(status),
+            requiresConfirmation: Value(requiresConfirmation),
             sourceMode: Value(sourceMode),
             claimBeingTested: Value(claimBeingTested),
             trialPurpose: Value(trialPurpose),
@@ -51,6 +72,9 @@ class TrialPurposeRepository {
             primaryEndpoint: Value(primaryEndpoint),
             treatmentRoleSummary: Value(treatmentRoleSummary),
             knownInterpretationFactors: Value(knownInterpretationFactors),
+            inferredFieldsJson: Value(inferredFieldsJson),
+            plannedDatByAssessment: Value(plannedDatByAssessment),
+            protocolTimingWindow: Value(protocolTimingWindow),
           ),
         );
   }

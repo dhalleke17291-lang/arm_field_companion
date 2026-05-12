@@ -6,6 +6,14 @@ abstract class ModeCQuestionKeys {
   static const String treatmentRoles = 'treatment_roles';
   static const String knownInterpretationFactors = 'known_interpretation_factors';
 
+  /// Standalone-only: planned DAT per assessment (JSON map in trial_purposes).
+  /// Not in [all] or [required] — does not gate canDriveReadinessClaims.
+  static const String plannedDatByAssessment = 'planned_dat_by_assessment';
+
+  /// Standalone-only: acceptable timing deviation in ±days.
+  /// Not in [all] or [required] — does not gate canDriveReadinessClaims.
+  static const String protocolTimingWindow = 'protocol_timing_window';
+
   static const List<String> all = [
     claimBeingTested,
     trialPurposeContext,

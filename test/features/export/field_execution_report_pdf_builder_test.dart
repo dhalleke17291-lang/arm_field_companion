@@ -26,11 +26,16 @@ void main() {
         reviewCount: 0,
         satisfiedCount: 0,
         topCtqAttentionItems: [],
+        knownInterpretationFactors: null,
+        interpretationRiskFactors: [],
       );
 
   // Minimal valid FieldExecutionReportData — all sections populated with
   // empty/zero values. Used to verify the builder renders without throwing.
-  FieldExecutionReportData minimal() {
+  FieldExecutionReportData minimal({
+    List<FerAssessmentTimingRow> assessmentTimingRows = const [],
+    FerSignalsSection signals = const FerSignalsSection(openSignals: []),
+  }) {
     const identity = FerIdentity(
       trialId: 1,
       trialName: 'Test Trial',
@@ -66,7 +71,6 @@ void main() {
       hasTimestamp: true,
       sessionDurationMinutes: null,
     );
-    const signals = FerSignalsSection(openSignals: []);
     const completeness = FerCompletenessSection(
       expectedPlots: 0,
       completedPlots: 0,
@@ -80,6 +84,7 @@ void main() {
       identity: identity,
       protocolContext: protocolContext,
       sessionGrid: sessionGrid,
+      assessmentTimingRows: assessmentTimingRows,
       evidenceRecord: evidenceRecord,
       signals: signals,
       completeness: completeness,
@@ -140,6 +145,7 @@ void main() {
           edited: 2,
           flagged: 0,
         ),
+        assessmentTimingRows: const [],
         evidenceRecord: const FerEvidenceRecord(
           photoCount: 3,
           photoIds: [10, 11, 12],
@@ -188,6 +194,134 @@ void main() {
       expect(bytes.length, greaterThan(100));
     });
 
+    test('protocol deviation table uses populated row fields', () async {
+      const protocol = FerProtocolContext(
+        isArmLinked: true,
+        isArmTrial: true,
+        divergences: [
+          FerProtocolDivergenceRow(
+            type: FerDivergenceType.timing,
+            plannedDat: 10,
+            actualDat: 13,
+            deltaDays: 3,
+          ),
+          FerProtocolDivergenceRow(
+            type: FerDivergenceType.unexpected,
+            actualDat: 14,
+          ),
+        ],
+      );
+
+      expect(
+        FieldExecutionReportPdfBuilder
+            .protocolDeviationTableColumnCountForTesting(protocol),
+        4,
+      );
+      expect(
+        FieldExecutionReportPdfBuilder.protocolDeviationTableRowCountForTesting(
+            protocol),
+        3,
+      );
+      expect(
+        FieldExecutionReportPdfBuilder.protocolDeviationTableRowsForTesting(
+          protocol,
+        ),
+        [
+          ['Type', 'Planned DAT', 'Actual DAT', 'Delta'],
+          ['Timing', '10', '13', '+3 days'],
+          ['Unexpected session', '-', '14', '-'],
+        ],
+      );
+
+      final data = FieldExecutionReportData(
+        identity: const FerIdentity(
+          trialId: 7,
+          trialName: 'Deviation Trial',
+          protocolNumber: null,
+          crop: null,
+          location: null,
+          season: null,
+          sessionId: 7,
+          sessionName: 'Deviation Session',
+          sessionDateLocal: '2026-04-14',
+          sessionStatus: 'closed',
+          raterName: null,
+        ),
+        protocolContext: protocol,
+        sessionGrid: const FerSessionGrid(
+          dataPlotCount: 1,
+          assessmentCount: 1,
+          rated: 1,
+          unrated: 0,
+          withIssues: 0,
+          edited: 0,
+          flagged: 0,
+        ),
+        assessmentTimingRows: const [],
+        evidenceRecord: const FerEvidenceRecord(
+          photoCount: 0,
+          photoIds: [],
+          hasGps: false,
+          hasWeather: false,
+          hasTimestamp: true,
+          sessionDurationMinutes: null,
+        ),
+        signals: const FerSignalsSection(openSignals: []),
+        completeness: const FerCompletenessSection(
+          expectedPlots: 1,
+          completedPlots: 1,
+          incompletePlots: 0,
+          canClose: true,
+          blockerCount: 0,
+          warningCount: 0,
+        ),
+        executionStatement: 'Session complete.',
+        cognition: emptyCognition(),
+        generatedAt: DateTime(2026, 4, 14, 10),
+      );
+
+      final bytes = await FieldExecutionReportPdfBuilder().build(data);
+      expect(bytes.length, greaterThan(100));
+    });
+
+    test('empty protocol deviation list renders empty state row', () async {
+      const protocol = FerProtocolContext(
+        isArmLinked: true,
+        isArmTrial: true,
+        divergences: [],
+      );
+
+      expect(
+        FieldExecutionReportPdfBuilder.protocolDeviationTableRowsForTesting(
+          protocol,
+        ),
+        [
+          ['No protocol deviations recorded for this session.'],
+        ],
+      );
+
+      final bytes = await FieldExecutionReportPdfBuilder().build(minimal());
+      expect(bytes.length, greaterThan(100));
+    });
+
+    test('non-ARM trial renders protocol deviation empty state', () async {
+      const protocol = FerProtocolContext(
+        isArmLinked: false,
+        isArmTrial: false,
+        divergences: [],
+      );
+
+      expect(
+        FieldExecutionReportPdfBuilder.protocolDeviationTableRowsForTesting(
+          protocol,
+        ).single.single,
+        'No protocol deviations recorded for this session.',
+      );
+
+      final bytes = await FieldExecutionReportPdfBuilder().build(minimal());
+      expect(bytes.length, greaterThan(100));
+    });
+
     test('signals with open entries renders without throwing', () async {
       final data = FieldExecutionReportData(
         identity: const FerIdentity(
@@ -217,6 +351,7 @@ void main() {
           edited: 0,
           flagged: 1,
         ),
+        assessmentTimingRows: const [],
         evidenceRecord: const FerEvidenceRecord(
           photoCount: 0,
           photoIds: [],
@@ -265,6 +400,85 @@ void main() {
       expect(bytes.sublist(0, 5), equals([0x25, 0x50, 0x44, 0x46, 0x2D]));
     });
 
+    test('rater drift signal renders in Rater Quality subsection', () async {
+      final data = minimal(
+        signals: const FerSignalsSection(
+          openSignals: [
+            FerSignalRow(
+              id: 21,
+              signalType: 'rater_drift',
+              severity: 'review',
+              status: 'open',
+              consequenceText:
+                  'Recorded ratings show more than one rater name in this session.',
+              raisedAt: 1745000000000,
+            ),
+          ],
+        ),
+      );
+
+      expect(
+        FieldExecutionReportPdfBuilder.raterQualityRowsForTesting(data),
+        containsAll([
+          'Rater Quality',
+          'Rater Drift Detected',
+          'Review',
+          'Recorded ratings show more than one rater name in this session.',
+          'Medium confidence - observed pattern, not a confirmed measurement.',
+        ]),
+      );
+      final bytes = await FieldExecutionReportPdfBuilder().build(data);
+      expect(bytes.length, greaterThan(100));
+    });
+
+    test('no rater signals renders Rater Quality empty state', () async {
+      final data = minimal();
+
+      expect(
+        FieldExecutionReportPdfBuilder.raterQualityRowsForTesting(data),
+        ['No rater drift signals recorded for this session.'],
+      );
+      final bytes = await FieldExecutionReportPdfBuilder().build(data);
+      expect(bytes.length, greaterThan(100));
+    });
+
+    test('mixed signals separate rater drift from general signal list', () async {
+      final data = minimal(
+        signals: const FerSignalsSection(
+          openSignals: [
+            FerSignalRow(
+              id: 31,
+              signalType: 'rater_drift',
+              severity: 'review',
+              status: 'open',
+              consequenceText:
+                  'Some recorded ratings include a rater name and others have none.',
+              raisedAt: 1745000000000,
+            ),
+            FerSignalRow(
+              id: 32,
+              signalType: 'scale_violation',
+              severity: 'critical',
+              status: 'open',
+              consequenceText: 'Value outside scale.',
+              raisedAt: 1745000001000,
+            ),
+          ],
+        ),
+      );
+
+      expect(
+        FieldExecutionReportPdfBuilder.raterQualityRowsForTesting(data),
+        contains('Rater Drift Detected'),
+      );
+      expect(
+        FieldExecutionReportPdfBuilder.generalSignalIdsForTesting(data),
+        [32],
+      );
+      final bytes = await FieldExecutionReportPdfBuilder().build(data);
+      expect(bytes.length, greaterThan(100));
+    });
+
     test('no DB dependency — builder has no constructor parameters', () {
       // Verifies the renderer contract: no repositories, no providers injected.
       final builder = FieldExecutionReportPdfBuilder();
@@ -302,6 +516,7 @@ void main() {
             edited: 0,
             flagged: 0,
           ),
+          assessmentTimingRows: const [],
           evidenceRecord: const FerEvidenceRecord(
             photoCount: 0,
             photoIds: [],
@@ -345,6 +560,8 @@ void main() {
         reviewCount: 0,
         satisfiedCount: 7,
         topCtqAttentionItems: [],
+        knownInterpretationFactors: null,
+        interpretationRiskFactors: [],
       ));
       final bytes = await FieldExecutionReportPdfBuilder().build(data);
       expect(bytes.length, greaterThan(100));
@@ -384,6 +601,8 @@ void main() {
             statusLabel: 'Missing',
           ),
         ],
+        knownInterpretationFactors: null,
+        interpretationRiskFactors: [],
       ));
       final bytes = await FieldExecutionReportPdfBuilder().build(data);
       expect(bytes.length, greaterThan(100));
@@ -413,6 +632,8 @@ void main() {
         reviewCount: 0,
         satisfiedCount: 0,
         topCtqAttentionItems: [],
+        knownInterpretationFactors: null,
+        interpretationRiskFactors: [],
       ));
       final bytes = await FieldExecutionReportPdfBuilder().build(data);
       expect(bytes.length, greaterThan(100));
@@ -471,6 +692,7 @@ void main() {
           edited: 0,
           flagged: 0,
         ),
+        assessmentTimingRows: const [],
         evidenceRecord: const FerEvidenceRecord(
           photoCount: 0,
           photoIds: [],
@@ -539,6 +761,7 @@ void main() {
           edited: 0,
           flagged: 0,
         ),
+        assessmentTimingRows: const [],
         evidenceRecord: const FerEvidenceRecord(
           photoCount: 1,
           photoIds: [1],
@@ -568,6 +791,70 @@ void main() {
       );
     });
 
+    test('assessment timing renders DAA value', () async {
+      final data = minimal(
+        assessmentTimingRows: const [
+          FerAssessmentTimingRow(
+            assessmentId: 1,
+            assessmentName: 'Weed control',
+            actualDaa: 3,
+          ),
+        ],
+      );
+
+      expect(
+        FieldExecutionReportPdfBuilder.assessmentTimingRowsForTesting(data),
+        [
+          ['Weed control', '3 days'],
+        ],
+      );
+      final bytes = await FieldExecutionReportPdfBuilder().build(data);
+      expect(bytes.length, greaterThan(100));
+    });
+
+    test('assessment timing renders dash when DAA is unavailable', () async {
+      final data = minimal(
+        assessmentTimingRows: const [
+          FerAssessmentTimingRow(
+            assessmentId: 1,
+            assessmentName: 'Crop vigor',
+            actualDaa: null,
+          ),
+        ],
+      );
+
+      expect(
+        FieldExecutionReportPdfBuilder.assessmentTimingRowsForTesting(data),
+        [
+          ['Crop vigor', '—'],
+        ],
+      );
+      final bytes = await FieldExecutionReportPdfBuilder().build(data);
+      expect(bytes.length, greaterThan(100));
+    });
+
+    test('non-ARM trial renders assessment DAA without ARM gating', () async {
+      final data = minimal(
+        assessmentTimingRows: const [
+          FerAssessmentTimingRow(
+            assessmentId: 1,
+            assessmentName: 'Disease severity',
+            actualDaa: 1,
+          ),
+        ],
+      );
+
+      expect(data.protocolContext.isArmTrial, isFalse);
+      expect(
+        FieldExecutionReportPdfBuilder.assessmentTimingRowsForTesting(data),
+        [
+          ['Disease severity', '1 day'],
+        ],
+      );
+      final bytes = await FieldExecutionReportPdfBuilder().build(data);
+      expect(bytes.length, greaterThan(100));
+    });
+
     test('provenance GPS state uses presence labels without counts', () {
       expect(
         FieldExecutionReportPdfBuilder.evidenceGpsLabelForTesting(
@@ -594,6 +881,157 @@ void main() {
           ),
         ),
         'GPS evidence not recorded',
+      );
+    });
+
+    // CTQ-1: CTQ factor lines carry verbatim label and status.
+    test('CTQ factor lines use verbatim label and pre-baked status', () {
+      const items = [
+        FerCognitionAttentionItem(
+          factorKey: 'photo_evidence',
+          label: 'Photo Evidence',
+          statusLabel: 'Missing',
+        ),
+        FerCognitionAttentionItem(
+          factorKey: 'plot_completeness',
+          label: 'Plot Completeness',
+          statusLabel: 'Blocked',
+        ),
+      ];
+      final lines =
+          FieldExecutionReportPdfBuilder.ctqFactorLinesForTesting(items);
+      expect(lines, [
+        'Photo Evidence: Not recorded',
+        'Plot Completeness: Blocked',
+      ]);
+    });
+
+    // CTQ-2: Empty CTQ items list is handled — smoke test renders without throw.
+    test('empty CTQ attention items renders without throwing', () async {
+      final bytes =
+          await FieldExecutionReportPdfBuilder().build(minimal());
+      expect(bytes.length, greaterThan(100));
+    });
+
+    // IB-1: Declared line present when knownInterpretationFactors is set.
+    test('interpretation boundary includes declared line when factors set', () {
+      const cog = FerCognitionSection(
+        purposeStatus: 'confirmed',
+        purposeStatusLabel: 'Intent confirmed',
+        missingIntentFields: [],
+        missingIntentFieldLabels: [],
+        evidenceState: 'partial',
+        evidenceStateLabel: 'Partial evidence',
+        actualEvidenceSummary: '',
+        missingEvidenceItems: [],
+        ctqOverallStatus: 'unknown',
+        ctqOverallStatusLabel: 'Not yet evaluated',
+        blockerCount: 0,
+        warningCount: 0,
+        reviewCount: 0,
+        satisfiedCount: 0,
+        topCtqAttentionItems: [],
+        knownInterpretationFactors: 'Field slope may affect runoff patterns.',
+        interpretationRiskFactors: [],
+      );
+      final lines =
+          FieldExecutionReportPdfBuilder.interpretationBoundaryLinesForTesting(
+              cog);
+      expect(lines, contains('declared:Field slope may affect runoff patterns.'));
+      expect(lines,
+          contains('No interpretation risk factors identified for this session.'));
+    });
+
+    // IB-2: Declared line omitted when knownInterpretationFactors is null.
+    test('interpretation boundary omits declared line when null', () {
+      const cog = FerCognitionSection(
+        purposeStatus: 'unknown',
+        purposeStatusLabel: 'Intent not captured',
+        missingIntentFields: [],
+        missingIntentFieldLabels: [],
+        evidenceState: 'no_evidence',
+        evidenceStateLabel: 'No evidence yet',
+        actualEvidenceSummary: '',
+        missingEvidenceItems: [],
+        ctqOverallStatus: 'unknown',
+        ctqOverallStatusLabel: 'Not yet evaluated',
+        blockerCount: 0,
+        warningCount: 0,
+        reviewCount: 0,
+        satisfiedCount: 0,
+        topCtqAttentionItems: [],
+        knownInterpretationFactors: null,
+        interpretationRiskFactors: [],
+      );
+      final lines =
+          FieldExecutionReportPdfBuilder.interpretationBoundaryLinesForTesting(
+              cog);
+      expect(lines.any((l) => l.startsWith('declared:')), isFalse);
+    });
+
+    // IB-3: Risk items render with correct tier labels.
+    test('interpretation boundary renders risk items with tier labels', () {
+      const cog = FerCognitionSection(
+        purposeStatus: 'unknown',
+        purposeStatusLabel: 'Intent not captured',
+        missingIntentFields: [],
+        missingIntentFieldLabels: [],
+        evidenceState: 'no_evidence',
+        evidenceStateLabel: 'No evidence yet',
+        actualEvidenceSummary: '',
+        missingEvidenceItems: [],
+        ctqOverallStatus: 'unknown',
+        ctqOverallStatusLabel: 'Not yet evaluated',
+        blockerCount: 0,
+        warningCount: 0,
+        reviewCount: 0,
+        satisfiedCount: 0,
+        topCtqAttentionItems: [],
+        knownInterpretationFactors: null,
+        interpretationRiskFactors: [
+          FerRiskFactorItem(label: 'High CV detected', tier: 'HIGH'),
+          FerRiskFactorItem(label: 'Spatial gradient present', tier: 'MEDIUM'),
+          FerRiskFactorItem(
+              label: 'Insufficient data', tier: 'CANNOT EVALUATE'),
+        ],
+      );
+      final lines =
+          FieldExecutionReportPdfBuilder.interpretationBoundaryLinesForTesting(
+              cog);
+      expect(lines, contains('High CV detected — HIGH'));
+      expect(lines, contains('Spatial gradient present — MEDIUM'));
+      expect(lines, contains('Insufficient data — CANNOT EVALUATE'));
+    });
+
+    // IB-4: Empty risk factors → empty-state text, no crash.
+    test('interpretation boundary renders empty-state text when no risk factors',
+        () {
+      const cog = FerCognitionSection(
+        purposeStatus: 'unknown',
+        purposeStatusLabel: 'Intent not captured',
+        missingIntentFields: [],
+        missingIntentFieldLabels: [],
+        evidenceState: 'no_evidence',
+        evidenceStateLabel: 'No evidence yet',
+        actualEvidenceSummary: '',
+        missingEvidenceItems: [],
+        ctqOverallStatus: 'unknown',
+        ctqOverallStatusLabel: 'Not yet evaluated',
+        blockerCount: 0,
+        warningCount: 0,
+        reviewCount: 0,
+        satisfiedCount: 0,
+        topCtqAttentionItems: [],
+        knownInterpretationFactors: null,
+        interpretationRiskFactors: [],
+      );
+      final lines =
+          FieldExecutionReportPdfBuilder.interpretationBoundaryLinesForTesting(
+              cog);
+      expect(
+        lines,
+        contains(
+            'No interpretation risk factors identified for this session.'),
       );
     });
   });

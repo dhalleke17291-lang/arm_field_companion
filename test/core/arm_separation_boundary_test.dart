@@ -42,7 +42,8 @@ const _armSubtreePrefixes = <String>[
 // the export feature to know ARM internals. Do not add new entries.
 const _allowList = <String>{
   // Composition root — wires DI graph for every feature, ARM included.
-  'lib/core/providers.dart',
+  // providers.dart is now a pure barrel; the ARM DI wiring lives in arm_providers.dart.
+  'lib/core/providers/arm_providers.dart',
 
   // ARM-only usecases that currently live under features/export/.
   // These should move to lib/features/arm_protocol/ in Phase 0b; they are

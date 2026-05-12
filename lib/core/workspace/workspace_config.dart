@@ -145,7 +145,6 @@ class WorkspaceConfig {
     availableExports: [
       ExportFormat.flatCsv,
       ExportFormat.armHandoff,
-      ExportFormat.zipBundle,
       ExportFormat.pdfReport,
       ExportFormat.evidenceReport,
       ExportFormat.trialReport,
@@ -186,7 +185,6 @@ class WorkspaceConfig {
     availableExports: [
       ExportFormat.flatCsv,
       ExportFormat.armHandoff,
-      ExportFormat.zipBundle,
       ExportFormat.pdfReport,
       ExportFormat.evidenceReport,
       ExportFormat.trialReport,
@@ -229,7 +227,6 @@ class WorkspaceConfig {
     availableExports: [
       ExportFormat.flatCsv,
       ExportFormat.armHandoff,
-      ExportFormat.zipBundle,
       ExportFormat.pdfReport,
       ExportFormat.evidenceReport,
       ExportFormat.trialReport,
@@ -277,7 +274,6 @@ class WorkspaceConfig {
       ExportFormat.trialReport,
       ExportFormat.trialDefensibility,
       ExportFormat.flatCsv,
-      ExportFormat.zipBundle,
     ],
     primaryExport: ExportFormat.pdfReport,
     lockPolicy: ProtocolLockPolicy.soft,

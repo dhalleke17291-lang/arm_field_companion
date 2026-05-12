@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 
 import '../../core/database/app_database.dart';
 import '../../core/diagnostics/diagnostic_finding.dart';
+import '../photos/photo_repository.dart';
 
 /// Minimal assessment descriptor for validation (id + name).
 /// Callers can map from Assessment or TrialAssessment + display name.
@@ -15,14 +16,14 @@ class AssessmentDefinition {
 }
 
 class ExportValidationService {
-  ExportValidationReport validate({
+  Future<ExportValidationReport> validate({
     required List<Plot> plots,
     required List<Assignment> assignments,
     required List<AssessmentDefinition> assessments,
     required List<RatingRecord> records,
     required List<Session> sessions,
     required List<Photo> photos,
-  }) {
+  }) async {
     final issues = <ValidationIssue>[];
 
     if (plots.isEmpty) {
@@ -151,8 +152,10 @@ class ExportValidationService {
 
     // 7. Photos with missing files
     for (final photo in photos) {
-      final file = File(photo.filePath);
-      if (!file.existsSync()) {
+      final absolutePath =
+          await PhotoRepository.resolvePhotoPath(photo.filePath);
+      final file = File(absolutePath);
+      if (!await file.exists()) {
         final fileName = p.basename(photo.filePath);
         issues.add(ValidationIssue(
           severity: IssueSeverity.warning,

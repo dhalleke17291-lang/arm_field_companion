@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/data/repositories/assessment_definition_repository.dart';
+import 'package:arm_field_companion/data/repositories/assessment_guide_repository.dart';
 import 'package:arm_field_companion/data/repositories/assignment_repository.dart';
 import 'package:arm_field_companion/data/repositories/trial_assessment_repository.dart';
 import 'package:arm_field_companion/data/repositories/treatment_repository.dart';
@@ -42,7 +43,29 @@ void main() {
     );
   }
 
-  test('creates standalone trial, treatments, plots, assignments, assessments', () async {
+  const mappedLibraryCases = [
+    (
+      libraryId: 'fung_disease_severity',
+      systemCode: 'DISEASE_SEV',
+      name: '% disease severity',
+      category: 'Fungicide Efficacy',
+    ),
+    (
+      libraryId: 'herb_weed_cover',
+      systemCode: 'WEED_COVER',
+      name: '% weed cover',
+      category: 'Herbicide Efficacy',
+    ),
+    (
+      libraryId: 'growth_canopy_closure',
+      systemCode: 'STAND_COVER',
+      name: 'Canopy closure',
+      category: 'Crop Growth',
+    ),
+  ];
+
+  test('creates standalone trial, treatments, plots, assignments, assessments',
+      () async {
     final uc = buildUseCase();
     final result = await uc.execute(
       CreateStandaloneTrialWizardInput(
@@ -80,8 +103,8 @@ void main() {
     expect(trial.status, kTrialStatusActive);
     expect(trial.experimentalDesign, PlotGenerationEngine.designRcbd);
 
-    final treatments =
-        await TreatmentRepository(db, AssignmentRepository(db)).getTreatmentsForTrial(trialId);
+    final treatments = await TreatmentRepository(db, AssignmentRepository(db))
+        .getTreatmentsForTrial(trialId);
     expect(treatments.length, 4);
 
     final plots = await PlotRepository(db).getPlotsForTrial(trialId);
@@ -221,7 +244,8 @@ void main() {
     final trialAssessments = await taRepo.getForTrial(trialId);
     expect(trialAssessments.length, 1);
 
-    final legacyIds = await taRepo.getOrCreateLegacyAssessmentIdsForTrialAssessments(
+    final legacyIds =
+        await taRepo.getOrCreateLegacyAssessmentIdsForTrialAssessments(
       trialId,
       [trialAssessments.single.id],
     );
@@ -246,7 +270,8 @@ void main() {
     expect(sessionResult.session!.trialId, trialId);
   });
 
-  test('wizard with guard rows, physical dimensions, and GPS on trial', () async {
+  test('wizard with guard rows, physical dimensions, and GPS on trial',
+      () async {
     final uc = buildUseCase();
     final result = await uc.execute(
       CreateStandaloneTrialWizardInput(
@@ -285,8 +310,14 @@ void main() {
     expect(
       plots.map((p) => p.plotId).toList(),
       [
-        'G1-S1', '101', '102', 'G1-E1',
-        'G2-S1', '201', '202', 'G2-E1',
+        'G1-S1',
+        '101',
+        '102',
+        'G1-E1',
+        'G2-S1',
+        '201',
+        '202',
+        'G2-E1',
       ],
     );
     for (final p in plots.where((x) => x.isGuardRow)) {
@@ -303,11 +334,227 @@ void main() {
     }
   });
 
-  test('curated library assessment stores instruction override and LIB code', () async {
+  test('curated library assessment stores instruction override and LIB code',
+      () async {
     final uc = buildUseCase();
     final result = await uc.execute(
       CreateStandaloneTrialWizardInput(
         trialName: 'Lib ${DateTime.now().microsecondsSinceEpoch}',
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+        treatments: const [
+          StandaloneWizardTreatmentInput(code: 'A'),
+          StandaloneWizardTreatmentInput(code: 'B'),
+        ],
+        repCount: 1,
+        plotsPerRep: 2,
+        assessments: const [
+          StandaloneWizardAssessmentInput(
+            name: 'Weed density',
+            unit: 'plants/m2',
+            scaleMin: 0,
+            scaleMax: 999,
+            dataType: 'count',
+            curatedLibraryEntryId: 'herb_weed_density',
+            definitionCategory: 'Herbicide Efficacy',
+          ),
+        ],
+        random: Random(99),
+      ),
+    );
+    expect(result.success, true);
+    final trialId = result.trialId!;
+    final tas = await TrialAssessmentRepository(db).getForTrial(trialId);
+    expect(tas.length, 1);
+    expect(
+      tas.single.instructionOverride,
+      curatedLibraryInstructionTag('herb_weed_density'),
+    );
+    final defs =
+        await AssessmentDefinitionRepository(db).getAll(activeOnly: false);
+    final def =
+        defs.firstWhere((d) => d.id == tas.single.assessmentDefinitionId);
+    expect(def.code.startsWith('LIB_${trialId}_'), true);
+    expect(def.code.length, lessThanOrEqualTo(50));
+    expect(def.category, 'Herbicide Efficacy');
+  });
+
+  for (final mappedCase in mappedLibraryCases) {
+    test(
+        'mapped library assessment ${mappedCase.libraryId} uses ${mappedCase.systemCode} system definition',
+        () async {
+      final uc = buildUseCase();
+      final result = await uc.execute(
+        CreateStandaloneTrialWizardInput(
+          trialName:
+              'Mapped ${mappedCase.libraryId} ${DateTime.now().microsecondsSinceEpoch}',
+          experimentalDesign: PlotGenerationEngine.designRcbd,
+          treatments: const [
+            StandaloneWizardTreatmentInput(code: 'A'),
+            StandaloneWizardTreatmentInput(code: 'B'),
+          ],
+          repCount: 1,
+          plotsPerRep: 2,
+          assessments: [
+            StandaloneWizardAssessmentInput(
+              name: mappedCase.name,
+              unit: '%',
+              scaleMin: 0,
+              scaleMax: 100,
+              dataType: 'numeric',
+              curatedLibraryEntryId: mappedCase.libraryId,
+              definitionCategory: mappedCase.category,
+            ),
+          ],
+          random: Random(100),
+        ),
+      );
+
+      expect(result.success, true);
+      final tas =
+          await TrialAssessmentRepository(db).getForTrial(result.trialId!);
+      final systemDef = await AssessmentDefinitionRepository(db)
+          .getByCode(mappedCase.systemCode);
+      expect(tas.single.assessmentDefinitionId, systemDef!.id);
+      expect(
+        tas.single.instructionOverride,
+        curatedLibraryInstructionTag(mappedCase.libraryId),
+      );
+    });
+  }
+
+  test('custom assessment without library ID still uses custom definition',
+      () async {
+    final uc = buildUseCase();
+    final result = await uc.execute(
+      CreateStandaloneTrialWizardInput(
+        trialName: 'Custom ${DateTime.now().microsecondsSinceEpoch}',
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+        treatments: const [
+          StandaloneWizardTreatmentInput(code: 'A'),
+          StandaloneWizardTreatmentInput(code: 'B'),
+        ],
+        repCount: 1,
+        plotsPerRep: 2,
+        assessments: const [
+          StandaloneWizardAssessmentInput(
+            name: 'Custom score',
+            unit: 'score',
+            scaleMin: 0,
+            scaleMax: 9,
+            dataType: 'ordinal',
+          ),
+        ],
+        random: Random(101),
+      ),
+    );
+
+    expect(result.success, true);
+    final trialId = result.trialId!;
+    final tas = await TrialAssessmentRepository(db).getForTrial(trialId);
+    final defs =
+        await AssessmentDefinitionRepository(db).getAll(activeOnly: false);
+    final def =
+        defs.firstWhere((d) => d.id == tas.single.assessmentDefinitionId);
+    expect(def.code.startsWith('CUSTOM_${trialId}_'), true);
+    expect(tas.single.instructionOverride, isNull);
+
+    final hasGuide = await AssessmentGuideRepository(db)
+        .watchHasAnyGuide(
+          trialAssessmentId: tas.single.id,
+          assessmentDefinitionId: tas.single.assessmentDefinitionId,
+        )
+        .first;
+    expect(hasGuide, isFalse);
+  });
+
+  test('manual standalone percent disease severity maps to DISEASE_SEV',
+      () async {
+    final uc = buildUseCase();
+    final result = await uc.execute(
+      CreateStandaloneTrialWizardInput(
+        trialName: 'ManualDisease ${DateTime.now().microsecondsSinceEpoch}',
+        crop: 'Wheat',
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+        treatments: const [
+          StandaloneWizardTreatmentInput(code: 'A'),
+          StandaloneWizardTreatmentInput(code: 'B'),
+        ],
+        repCount: 1,
+        plotsPerRep: 2,
+        assessments: const [
+          StandaloneWizardAssessmentInput(
+            name: '% disease severity',
+            unit: '%',
+            scaleMin: 0,
+            scaleMax: 100,
+            dataType: 'numeric',
+          ),
+        ],
+        random: Random(103),
+      ),
+    );
+
+    expect(result.success, true);
+    final tas =
+        await TrialAssessmentRepository(db).getForTrial(result.trialId!);
+    final systemDef =
+        await AssessmentDefinitionRepository(db).getByCode('DISEASE_SEV');
+    expect(tas.single.assessmentDefinitionId, systemDef!.id);
+
+    final hasGuide = await AssessmentGuideRepository(db)
+        .watchHasAnyGuide(
+          trialAssessmentId: tas.single.id,
+          assessmentDefinitionId: tas.single.assessmentDefinitionId,
+        )
+        .first;
+    expect(hasGuide, isTrue);
+  });
+
+  test('percent crop injury library entry remains LIB because scale mismatches',
+      () async {
+    final uc = buildUseCase();
+    final result = await uc.execute(
+      CreateStandaloneTrialWizardInput(
+        trialName: 'PercentInjury ${DateTime.now().microsecondsSinceEpoch}',
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+        treatments: const [
+          StandaloneWizardTreatmentInput(code: 'A'),
+          StandaloneWizardTreatmentInput(code: 'B'),
+        ],
+        repCount: 1,
+        plotsPerRep: 2,
+        assessments: const [
+          StandaloneWizardAssessmentInput(
+            name: '% crop injury',
+            unit: '%',
+            scaleMin: 0,
+            scaleMax: 100,
+            dataType: 'numeric',
+            curatedLibraryEntryId: 'phyto_crop_injury',
+            definitionCategory: 'Crop Safety',
+          ),
+        ],
+        random: Random(104),
+      ),
+    );
+
+    expect(result.success, true);
+    final trialId = result.trialId!;
+    final tas = await TrialAssessmentRepository(db).getForTrial(trialId);
+    final defs =
+        await AssessmentDefinitionRepository(db).getAll(activeOnly: false);
+    final def =
+        defs.firstWhere((d) => d.id == tas.single.assessmentDefinitionId);
+    expect(def.code.startsWith('LIB_${trialId}_'), true);
+    expect(def.name, '% crop injury');
+  });
+
+  test('weed control library entry remains LIB and does not map to weed cover',
+      () async {
+    final uc = buildUseCase();
+    final result = await uc.execute(
+      CreateStandaloneTrialWizardInput(
+        trialName: 'WeedControl ${DateTime.now().microsecondsSinceEpoch}',
         experimentalDesign: PlotGenerationEngine.designRcbd,
         treatments: const [
           StandaloneWizardTreatmentInput(code: 'A'),
@@ -326,21 +573,64 @@ void main() {
             definitionCategory: 'Herbicide Efficacy',
           ),
         ],
-        random: Random(99),
+        random: Random(105),
       ),
     );
+
     expect(result.success, true);
     final trialId = result.trialId!;
     final tas = await TrialAssessmentRepository(db).getForTrial(trialId);
-    expect(tas.length, 1);
-    expect(
-      tas.single.instructionOverride,
-      curatedLibraryInstructionTag('herb_weed_control'),
-    );
-    final defs = await AssessmentDefinitionRepository(db).getAll(activeOnly: false);
-    final def = defs.firstWhere((d) => d.id == tas.single.assessmentDefinitionId);
+    final defs =
+        await AssessmentDefinitionRepository(db).getAll(activeOnly: false);
+    final def =
+        defs.firstWhere((d) => d.id == tas.single.assessmentDefinitionId);
     expect(def.code.startsWith('LIB_${trialId}_'), true);
-    expect(def.code.length, lessThanOrEqualTo(50));
-    expect(def.category, 'Herbicide Efficacy');
+    expect(def.name, '% weed control');
+  });
+
+  test('mapped library assessment falls back when system definition is missing',
+      () async {
+    await db.customStatement(
+      "DELETE FROM assessment_guide_anchors "
+      "WHERE source_url = 'assets/reference_guides/lane1/wheat_disease_severity.svg'",
+    );
+    await db.customStatement(
+      "DELETE FROM assessment_definitions WHERE code = 'DISEASE_SEV'",
+    );
+
+    final uc = buildUseCase();
+    final result = await uc.execute(
+      CreateStandaloneTrialWizardInput(
+        trialName: 'MissingDef ${DateTime.now().microsecondsSinceEpoch}',
+        experimentalDesign: PlotGenerationEngine.designRcbd,
+        treatments: const [
+          StandaloneWizardTreatmentInput(code: 'A'),
+          StandaloneWizardTreatmentInput(code: 'B'),
+        ],
+        repCount: 1,
+        plotsPerRep: 2,
+        assessments: const [
+          StandaloneWizardAssessmentInput(
+            name: '% disease severity',
+            unit: '%',
+            scaleMin: 0,
+            scaleMax: 100,
+            dataType: 'numeric',
+            curatedLibraryEntryId: 'fung_disease_severity',
+            definitionCategory: 'Fungicide Efficacy',
+          ),
+        ],
+        random: Random(102),
+      ),
+    );
+
+    expect(result.success, true);
+    final trialId = result.trialId!;
+    final tas = await TrialAssessmentRepository(db).getForTrial(trialId);
+    final defs =
+        await AssessmentDefinitionRepository(db).getAll(activeOnly: false);
+    final def =
+        defs.firstWhere((d) => d.id == tas.single.assessmentDefinitionId);
+    expect(def.code.startsWith('LIB_${trialId}_'), true);
   });
 }

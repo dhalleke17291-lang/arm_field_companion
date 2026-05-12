@@ -10,6 +10,7 @@ import '../../../core/widgets/app_draggable_modal_sheet.dart';
 import '../../../core/widgets/standard_form_bottom_sheet.dart';
 import '../../assessments/assessment_library.dart';
 import '../../assessments/assessment_library_picker.dart';
+import '../assessment_library_system_map.dart';
 import '../../../core/protocol_edit_blocked_exception.dart';
 
 /// Normalized display names already on the trial (library + unlinked legacy).
@@ -23,10 +24,8 @@ Set<String> _existingTrialAssessmentNamesNormalized({
   Map<int, ArmAssessmentMetadataData> aamByTaId =
       const <int, ArmAssessmentMetadataData>{},
 }) {
-  final linkedLegacyIds = pairs
-      .map((e) => e.$1.legacyAssessmentId)
-      .whereType<int>()
-      .toSet();
+  final linkedLegacyIds =
+      pairs.map((e) => e.$1.legacyAssessmentId).whereType<int>().toSet();
   final out = <String>{};
   for (final p in pairs) {
     out.add(
@@ -57,8 +56,7 @@ Future<Set<String>> _loadExistingTrialAssessmentNamesNormalizedForTrial(
   return _existingTrialAssessmentNamesNormalized(
     pairs: await pairsFuture,
     legacy: await legacyFuture,
-    aamByTaId:
-        aamMapFuture == null ? const {} : await aamMapFuture,
+    aamByTaId: aamMapFuture == null ? const {} : await aamMapFuture,
   );
 }
 
@@ -110,7 +108,8 @@ Future<void> showAddCustomAssessmentSheet(
   await showAppDraggableModalSheet<void>(
     context: context,
     useRootNavigator: true,
-    sheetBuilder: (sheetContext, scrollController) => _AddCustomAssessmentSheetBody(
+    sheetBuilder: (sheetContext, scrollController) =>
+        _AddCustomAssessmentSheetBody(
       trial: trial,
       scrollController: scrollController,
       parentContext: context,
@@ -209,24 +208,36 @@ class _AddCustomAssessmentSheetBodyState
       final scaleMin = double.tryParse(_scaleMinController.text.trim());
       final scaleMax = double.tryParse(_scaleMaxController.text.trim());
       final unitStr = _unitController.text.trim();
-      final defId = await defRepo.insertCustom(
-        code: code,
+      final unit = unitStr.isEmpty ? null : unitStr;
+      final systemCode = canonicalSystemAssessmentCode(
         name: name,
-        category: 'custom',
         dataType: 'numeric',
-        unit: unitStr.isEmpty ? null : unitStr,
+        unit: unit,
         scaleMin: scaleMin,
         scaleMax: scaleMax,
-        assessmentMethod: _selectedType,
-        cropPart: null,
-        timingCode: null,
-        daysAfterTreatment: null,
-        timingDescription: null,
-        validMin: null,
-        validMax: null,
-        eppoCode: null,
-        resultDirection: _selectedResultDirection,
+        category: 'custom',
       );
+      final systemDef =
+          systemCode == null ? null : await defRepo.getByCode(systemCode);
+      final defId = systemDef?.id ??
+          await defRepo.insertCustom(
+            code: code,
+            name: name,
+            category: 'custom',
+            dataType: 'numeric',
+            unit: unit,
+            scaleMin: scaleMin,
+            scaleMax: scaleMax,
+            assessmentMethod: _selectedType,
+            cropPart: null,
+            timingCode: null,
+            daysAfterTreatment: null,
+            timingDescription: null,
+            validMin: null,
+            validMax: null,
+            eppoCode: null,
+            resultDirection: _selectedResultDirection,
+          );
       await ref.read(trialAssessmentRepositoryProvider).addToTrial(
             trialId: widget.trial.id,
             assessmentDefinitionId: defId,
@@ -283,7 +294,8 @@ class _AddCustomAssessmentSheetBodyState
                   await _loadExistingTrialAssessmentNamesNormalizedForTrial(
                 trialId,
                 pairsFuture: container.read(
-                  trialAssessmentsWithDefinitionsForTrialProvider(trialId).future,
+                  trialAssessmentsWithDefinitionsForTrialProvider(trialId)
+                      .future,
                 ),
                 legacyFuture:
                     container.read(assessmentsForTrialProvider(trialId).future),
@@ -382,7 +394,9 @@ class _AddCustomAssessmentSheetBodyState
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return null;
-                    if (double.tryParse(v.trim()) == null) return 'Invalid number';
+                    if (double.tryParse(v.trim()) == null) {
+                      return 'Invalid number';
+                    }
                     return null;
                   },
                 ),
@@ -398,7 +412,9 @@ class _AddCustomAssessmentSheetBodyState
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return null;
-                    if (double.tryParse(v.trim()) == null) return 'Invalid number';
+                    if (double.tryParse(v.trim()) == null) {
+                      return 'Invalid number';
+                    }
                     return null;
                   },
                 ),

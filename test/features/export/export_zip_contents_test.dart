@@ -248,9 +248,9 @@ void main() {
       final ids = await _seedMinimalRatedTrial(db, trialName: 'OnePhoto');
       final trial = await TrialRepository(db).getTrialById(ids.trialId);
       expect(trial, isNotNull);
-      final photoDir = await Directory.systemTemp.createTemp('zip_photo_one_');
-      addTearDown(() => photoDir.delete(recursive: true));
-      final img = File('${photoDir.path}/a.jpg');
+      final photosDir = Directory(p.join(docsPath, 'photos'));
+      await photosDir.create(recursive: true);
+      final img = File(p.join(photosDir.path, 'a.jpg'));
       await img.writeAsBytes([1, 2, 3]);
       await db.into(db.photos).insert(
             PhotosCompanion.insert(
@@ -271,9 +271,9 @@ void main() {
       addTearDown(db.close);
       final ids = await _seedMinimalRatedTrial(db, trialName: 'StemTrial');
       final trial = await TrialRepository(db).getTrialById(ids.trialId);
-      final photoDir = await Directory.systemTemp.createTemp('zip_photo_stem_');
-      addTearDown(() => photoDir.delete(recursive: true));
-      final img = File('${photoDir.path}/x.jpg');
+      final photosDir = Directory(p.join(docsPath, 'photos'));
+      await photosDir.create(recursive: true);
+      final img = File(p.join(photosDir.path, 'x.jpg'));
       await img.writeAsBytes([1]);
       await db.into(db.photos).insert(
             PhotosCompanion.insert(
@@ -297,11 +297,11 @@ void main() {
       addTearDown(db.close);
       final ids = await _seedMinimalRatedTrial(db, trialName: 'Collide');
       final trial = await TrialRepository(db).getTrialById(ids.trialId);
-      final photoDir = await Directory.systemTemp.createTemp('zip_photo_col_');
-      addTearDown(() => photoDir.delete(recursive: true));
+      final photosDir = Directory(p.join(docsPath, 'photos'));
+      await photosDir.create(recursive: true);
       final same = DateTime(2026, 4, 10, 12);
       for (var i = 0; i < 2; i++) {
-        final img = File('${photoDir.path}/p$i.jpg');
+        final img = File(p.join(photosDir.path, 'p$i.jpg'));
         await img.writeAsBytes([i]);
         await db.into(db.photos).insert(
               PhotosCompanion.insert(

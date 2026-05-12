@@ -419,6 +419,101 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+        'readyWithWarnings N=1 → shows "Export-ready · 1 caution to review"',
+        (WidgetTester tester) async {
+      final trial = _trial();
+
+      await tester.pumpWidget(
+        _wrap(
+          TrialStoryScreen(trial: trial),
+          overrides: [
+            trialStoryProvider(trial.id).overrideWith(
+              (ref) async => const <TrialStoryEvent>[],
+            ),
+            openSignalsForTrialProvider(trial.id).overrideWith(
+              (ref) => Stream.value(const <Signal>[]),
+            ),
+            trialDecisionSummaryProvider(trial.id).overrideWith(
+              (ref) async => TrialDecisionSummaryDto(
+                trialId: trial.id,
+                signalDecisions: const [],
+                ctqAcknowledgments: const <CtqFactorAcknowledgmentDto>[],
+                hasAnyResearcherReasoning: false,
+              ),
+            ),
+            trialReadinessProvider(trial.id).overrideWith(
+              (ref) => Stream.value(const TrialReadinessReport(checks: [
+                TrialReadinessCheck(
+                  code: 'cognition_caution_test',
+                  label: 'Cautions present',
+                  severity: TrialCheckSeverity.warning,
+                ),
+              ])),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+        find.text('Export-ready · 1 caution to review'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+        'readyWithWarnings N=2 → shows "Export-ready · 2 cautions to review"',
+        (WidgetTester tester) async {
+      final trial = _trial();
+
+      await tester.pumpWidget(
+        _wrap(
+          TrialStoryScreen(trial: trial),
+          overrides: [
+            trialStoryProvider(trial.id).overrideWith(
+              (ref) async => const <TrialStoryEvent>[],
+            ),
+            openSignalsForTrialProvider(trial.id).overrideWith(
+              (ref) => Stream.value(const <Signal>[]),
+            ),
+            trialDecisionSummaryProvider(trial.id).overrideWith(
+              (ref) async => TrialDecisionSummaryDto(
+                trialId: trial.id,
+                signalDecisions: const [],
+                ctqAcknowledgments: const <CtqFactorAcknowledgmentDto>[],
+                hasAnyResearcherReasoning: false,
+              ),
+            ),
+            trialReadinessProvider(trial.id).overrideWith(
+              (ref) => Stream.value(const TrialReadinessReport(checks: [
+                TrialReadinessCheck(
+                  code: 'cognition_caution_test',
+                  label: 'Cautions present',
+                  severity: TrialCheckSeverity.warning,
+                ),
+                TrialReadinessCheck(
+                  code: 'other_caution_test',
+                  label: 'Another caution',
+                  severity: TrialCheckSeverity.warning,
+                ),
+              ])),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(
+        find.text('Export-ready · 2 cautions to review'),
+        findsOneWidget,
+      );
+    });
   });
 
   group('TrialStoryScreen — decisions section', () {

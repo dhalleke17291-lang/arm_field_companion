@@ -342,11 +342,39 @@ class EvidenceRater {
     required this.name,
     required this.ratingCount,
     required this.sessionNames,
+    required this.raterDriftDetected,
+    this.driftSeverity,
+    this.driftConsequence,
   });
 
   final String name;
   final int ratingCount;
   final List<String> sessionNames;
+  final bool raterDriftDetected;
+  final String? driftSeverity;
+  final String? driftConsequence;
+}
+
+class EvidenceRawDataRow {
+  const EvidenceRawDataRow({
+    required this.plotCode,
+    required this.rep,
+    required this.treatmentCode,
+    required this.assessmentName,
+    required this.sessionName,
+    required this.ratingValue,
+    required this.dat,
+    required this.raterName,
+  });
+
+  final String plotCode;
+  final int rep;
+  final String treatmentCode;
+  final String assessmentName;
+  final String sessionName;
+  final double? ratingValue;
+  final int? dat;
+  final String? raterName;
 }
 
 class SessionTimestampDistribution {
@@ -463,6 +491,9 @@ class EvidenceReportData {
     required this.outliers,
     required this.photos,
     required this.weatherRecords,
+    required this.rawDataRows,
+    required this.rawDataTruncated,
+    required this.rawDataTotalCount,
     required this.completenessScore,
     required this.generatedAt,
     required this.appVersion,
@@ -478,6 +509,9 @@ class EvidenceReportData {
   final List<EvidenceOutlier> outliers;
   final List<EvidencePhoto> photos;
   final List<EvidenceWeather> weatherRecords;
+  final List<EvidenceRawDataRow> rawDataRows;
+  final bool rawDataTruncated;
+  final int rawDataTotalCount;
   final EvidenceCompletenessScore completenessScore;
   final DateTime generatedAt;
   final String appVersion;

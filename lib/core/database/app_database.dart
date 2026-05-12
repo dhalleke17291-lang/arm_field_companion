@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
-import 'dart:io';
+
+import '../../features/reference_guides/lane1_seed_service.dart';
+import '../../features/reference_guides/lane2a_reference_photo_seed_service.dart';
 
 part 'app_database.g.dart';
 
@@ -118,7 +122,11 @@ class ArmTrialMetadata extends Table {
   /// Plain int (no FK) to avoid Drift circular ref: sessions already reference trials.
   IntColumn get armImportSessionId => integer().nullable()();
 
-  /// Last ARM Rating Shell (.xlsx) path applied from the shell link workflow.
+  // armLinkedShellPath stores the user's original file path from Downloads or
+  // Files app. This path is ephemeral — share-sheet grants temporary access
+  // only. The backup service records MissingReference when the file is not
+  // found. Long-term fix: copy file to app sandbox at import time and drop
+  // this column. Tracked in deferred TODO.
   TextColumn get armLinkedShellPath => text().nullable()();
 
   /// When [armLinkedShellPath] was last applied.
@@ -1531,6 +1539,17 @@ class TrialPurposes extends Table {
   TextColumn get requiredEvidenceSummary => text().nullable()();
   TextColumn get readinessCriteriaSummary => text().nullable()();
   TextColumn get inferredFieldsJson => text().nullable()();
+
+  /// JSON map of {trialAssessmentId: plannedDat} for standalone deviation detection.
+  /// Keyed by TrialAssessment.id (as string). Null when not specified (ARM trials
+  /// use arm_session_metadata instead). Written by Mode C Q6.
+  TextColumn get plannedDatByAssessment => text().nullable()();
+
+  /// Acceptable timing deviation in ±days for standalone protocol checking.
+  /// Null means no window specified — no deviation rows will be generated.
+  /// Written by Mode C Q7.
+  IntColumn get protocolTimingWindow => integer().nullable()();
+
   DateTimeColumn get confirmedAt => dateTime().nullable()();
   TextColumn get confirmedBy => text().nullable()();
 
@@ -1651,6 +1670,106 @@ class CtqFactorAcknowledgments extends Table {
       .withDefault(const CustomExpression("(strftime('%s','now') * 1000)"))();
 }
 
+// ─── Rating Reference Assist (v85) ─────────────────────────────────────────
+
+/// Container grouping reference content for a single assessment type (Lane 1/2)
+/// or a single trial assessment (Lane 3). One row per guide set; anchors hold
+/// the individual images.
+class AssessmentGuides extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// Lane 1/2: links to the assessment definition (type-wide content).
+  /// Null for Lane 3 (trial-specific customer uploads).
+  IntColumn get assessmentDefinitionId => integer()
+      .references(AssessmentDefinitions, #id, onDelete: KeyAction.cascade)
+      .nullable()();
+
+  /// Lane 3: links to the specific trial assessment. Null for Lane 1/2.
+  IntColumn get trialAssessmentId => integer()
+      .references(TrialAssessments, #id, onDelete: KeyAction.cascade)
+      .nullable()();
+
+  IntColumn get createdAt => integer()
+      .withDefault(const CustomExpression("(strftime('%s','now') * 1000)"))();
+}
+
+/// Individual image or diagram within an assessment guide.
+/// All attribution and provenance metadata lives here.
+class AssessmentGuideAnchors extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get guideId => integer()
+      .references(AssessmentGuides, #id, onDelete: KeyAction.cascade)();
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+
+  /// Local file path for stored/cached image bytes.
+  TextColumn get filePath => text().nullable()();
+
+  /// calibration_diagram | identification_photo | customer_upload
+  TextColumn get lane => text()();
+
+  /// ai_generated_svg | ai_generated_png | inaturalist_photo | customer_photo
+  TextColumn get contentType => text()();
+
+  /// Lane 1: specification document URL. Lane 2: iNaturalist observation URL.
+  /// Lane 3: null (customer upload, no external source).
+  TextColumn get sourceUrl => text().nullable()();
+
+  /// Lane 1: 'original_work_agnexis'. Lane 2: 'CC-BY-4.0' or 'CC0-1.0'.
+  /// Lane 3: 'customer_grant_v1'.
+  TextColumn get licenseIdentifier => text().nullable()();
+
+  /// Required. Rendered visibly in overlay for every anchor — no image without this.
+  TextColumn get attributionString => text()();
+
+  /// Lane 2 only.
+  IntColumn get inaturalistObservationId => integer().nullable()();
+  IntColumn get inaturalistTaxonId => integer().nullable()();
+
+  /// Lane 1 generation parameters or Lane 2A structured reference metadata.
+  TextColumn get generationSpecification => text().nullable()();
+
+  /// Lane 1 only. Diagram validated against cited specification before seeding.
+  TextColumn get validatedBy => text().nullable()();
+  TextColumn get validationDate => text().nullable()(); // ISO-8601 date
+
+  /// Lane 1 only. Full bibliographic citation of the scale specification source.
+  TextColumn get citationFull => text().nullable()();
+
+  /// Required. ISO-8601 date content was added to the library.
+  TextColumn get dateObtained => text()();
+
+  /// ISO-8601 date of last annual re-verification of source and license status.
+  TextColumn get dateLastVerified => text().nullable()();
+
+  /// Lane 3 only. Organization that uploaded this content.
+  IntColumn get customerOrganizationId => integer().nullable()();
+
+  /// Lane 3 only. Signed consent record reference in document storage.
+  IntColumn get customerConsentRecordId => integer().nullable()();
+
+  IntColumn get isDeleted => integer().withDefault(const Constant(0))();
+  IntColumn get createdAt => integer()
+      .withDefault(const CustomExpression("(strftime('%s','now') * 1000)"))();
+}
+
+/// GLP audit trail: one record per overlay open event.
+/// Tells auditors whether raters viewed the reference guide before rating.
+class RatingGuideViewEvents extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get guideId => integer()
+      .references(AssessmentGuides, #id, onDelete: KeyAction.cascade)();
+  IntColumn get trialAssessmentId => integer()
+      .references(TrialAssessments, #id, onDelete: KeyAction.cascade)();
+  IntColumn get sessionId =>
+      integer().references(Sessions, #id, onDelete: KeyAction.cascade)();
+  IntColumn get raterUserId => integer()
+      .references(Users, #id, onDelete: KeyAction.setNull)
+      .nullable()();
+
+  /// Unix millisecond timestamp of overlay open (not close).
+  IntColumn get viewedAt => integer()();
+}
+
 @DriftDatabase(tables: [
   Users,
   Trials,
@@ -1713,6 +1832,10 @@ class CtqFactorAcknowledgments extends Table {
   CtqFactorAcknowledgments,
   // Environmental Evidence Layer (v81): daily weather records per trial.
   TrialEnvironmentalRecords,
+  // Rating Reference Assist (v85): visual calibration and identification guides.
+  AssessmentGuides,
+  AssessmentGuideAnchors,
+  RatingGuideViewEvents,
 ])
 class AppDatabase extends _$AppDatabase {
   /// In-memory database for testing only.
@@ -1721,7 +1844,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 83;
+  int get schemaVersion => 87;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -1731,6 +1854,9 @@ class AppDatabase extends _$AppDatabase {
           await _seedAssessmentDefinitions();
           await _seedSeTypeProfiles();
           await _seedSeTypeCausalProfiles();
+          await Lane1SeedService(this).seedIfNeeded();
+          await Lane2AReferencePhotoSeedService.fromBundledManifest(this)
+              .seedIfNeeded();
         },
         onUpgrade: (Migrator m, int from, int to) async {
           if (from < 2) {
@@ -3377,7 +3503,81 @@ END
             }
           }
 
+          // v84: standalone protocol deviation fields on trial_purposes.
+          // plannedDatByAssessment — JSON {trialAssessmentId: plannedDat}
+          // protocolTimingWindow   — acceptable deviation in ±days
+          if (from < 84) {
+            final tpColsRaw = await customSelect(
+              "SELECT name FROM pragma_table_info('trial_purposes')",
+            ).get();
+            final tpCols = tpColsRaw.map((r) => r.read<String>('name')).toSet();
+            if (!tpCols.contains('planned_dat_by_assessment')) {
+              await customStatement(
+                'ALTER TABLE trial_purposes '
+                'ADD COLUMN planned_dat_by_assessment TEXT',
+              );
+            }
+            if (!tpCols.contains('protocol_timing_window')) {
+              await customStatement(
+                'ALTER TABLE trial_purposes '
+                'ADD COLUMN protocol_timing_window INTEGER',
+              );
+            }
+          }
+
+          // v85: Rating Reference Assist — assessment guide system.
+          if (from < 85) {
+            await m.createTable(assessmentGuides);
+            await m.createTable(assessmentGuideAnchors);
+            await m.createTable(ratingGuideViewEvents);
+          }
+
+          if (from < 86) {
+            // Add STAND_COVER assessment definition (new in v86).
+            await customStatement(
+              'INSERT INTO assessment_definitions '
+              '(code, name, category, data_type, unit, scale_min, scale_max, '
+              "result_direction, is_system, is_active, created_at, updated_at) "
+              "SELECT ?, ?, ?, ?, ?, ?, ?, 'neutral', 1, 1, "
+              "strftime('%s','now'), strftime('%s','now') "
+              'WHERE NOT EXISTS '
+              '(SELECT 1 FROM assessment_definitions WHERE code = ?)',
+              [
+                'STAND_COVER',
+                'Stand coverage',
+                'growth',
+                'numeric',
+                '%',
+                0.0,
+                100.0,
+                'STAND_COVER'
+              ],
+            );
+            // Seed Lane 1 calibration diagrams (idempotent).
+            await Lane1SeedService(this).seedIfNeeded();
+          }
+
+          // v87: Fix CROP_INJURY definition — was numeric/% 0–100; correct
+          // scale is ordinal score 0–4 matching the Lane 1 EPPO PP1/181 diagram.
+          // No existing production code path linked user data to this definition
+          // (ARM import maps only CONTRO and PESINC; standalone mapping is new in
+          // this release) so no rating-record migration is required.
+          if (from < 87) {
+            await customStatement(
+              "UPDATE assessment_definitions "
+              "SET name = 'Crop injury score', data_type = 'ordinal', "
+              "    unit = 'score', scale_min = 0.0, scale_max = 4.0, "
+              "    updated_at = strftime('%s','now') "
+              "WHERE code = 'CROP_INJURY'",
+            );
+          }
+
           await _createIndexes();
+        },
+        beforeOpen: (_) async {
+          await Lane1SeedService(this).seedIfNeeded();
+          await Lane2AReferencePhotoSeedService.fromBundledManifest(this)
+              .seedIfNeeded();
         },
       );
 
@@ -3391,7 +3591,15 @@ END
 
   Future<void> _seedAssessmentDefinitions() async {
     const rows = [
-      ['CROP_INJURY', 'Crop injury', 'crop_injury', 'numeric', '%', 0.0, 100.0],
+      [
+        'CROP_INJURY',
+        'Crop injury score',
+        'crop_injury',
+        'ordinal',
+        'score',
+        0.0,
+        4.0
+      ],
       [
         'DISEASE_SEV',
         'Disease severity',
@@ -3402,6 +3610,7 @@ END
         100.0
       ],
       ['WEED_COVER', 'Weed cover', 'weed', 'numeric', '%', 0.0, 100.0],
+      ['STAND_COVER', 'Stand coverage', 'growth', 'numeric', '%', 0.0, 100.0],
       ['PLANT_HEIGHT', 'Plant height', 'growth', 'numeric', 'cm', 0.0, 9999.0],
       [
         'STAND_COUNT',
@@ -3632,6 +3841,24 @@ END
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_se_profiles_type
       ON se_type_causal_profiles(se_type, trial_type, region)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_guide_anchors_guide
+      ON assessment_guide_anchors(guide_id, is_deleted, lane)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_guides_definition
+      ON assessment_guides(assessment_definition_id)
+      WHERE assessment_definition_id IS NOT NULL
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_guides_trial_assessment
+      ON assessment_guides(trial_assessment_id)
+      WHERE trial_assessment_id IS NOT NULL
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_rgve_session
+      ON rating_guide_view_events(session_id, trial_assessment_id)
     ''');
   }
 }

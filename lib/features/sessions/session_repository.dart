@@ -128,10 +128,15 @@ class SessionRepository {
           );
 
       for (var i = 0; i < assessmentIds.length; i++) {
+        final trialAssessmentId =
+            await _trialAssessmentIdForLegacyAssessment(assessmentIds[i]);
         await _db.into(_db.sessionAssessments).insert(
               SessionAssessmentsCompanion.insert(
                 sessionId: sessionId,
                 assessmentId: assessmentIds[i],
+                trialAssessmentId: trialAssessmentId != null
+                    ? Value(trialAssessmentId)
+                    : const Value.absent(),
                 sortOrder: Value(i),
               ),
             );
@@ -192,8 +197,7 @@ class SessionRepository {
           .write(SessionsCompanion(
         status: const Value(kSessionStatusOpen),
         startedAt: Value(now),
-        raterName:
-            raterName != null ? Value(raterName) : const Value.absent(),
+        raterName: raterName != null ? Value(raterName) : const Value.absent(),
         cropStageBbch:
             cropStageBbch != null ? Value(cropStageBbch) : const Value.absent(),
       ));
@@ -231,14 +235,26 @@ class SessionRepository {
           ..where((sa) => sa.sessionId.equals(sessionId)))
         .get();
     if (existingSA.isNotEmpty) {
+      for (final row in existingSA) {
+        if (row.trialAssessmentId != null) continue;
+        final trialAssessmentId =
+            await _trialAssessmentIdForLegacyAssessment(row.assessmentId);
+        if (trialAssessmentId == null) continue;
+        await (_db.update(_db.sessionAssessments)
+              ..where((sa) => sa.id.equals(row.id)))
+            .write(
+          SessionAssessmentsCompanion(
+            trialAssessmentId: Value(trialAssessmentId),
+          ),
+        );
+      }
       await _backfillArmSessionName(sessionId: sessionId, trialId: trialId);
       return;
     }
 
     final mappings = await (_db.select(_db.armColumnMappings)
           ..where((m) =>
-              m.sessionId.equals(sessionId) &
-              m.trialAssessmentId.isNotNull())
+              m.sessionId.equals(sessionId) & m.trialAssessmentId.isNotNull())
           ..orderBy([(m) => OrderingTerm.asc(m.armColumnIndex)]))
         .get();
 
@@ -316,8 +332,8 @@ class SessionRepository {
       final displayName = ta.displayNameOverride ?? def.name;
       int? legacyId;
       final existingClean = await (_db.select(_db.assessments)
-            ..where((a) =>
-                a.trialId.equals(trialId) & a.name.equals(displayName)))
+            ..where(
+                (a) => a.trialId.equals(trialId) & a.name.equals(displayName)))
           .getSingleOrNull();
       if (existingClean != null) {
         final claimed = await (_db.select(_db.trialAssessments)
@@ -330,14 +346,13 @@ class SessionRepository {
         }
       }
       if (legacyId == null) {
-        final name = existingClean == null
-            ? displayName
-            : '$displayName — TA$taId';
+        final name =
+            existingClean == null ? displayName : '$displayName — TA$taId';
         final suffixed = existingClean == null
             ? null
             : await (_db.select(_db.assessments)
-                  ..where((a) =>
-                      a.trialId.equals(trialId) & a.name.equals(name)))
+                  ..where(
+                      (a) => a.trialId.equals(trialId) & a.name.equals(name)))
                 .getSingleOrNull();
         legacyId = suffixed?.id ??
             await _db.into(_db.assessments).insert(
@@ -351,23 +366,36 @@ class SessionRepository {
                   ),
                 );
       }
-      await (_db.update(_db.trialAssessments)
-            ..where((t) => t.id.equals(taId)))
-          .write(TrialAssessmentsCompanion(legacyAssessmentId: Value(legacyId)));
+      await (_db.update(_db.trialAssessments)..where((t) => t.id.equals(taId)))
+          .write(
+              TrialAssessmentsCompanion(legacyAssessmentId: Value(legacyId)));
       assessmentIds.add(legacyId);
     }
 
     for (var i = 0; i < assessmentIds.length; i++) {
+      final trialAssessmentId =
+          await _trialAssessmentIdForLegacyAssessment(assessmentIds[i]);
       await _db.into(_db.sessionAssessments).insert(
             SessionAssessmentsCompanion.insert(
               sessionId: sessionId,
               assessmentId: assessmentIds[i],
+              trialAssessmentId: trialAssessmentId != null
+                  ? Value(trialAssessmentId)
+                  : const Value.absent(),
               sortOrder: Value(i),
             ),
           );
     }
 
     await _backfillArmSessionName(sessionId: sessionId, trialId: trialId);
+  }
+
+  Future<int?> _trialAssessmentIdForLegacyAssessment(int assessmentId) async {
+    final row = await (_db.select(_db.trialAssessments)
+          ..where((ta) => ta.legacyAssessmentId.equals(assessmentId))
+          ..limit(1))
+        .getSingleOrNull();
+    return row?.id;
   }
 
   /// Batch-rename every "Planned — $date" session in [trialId] to a
@@ -408,8 +436,7 @@ class SessionRepository {
     // they're ever opened (no session_assessments rows yet).
     final mappings = await (_db.select(_db.armColumnMappings)
           ..where((m) =>
-              m.sessionId.equals(sessionId) &
-              m.trialAssessmentId.isNotNull())
+              m.sessionId.equals(sessionId) & m.trialAssessmentId.isNotNull())
           ..orderBy([(m) => OrderingTerm.asc(m.armColumnIndex)]))
         .get();
     final seenTa = <int>{};
@@ -442,15 +469,13 @@ class SessionRepository {
         .get();
     if (saRows.isEmpty) return names;
     final ids = saRows.map((sa) => sa.assessmentId).toList();
-    final asmtRows = await (_db.select(_db.assessments)
-          ..where((a) => a.id.isIn(ids)))
-        .get();
+    final asmtRows =
+        await (_db.select(_db.assessments)..where((a) => a.id.isIn(ids))).get();
     final byId = {for (final a in asmtRows) a.id: a};
     for (final id in ids) {
       final a = byId[id];
       if (a == null) continue;
-      final cleaned =
-          a.name.replaceAll(RegExp(r'\s+—\s+TA\d+$'), '').trim();
+      final cleaned = a.name.replaceAll(RegExp(r'\s+—\s+TA\d+$'), '').trim();
       if (cleaned.isEmpty) continue;
       if (seen.add(cleaned)) names.add(cleaned);
     }
@@ -473,7 +498,8 @@ class SessionRepository {
     final oldPattern = RegExp(r'^Planned\s*[—-]\s*');
     if (!oldPattern.hasMatch(session.name)) return;
 
-    final names = await _computeArmAssessmentNamesForSession(sessionId, trialId);
+    final names =
+        await _computeArmAssessmentNamesForSession(sessionId, trialId);
     if (names.isEmpty) return;
 
     await (_db.update(_db.sessions)..where((s) => s.id.equals(sessionId)))

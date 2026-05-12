@@ -531,25 +531,45 @@ class TrialReadinessService {
       trialState: trial.status,
       knownInterpretationFactors: purpose.knownInterpretationFactors,
     );
-    if (cognitionStatement.isReadyForExport) {
-      checks.add(const TrialReadinessCheck(
-        code: 'trial_cognition_ready',
-        label: 'Trial Review readiness statement is export-ready',
-        severity: TrialCheckSeverity.pass,
-      ));
-    } else {
-      final details = [
-        ...cognitionStatement.actionItems,
-        ...cognitionStatement.cautions,
-      ].take(6).join('\n');
-      checks.add(TrialReadinessCheck(
-        code: 'trial_cognition_not_export_ready',
-        label: 'Trial Review readiness statement requires action',
-        detail: details.isEmpty ? cognitionStatement.summaryText : details,
-        severity: TrialCheckSeverity.blocker,
-      ));
-    }
+    checks.add(buildCognitionReadinessCheck(cognitionStatement));
 
     return TrialReadinessReport(checks: checks);
   }
+}
+
+/// Maps a [TrialReadinessStatement] to a single bridge [TrialReadinessCheck].
+///
+/// Three-state mapping:
+///   - isReadyForExport && cautions.isEmpty  → pass
+///   - isReadyForExport && cautions.isNotEmpty → warning (cautions as detail)
+///   - !isReadyForExport → blocker (actionItems + cautions as detail)
+TrialReadinessCheck buildCognitionReadinessCheck(
+  TrialReadinessStatement statement,
+) {
+  if (statement.isReadyForExport) {
+    if (statement.cautions.isEmpty) {
+      return const TrialReadinessCheck(
+        code: 'trial_cognition_ready',
+        label: 'Trial Review readiness statement is export-ready',
+        severity: TrialCheckSeverity.pass,
+      );
+    }
+    final detail = statement.cautions.take(6).join('\n');
+    return TrialReadinessCheck(
+      code: 'trial_cognition_ready_with_cautions',
+      label: 'Trial Review readiness statement has cautions',
+      detail: detail,
+      severity: TrialCheckSeverity.warning,
+    );
+  }
+  final details = [
+    ...statement.actionItems,
+    ...statement.cautions,
+  ].take(6).join('\n');
+  return TrialReadinessCheck(
+    code: 'trial_cognition_not_export_ready',
+    label: 'Trial Review readiness statement requires action',
+    detail: details.isEmpty ? statement.summaryText : details,
+    severity: TrialCheckSeverity.blocker,
+  );
 }

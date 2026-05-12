@@ -129,6 +129,20 @@ class FerSessionGrid {
   final int flagged;
 }
 
+class FerAssessmentTimingRow {
+  const FerAssessmentTimingRow({
+    required this.assessmentId,
+    required this.assessmentName,
+    required this.actualDaa,
+  });
+
+  final int assessmentId;
+  final String assessmentName;
+
+  /// Days after the most recent applied application before this session.
+  final int? actualDaa;
+}
+
 // ── Section D: Evidence record ────────────────────────────────────────────────
 
 /// Operational evidence presence for a single session.
@@ -234,6 +248,20 @@ class FerCompletenessSection {
 
 // ── Section H: Trial cognition — purpose, evidence arc, CTQ ──────────────────
 
+/// One interpretation risk factor row for the cognition section.
+///
+/// Only factors with severity != 'none' are included. The tier label is
+/// pre-baked at assembly time so the PDF builder needs no mapping logic.
+/// Tier values: 'HIGH' | 'MEDIUM' | 'CANNOT EVALUATE'
+class FerRiskFactorItem {
+  const FerRiskFactorItem({required this.label, required this.tier});
+
+  final String label;
+
+  /// Pre-baked tier label: 'HIGH', 'MEDIUM', or 'CANNOT EVALUATE'.
+  final String tier;
+}
+
 /// One actionable CTQ factor row for the cognition section.
 ///
 /// Only blocked / review_needed / missing items are included; the status label
@@ -276,6 +304,8 @@ class FerCognitionSection {
     required this.reviewCount,
     required this.satisfiedCount,
     required this.topCtqAttentionItems,
+    this.knownInterpretationFactors,
+    required this.interpretationRiskFactors,
   });
 
   /// Non-efficacy, non-validity disclaimer required on all cognition output.
@@ -324,6 +354,14 @@ class FerCognitionSection {
   /// Actionable items only (blocked / review_needed / missing), ranked by
   /// severity, capped at 5. Does not include unknown / future factors.
   final List<FerCognitionAttentionItem> topCtqAttentionItems;
+
+  /// Free-text interpretation factors declared by the researcher, or null if
+  /// no trial_purposes row exists or the field was not captured.
+  final String? knownInterpretationFactors;
+
+  /// Risk factors with severity != 'none', tier labels pre-baked.
+  /// Empty when the evaluator finds no risk or no data is available.
+  final List<FerRiskFactorItem> interpretationRiskFactors;
 }
 
 // ── Top-level ─────────────────────────────────────────────────────────────────
@@ -333,6 +371,7 @@ class FieldExecutionReportData {
     required this.identity,
     required this.protocolContext,
     required this.sessionGrid,
+    required this.assessmentTimingRows,
     required this.evidenceRecord,
     required this.signals,
     required this.completeness,
@@ -344,6 +383,7 @@ class FieldExecutionReportData {
   final FerIdentity identity;
   final FerProtocolContext protocolContext;
   final FerSessionGrid sessionGrid;
+  final List<FerAssessmentTimingRow> assessmentTimingRows;
   final FerEvidenceRecord evidenceRecord;
   final FerSignalsSection signals;
   final FerCompletenessSection completeness;
