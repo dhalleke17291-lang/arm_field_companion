@@ -174,14 +174,14 @@ class TimelineTab extends ConsumerWidget {
           }
           appSubtitleParts.add(statusLabel);
 
-          final appProducts =
-              ref.watch(trialApplicationProductsForEventProvider(app.id))
-                  .valueOrNull ?? [];
+          final appProducts = ref
+                  .watch(trialApplicationProductsForEventProvider(app.id))
+                  .valueOrNull ??
+              [];
           final appDeviations = appProducts.isNotEmpty
               ? computeApplicationDeviations(app, appProducts)
               : <ProductDeviationResult>[];
-          final appHasDeviation =
-              appDeviations.any((d) => d.exceedsTolerance);
+          final appHasDeviation = appDeviations.any((d) => d.exceedsTolerance);
 
           final appStory = storyByAppId[app.id];
           events.add(_TrialTimelineEvent(
@@ -254,13 +254,11 @@ class TimelineTab extends ConsumerWidget {
             date: note.createdAt,
             type: _TimelineEventType.note,
             title: 'Field note',
-            subtitle: preview.length > 80
-                ? '${preview.substring(0, 80)}…'
-                : preview,
+            subtitle:
+                preview.length > 80 ? '${preview.substring(0, 80)}…' : preview,
             timingText: timingText,
             noteTimestampCaption: formatFieldNoteTimestampLine(note),
-            noteMetaCaption:
-                noteMeta.trim().isEmpty ? null : noteMeta.trim(),
+            noteMetaCaption: noteMeta.trim().isEmpty ? null : noteMeta.trim(),
           ));
         }
 
@@ -323,21 +321,20 @@ class _TimelineDateGroupSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final dateHeader = DateFormat('MMM d, yyyy').format(group.date);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing24),
+      padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             dateHeader,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: scheme.onSurfaceVariant,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: AppDesignTokens.primaryText,
             ),
           ),
           const SizedBox(height: AppDesignTokens.spacing8),
@@ -350,7 +347,7 @@ class _TimelineDateGroupSection extends StatelessWidget {
                   event: group.events[i],
                   isFirst: i == 0,
                   isLast: i == group.events.length - 1,
-                  railColor: scheme.outlineVariant,
+                  railColor: AppDesignTokens.borderCrisp,
                   trialId: trialId,
                 ),
             ],
@@ -449,226 +446,196 @@ class _TimelineEventRow extends ConsumerWidget {
         const SizedBox(width: AppDesignTokens.spacing12),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: scheme.surfaceContainerHighest,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: scheme.outlineVariant),
+            padding: const EdgeInsets.only(bottom: AppDesignTokens.spacing12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppDesignTokens.spacing12),
+              decoration: BoxDecoration(
+                color: AppDesignTokens.cardSurface,
+                borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+                border: Border.all(color: AppDesignTokens.borderCrisp),
+                boxShadow: AppDesignTokens.cardShadowRating,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: circleColor.withValues(alpha: 0.12),
+                      borderRadius:
+                          BorderRadius.circular(AppDesignTokens.radiusSmall),
+                      border: Border.all(
+                        color: circleColor.withValues(alpha: 0.25),
                       ),
-                      child: Icon(_icon, size: 18, color: scheme.onSurface),
                     ),
-                    const SizedBox(width: AppDesignTokens.spacing12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  event.title,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: scheme.onSurface,
-                                  ),
+                    child: Icon(_icon, size: 19, color: circleColor),
+                  ),
+                  const SizedBox(width: AppDesignTokens.spacing12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                event.title,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  height: 1.15,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppDesignTokens.primaryText,
                                 ),
                               ),
-                              if (hasWeather)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 4),
-                                  child: Icon(
-                                    Icons.cloud,
-                                    size: 16,
-                                    color: scheme.onSurfaceVariant,
-                                  ),
+                            ),
+                            if (hasWeather)
+                              const Padding(
+                                padding: EdgeInsets.only(left: 6),
+                                child: Icon(
+                                  Icons.cloud,
+                                  size: 17,
+                                  color: AppDesignTokens.primaryText,
+                                ),
+                              ),
+                          ],
+                        ),
+                        if (event.subtitle != null &&
+                            event.subtitle!.trim().isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            event.subtitle!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              height: 1.25,
+                              fontWeight: FontWeight.w600,
+                              color: AppDesignTokens.primaryText,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                        if (event.noteTimestampCaption != null &&
+                            event.noteTimestampCaption!.trim().isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          _TimelineInfoLine(
+                            icon: Icons.schedule_rounded,
+                            label: 'Recorded',
+                            value: event.noteTimestampCaption!,
+                          ),
+                        ],
+                        if (event.noteMetaCaption != null &&
+                            event.noteMetaCaption!.trim().isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          _TimelineInfoLine(
+                            icon: Icons.place_outlined,
+                            label: 'Context',
+                            value: event.noteMetaCaption!,
+                          ),
+                        ],
+                        if (event.timingText != null) ...[
+                          const SizedBox(height: 6),
+                          _TimelineInfoLine(
+                            icon: Icons.calendar_today_outlined,
+                            label: 'Timing',
+                            value: event.timingText!,
+                          ),
+                        ],
+                        if (event.hasDeviation ||
+                            event.beforeFirstApplication) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              if (event.hasDeviation)
+                                const _TimelineStatusPill(
+                                  icon: Icons.warning_amber_rounded,
+                                  label: 'Rate deviation flagged',
+                                  background: AppDesignTokens.warningBg,
+                                  foreground: AppDesignTokens.warningFg,
+                                ),
+                              if (event.beforeFirstApplication)
+                                const _TimelineStatusPill(
+                                  icon: Icons.error_outline_rounded,
+                                  label: 'Before first applied application',
+                                  background: Color(0xFFFEE2E2),
+                                  foreground: AppDesignTokens.missedColor,
                                 ),
                             ],
                           ),
-                          if (event.noteTimestampCaption != null &&
-                              event.noteTimestampCaption!.trim().isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              event.noteTimestampCaption!,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                          if (event.noteMetaCaption != null &&
-                              event.noteMetaCaption!.trim().isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              event.noteMetaCaption!,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                          if (event.subtitle != null &&
-                              event.subtitle!.trim().isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              event.subtitle!,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                          if (event.timingText != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              event.timingText!,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                          if (event.hasDeviation) ...[
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Rate deviation flagged',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppDesignTokens.warningFg,
-                              ),
-                            ),
-                          ],
-                          if (event.beforeFirstApplication) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              'Before first application',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: scheme.error,
-                              ),
-                            ),
-                          ],
-                          // ── Session enrichments ──────────────────────────
-                          if (event.type == _TimelineEventType.session) ...[
-                            if (event.activeSignalCount != null &&
-                                event.activeSignalCount! > 0) ...[
-                              const SizedBox(height: 4),
-                              GestureDetector(
-                                onTap: () async {
-                                  if (event.ratingSessionId == null) return;
-                                  final signals = await ref.read(
-                                    openSignalsForSessionProvider(
-                                            event.ratingSessionId!)
-                                        .future,
-                                  );
-                                  if (signals.isEmpty || !context.mounted) {
-                                    return;
-                                  }
-                                  if (signals.length == 1) {
-                                    await showSignalActionSheet(
-                                      context,
-                                      signal: signals.first,
-                                      trialId: trialId,
-                                    );
-                                  } else {
-                                    await _showSignalPickerSheet(
-                                        context, signals, trialId);
-                                  }
-                                },
-                                child: Text(
-                                  '${event.activeSignalCount} active signal${event.activeSignalCount == 1 ? '' : 's'}${event.hasActiveCriticalSignal ? ' · Critical' : ''}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppDesignTokens.warningFg,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            if (event.divergenceCount != null &&
-                                event.divergenceCount! > 0) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                '${event.divergenceCount} protocol deviation${event.divergenceCount == 1 ? '' : 's'}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                            if (event.sessionEvidenceSummary != null) ...[
-                              const SizedBox(height: 2),
-                              _TimelineEvidenceText(
-                                summary: event.sessionEvidenceSummary!,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ],
-                            if (event.bbchAtSession != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                'BBCH ${event.bbchAtSession}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                            if (weatherSnapshot != null) ...[
-                              const SizedBox(height: 3),
-                              _WeatherSnapshotLine(snapshot: weatherSnapshot),
-                            ],
-                          ],
-                          // ── Application enrichments ──────────────────────
-                          if (event.type == _TimelineEventType.application) ...[
-                            if (event.bbchAtApplication != null ||
-                                event.hasApplicationGps ||
-                                event.applicationTemperatureC != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                [
-                                  if (event.bbchAtApplication != null)
-                                    'BBCH ${event.bbchAtApplication}',
-                                  if (event.hasApplicationGps) 'GPS confirmed',
-                                  if (event.applicationTemperatureC != null)
-                                    '${event.applicationTemperatureC!.round()}°C at application',
-                                ].join(' · '),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                            if (event.isApplied &&
-                                event.applicationEventId != null) ...[
-                              const SizedBox(height: 2),
-                              _TimelineAppWindowsRow(
-                                trialId: trialId,
-                                applicationEventId: event.applicationEventId!,
-                              ),
-                            ],
-                          ],
                         ],
-                      ),
+                        if (event.type == _TimelineEventType.session)
+                          _SessionTimelineDetails(
+                            event: event,
+                            weatherSnapshot: weatherSnapshot,
+                            trialId: trialId,
+                          ),
+                        if (event.type == _TimelineEventType.application)
+                          _ApplicationTimelineDetails(
+                            event: event,
+                            trialId: trialId,
+                          ),
+                      ],
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TimelineInfoLine extends StatelessWidget {
+  const _TimelineInfoLine({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(
+            icon,
+            size: 14,
+            color: AppDesignTokens.secondaryText,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: RichText(
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            text: TextSpan(
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.25,
+                color: AppDesignTokens.secondaryText,
+              ),
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppDesignTokens.primaryText,
+                  ),
                 ),
+                TextSpan(text: value),
               ],
             ),
           ),
@@ -678,12 +645,191 @@ class _TimelineEventRow extends ConsumerWidget {
   }
 }
 
+class _TimelineStatusPill extends StatelessWidget {
+  const _TimelineStatusPill({
+    required this.icon,
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: foreground),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: foreground,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SessionTimelineDetails extends ConsumerWidget {
+  const _SessionTimelineDetails({
+    required this.event,
+    required this.weatherSnapshot,
+    required this.trialId,
+  });
+
+  final _TrialTimelineEvent event;
+  final WeatherSnapshot? weatherSnapshot;
+  final int trialId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final children = <Widget>[];
+
+    if (event.activeSignalCount != null && event.activeSignalCount! > 0) {
+      children.add(
+        GestureDetector(
+          onTap: () async {
+            if (event.ratingSessionId == null) return;
+            final signals = await ref.read(
+              openSignalsForSessionProvider(event.ratingSessionId!).future,
+            );
+            if (signals.isEmpty || !context.mounted) return;
+            if (signals.length == 1) {
+              await showSignalActionSheet(
+                context,
+                signal: signals.first,
+                trialId: trialId,
+              );
+            } else {
+              await _showSignalPickerSheet(context, signals, trialId);
+            }
+          },
+          child: _TimelineStatusPill(
+            icon: Icons.flag_outlined,
+            label:
+                '${event.activeSignalCount} active signal${event.activeSignalCount == 1 ? '' : 's'}${event.hasActiveCriticalSignal ? ' · Critical' : ''}',
+            background: AppDesignTokens.warningBg,
+            foreground: AppDesignTokens.warningFg,
+          ),
+        ),
+      );
+    }
+
+    if (event.divergenceCount != null && event.divergenceCount! > 0) {
+      children.add(
+        _TimelineInfoLine(
+          icon: Icons.rule_rounded,
+          label: 'Protocol',
+          value:
+              '${event.divergenceCount} deviation${event.divergenceCount == 1 ? '' : 's'}',
+        ),
+      );
+    }
+
+    if (event.sessionEvidenceSummary != null) {
+      children.add(
+        _TimelineEvidenceText(summary: event.sessionEvidenceSummary!),
+      );
+    }
+
+    if (event.bbchAtSession != null) {
+      children.add(
+        _TimelineInfoLine(
+          icon: Icons.eco_outlined,
+          label: 'Crop stage',
+          value: 'BBCH ${event.bbchAtSession}',
+        ),
+      );
+    }
+
+    if (weatherSnapshot != null) {
+      children.add(_WeatherSnapshotLine(snapshot: weatherSnapshot!));
+    }
+
+    if (children.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0) const SizedBox(height: 5),
+            children[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ApplicationTimelineDetails extends StatelessWidget {
+  const _ApplicationTimelineDetails({
+    required this.event,
+    required this.trialId,
+  });
+
+  final _TrialTimelineEvent event;
+  final int trialId;
+
+  @override
+  Widget build(BuildContext context) {
+    final evidenceParts = <String>[
+      if (event.bbchAtApplication != null) 'BBCH ${event.bbchAtApplication}',
+      if (event.hasApplicationGps) 'GPS confirmed',
+      if (event.applicationTemperatureC != null)
+        '${event.applicationTemperatureC!.round()}°C at application',
+    ];
+
+    if (evidenceParts.isEmpty &&
+        (!event.isApplied || event.applicationEventId == null)) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (evidenceParts.isNotEmpty)
+            _TimelineInfoLine(
+              icon: Icons.fact_check_outlined,
+              label: 'Application record',
+              value: evidenceParts.join(' · '),
+            ),
+          if (event.isApplied && event.applicationEventId != null) ...[
+            if (evidenceParts.isNotEmpty) const SizedBox(height: 5),
+            _TimelineAppWindowsRow(
+              trialId: trialId,
+              applicationEventId: event.applicationEventId!,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 /// Evidence summary line for a session tile: "GPS · Weather · 3 photos" or "No evidence captured".
 class _TimelineEvidenceText extends StatelessWidget {
-  const _TimelineEvidenceText({required this.summary, required this.color});
+  const _TimelineEvidenceText({required this.summary});
 
   final EvidenceSummary summary;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -693,9 +839,10 @@ class _TimelineEvidenceText extends StatelessWidget {
       if (summary.photoCount > 0)
         '${summary.photoCount} photo${summary.photoCount == 1 ? '' : 's'}',
     ];
-    return Text(
-      parts.isEmpty ? 'No evidence captured' : parts.join(' · '),
-      style: TextStyle(fontSize: 12, color: color),
+    return _TimelineInfoLine(
+      icon: Icons.inventory_2_outlined,
+      label: 'Evidence',
+      value: parts.isEmpty ? 'No evidence captured' : parts.join(' · '),
     );
   }
 }
@@ -726,18 +873,32 @@ class _TimelineAppWindowsRow extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (ctx) {
         if (ctx.isUnavailable) return const SizedBox.shrink();
+        if (ctx.preWindow.recordCount == 0 && ctx.postWindow.recordCount == 0) {
+          return const _TimelineInfoLine(
+            icon: Icons.cloud_outlined,
+            label: 'Weather window',
+            value: 'No records 72h before or 48h after application',
+          );
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _windowLine('72h before', ctx.preWindow, scheme),
-            _windowLine('48h after', ctx.postWindow, scheme),
+            const _TimelineInfoLine(
+              icon: Icons.cloud_outlined,
+              label: 'Weather window',
+              value: 'Application-adjacent observations',
+            ),
+            const SizedBox(height: 3),
+            _windowLine('72h before application', ctx.preWindow, scheme),
+            _windowLine('48h after application', ctx.postWindow, scheme),
           ],
         );
       },
     );
   }
 
-  Widget _windowLine(String label, EnvironmentalWindowDto w, ColorScheme scheme) {
+  Widget _windowLine(
+      String label, EnvironmentalWindowDto w, ColorScheme scheme) {
     final String detail;
     if (w.recordCount == 0) {
       detail = 'no records';
@@ -753,8 +914,12 @@ class _TimelineAppWindowsRow extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 2),
       child: Text(
-        '$label: $detail',
-        style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+        '  $label: $detail',
+        style: const TextStyle(
+          fontSize: 12,
+          height: 1.25,
+          color: AppDesignTokens.secondaryText,
+        ),
       ),
     );
   }
@@ -872,37 +1037,37 @@ class _WeatherSnapshotLine extends StatelessWidget {
     final parts = <String>[];
 
     if (snapshot.temperature != null) {
-      parts.add('${snapshot.temperature!.toStringAsFixed(0)}°${snapshot.temperatureUnit}');
+      parts.add(
+        'Temp ${snapshot.temperature!.toStringAsFixed(0)}°${snapshot.temperatureUnit}',
+      );
     }
 
     if (snapshot.windSpeed != null) {
-      final dir = snapshot.windDirection != null ? ' ${snapshot.windDirection}' : '';
-      parts.add('${snapshot.windSpeed!.toStringAsFixed(0)} ${snapshot.windSpeedUnit}$dir');
+      final dir =
+          snapshot.windDirection != null ? ' ${snapshot.windDirection}' : '';
+      parts.add(
+        'Wind ${snapshot.windSpeed!.toStringAsFixed(0)} ${snapshot.windSpeedUnit}$dir',
+      );
     }
 
     if (snapshot.cloudCover != null && snapshot.cloudCover!.isNotEmpty) {
-      parts.add(snapshot.cloudCover!);
+      parts.add('Sky ${snapshot.cloudCover!}');
     }
 
     if (parts.isEmpty) return const SizedBox.shrink();
 
-    return Text(
-      parts.join(' · '),
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: AppDesignTokens.secondaryText,
-        fontSize: 11,
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+    return _TimelineInfoLine(
+      icon: Icons.cloud_outlined,
+      label: 'Weather',
+      value: parts.join(' · '),
     );
   }
 }
 
 String _fmtRange(DateTime from, DateTime to) {
   final fmt = DateFormat('MMM d');
-  final sameDay = from.year == to.year &&
-      from.month == to.month &&
-      from.day == to.day;
+  final sameDay =
+      from.year == to.year && from.month == to.month && from.day == to.day;
   return sameDay ? fmt.format(from) : '${fmt.format(from)} – ${fmt.format(to)}';
 }
 

@@ -151,6 +151,27 @@ Widget _wrapDesign({
   );
 }
 
+Widget _wrapResearcherContext({
+  Trial? trial,
+  List<ResearcherContextEntry> entries = const [],
+}) {
+  final resolvedTrial = trial ?? _trial();
+  return ProviderScope(
+    overrides: [
+      researcherContextEntriesProvider(resolvedTrial.id).overrideWith(
+        (_) => Stream.value(entries),
+      ),
+    ],
+    child: MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: ResearcherContextCard(trial: resolvedTrial),
+        ),
+      ),
+    ),
+  );
+}
+
 void main() {
   group('Overview identity and design cards', () {
     testWidgets('OID-1: identity renders trial fields', (tester) async {
@@ -257,6 +278,77 @@ void main() {
       expect(find.text('Registration / regulatory submission'), findsOneWidget);
       expect(find.text('Edit intent'), findsOneWidget);
       expect(find.text('Confirm intent'), findsNothing);
+    });
+
+    testWidgets('OID-7: researcher context card hides when empty',
+        (tester) async {
+      await tester.pumpWidget(_wrapResearcherContext());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Researcher Context'), findsNothing);
+    });
+
+    testWidgets('OID-8: researcher context card renders notes and reasons',
+        (tester) async {
+      await tester.pumpWidget(_wrapResearcherContext(
+        entries: [
+          ResearcherContextEntry(
+            contextType: 'Session notes',
+            title: '2026-05-11 Session 2',
+            text: 'Wind picked up during Rep 4 ratings.',
+            detail: 'Plot 104',
+            occurredAt: DateTime(2026, 5, 11),
+          ),
+          const ResearcherContextEntry(
+            contextType: 'Plot notes',
+            title: 'Plot 203',
+            text: 'Wheel track damage, interpret cautiously.',
+          ),
+        ],
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Researcher Context'), findsOneWidget);
+      expect(find.text('2 notes and reasons captured'), findsOneWidget);
+      expect(find.text('Session notes 1'), findsOneWidget);
+      expect(find.text('Plot notes 1'), findsOneWidget);
+      expect(find.text('2026-05-11 Session 2'), findsOneWidget);
+      expect(find.text('Wind picked up during Rep 4 ratings.'), findsOneWidget);
+    });
+
+    testWidgets(
+        'OID-9: researcher context hides intent answers and softens signal wording',
+        (tester) async {
+      await tester.pumpWidget(_wrapResearcherContext(
+        entries: [
+          ResearcherContextEntry(
+            contextType: 'Signal decision notes',
+            title: 'Signal 1 · confirm',
+            text: 'No worries.',
+            detail: 'resolved',
+            occurredAt: DateTime(2026, 5, 11),
+          ),
+          ResearcherContextEntry(
+            contextType: 'Trial intent answers',
+            title: 'What role does each treatment play in the comparison?',
+            text: 'Test items: T2, T3, T4',
+            detail: 'revised',
+            occurredAt: DateTime(2026, 5, 11),
+          ),
+        ],
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Researcher Context'), findsOneWidget);
+      expect(find.text('1 note and reason captured'), findsOneWidget);
+      expect(find.text('Signal notes 1'), findsOneWidget);
+      expect(find.text('Signal decision · confirm'), findsOneWidget);
+      expect(find.text('Signal decision notes 1'), findsNothing);
+      expect(find.text('Trial intent answers 1'), findsNothing);
+      expect(
+        find.text('What role does each treatment play in the comparison?'),
+        findsNothing,
+      );
     });
   });
 }

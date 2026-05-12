@@ -15,6 +15,7 @@ class RatingPhotoStrip extends ConsumerWidget {
     required this.sessionId,
     required this.onCapture,
     required this.onPhotoTap,
+    required this.onCaptionTap,
   });
 
   final int trialId;
@@ -22,8 +23,10 @@ class RatingPhotoStrip extends ConsumerWidget {
   final int sessionId;
   final VoidCallback onCapture;
   final void Function(Photo) onPhotoTap;
+  final void Function(Photo) onCaptionTap;
 
   static const double _tileSize = 72.0;
+  static const double _captionHeight = 48.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -51,7 +54,8 @@ class RatingPhotoStrip extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                color:
+                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                 letterSpacing: 0.3,
               ),
             ),
@@ -74,7 +78,7 @@ class RatingPhotoStrip extends ConsumerWidget {
               ),
             ),
             data: (photos) => SizedBox(
-              height: _tileSize + 24,
+              height: _tileSize + _captionHeight + 32,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.zero,
@@ -84,7 +88,7 @@ class RatingPhotoStrip extends ConsumerWidget {
                     _buildCameraTile(context),
                     for (var i = 0; i < photos.length; i++) ...[
                       const SizedBox(width: 8),
-                      _buildPhotoTile(context, photos[i], i + 1, photos.length),
+                      _buildPhotoItem(context, photos[i], i + 1, photos.length),
                     ],
                   ],
                 ),
@@ -132,6 +136,28 @@ class RatingPhotoStrip extends ConsumerWidget {
     );
   }
 
+  Widget _buildPhotoItem(
+    BuildContext context,
+    Photo photo,
+    int index,
+    int totalCount,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: SizedBox(
+        width: 156,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildPhotoTile(context, photo, index, totalCount),
+            const SizedBox(height: 6),
+            _buildCaptionTile(context, photo),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPhotoTile(
     BuildContext context,
     Photo photo,
@@ -141,88 +167,137 @@ class RatingPhotoStrip extends ConsumerWidget {
     final theme = Theme.of(context);
     final timeStr = DateFormat('HH:mm').format(photo.createdAt);
 
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () => onPhotoTap(photo),
-        child: Container(
-          width: _tileSize,
-          height: _tileSize,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppDesignTokens.borderCrisp),
-            color: theme.colorScheme.surfaceContainerLow,
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              PhotoThumbnail(
-                filePath: photo.filePath,
-                width: _tileSize,
-                height: _tileSize,
-                borderRadius: 7,
-              ),
-              Positioned(
-                left: 4,
-                top: 4,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.scrim.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '$index/$totalCount',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onPrimary,
-                      fontSize: 10,
-                    ),
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => onPhotoTap(photo),
+      child: Container(
+        width: _tileSize,
+        height: _tileSize,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppDesignTokens.borderCrisp),
+          color: theme.colorScheme.surfaceContainerLow,
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            PhotoThumbnail(
+              filePath: photo.filePath,
+              width: _tileSize,
+              height: _tileSize,
+              borderRadius: 7,
+            ),
+            Positioned(
+              left: 4,
+              top: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.scrim.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '$index/$totalCount',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onPrimary,
+                    fontSize: 10,
                   ),
                 ),
               ),
+            ),
+            Positioned(
+              left: 4,
+              bottom: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.scrim.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  timeStr,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onPrimary,
+                    fontSize: 10,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            if (photo.ratingValue != null)
               Positioned(
-                left: 4,
+                right: 4,
                 bottom: 4,
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.scrim.withValues(alpha: 0.6),
+                    color: AppDesignTokens.primary.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    timeStr,
+                    '${photo.ratingValue!.round()}%',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onPrimary,
+                      color: Colors.white,
                       fontSize: 10,
+                      fontWeight: FontWeight.w600,
                     ),
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ),
-              if (photo.ratingValue != null)
-                Positioned(
-                  right: 4,
-                  bottom: 4,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: AppDesignTokens.primary.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${photo.ratingValue!.round()}%',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCaptionTile(BuildContext context, Photo photo) {
+    final theme = Theme.of(context);
+    final caption = photo.caption?.trim();
+    final hasCaption = caption != null && caption.isNotEmpty;
+    return Material(
+      color: hasCaption
+          ? AppDesignTokens.primary.withValues(alpha: 0.06)
+          : theme.colorScheme.surface,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => onCaptionTap(photo),
+        child: Container(
+          height: _captionHeight,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppDesignTokens.borderCrisp),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                hasCaption ? Icons.notes_rounded : Icons.add_comment_outlined,
+                size: 16,
+                color: hasCaption
+                    ? AppDesignTokens.primary
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  hasCaption
+                      ? caption
+                      : 'Add caption — why this photo matters (optional)',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontSize: 11,
+                    height: 1.2,
+                    color: hasCaption
+                        ? AppDesignTokens.primaryText
+                        : theme.colorScheme.onSurfaceVariant,
+                    fontWeight: hasCaption ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
+              ),
             ],
           ),
         ),

@@ -8,6 +8,7 @@ class TrialReadinessSheet extends ConsumerWidget {
     required this.showExportAnyway,
     required this.onExport,
     required this.onClose,
+    required this.onOpenTrialReview,
   });
 
   final int trialId;
@@ -15,6 +16,7 @@ class TrialReadinessSheet extends ConsumerWidget {
   final bool showExportAnyway;
   final VoidCallback onExport;
   final VoidCallback onClose;
+  final VoidCallback onOpenTrialReview;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,7 +36,18 @@ class TrialReadinessSheet extends ConsumerWidget {
     List<ReadinessCheckRow> rowsForSeverity(UnifiedSeverity severity) {
       final fromReport = report.checks
           .where((c) => mapTrialCheckSeverity(c.severity) == severity)
-          .map((c) => ReadinessCheckRow(check: c))
+          .map((c) => ReadinessCheckRow(
+                check: c,
+                onTap: c.code == 'trial_cognition_not_export_ready'
+                    ? onOpenTrialReview
+                    : null,
+                actionLabel: c.code == 'trial_cognition_not_export_ready'
+                    ? 'Open Trial Review'
+                    : null,
+                actionHint: c.code == 'trial_cognition_not_export_ready'
+                    ? 'Complete the Required before export cards shown in Trial Review.'
+                    : null,
+              ))
           .toList();
       final fromDiag = diagnosticExtras
           .where((f) => mapFindingDiagnosticSeverity(f.severity) == severity)
@@ -140,6 +153,9 @@ class ReadinessCheckRow extends StatelessWidget {
   const ReadinessCheckRow({
     super.key,
     required this.check,
+    this.onTap,
+    this.actionLabel,
+    this.actionHint,
     // Reserved for readiness rows that need a source hint; callers use default today.
     // ignore: unused_element_parameter
     this.source,
@@ -163,6 +179,9 @@ class ReadinessCheckRow extends StatelessWidget {
     String? detail,
     required DiagnosticSource findingSource,
   })  : check = null,
+        onTap = null,
+        actionLabel = null,
+        actionHint = null,
         source = null,
         _findingSeverity = severity,
         _message = message,
@@ -170,6 +189,9 @@ class ReadinessCheckRow extends StatelessWidget {
         _findingSource = findingSource;
 
   final TrialReadinessCheck? check;
+  final VoidCallback? onTap;
+  final String? actionLabel;
+  final String? actionHint;
   final DiagnosticSource? source;
   final UnifiedSeverity? _findingSeverity;
   final String? _message;
@@ -211,7 +233,7 @@ class ReadinessCheckRow extends StatelessWidget {
             _sourceLabel(hintSource).isNotEmpty
         ? _sourceLabel(hintSource)
         : null;
-    return Padding(
+    final row = Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,6 +260,33 @@ class ReadinessCheckRow extends StatelessWidget {
                     ),
                   ),
                 ],
+                if (actionHint != null && actionHint!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    actionHint!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppDesignTokens.primaryText,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+                if (onTap != null && actionLabel != null) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: onTap,
+                      icon: const Icon(Icons.fact_check_outlined, size: 18),
+                      label: Text(actionLabel!),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppDesignTokens.primary,
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        minimumSize: const Size(0, 32),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -252,6 +301,15 @@ class ReadinessCheckRow extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+    if (onTap == null) return row;
+    return Material(
+      color: AppDesignTokens.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+        child: row,
       ),
     );
   }

@@ -204,14 +204,21 @@ class OverviewPlotSummary extends ConsumerWidget {
   }
 }
 
-class TrialInsightsCard extends ConsumerWidget {
+class TrialInsightsCard extends ConsumerStatefulWidget {
   const TrialInsightsCard({super.key, required this.trialId});
 
   final int trialId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final insightsAsync = ref.watch(trialInsightsProvider(trialId));
+  ConsumerState<TrialInsightsCard> createState() => _TrialInsightsCardState();
+}
+
+class _TrialInsightsCardState extends ConsumerState<TrialInsightsCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final insightsAsync = ref.watch(trialInsightsProvider(widget.trialId));
 
     return insightsAsync.when(
       loading: () => const SizedBox.shrink(),
@@ -220,46 +227,106 @@ class TrialInsightsCard extends ConsumerWidget {
         if (insights.isEmpty) return const SizedBox.shrink();
         final hasTrends =
             insights.any((i) => i.type == InsightType.treatmentTrend);
-        return OverviewDashboardCard(
-          title: 'Trial insights',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Early or developing readouts — not proof of treatment '
-                'effects. Not for final trial conclusions, registration, or '
-                'substitute for approved analysis software.',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppDesignTokens.secondaryText,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'All insights here are exploratory. Labels like '
-                '"Developing" describe how much history the row has — not '
-                'that a trend is proven. Formal inference stays outside the app.',
-                style: TextStyle(
-                  fontSize: 10,
-                  height: 1.35,
-                  color: AppDesignTokens.secondaryText.withValues(alpha: 0.88),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Divider(height: 1, color: AppDesignTokens.borderCrisp),
-              ..._buildGroupedInsights(insights),
-              if (hasTrends) ...[
-                const Divider(height: 1, color: AppDesignTokens.borderCrisp),
-                const SizedBox(height: 6),
-                const Text(
-                  'Treatment trends: arithmetic mean per treatment per session.',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppDesignTokens.secondaryText,
+        return Card(
+          margin: _kOverviewDashboardCardMargin,
+          elevation: 0,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+            side: const BorderSide(color: AppDesignTokens.borderCrisp),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDesignTokens.spacing12,
+              vertical: AppDesignTokens.spacing8,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                InkWell(
+                  borderRadius:
+                      BorderRadius.circular(AppDesignTokens.radiusSmall),
+                  onTap: () => setState(() => _expanded = !_expanded),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Trial insights',
+                            style: _overviewDashboardCardTitleStyle(),
+                          ),
+                        ),
+                        Text(
+                          '${insights.length} insight${insights.length == 1 ? '' : 's'}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppDesignTokens.secondaryText,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          _expanded
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
+                          size: 20,
+                          color: AppDesignTokens.primary,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+                if (!_expanded) ...[
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Exploratory readouts available. Tap to review.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Early or developing readouts — not proof of treatment '
+                    'effects. Not for final trial conclusions, registration, or '
+                    'substitute for approved analysis software.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppDesignTokens.secondaryText,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'All insights here are exploratory. Labels like '
+                    '"Developing" describe how much history the row has — not '
+                    'that a trend is proven. Formal inference stays outside the app.',
+                    style: TextStyle(
+                      fontSize: 10,
+                      height: 1.35,
+                      color:
+                          AppDesignTokens.secondaryText.withValues(alpha: 0.88),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(height: 1, color: AppDesignTokens.borderCrisp),
+                  ..._buildGroupedInsights(insights),
+                  if (hasTrends) ...[
+                    const Divider(
+                        height: 1, color: AppDesignTokens.borderCrisp),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Treatment trends: arithmetic mean per treatment per session.',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppDesignTokens.secondaryText,
+                      ),
+                    ),
+                  ],
+                ],
               ],
-            ],
+            ),
           ),
         );
       },
@@ -365,6 +432,8 @@ class OverviewTabBody extends ConsumerWidget {
           ),
           // 2b — Read-only execution summary (divergences + evidence coverage).
           ExecutionSummaryCard(trial: trial),
+          // 2c — Researcher-authored notes, reasons, and captions.
+          ResearcherContextCard(trial: trial),
           // 2c — Trial design summary.
           TrialDesignSummaryCard(trial: trial),
           // 3 — Physical structure & progress (incl. whole-trial %).
@@ -375,6 +444,166 @@ class OverviewTabBody extends ConsumerWidget {
           TrialInsightsCard(trialId: trial.id),
           // 6 — Minor status text.
           const AutoBackupStatusLine(),
+        ],
+      ),
+    );
+  }
+}
+
+class ResearcherContextCard extends ConsumerWidget {
+  const ResearcherContextCard({super.key, required this.trial});
+
+  final Trial trial;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final contextAsync = ref.watch(researcherContextEntriesProvider(trial.id));
+    return contextAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (entries) {
+        final visibleEntries = entries
+            .where((entry) => entry.contextType != 'Trial intent answers')
+            .toList();
+        if (visibleEntries.isEmpty) return const SizedBox.shrink();
+        final counts = <String, int>{};
+        for (final entry in visibleEntries) {
+          final label = _researcherContextTypeLabel(entry.contextType);
+          counts[label] = (counts[label] ?? 0) + 1;
+        }
+        final countParts =
+            counts.entries.take(4).map((e) => '${e.key} ${e.value}').toList();
+        final previewEntries = visibleEntries.take(3).toList();
+
+        return OverviewDashboardCard(
+          title: 'Researcher Context',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${visibleEntries.length} note${visibleEntries.length == 1 ? '' : 's'} and reason${visibleEntries.length == 1 ? '' : 's'} captured',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppDesignTokens.primaryText,
+                ),
+              ),
+              if (countParts.isNotEmpty) ...[
+                const SizedBox(height: AppDesignTokens.spacing8),
+                Wrap(
+                  spacing: AppDesignTokens.spacing4,
+                  runSpacing: AppDesignTokens.spacing4,
+                  children: [
+                    for (final part in countParts)
+                      _OverviewMiniChip(
+                        label: part,
+                        bg: AppDesignTokens.successBg,
+                        fg: AppDesignTokens.primary,
+                      ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: AppDesignTokens.spacing8),
+              for (var i = 0; i < previewEntries.length; i++) ...[
+                _ResearcherContextPreviewRow(entry: previewEntries[i]),
+                if (i != previewEntries.length - 1)
+                  const SizedBox(height: AppDesignTokens.spacing8),
+              ],
+              if (visibleEntries.length > previewEntries.length) ...[
+                const SizedBox(height: AppDesignTokens.spacing8),
+                Text(
+                  '+${visibleEntries.length - previewEntries.length} more captured for export context',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+String _researcherContextTypeLabel(String type) {
+  return switch (type) {
+    'Signal decision notes' => 'Signal notes',
+    _ => type,
+  };
+}
+
+String _researcherContextTitleLabel(ResearcherContextEntry entry) {
+  if (entry.contextType != 'Signal decision notes') return entry.title;
+  final signalMatch =
+      RegExp(r'^Signal\s+\d+\s+·\s+(.+)$').firstMatch(entry.title.trim());
+  if (signalMatch == null) return 'Signal decision';
+  return 'Signal decision · ${signalMatch.group(1)}';
+}
+
+class _ResearcherContextPreviewRow extends StatelessWidget {
+  const _ResearcherContextPreviewRow({required this.entry});
+
+  final ResearcherContextEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final date = entry.occurredAt == null
+        ? null
+        : DateFormat('MMM d').format(entry.occurredAt!);
+    final meta = [
+      _researcherContextTypeLabel(entry.contextType),
+      if (entry.detail != null) entry.detail!,
+      if (date != null) date,
+    ].join(' · ');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppDesignTokens.spacing8),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.sectionHeaderBg,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _researcherContextTitleLabel(entry),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            meta,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          const SizedBox(height: AppDesignTokens.spacing4),
+          Text(
+            entry.text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.35,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
         ],
       ),
     );

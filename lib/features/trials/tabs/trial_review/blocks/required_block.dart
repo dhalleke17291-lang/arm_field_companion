@@ -125,6 +125,8 @@ class RequiredBlockBody extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
+        const _RequiredBlockHeader(),
+        const SizedBox(height: AppDesignTokens.spacing8),
         for (var i = 0; i < items.length; i++) ...[
           if (i > 0) const SizedBox(height: AppDesignTokens.spacing8),
           _RequiredItemCard(
@@ -310,6 +312,37 @@ class RequiredBlockBody extends ConsumerWidget {
       return;
     }
     showSignalActionSheet(context, signal: signal, trialId: trial.id);
+  }
+}
+
+class _RequiredBlockHeader extends StatelessWidget {
+  const _RequiredBlockHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Required before export',
+          style: TextStyle(
+            fontSize: 15,
+            height: 1.2,
+            fontWeight: FontWeight.w800,
+            color: AppDesignTokens.primaryText,
+          ),
+        ),
+        SizedBox(height: 3),
+        Text(
+          'Complete these cards to clear Trial Review readiness.',
+          style: TextStyle(
+            fontSize: 12,
+            height: 1.25,
+            color: AppDesignTokens.secondaryText,
+          ),
+        ),
+      ],
+    );
   }
 }
 

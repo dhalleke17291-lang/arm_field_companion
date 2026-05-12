@@ -638,31 +638,34 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                 icon: const Icon(Icons.more_vert, color: Colors.white),
                 tooltip: 'More options',
                 onSelected: (value) {
-                  if (value == 'rating_order') {
-                    _showRatingOrderSheet(context);
-                  } else if (value == 'void_rating') {
-                    final ex = existingRatingAsync.asData?.value;
-                    if (ex != null) {
-                      _showVoidRatingDialog(context, ex);
+                  final existing = existingRatingAsync.asData?.value;
+                  // Let the popup route fully close before opening dialogs/sheets.
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    if (value == 'rating_order') {
+                      _showRatingOrderSheet(context);
+                    } else if (value == 'void_rating') {
+                      if (existing != null) {
+                        _showVoidRatingDialog(context, existing);
+                      }
+                    } else if (value == 'rating_history') {
+                      if (existing != null) {
+                        showRatingLineageBottomSheet(
+                          context: context,
+                          ref: ref,
+                          trialId: widget.trial.id,
+                          plotPk: widget.plot.id,
+                          assessmentId: _currentAssessment.id,
+                          sessionId: widget.session.id,
+                          assessmentName: _ratingAssessmentDisplayLabel(
+                              _currentAssessment, taByLegacy, taById),
+                          plotLabel:
+                              getDisplayPlotLabel(widget.plot, widget.allPlots),
+                          ratingId: existing.id,
+                        );
+                      }
                     }
-                  } else if (value == 'rating_history') {
-                    final ex = existingRatingAsync.asData?.value;
-                    if (ex != null) {
-                      showRatingLineageBottomSheet(
-                        context: context,
-                        ref: ref,
-                        trialId: widget.trial.id,
-                        plotPk: widget.plot.id,
-                        assessmentId: _currentAssessment.id,
-                        sessionId: widget.session.id,
-                        assessmentName: _ratingAssessmentDisplayLabel(
-                            _currentAssessment, taByLegacy, taById),
-                        plotLabel:
-                            getDisplayPlotLabel(widget.plot, widget.allPlots),
-                        ratingId: ex.id,
-                      );
-                    }
-                  }
+                  });
                 },
                 itemBuilder: (context) {
                   final items = <PopupMenuEntry<String>>[];
@@ -890,6 +893,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                           sessionId: widget.session.id,
                           onCapture: () => _capturePhoto(context),
                           onPhotoTap: _viewPhoto,
+                          onCaptionTap: _editPhotoCaption,
                         ),
                       ];
 
@@ -1058,6 +1062,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         return false;
       }
 
+      if (!mounted || !context.mounted) return false;
+      final captionResult = await _openPhotoCaptionEditor(context);
+      if (!mounted || !context.mounted) return false;
+
       final userId = await ref.read(currentUserIdProvider.future);
       final currentValue = double.tryParse(_valueController.text.trim());
       final usecase = ref.read(savePhotoUseCaseProvider);
@@ -1068,7 +1076,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
           sessionId: widget.session.id,
           tempPath: shot.path,
           finalPath: finalPath,
-          caption: null,
+          caption: captionResult?.caption,
           raterName: widget.session.raterName,
           performedByUserId: userId,
           assessmentId: _currentAssessment.id,
@@ -1095,6 +1103,62 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         SnackBar(content: Text('Photo error: $e')),
       );
       return false;
+    }
+  }
+
+  Future<_PhotoCaptionEditResult?> _openPhotoCaptionEditor(
+    BuildContext context, {
+    String? initialCaption,
+  }) {
+    return Navigator.push<_PhotoCaptionEditResult>(
+      context,
+      MaterialPageRoute<_PhotoCaptionEditResult>(
+        fullscreenDialog: true,
+        builder: (_) => _PhotoCaptionEditorScreen(
+          initialCaption: initialCaption,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editPhotoCaption(Photo photo) async {
+    final result = await _openPhotoCaptionEditor(
+      context,
+      initialCaption: photo.caption,
+    );
+    if (result == null || !mounted) return;
+
+    try {
+      final userId = await ref.read(currentUserIdProvider.future);
+      final user = await ref.read(currentUserProvider.future);
+      await ref.read(photoRepositoryProvider).updateCaption(
+            photo.id,
+            result.caption,
+            performedBy: user?.displayName ?? widget.session.raterName,
+            performedByUserId: userId,
+          );
+      ref.invalidate(
+        photosForPlotProvider(
+          PhotosForPlotParams(
+            trialId: widget.trial.id,
+            plotPk: widget.plot.id,
+            sessionId: widget.session.id,
+          ),
+        ),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.caption == null ? 'Caption removed' : 'Caption saved',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Caption save error: $e')),
+      );
     }
   }
 
@@ -2102,39 +2166,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     if (applied == true && mounted) setState(() {});
   }
 
-  void _invalidateRatingStreamsAfterVoid() {
-    final taList = ref
-            .read(trialAssessmentsForTrialProvider(widget.trial.id))
-            .valueOrNull ??
-        <TrialAssessment>[];
-    final aamData = ref
-            .read(armAssessmentMetadataMapForTrialProvider(widget.trial.id))
-            .valueOrNull ??
-        <int, ArmAssessmentMetadataData>{};
-    TrialAssessment? voidTa;
-    for (final ta in taList) {
-      if (ta.legacyAssessmentId == _currentAssessment.id) {
-        voidTa = ta;
-        break;
-      }
-    }
-    final voidNumSubs =
-        voidTa != null ? (aamData[voidTa.id]?.numSubsamples ?? 1) : 1;
-    ref.invalidate(
-      currentRatingProvider(
-        CurrentRatingParams(
-          trialId: widget.trial.id,
-          plotPk: widget.plot.id,
-          assessmentId: _currentAssessment.id,
-          sessionId: widget.session.id,
-          subUnitId: voidNumSubs > 1 ? _currentSubUnit : null,
-        ),
-      ),
-    );
-    ref.invalidate(sessionRatingsProvider(widget.session.id));
-    ref.invalidate(ratedPlotPksProvider(widget.session.id));
-  }
-
   Future<void> _showVoidRatingDialog(
       BuildContext context, RatingRecord existing) async {
     final reasonController = TextEditingController();
@@ -2209,7 +2240,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
     );
     reasonController.dispose();
     if (applied == true && mounted) {
-      _invalidateRatingStreamsAfterVoid();
       setState(() {
         _userHasInteracted = false;
       });
@@ -2406,62 +2436,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                       ),
                     ),
                   ],
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.only(right: 8),
-                        child: Text(
-                          'Rater',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppDesignTokens.secondaryText,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 6),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.person_outline,
-                                size: 12,
-                                color: AppDesignTokens.secondaryText,
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  (widget.session.raterName != null &&
-                                          widget.session.raterName!
-                                              .trim()
-                                              .isNotEmpty)
-                                      ? widget.session.raterName!.trim()
-                                      : (ref
-                                              .watch(currentUserProvider)
-                                              .valueOrNull
-                                              ?.displayName ??
-                                          '\u2014'),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppDesignTokens.primaryText,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
+                  if (!_hasScaleDefined) ...[
+                    _buildStandaloneRaterRow(),
+                    const SizedBox(height: 8),
+                  ],
                   if (_isTextAssessment) ...[
                     const SizedBox(height: 6),
                     TextField(
@@ -2486,8 +2464,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                     Stack(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 16),
+                          constraints: const BoxConstraints(minHeight: 132),
+                          padding: const EdgeInsets.fromLTRB(16, 18, 16, 34),
                           decoration: BoxDecoration(
                             color:
                                 AppDesignTokens.primary.withValues(alpha: 0.06),
@@ -2534,6 +2512,17 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                           top: 6,
                           right: 6,
                           child: _buildSameAsLastChip(),
+                        ),
+                        Positioned(
+                          left: 12,
+                          bottom: 8,
+                          right: 64,
+                          child: _buildInlineRaterMeta(),
+                        ),
+                        Positioned(
+                          right: 8,
+                          bottom: 6,
+                          child: _buildInlineCameraButton(context),
                         ),
                       ],
                     ),
@@ -3087,18 +3076,23 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         // Fine adjustment row — ±step and ±5×step
         Row(
           children: [
-            _fineBtn(
-              '−${(step * 5) == (step * 5).roundToDouble() && step < 1 ? (step * 5).toStringAsFixed(1) : (step * 5).round()}',
-              () => applyFine(-step * 5),
+            Expanded(
+              child: _fineBtn(
+                '−${(step * 5) == (step * 5).roundToDouble() && step < 1 ? (step * 5).toStringAsFixed(1) : (step * 5).round()}',
+                () => applyFine(-step * 5),
+              ),
             ),
             const SizedBox(width: 4),
-            _fineBtn(
-              '−${step < 1 ? step.toStringAsFixed(1) : step.round()}',
-              () => applyFine(-step),
+            Expanded(
+              child: _fineBtn(
+                '−${step < 1 ? step.toStringAsFixed(1) : step.round()}',
+                () => applyFine(-step),
+              ),
             ),
             const SizedBox(width: 4),
             // Value field centered between −step and +step; unit outside so number is visually centered
-            Expanded(
+            SizedBox(
+              width: 112,
               child: Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -3150,33 +3144,23 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                         ),
                       ),
                     ),
-                    if (_currentAssessment.unit != null &&
-                        _currentAssessment.unit!.isNotEmpty) ...[
-                      const SizedBox(width: 4),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Text(
-                          _currentAssessment.unit!,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppDesignTokens.secondaryText,
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
             ),
             const SizedBox(width: 4),
-            _fineBtn(
-              '+${step < 1 ? step.toStringAsFixed(1) : step.round()}',
-              () => applyFine(step),
+            Expanded(
+              child: _fineBtn(
+                '+${step < 1 ? step.toStringAsFixed(1) : step.round()}',
+                () => applyFine(step),
+              ),
             ),
             const SizedBox(width: 4),
-            _fineBtn(
-              '+${(step * 5) == (step * 5).roundToDouble() && step < 1 ? (step * 5).toStringAsFixed(1) : (step * 5).round()}',
-              () => applyFine(step * 5),
+            Expanded(
+              child: _fineBtn(
+                '+${(step * 5) == (step * 5).roundToDouble() && step < 1 ? (step * 5).toStringAsFixed(1) : (step * 5).round()}',
+                () => applyFine(step * 5),
+              ),
             ),
           ],
         ),
@@ -3191,14 +3175,13 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
         onTap();
       },
       child: Container(
-        width: 44,
         height: 36,
         decoration: BoxDecoration(
-          color: AppDesignTokens.cardSurface,
+          color: AppDesignTokens.warningBg.withValues(alpha: 0.42),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: AppDesignTokens.borderCrisp,
-            width: 0.5,
+            color: AppDesignTokens.warningFg.withValues(alpha: 0.18),
+            width: 1,
           ),
         ),
         child: Center(
@@ -3206,8 +3189,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
             label,
             style: const TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppDesignTokens.primaryText,
+              fontWeight: FontWeight.w800,
+              color: AppDesignTokens.warningFg,
             ),
           ),
         ),
@@ -4622,6 +4605,165 @@ class _RatingScreenState extends ConsumerState<RatingScreen>
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInlineRaterMeta() {
+    final rater = (widget.session.raterName != null &&
+            widget.session.raterName!.trim().isNotEmpty)
+        ? widget.session.raterName!.trim()
+        : (ref.watch(currentUserProvider).valueOrNull?.displayName ?? '\u2014');
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.person_outline,
+          size: 14,
+          color: AppDesignTokens.secondaryText,
+        ),
+        const SizedBox(width: 5),
+        Flexible(
+          child: Text(
+            rater,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppDesignTokens.secondaryText,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStandaloneRaterRow() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(right: 8),
+          child: Text(
+            'Rater',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppDesignTokens.secondaryText,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: _buildInlineRaterMeta(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInlineCameraButton(BuildContext context) {
+    return Tooltip(
+      message: 'Add photo',
+      child: Material(
+        color: AppDesignTokens.primary,
+        borderRadius: BorderRadius.circular(18),
+        elevation: 1,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => _capturePhoto(context),
+          child: const SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(
+              Icons.camera_alt_outlined,
+              size: 20,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PhotoCaptionEditResult {
+  const _PhotoCaptionEditResult(this.caption);
+
+  final String? caption;
+}
+
+class _PhotoCaptionEditorScreen extends StatefulWidget {
+  const _PhotoCaptionEditorScreen({
+    this.initialCaption,
+  });
+
+  final String? initialCaption;
+
+  @override
+  State<_PhotoCaptionEditorScreen> createState() =>
+      _PhotoCaptionEditorScreenState();
+}
+
+class _PhotoCaptionEditorScreenState extends State<_PhotoCaptionEditorScreen> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialCaption ?? '');
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _done() {
+    final trimmed = _controller.text.trim();
+    Navigator.pop(
+      context,
+      _PhotoCaptionEditResult(trimmed.isEmpty ? null : trimmed),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Photo caption'),
+        actions: [
+          TextButton(
+            onPressed: _done,
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppDesignTokens.spacing16),
+          child: TextField(
+            controller: _controller,
+            autofocus: true,
+            keyboardType: TextInputType.multiline,
+            textInputAction: TextInputAction.newline,
+            minLines: 10,
+            maxLines: null,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  height: 1.35,
+                  color: AppDesignTokens.primaryText,
+                ),
+            decoration: const InputDecoration(
+              hintText: 'Add caption — why this photo matters (optional)',
+              alignLabelWithHint: true,
+              border: OutlineInputBorder(),
+            ),
           ),
         ),
       ),

@@ -72,7 +72,8 @@ class TrialReadinessService {
         await ref.read(assessmentsForTrialProvider(trialPk).future);
     final trialAssessmentRepo = ref.read(trialAssessmentRepositoryProvider);
     final trialAssessments = await trialAssessmentRepo.getForTrial(trialPk);
-    final hasAssessments = legacyAssessments.isNotEmpty || trialAssessments.isNotEmpty;
+    final hasAssessments =
+        legacyAssessments.isNotEmpty || trialAssessments.isNotEmpty;
     if (!hasAssessments) {
       checks.add(const TrialReadinessCheck(
         code: 'no_assessments',
@@ -111,8 +112,7 @@ class TrialReadinessService {
       }
       var plotsWithoutTreatmentCount = 0;
       for (final p in dataPlots) {
-        final effective =
-            plotPkToAssignmentTreatment[p.id] ?? p.treatmentId;
+        final effective = plotPkToAssignmentTreatment[p.id] ?? p.treatmentId;
         if (effective == null) plotsWithoutTreatmentCount++;
       }
       if (plotsWithoutTreatmentCount > 0) {
@@ -285,8 +285,7 @@ class TrialReadinessService {
     }
     for (final a in legacyAssessments) {
       if (linkedLegacyIds.contains(a.id)) continue;
-      assessmentTargets
-          .add((stableId: -a.id, name: a.name, legacyId: a.id));
+      assessmentTargets.add((stableId: -a.id, name: a.name, legacyId: a.id));
     }
 
     for (final t in assessmentTargets) {
@@ -517,12 +516,10 @@ class TrialReadinessService {
       ));
     }
 
-    final coherence =
-        await ref.read(trialCoherenceProvider(trialPk).future);
+    final coherence = await ref.read(trialCoherenceProvider(trialPk).future);
     final risk =
         await ref.read(trialInterpretationRiskProvider(trialPk).future);
-    final ctq =
-        await ref.read(trialCriticalToQualityProvider(trialPk).future);
+    final ctq = await ref.read(trialCriticalToQualityProvider(trialPk).future);
     final purpose = await ref.read(trialPurposeProvider(trialPk).future);
     final cognitionStatement = computeTrialReadinessStatement(
       coherenceDto: coherence,
@@ -568,7 +565,7 @@ TrialReadinessCheck buildCognitionReadinessCheck(
   ].take(6).join('\n');
   return TrialReadinessCheck(
     code: 'trial_cognition_not_export_ready',
-    label: 'Trial Review readiness statement requires action',
+    label: 'Trial Review required cards need action',
     detail: details.isEmpty ? statement.summaryText : details,
     severity: TrialCheckSeverity.blocker,
   );

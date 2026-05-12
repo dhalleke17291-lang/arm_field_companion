@@ -32,7 +32,8 @@ void _generateThumbnail(String originalPath) {
   final decoded = img.decodeImage(bytes);
   if (decoded == null) return;
   final thumb = img.copyResize(decoded,
-      width: kThumbnailSize, height: kThumbnailSize,
+      width: kThumbnailSize,
+      height: kThumbnailSize,
       interpolation: img.Interpolation.average);
   final thumbPath = thumbnailPathFor(originalPath);
   File(thumbPath).writeAsBytesSync(img.encodeJpg(thumb, quality: 80));
@@ -131,8 +132,8 @@ class PhotoRepository {
 
   Future<int> getPhotoCountForSession(int sessionId) async {
     final list = await (_db.select(_db.photos)
-          ..where((p) =>
-              p.sessionId.equals(sessionId) & p.isDeleted.equals(false)))
+          ..where(
+              (p) => p.sessionId.equals(sessionId) & p.isDeleted.equals(false)))
         .get();
     return list.length;
   }
@@ -162,6 +163,47 @@ class PhotoRepository {
       plotPk: plotPk,
       sessionId: sessionId,
     );
+  }
+
+  Future<void> updateCaption(
+    int id,
+    String? caption, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async {
+    final photo = await (_db.select(_db.photos)
+          ..where((p) => p.id.equals(id) & p.isDeleted.equals(false)))
+        .getSingleOrNull();
+    if (photo == null) return;
+
+    final trimmed = caption?.trim();
+    final normalized = trimmed == null || trimmed.isEmpty ? null : trimmed;
+
+    await _db.transaction(() async {
+      await (_db.update(_db.photos)..where((p) => p.id.equals(id))).write(
+        PhotosCompanion(caption: Value(normalized)),
+      );
+
+      await _db.into(_db.auditEvents).insert(
+            AuditEventsCompanion.insert(
+              trialId: Value(photo.trialId),
+              sessionId: Value(photo.sessionId),
+              plotPk: Value(photo.plotPk),
+              eventType: 'PHOTO_CAPTION_UPDATED',
+              description: normalized == null
+                  ? 'Photo caption cleared'
+                  : 'Photo caption updated',
+              performedBy: Value(performedBy),
+              performedByUserId: Value(performedByUserId),
+              metadata: Value(jsonEncode({
+                'photo_id': photo.id,
+                'file_path': photo.filePath,
+                'old_caption': photo.caption,
+                'new_caption': normalized,
+              })),
+            ),
+          );
+    });
   }
 
   /// Soft-deletes a photo row. Does not delete the file on disk.
@@ -202,8 +244,8 @@ class PhotoRepository {
   /// Soft-deleted photos for a session (Recovery), newest first.
   Future<List<Photo>> getDeletedPhotosForSession(int sessionId) {
     return (_db.select(_db.photos)
-          ..where((p) =>
-              p.sessionId.equals(sessionId) & p.isDeleted.equals(true))
+          ..where(
+              (p) => p.sessionId.equals(sessionId) & p.isDeleted.equals(true))
           ..orderBy([(p) => OrderingTerm.desc(p.deletedAt)]))
         .get();
   }
@@ -259,8 +301,7 @@ class PhotoRepository {
 
   Stream<List<Photo>> watchPhotosForTrial(int trialId) {
     return (_db.select(_db.photos)
-          ..where((p) =>
-              p.trialId.equals(trialId) & p.isDeleted.equals(false))
+          ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(false))
           ..orderBy([
             (p) => OrderingTerm.asc(p.sessionId),
             (p) => OrderingTerm.asc(p.createdAt),
@@ -270,8 +311,7 @@ class PhotoRepository {
 
   Future<List<Photo>> getPhotosForTrial(int trialId) {
     return (_db.select(_db.photos)
-          ..where((p) =>
-              p.trialId.equals(trialId) & p.isDeleted.equals(false))
+          ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(false))
           ..orderBy([
             (p) => OrderingTerm.asc(p.sessionId),
             (p) => OrderingTerm.asc(p.createdAt),

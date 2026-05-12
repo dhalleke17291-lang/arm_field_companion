@@ -777,6 +777,13 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
           _runExport(format);
         },
         onClose: () => Navigator.pop(ctx),
+        onOpenTrialReview: () {
+          Navigator.pop(ctx);
+          if (!mounted) return;
+          setState(() {
+            _selectedTabIndex = _trialOverviewTabIndex;
+          });
+        },
       ),
     );
   }
@@ -936,30 +943,14 @@ class _TrialDetailScreenState extends ConsumerState<TrialDetailScreen> {
                     trial.workspaceType,
                     isArmLinked: trialArmLinked,
                   ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      TrialExportMenu(
-                        isExporting: _isExporting,
-                        onExportTapped: () =>
-                            _onExportTapped(context, ref, trial),
-                      ),
-                      if (showBadge)
-                        Positioned(
-                          right: 18,
-                          top: 12,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isBlocker
-                                  ? theme.colorScheme.error
-                                  : Colors.amber.shade700,
-                            ),
-                          ),
-                        ),
-                    ],
+                  child: TrialExportMenu(
+                    isExporting: _isExporting,
+                    badgeColor: showBadge
+                        ? (isBlocker
+                            ? theme.colorScheme.error
+                            : Colors.amber.shade700)
+                        : null,
+                    onExportTapped: () => _onExportTapped(context, ref, trial),
                   ),
                 ),
               ),

@@ -20,7 +20,6 @@ import '../../core/design/app_design_tokens.dart';
 import '../../core/ui/field_note_timestamp_format.dart';
 import '../../core/widgets/app_standard_widgets.dart';
 import '../../domain/models/plot_context.dart';
-import '../../shared/widgets/app_empty_state.dart';
 
 String _plotDetailFormatDate(DateTime dt) {
   return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
@@ -142,8 +141,7 @@ class _PlotRatingHistoryList extends ConsumerWidget {
                 ? taByLegacyAssessmentId[assessment.id]
                 : null;
             final historyTitle = ta != null
-                ? AssessmentDisplayHelper.minimalName(ta,
-                    aam: aamMap[ta.id])
+                ? AssessmentDisplayHelper.minimalName(ta, aam: aamMap[ta.id])
                 : (assessment?.name ?? 'Assessment');
             return Consumer(
               builder: (context, cRef, _) {
@@ -720,48 +718,83 @@ class PlotDetailScreen extends ConsumerWidget {
           slivers: [
             SliverToBoxAdapter(
               child: Card(
-                margin: const EdgeInsets.all(12),
+                margin: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+                elevation: 0,
+                color: AppDesignTokens.cardSurface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: const BorderSide(color: AppDesignTokens.borderCrisp),
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Plot Details',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: Theme.of(context).colorScheme.primary)),
-                      const Divider(),
-                      StandardDetailRow(
-                          label: 'Plot (display)', value: displayNum),
-                      if (plotToShow.rep != null)
-                        StandardDetailRow(
-                            label: 'Rep / Block',
-                            value: plotToShow.rep.toString()),
-                      if (assignmentSourceLabel != 'Unknown' &&
-                          assignmentSourceLabel != 'Unassigned')
-                        StandardDetailRow(
-                            label: 'Assignment source',
-                            value: assignmentSourceLabel),
-                      if (plotToShow.row != null)
-                        StandardDetailRow(
-                            label: 'Range', value: plotToShow.row.toString()),
-                      if (plotToShow.column != null)
-                        StandardDetailRow(
-                            label: 'Column',
-                            value: plotToShow.column.toString()),
-                      if (plotToShow.plotSortIndex != null)
-                        StandardDetailRow(
-                            label: 'Sort Index',
-                            value: plotToShow.plotSortIndex.toString()),
-                      if (plotToShow.isGuardRow)
-                        const StandardDetailRow(
-                            label: 'Plot type', value: 'Guard row'),
-                      StandardDetailRow(label: 'Trial', value: trial.name),
+                      _PlotDetailSectionHeader(
+                        icon: Icons.grid_view_rounded,
+                        title: 'Plot Details',
+                        subtitle: plotToShow.isGuardRow
+                            ? 'Guard row label'
+                            : 'Field plot record',
+                      ),
+                      const SizedBox(height: 14),
+                      _PlotMetadataGrid(
+                        items: [
+                          _PlotMetadataItem(
+                            label: 'Plot',
+                            value: displayNum,
+                            icon: Icons.crop_square_rounded,
+                          ),
+                          if (plotToShow.rep != null)
+                            _PlotMetadataItem(
+                              label: 'Rep / Block',
+                              value: plotToShow.rep.toString(),
+                              icon: Icons.layers_rounded,
+                            ),
+                          if (assignmentSourceLabel != 'Unknown' &&
+                              assignmentSourceLabel != 'Unassigned')
+                            _PlotMetadataItem(
+                              label: 'Source',
+                              value: assignmentSourceLabel,
+                              icon: Icons.edit_rounded,
+                            ),
+                          if (plotToShow.row != null)
+                            _PlotMetadataItem(
+                              label: 'Range',
+                              value: plotToShow.row.toString(),
+                              icon: Icons.table_rows_rounded,
+                            ),
+                          if (plotToShow.column != null)
+                            _PlotMetadataItem(
+                              label: 'Column',
+                              value: plotToShow.column.toString(),
+                              icon: Icons.view_column_rounded,
+                            ),
+                          if (plotToShow.plotSortIndex != null)
+                            _PlotMetadataItem(
+                              label: 'Sort',
+                              value: plotToShow.plotSortIndex.toString(),
+                              icon: Icons.sort_rounded,
+                            ),
+                          if (plotToShow.isGuardRow)
+                            const _PlotMetadataItem(
+                              label: 'Type',
+                              value: 'Guard row',
+                              icon: Icons.shield_outlined,
+                            ),
+                          _PlotMetadataItem(
+                            label: 'Trial',
+                            value: trial.name,
+                            icon: Icons.science_outlined,
+                          ),
+                        ],
+                      ),
                       if (trial.plotDimensions != null ||
                           trial.plotRows != null ||
                           trial.plotSpacing != null) ...[
-                        const Divider(),
+                        const SizedBox(height: 16),
+                        const Divider(height: 1),
+                        const SizedBox(height: 12),
                         if (trial.plotDimensions != null)
                           StandardDetailRow(
                               label: 'Plot dimensions',
@@ -775,52 +808,35 @@ class PlotDetailScreen extends ConsumerWidget {
                               label: 'Plot spacing', value: trial.plotSpacing!),
                       ],
                       if (_hasPlotDimensionSummary(plotToShow)) ...[
-                        const Divider(),
+                        const SizedBox(height: 12),
+                        const Divider(height: 1),
+                        const SizedBox(height: 12),
                         _PlotDimensionSummary(plot: plotToShow),
                       ],
+                      const SizedBox(height: 16),
                       _PlotDetailsForm(
                         key: ValueKey('plot_details_${plotToShow.id}'),
                         plot: plotToShow,
                         trial: trial,
                       ),
-                      const Divider(),
+                      const SizedBox(height: 16),
+                      const Divider(height: 1),
+                      const SizedBox(height: 14),
                       if (plotToShow.plotNotes != null &&
                           plotToShow.plotNotes!.trim().isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Plot Note',
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary)),
-                              const SizedBox(height: 4),
-                              Text(
-                                plotToShow.plotNotes!.trim(),
-                                style: const TextStyle(fontSize: 13),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
+                        _PlotNotePanel(
+                          note: plotToShow.plotNotes!.trim(),
+                          onEdit: () => showPlotNotesDialog(
+                              context, ref, plotToShow, trial,
+                              sameTrialPlots: plots),
                         )
                       else
-                        const StandardDetailRow(
-                            label: 'Plot Note', value: 'No plot note'),
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.edit_note, size: 18),
-                        label: Text(
-                            plotToShow.plotNotes?.trim().isNotEmpty == true
-                                ? 'Edit Plot Note'
-                                : 'Add Plot Note'),
-                        onPressed: () => showPlotNotesDialog(
-                            context, ref, plotToShow, trial,
-                            sameTrialPlots: plots),
-                      ),
+                        _PlotNotePanel(
+                          note: null,
+                          onEdit: () => showPlotNotesDialog(
+                              context, ref, plotToShow, trial,
+                              sameTrialPlots: plots),
+                        ),
                       notesAsync.when(
                         loading: () => const SizedBox.shrink(),
                         error: (e, __) => AppErrorHint(error: e),
@@ -830,22 +846,13 @@ class PlotDetailScreen extends ConsumerWidget {
                               .toList();
                           if (linked.isEmpty) {
                             return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: AppEmptyState(
-                                icon: Icons.sticky_note_2_outlined,
-                                title: 'No field notes yet',
-                                subtitle:
-                                    'Field notes you add for this plot will appear here.',
-                                action: TextButton.icon(
-                                  onPressed: () => showFieldNoteEditorSheet(
-                                    context,
-                                    ref,
-                                    trial: trial,
-                                    initialPlotPk: plotToShow.id,
-                                  ),
-                                  icon: const Icon(Icons.sticky_note_2_outlined,
-                                      size: 18),
-                                  label: const Text('Add Field Note'),
+                              padding: const EdgeInsets.only(top: 14),
+                              child: _EmptyPlotFieldNotes(
+                                onAdd: () => showFieldNoteEditorSheet(
+                                  context,
+                                  ref,
+                                  trial: trial,
+                                  initialPlotPk: plotToShow.id,
                                 ),
                               ),
                             );
@@ -1080,21 +1087,24 @@ Future<void> _showEditRatingSheet(
   Trial trial,
   Plot plot,
 ) async {
-  final sessionRow =
-      await ref.read(sessionRepositoryProvider).getSessionById(rating.sessionId);
+  final sessionRow = await ref
+      .read(sessionRepositoryProvider)
+      .getSessionById(rating.sessionId);
   final currentUser = ref.read(currentUserProvider).valueOrNull;
   final raterFromSession = sessionRow?.raterName?.trim();
-  final amendedByInitial = (raterFromSession != null && raterFromSession.isNotEmpty)
-      ? raterFromSession
-      : (currentUser?.displayName ?? '');
+  final amendedByInitial =
+      (raterFromSession != null && raterFromSession.isNotEmpty)
+          ? raterFromSession
+          : (currentUser?.displayName ?? '');
 
   if (!context.mounted) return;
   final trialAssessments =
       ref.read(trialAssessmentsForTrialProvider(trial.id)).valueOrNull ??
           <TrialAssessment>[];
-  final aamData =
-      ref.read(armAssessmentMetadataMapForTrialProvider(trial.id)).valueOrNull ??
-          <int, ArmAssessmentMetadataData>{};
+  final aamData = ref
+          .read(armAssessmentMetadataMapForTrialProvider(trial.id))
+          .valueOrNull ??
+      <int, ArmAssessmentMetadataData>{};
   String seType = 'LOCAL';
   int? trialAssessmentId;
   for (final ta in trialAssessments) {
@@ -1295,6 +1305,285 @@ class _PlotDimensionSummary extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: parts,
+    );
+  }
+}
+
+class _PlotDetailSectionHeader extends StatelessWidget {
+  const _PlotDetailSectionHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppDesignTokens.primaryTint,
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+          ),
+          child: Icon(icon, color: AppDesignTokens.primary, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  height: 1.1,
+                  fontWeight: FontWeight.w800,
+                  color: AppDesignTokens.primary,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppDesignTokens.secondaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PlotMetadataItem {
+  const _PlotMetadataItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+}
+
+class _PlotMetadataGrid extends StatelessWidget {
+  const _PlotMetadataGrid({required this.items});
+
+  final List<_PlotMetadataItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useTwoColumns = constraints.maxWidth >= 380;
+        final tileWidth = useTwoColumns
+            ? (constraints.maxWidth - AppDesignTokens.spacing8) / 2
+            : constraints.maxWidth;
+        return Wrap(
+          spacing: AppDesignTokens.spacing8,
+          runSpacing: AppDesignTokens.spacing8,
+          children: [
+            for (final item in items)
+              SizedBox(
+                width: tileWidth,
+                child: _PlotMetadataTile(item: item),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PlotMetadataTile extends StatelessWidget {
+  const _PlotMetadataTile({required this.item});
+
+  final _PlotMetadataItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.sectionHeaderBg.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+      ),
+      child: Row(
+        children: [
+          Icon(item.icon, size: 17, color: AppDesignTokens.secondaryText),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  item.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlotNotePanel extends StatelessWidget {
+  const _PlotNotePanel({
+    required this.note,
+    required this.onEdit,
+  });
+
+  final String? note;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasNote = note != null && note!.trim().isNotEmpty;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.sectionHeaderBg.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.edit_note_rounded,
+            size: 20,
+            color: AppDesignTokens.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Plot note',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  hasNote ? note!.trim() : 'No plot note',
+                  maxLines: hasNote ? 3 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.25,
+                    fontWeight: hasNote ? FontWeight.w600 : FontWeight.w500,
+                    color: hasNote
+                        ? AppDesignTokens.primaryText
+                        : AppDesignTokens.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            onPressed: onEdit,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppDesignTokens.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              minimumSize: const Size(0, 34),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              side: const BorderSide(color: AppDesignTokens.borderCrisp),
+              shape: RoundedRectangleBorder(
+                borderRadius:
+                    BorderRadius.circular(AppDesignTokens.radiusSmall),
+              ),
+            ),
+            child: Text(hasNote ? 'Edit' : 'Add'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyPlotFieldNotes extends StatelessWidget {
+  const _EmptyPlotFieldNotes({required this.onAdd});
+
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+      decoration: BoxDecoration(
+        color: AppDesignTokens.backgroundSurface,
+        borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+        border: Border.all(color: AppDesignTokens.borderCrisp),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.sticky_note_2_outlined,
+            size: 30,
+            color: AppDesignTokens.emptyBadgeFg,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'No field notes yet',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppDesignTokens.primaryText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Notes for this plot will appear here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: AppDesignTokens.secondaryText,
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add Field Note'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1801,9 +2090,26 @@ class _PlotDetailsFormState extends ConsumerState<_PlotDetailsForm> {
           ],
         ),
         const SizedBox(height: 8),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: Text(_saving ? 'Saving…' : 'Save plot details'),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: FilledButton.icon(
+            onPressed: _saving ? null : _save,
+            icon: Icon(
+              _saving ? Icons.hourglass_top_rounded : Icons.save_rounded,
+              size: 18,
+            ),
+            label: Text(_saving ? 'Saving…' : 'Save plot details'),
+            style: FilledButton.styleFrom(
+              textStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppDesignTokens.radiusCard),
+              ),
+            ),
+          ),
         ),
       ],
     );

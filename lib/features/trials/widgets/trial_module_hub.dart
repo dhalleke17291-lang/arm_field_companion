@@ -50,9 +50,9 @@ class TrialModuleHub extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final narrow = constraints.maxWidth < 380;
-        final padLeft = narrow ? 8.0 : AppDesignTokens.spacing16;
-        final padRight = narrow ? 12.0 : 48.0;
+        final narrow = constraints.maxWidth < 420;
+        final padLeft = narrow ? 6.0 : AppDesignTokens.spacing16;
+        final padRight = narrow ? 8.0 : 48.0;
         final sepW = narrow ? 6.0 : AppDesignTokens.spacing12;
 
         final listView = ListView.separated(
@@ -129,7 +129,7 @@ class DockTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hPad = compact ? 6.0 : AppDesignTokens.spacing12;
+    final hPad = compact ? 5.0 : AppDesignTokens.spacing12;
     final vPad = compact ? 6.0 : AppDesignTokens.spacing8;
     final iconSize =
         selected ? (compact ? 22.0 : 26.0) : (compact ? 19.0 : 22.0);
@@ -141,47 +141,54 @@ class DockTile extends StatelessWidget {
       scale: selected ? 1.05 : 1.0,
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: selected
-                    ? AppDesignTokens.primary
-                    : AppDesignTokens.primaryText,
-                size: iconSize,
-              ),
-              SizedBox(height: compact ? 2 : 4),
-              Text(
-                label,
-                maxLines: 1,
-                softWrap: false,
-                textAlign: TextAlign.center,
-                style: TextStyle(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minWidth: compact ? 62 : 72,
+          maxWidth: compact ? 82 : 104,
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusSmall),
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
                   color: selected
                       ? AppDesignTokens.primary
                       : AppDesignTokens.primaryText,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                  fontSize: fontSize,
+                  size: iconSize,
                 ),
-              ),
-              SizedBox(height: compact ? 2 : 4),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                height: 2,
-                width: selected ? (compact ? 16 : 20) : 0,
-                decoration: BoxDecoration(
-                  color: AppDesignTokens.primary,
-                  borderRadius: BorderRadius.circular(1),
+                SizedBox(height: compact ? 2 : 4),
+                Text(
+                  label,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: selected
+                        ? AppDesignTokens.primary
+                        : AppDesignTokens.primaryText,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    fontSize: fontSize,
+                  ),
                 ),
-              )
-            ],
+                SizedBox(height: compact ? 2 : 4),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  height: 2,
+                  width: selected ? (compact ? 16 : 20) : 0,
+                  decoration: BoxDecoration(
+                    color: AppDesignTokens.primary,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                )
+              ],
+            ),
           ),
         ),
       ),

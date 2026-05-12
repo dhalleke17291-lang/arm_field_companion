@@ -144,7 +144,7 @@ class MockPlotRepository implements PlotRepository {
 
   @override
   Future<void> softDeletePlot(int plotPk,
-      {String? deletedBy, int? deletedByUserId}) async =>
+          {String? deletedBy, int? deletedByUserId}) async =>
       throw UnimplementedError();
 
   @override
@@ -155,8 +155,7 @@ class MockPlotRepository implements PlotRepository {
   Future<List<Plot>> getAllDeletedPlots() => throw UnimplementedError();
 
   @override
-  Future<Plot?> getDeletedPlotByPk(int plotPk) =>
-      throw UnimplementedError();
+  Future<Plot?> getDeletedPlotByPk(int plotPk) => throw UnimplementedError();
 
   @override
   Future<PlotRestoreResult> restorePlot(int plotPk,
@@ -222,7 +221,8 @@ class MockTreatmentRepository implements TreatmentRepository {
       throw UnimplementedError();
 
   @override
-  Future<List<TreatmentComponent>> getComponentsForTreatment(int treatmentId) async =>
+  Future<List<TreatmentComponent>> getComponentsForTreatment(
+          int treatmentId) async =>
       List.from(componentsByTreatmentId[treatmentId] ?? []);
 
   @override
@@ -240,13 +240,13 @@ class MockTreatmentRepository implements TreatmentRepository {
 
   @override
   Future<void> updateTreatment(int id,
-      {String? code,
-      String? name,
-      String? description,
-      String? treatmentType,
-      String? timingCode,
-      String? eppoCode,
-      int? performedByUserId}) async =>
+          {String? code,
+          String? name,
+          String? description,
+          String? treatmentType,
+          String? timingCode,
+          String? eppoCode,
+          int? performedByUserId}) async =>
       throw UnimplementedError();
 
   @override
@@ -343,26 +343,26 @@ class MockTreatmentRepository implements TreatmentRepository {
 
   @override
   Future<void> updateComponent(int componentId,
-      {String? productName,
-      double? rate,
-      String? rateUnit,
-      String? applicationTiming,
-      String? notes,
-      int? sortOrder,
-      double? activeIngredientPct,
-      String? formulationType,
-      String? manufacturer,
-      String? registrationNumber,
-      String? eppoCode,
-      String? activeIngredientName,
-      double? aiConcentration,
-      String? aiConcentrationUnit,
-      double? labelRate,
-      String? labelRateUnit,
-      bool? isTestProduct,
-      String? pesticideCategory,
-      int? performedByUserId,
-      String? performedBy}) async =>
+          {String? productName,
+          double? rate,
+          String? rateUnit,
+          String? applicationTiming,
+          String? notes,
+          int? sortOrder,
+          double? activeIngredientPct,
+          String? formulationType,
+          String? manufacturer,
+          String? registrationNumber,
+          String? eppoCode,
+          String? activeIngredientName,
+          double? aiConcentration,
+          String? aiConcentrationUnit,
+          double? labelRate,
+          String? labelRateUnit,
+          bool? isTestProduct,
+          String? pesticideCategory,
+          int? performedByUserId,
+          String? performedBy}) async =>
       throw UnimplementedError();
 
   @override
@@ -395,7 +395,8 @@ class MockApplicationRepository implements ApplicationRepository {
   List<TrialApplicationEvent> applicationsForTrial = [];
 
   @override
-  Future<List<TrialApplicationEvent>> getApplicationsForTrial(int trialId) async =>
+  Future<List<TrialApplicationEvent>> getApplicationsForTrial(
+          int trialId) async =>
       List.from(applicationsForTrial);
 
   @override
@@ -440,8 +441,7 @@ class MockApplicationRepository implements ApplicationRepository {
       throw UnimplementedError();
 
   @override
-  Future<void> deleteApplication(String id) async =>
-      throw UnimplementedError();
+  Future<void> deleteApplication(String id) async => throw UnimplementedError();
 
   @override
   Stream<List<ApplicationEvent>> watchEventsForTrial(int trialId) =>
@@ -468,7 +468,8 @@ class MockApplicationRepository implements ApplicationRepository {
       throw UnimplementedError();
 
   @override
-  Future<List<ApplicationPlotRecord>> getPlotRecordsForEvent(int eventId) async =>
+  Future<List<ApplicationPlotRecord>> getPlotRecordsForEvent(
+          int eventId) async =>
       throw UnimplementedError();
 
   @override
@@ -500,8 +501,7 @@ class MockApplicationRepository implements ApplicationRepository {
       throw UnimplementedError();
 
   @override
-  Future<void> deleteEvent(int eventId) async =>
-      throw UnimplementedError();
+  Future<void> deleteEvent(int eventId) async => throw UnimplementedError();
 
   @override
   Future<void> completeApplication(String id,
@@ -613,10 +613,12 @@ class MockSessionRepository implements SessionRepository {
   Stream<Session?> watchOpenSession(int trialId) => Stream.value(null);
 
   @override
-  Future<void> updateSessionCropStageBbch(int sessionId, int? cropStageBbch) async {}
+  Future<void> updateSessionCropStageBbch(
+      int sessionId, int? cropStageBbch) async {}
 
   @override
-  Future<void> updateSessionCropInjury(int sessionId, {required String status, String? notes, String? photoIds}) async {}
+  Future<void> updateSessionCropInjury(int sessionId,
+      {required String status, String? notes, String? photoIds}) async {}
 
   @override
   Future<Session> createSession({
@@ -636,7 +638,9 @@ class MockSessionRepository implements SessionRepository {
 
   @override
   Future<Session> startPlannedSession(int sessionId,
-          {String? raterName, int? startedByUserId, int? cropStageBbch}) async =>
+          {String? raterName,
+          int? startedByUserId,
+          int? cropStageBbch}) async =>
       throw UnimplementedError();
 
   @override
@@ -699,8 +703,7 @@ class MockAssignmentRepository implements AssignmentRepository {
   Future<Assignment?> getForPlot(int plotPk) async => null;
 
   @override
-  Future<Assignment?> getForTrialAndPlot(int trialId, int plotPk) async =>
-      null;
+  Future<Assignment?> getForTrialAndPlot(int trialId, int plotPk) async => null;
 
   @override
   Future<List<Assignment>> getForTrial(int trialId) async =>
@@ -727,7 +730,6 @@ class MockAssignmentRepository implements AssignmentRepository {
     int? assignedBy,
     String? notes,
   }) async {}
-
 
   @override
   Future<void> upsertBulk({
@@ -793,6 +795,15 @@ class MockPhotoRepository implements PhotoRepository {
       throw UnimplementedError();
 
   @override
+  Future<void> updateCaption(
+    int id,
+    String? caption, {
+    String? performedBy,
+    int? performedByUserId,
+  }) async =>
+      throw UnimplementedError();
+
+  @override
   Future<void> softDeletePhoto(int id,
           {String? deletedBy, int? deletedByUserId}) async =>
       throw UnimplementedError();
@@ -802,8 +813,7 @@ class MockPhotoRepository implements PhotoRepository {
       throw UnimplementedError();
 
   @override
-  Future<void> cleanupOrphanTempFiles() async =>
-      throw UnimplementedError();
+  Future<void> cleanupOrphanTempFiles() async => throw UnimplementedError();
 
   @override
   Stream<List<Photo>> watchPhotosForPlot({
@@ -883,7 +893,9 @@ void main() {
       expect(result.seeding, isNull);
     });
 
-    test('SUCCESS: assembly with trial, plots, treatments, sessions, applications, photos', () async {
+    test(
+        'SUCCESS: assembly with trial, plots, treatments, sessions, applications, photos',
+        () async {
       final trial = _trial(
         id: 42,
         name: 'Canola 2026',
@@ -921,7 +933,8 @@ void main() {
           trialId: 42,
           productName: 'Product A',
           sortOrder: 0,
-          isDeleted: false, isTestProduct: false,
+          isDeleted: false,
+          isTestProduct: false,
         ),
       ];
       mockSessionRepo.sessionsForTrial = [
@@ -989,7 +1002,8 @@ void main() {
 
       expect(result.applications.count, 1);
       expect(result.applications.events[0].id, 'evt-1');
-      expect(result.applications.events[0].applicationDate, DateTime(2026, 3, 5));
+      expect(
+          result.applications.events[0].applicationDate, DateTime(2026, 3, 5));
       expect(result.applications.events[0].productName, 'Herbicide X');
       expect(result.applications.events[0].status, 'applied');
       expect(result.applications.events[0].appliedAt, DateTime(2026, 3, 5));
@@ -998,7 +1012,8 @@ void main() {
       expect(result.seeding, isNull);
     });
 
-    test('SUCCESS: treatment component count from getComponentsForTreatment', () async {
+    test('SUCCESS: treatment component count from getComponentsForTreatment',
+        () async {
       final trial = _trial();
       mockTreatmentRepo.treatmentsForTrial = [
         const Treatment(
@@ -1021,14 +1036,16 @@ void main() {
             trialId: 1,
             productName: 'A',
             sortOrder: 0,
-            isDeleted: false, isTestProduct: false),
+            isDeleted: false,
+            isTestProduct: false),
         const TreatmentComponent(
             id: 2,
             treatmentId: 1,
             trialId: 1,
             productName: 'B',
             sortOrder: 1,
-            isDeleted: false, isTestProduct: false),
+            isDeleted: false,
+            isTestProduct: false),
       ];
       mockTreatmentRepo.componentsByTreatmentId[2] = [];
 

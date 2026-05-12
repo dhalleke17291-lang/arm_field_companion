@@ -21,9 +21,7 @@ class TrajectoryChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final allPoints = series.treatments
-        .expand((t) => t.points)
-        .toList();
+    final allPoints = series.treatments.expand((t) => t.points).toList();
     if (allPoints.isEmpty) return const SizedBox.shrink();
 
     final minY = allPoints.map((p) => p.mean).reduce((a, b) => a < b ? a : b);
@@ -61,133 +59,146 @@ class TrajectoryChart extends StatelessWidget {
       ));
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          height: height,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 16, top: 8),
-            child: LineChart(
-              LineChartData(
-                lineBarsData: lines,
-                minY: yFloor,
-                maxY: yCeil,
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    axisNameWidget: const Text(
-                      'Days After Treatment',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppDesignTokens.secondaryText,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 420;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: height,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: narrow ? 8 : 16,
+                  top: 8,
+                  left: narrow ? 2 : 0,
+                ),
+                child: LineChart(
+                  LineChartData(
+                    lineBarsData: lines,
+                    minY: yFloor,
+                    maxY: yCeil,
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        axisNameWidget: narrow
+                            ? const SizedBox.shrink()
+                            : const Text(
+                                'Days After Treatment',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppDesignTokens.secondaryText,
+                                ),
+                              ),
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: narrow ? 34 : 28,
+                          getTitlesWidget: (value, meta) {
+                            if (!series.timings.contains(value.toInt())) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                narrow
+                                    ? '${value.toInt()} DAT'
+                                    : '${value.toInt()}',
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  color: AppDesignTokens.secondaryText,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: narrow ? 30 : 36,
+                          getTitlesWidget: (value, meta) {
+                            return Text(
+                              '${value.round()}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppDesignTokens.secondaryText,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                    ),
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      horizontalInterval:
+                          yRange > 0 ? (yRange / 4).ceilToDouble() : 10,
+                      getDrawingHorizontalLine: (value) => FlLine(
+                        color:
+                            AppDesignTokens.borderCrisp.withValues(alpha: 0.5),
+                        strokeWidth: 0.5,
                       ),
                     ),
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 28,
-                      getTitlesWidget: (value, meta) {
-                        if (!series.timings
-                            .contains(value.toInt())) {
-                          return const SizedBox.shrink();
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            '${value.toInt()}',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: AppDesignTokens.secondaryText,
-                            ),
-                          ),
-                        );
-                      },
+                    borderData: FlBorderData(
+                      show: true,
+                      border: const Border(
+                        bottom: BorderSide(color: AppDesignTokens.borderCrisp),
+                        left: BorderSide(color: AppDesignTokens.borderCrisp),
+                      ),
                     ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 36,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          '${value.round()}',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: AppDesignTokens.secondaryText,
-                          ),
-                        );
-                      },
+                    lineTouchData: LineTouchData(
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipItems: (spots) {
+                          return spots.map((s) {
+                            final trt = series.treatments[s.barIndex];
+                            return LineTooltipItem(
+                              '${trt.treatmentLabel}: ${s.y.toStringAsFixed(1)}',
+                              TextStyle(
+                                fontSize: 11,
+                                color: _treatmentColor(
+                                    s.barIndex, trt.treatmentNumber),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            );
+                          }).toList();
+                        },
+                      ),
                     ),
-                  ),
-                  topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
-                ),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval:
-                      yRange > 0 ? (yRange / 4).ceilToDouble() : 10,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: AppDesignTokens.borderCrisp.withValues(alpha: 0.5),
-                    strokeWidth: 0.5,
-                  ),
-                ),
-                borderData: FlBorderData(
-                  show: true,
-                  border: const Border(
-                    bottom:
-                        BorderSide(color: AppDesignTokens.borderCrisp),
-                    left:
-                        BorderSide(color: AppDesignTokens.borderCrisp),
-                  ),
-                ),
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipItems: (spots) {
-                      return spots.map((s) {
-                        final trt = series.treatments[s.barIndex];
-                        return LineTooltipItem(
-                          '${trt.treatmentLabel}: ${s.y.toStringAsFixed(1)}',
-                          TextStyle(
-                            fontSize: 11,
-                            color: _treatmentColor(
-                                s.barIndex, trt.treatmentNumber),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        );
-                      }).toList();
-                    },
                   ),
                 ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Legend
-        Wrap(
-          spacing: 12,
-          runSpacing: 4,
-          children: [
-            for (var i = 0; i < series.treatments.length; i++)
-              _LegendItem(
-                color: _treatmentColor(i, series.treatments[i].treatmentNumber),
-                label: series.treatments[i].treatmentLabel,
-                isCheck:
-                    checkTreatmentNumbers.contains(
-                        series.treatments[i].treatmentNumber),
-              ),
+            const SizedBox(height: 8),
+            // Legend
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                for (var i = 0; i < series.treatments.length; i++)
+                  _LegendItem(
+                    color: _treatmentColor(
+                        i, series.treatments[i].treatmentNumber),
+                    label: series.treatments[i].treatmentLabel,
+                    isCheck: checkTreatmentNumbers
+                        .contains(series.treatments[i].treatmentNumber),
+                  ),
+              ],
+            ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 
   Color _treatmentColor(int index, int treatmentNumber) {
-    return AppDesignTokens.treatmentPalette[
-        index % AppDesignTokens.treatmentPalette.length];
+    return AppDesignTokens
+        .treatmentPalette[index % AppDesignTokens.treatmentPalette.length];
   }
 }
 

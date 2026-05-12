@@ -33,7 +33,8 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
       return const AppEmptyState(
         icon: Icons.show_chart,
         title: 'No sessions yet',
-        subtitle: 'Profile will appear once rating sessions have been recorded.',
+        subtitle:
+            'Profile will appear once rating sessions have been recorded.',
       );
     }
 
@@ -84,8 +85,8 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
                   items: assessments
                       .map((a) => DropdownMenuItem<int>(
                             value: a.id,
-                            child: Text(a.name,
-                                overflow: TextOverflow.ellipsis),
+                            child:
+                                Text(a.name, overflow: TextOverflow.ellipsis),
                           ))
                       .toList(),
                   onChanged: (id) {
@@ -97,8 +98,8 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
             Expanded(
               child: progressionAsync.when(
                 loading: () => const Center(
-                  child: CircularProgressIndicator(
-                      color: AppDesignTokens.primary),
+                  child:
+                      CircularProgressIndicator(color: AppDesignTokens.primary),
                 ),
                 error: (e, _) => Center(child: Text('Error: $e')),
                 data: (result) => _buildBody(result, selectedAssessment),
@@ -115,7 +116,8 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
       return const AppEmptyState(
         icon: Icons.show_chart,
         title: 'No data yet',
-        subtitle: 'Profile will appear once rating sessions have been recorded.',
+        subtitle:
+            'Profile will appear once rating sessions have been recorded.',
       );
     }
 
@@ -173,6 +175,7 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
               painter: ProgressionPainter(
                 result: result,
                 colors: colors,
+                axisUnit: selectedAssessment.unit,
               ),
             ),
           ),
@@ -202,12 +205,16 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(width: 6, height: 1.5,
+                      Container(
+                          width: 6,
+                          height: 1.5,
                           color: colors[i % colors.length]),
                       const SizedBox(width: 2),
-                      Container(width: 3, height: 1.5,
-                          color: colors[i % colors.length]
-                              .withValues(alpha: 0.3)),
+                      Container(
+                          width: 3,
+                          height: 1.5,
+                          color:
+                              colors[i % colors.length].withValues(alpha: 0.3)),
                     ],
                   )
                 else
@@ -220,7 +227,7 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
                 Text(
                   series[i].treatmentCode,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 12,
                     color: colors[i % colors.length],
                     fontWeight: FontWeight.w600,
                   ),

@@ -565,8 +565,9 @@ class _PlotLayoutRatingsOverlayState
     }
     final dx =
         gridWidth > viewportWidth ? 0.0 : (viewportWidth - gridWidth) / 2;
-    final dy =
-        gridHeight > viewportHeight ? 0.0 : (viewportHeight - gridHeight) / 2;
+    final dy = gridHeight > viewportHeight
+        ? 0.0
+        : ((viewportHeight - gridHeight) * 0.34).clamp(12.0, double.infinity);
     _ratingsPanZoomController.value = Matrix4.identity()
       ..translateByDouble(dx, dy, 0.0, 1.0);
   }
@@ -1628,77 +1629,87 @@ class _PlotsTabState extends ConsumerState<PlotsTab> {
     final allAssigned =
         dataPlotCount > 0 && assignedDataPlotCount == dataPlotCount;
     final noneAssigned = dataPlotCount > 0 && assignedDataPlotCount == 0;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 118, 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 390;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(12, 8, narrow ? 96 : 118, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _StatChip(label: '$dataPlotCount', sub: 'plots'),
-              const SizedBox(width: 12),
-              _StatChip(label: '$treatmentCount', sub: 'trt'),
-              const SizedBox(width: 12),
-              _StatChip(label: '$replicateCount', sub: 'reps'),
-            ],
-          ),
-          Semantics(
-            label: dataPlotCount == 0
-                ? 'No data plots'
-                : allAssigned
-                    ? 'All $dataPlotCount data plots have a treatment assigned'
-                    : '$assignedDataPlotCount of $dataPlotCount data plots have a treatment assigned',
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  allAssigned
-                      ? Icons.check_circle
-                      : noneAssigned
-                          ? Icons.remove_circle_outline
-                          : Icons.warning_amber_rounded,
-                  size: 14,
-                  color: allAssigned
-                      ? AppDesignTokens.successFg
-                      : AppDesignTokens.warningFg,
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _StatChip(label: '$dataPlotCount', sub: 'plots'),
+                    SizedBox(width: narrow ? 8 : 12),
+                    _StatChip(label: '$treatmentCount', sub: 'trt'),
+                    SizedBox(width: narrow ? 8 : 12),
+                    _StatChip(label: '$replicateCount', sub: 'reps'),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  dataPlotCount == 0
-                      ? '—'
-                      : '$assignedDataPlotCount/$dataPlotCount',
-                  style: AppDesignTokens.bodyCrispStyle(
-                    fontSize: 12,
-                    color: allAssigned
-                        ? AppDesignTokens.successFg
-                        : AppDesignTokens.primary,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                SizedBox(
-                  width: 40,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
-                    child: LinearProgressIndicator(
-                      value: dataPlotCount > 0
-                          ? assignedDataPlotCount / dataPlotCount
-                          : 0,
-                      backgroundColor: AppDesignTokens.borderCrisp,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        allAssigned
+              ),
+              const SizedBox(width: 8),
+              Semantics(
+                label: dataPlotCount == 0
+                    ? 'No data plots'
+                    : allAssigned
+                        ? 'All $dataPlotCount data plots have a treatment assigned'
+                        : '$assignedDataPlotCount of $dataPlotCount data plots have a treatment assigned',
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      allAssigned
+                          ? Icons.check_circle
+                          : noneAssigned
+                              ? Icons.remove_circle_outline
+                              : Icons.warning_amber_rounded,
+                      size: 14,
+                      color: allAssigned
+                          ? AppDesignTokens.successFg
+                          : AppDesignTokens.warningFg,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      dataPlotCount == 0
+                          ? '—'
+                          : '$assignedDataPlotCount/$dataPlotCount',
+                      style: AppDesignTokens.bodyCrispStyle(
+                        fontSize: 12,
+                        color: allAssigned
                             ? AppDesignTokens.successFg
                             : AppDesignTokens.primary,
                       ),
-                      minHeight: 4,
                     ),
-                  ),
+                    if (!narrow) ...[
+                      const SizedBox(width: 6),
+                      SizedBox(
+                        width: 40,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: dataPlotCount > 0
+                                ? assignedDataPlotCount / dataPlotCount
+                                : 0,
+                            backgroundColor: AppDesignTokens.borderCrisp,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              allAssigned
+                                  ? AppDesignTokens.successFg
+                                  : AppDesignTokens.primary,
+                            ),
+                            minHeight: 4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -2708,90 +2719,102 @@ class _TrialPlotsWorkingSurfaceState
     required List<Plot> allTrialPlots,
   }) {
     final scheme = Theme.of(context).colorScheme;
+    final showAnalysisModes =
+        _showLayoutView && _layoutLayer == _LayoutLayer.ratings;
 
     return SizedBox(
-      height: 38,
-      child: Row(
+      height: showAnalysisModes ? 76 : 38,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Material(
-            color: scheme.surfaceContainerLow.withValues(alpha: 0.72),
-            borderRadius: BorderRadius.circular(10),
-            child: Padding(
-              padding: const EdgeInsets.all(2),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _compactIconButton(
-                    context: context,
-                    selected: !_showLayoutView,
-                    icon: Icons.view_list_rounded,
-                    tooltip: 'List view',
-                    onTap: () => setState(() => _showLayoutView = false),
+          Row(
+            children: [
+              Material(
+                color: scheme.surfaceContainerLow.withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _compactIconButton(
+                        context: context,
+                        selected: !_showLayoutView,
+                        icon: Icons.view_list_rounded,
+                        tooltip: 'List view',
+                        onTap: () => setState(() => _showLayoutView = false),
+                      ),
+                      _compactIconButton(
+                        context: context,
+                        selected: _showLayoutView,
+                        icon: Icons.grid_view_rounded,
+                        tooltip: 'Layout view',
+                        onTap: () => setState(() => _showLayoutView = true),
+                      ),
+                    ],
                   ),
-                  _compactIconButton(
-                    context: context,
-                    selected: _showLayoutView,
-                    icon: Icons.grid_view_rounded,
-                    tooltip: 'Layout view',
-                    onTap: () => setState(() => _showLayoutView = true),
-                  ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(width: 8),
+              if (_showLayoutView)
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final layer in _LayoutLayer.values) ...[
+                          _compactModeButton(
+                            context: context,
+                            selected: _layoutLayer == layer,
+                            icon: _layoutLayerIcon(layer),
+                            label: _layoutLayerLabel(layer),
+                            onTap: () => setState(() {
+                              _layoutLayer = layer;
+                              if (_layoutLayer != _LayoutLayer.applications) {
+                                _selectedAppTreatmentId = null;
+                              }
+                            }),
+                          ),
+                          if (layer != _LayoutLayer.values.last)
+                            const SizedBox(width: 6),
+                        ],
+                      ],
+                    ),
+                  ),
+                )
+              else
+                const Spacer(),
+            ],
           ),
-          const SizedBox(width: 8),
-          if (_showLayoutView)
-            Expanded(
+          if (showAnalysisModes) ...[
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 34,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    for (final layer in _LayoutLayer.values) ...[
+                    for (final mode in _PlotAnalysisMode.values) ...[
                       _compactModeButton(
                         context: context,
-                        selected: _layoutLayer == layer,
-                        icon: _layoutLayerIcon(layer),
-                        label: _layoutLayerLabel(layer),
-                        onTap: () => setState(() {
-                          _layoutLayer = layer;
-                          if (_layoutLayer != _LayoutLayer.applications) {
-                            _selectedAppTreatmentId = null;
-                          }
-                        }),
+                        selected: _analysisMode == mode,
+                        icon: _analysisModeIcon(mode),
+                        label: _analysisModeLabel(mode),
+                        tooltip: switch (mode) {
+                          _PlotAnalysisMode.heatmap => 'Heat map',
+                          _PlotAnalysisMode.distribution => 'Distribution',
+                          _PlotAnalysisMode.progression => 'Profile',
+                        },
+                        onTap: () => setState(() => _analysisMode = mode),
                       ),
-                      if (layer != _LayoutLayer.values.last)
+                      if (mode != _PlotAnalysisMode.values.last)
                         const SizedBox(width: 6),
-                    ],
-                    if (_layoutLayer == _LayoutLayer.ratings) ...[
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        width: 1,
-                        height: 24,
-                        color: AppDesignTokens.divider,
-                      ),
-                      for (final mode in _PlotAnalysisMode.values) ...[
-                        _compactModeButton(
-                          context: context,
-                          selected: _analysisMode == mode,
-                          icon: _analysisModeIcon(mode),
-                          label: _analysisModeLabel(mode),
-                          tooltip: switch (mode) {
-                            _PlotAnalysisMode.heatmap => 'Heat map',
-                            _PlotAnalysisMode.distribution => 'Distribution',
-                            _PlotAnalysisMode.progression => 'Profile',
-                          },
-                          onTap: () => setState(() => _analysisMode = mode),
-                        ),
-                        if (mode != _PlotAnalysisMode.values.last)
-                          const SizedBox(width: 6),
-                      ],
                     ],
                   ],
                 ),
               ),
-            )
-          else
-            const Spacer(),
+            ),
+          ],
         ],
       ),
     );
@@ -2845,6 +2868,9 @@ class _TrialPlotsWorkingSurfaceState
                   trial: widget.trial,
                   isLayoutView: _showLayoutView,
                   initialLayoutLayer: _layoutLayer,
+                  initialAnalysisMode: _analysisMode,
+                  selectedRatingSession: _selectedRatingSession,
+                  heatMapEnabled: _heatMapEnabled,
                   selectedAppEvent: _selectedAppEvent,
                   appPlotRecords: _appPlotRecords,
                 ),
@@ -2955,37 +2981,45 @@ class _TrialPlotsWorkingSurfaceState
   Widget _buildLayerSwitcherForDetails(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: SegmentedButton<_LayoutLayer>(
-        showSelectedIcon: false,
-        style: const ButtonStyle(
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          visualDensity: VisualDensity.compact,
-          padding: WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          ),
-          minimumSize: WidgetStatePropertyAll(Size(0, 34)),
-        ),
-        segments: const [
-          ButtonSegment(
-              value: _LayoutLayer.treatments,
-              label: Text('Treats'),
-              icon: Icon(Icons.science, size: 14)),
-          ButtonSegment(
-              value: _LayoutLayer.applications,
-              label: Text('Apps'),
-              icon: Icon(Icons.water_drop, size: 14)),
-          ButtonSegment(
-              value: _LayoutLayer.ratings,
-              label: Text('Ratings'),
-              icon: Icon(Icons.bar_chart, size: 14)),
-        ],
-        selected: {_layoutLayer},
-        onSelectionChanged: (val) => setState(() {
-          _layoutLayer = val.first;
-          if (_layoutLayer != _LayoutLayer.applications) {
-            _selectedAppTreatmentId = null;
-          }
-        }),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final narrow = constraints.maxWidth < 360;
+          return SegmentedButton<_LayoutLayer>(
+            showSelectedIcon: false,
+            style: ButtonStyle(
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+              padding: WidgetStatePropertyAll(
+                EdgeInsets.symmetric(
+                  horizontal: narrow ? 4 : 6,
+                  vertical: 4,
+                ),
+              ),
+              minimumSize: const WidgetStatePropertyAll(Size(0, 34)),
+            ),
+            segments: [
+              ButtonSegment(
+                  value: _LayoutLayer.treatments,
+                  label: Text(narrow ? 'Trt' : 'Treats'),
+                  icon: const Icon(Icons.science, size: 14)),
+              const ButtonSegment(
+                  value: _LayoutLayer.applications,
+                  label: Text('Apps'),
+                  icon: Icon(Icons.water_drop, size: 14)),
+              ButtonSegment(
+                  value: _LayoutLayer.ratings,
+                  label: Text(narrow ? 'Rate' : 'Ratings'),
+                  icon: const Icon(Icons.bar_chart, size: 14)),
+            ],
+            selected: {_layoutLayer},
+            onSelectionChanged: (val) => setState(() {
+              _layoutLayer = val.first;
+              if (_layoutLayer != _LayoutLayer.applications) {
+                _selectedAppTreatmentId = null;
+              }
+            }),
+          );
+        },
       ),
     );
   }
@@ -3252,6 +3286,9 @@ class _TrialPlotsWorkingSurfaceState
                   trial: widget.trial,
                   isLayoutView: _showLayoutView,
                   initialLayoutLayer: _layoutLayer,
+                  initialAnalysisMode: _analysisMode,
+                  selectedRatingSession: _selectedRatingSession,
+                  heatMapEnabled: _heatMapEnabled,
                   selectedAppEvent: _selectedAppEvent,
                   appPlotRecords: _appPlotRecords,
                 ),
@@ -4700,30 +4737,16 @@ class _RatingPlotGridTileState extends State<_RatingPlotGridTile> {
                 highlightColor: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(_kPlotLayoutCellRadius),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
                   child: widget.heatMapEnabled
-                    ? Stack(
-                        children: [
-                          Positioned(
-                            left: 0,
-                            top: 0,
-                            child: Text(
-                              widget.plotLabel,
-                              style: TextStyle(
-                                fontSize: 8,
-                                fontWeight: FontWeight.w700,
-                                color: widget.textColor.withValues(alpha: 0.72),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (widget.treatmentCode != null)
+                      ? Stack(
+                          children: [
                             Positioned(
-                              right: 0,
+                              left: 0,
                               top: 0,
                               child: Text(
-                                widget.treatmentCode!,
+                                widget.plotLabel,
                                 style: TextStyle(
                                   fontSize: 8,
                                   fontWeight: FontWeight.w700,
@@ -4734,48 +4757,64 @@ class _RatingPlotGridTileState extends State<_RatingPlotGridTile> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          Center(
-                            child: Text(
-                              widget.valueLabel,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                color: widget.textColor,
+                            if (widget.treatmentCode != null)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Text(
+                                  widget.treatmentCode!,
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    color: widget.textColor
+                                        .withValues(alpha: 0.72),
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            Center(
+                              child: Text(
+                                widget.valueLabel,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: widget.textColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            widget.plotLabel,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: widget.textColor.withValues(alpha: 0.78),
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            textAlign: TextAlign.center,
-                          ),
-                          if (widget.valueLabel.isNotEmpty)
+                          ],
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
                             Text(
-                              widget.valueLabel,
+                              widget.plotLabel,
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: widget.textColor,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: widget.textColor.withValues(alpha: 0.78),
                               ),
-                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                               textAlign: TextAlign.center,
                             ),
-                        ],
-                      ),
+                            if (widget.valueLabel.isNotEmpty)
+                              Text(
+                                widget.valueLabel,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: widget.textColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
+                          ],
+                        ),
                 ),
               ),
             ),
@@ -4842,6 +4881,9 @@ class _PlotsFullScreenPage extends ConsumerStatefulWidget {
   final Trial trial;
   final bool isLayoutView;
   final _LayoutLayer initialLayoutLayer;
+  final _PlotAnalysisMode initialAnalysisMode;
+  final Session? selectedRatingSession;
+  final bool heatMapEnabled;
   final ApplicationEvent? selectedAppEvent;
   final List<ApplicationPlotRecord> appPlotRecords;
 
@@ -4849,6 +4891,9 @@ class _PlotsFullScreenPage extends ConsumerStatefulWidget {
     required this.trial,
     required this.isLayoutView,
     required this.initialLayoutLayer,
+    required this.initialAnalysisMode,
+    this.selectedRatingSession,
+    required this.heatMapEnabled,
     this.selectedAppEvent,
     this.appPlotRecords = const [],
   });
@@ -4867,10 +4912,11 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
       true;
 
   late _LayoutLayer _layoutLayer;
+  late _PlotAnalysisMode _analysisMode;
   int? _selectedAppTreatmentId;
   ApplicationEvent? _selectedAppEvent;
   Session? _selectedRatingSession;
-  bool _heatMapEnabled = false;
+  late bool _heatMapEnabled;
   List<ApplicationPlotRecord> _appPlotRecords = [];
   bool _loadingAppRecords = false;
   final TransformationController _gridTransformController =
@@ -4888,6 +4934,9 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
   void initState() {
     super.initState();
     _layoutLayer = widget.initialLayoutLayer;
+    _analysisMode = widget.initialAnalysisMode;
+    _selectedRatingSession = widget.selectedRatingSession;
+    _heatMapEnabled = widget.heatMapEnabled;
     _selectedAppEvent = widget.selectedAppEvent;
     _appPlotRecords = List.from(widget.appPlotRecords);
   }
@@ -4948,6 +4997,47 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
         _loadingAppRecords = false;
       });
     }
+  }
+
+  Widget _buildFullScreenAnalysisModeSwitcher(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      child: SegmentedButton<_PlotAnalysisMode>(
+        showSelectedIcon: false,
+        style: const ButtonStyle(
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+          padding: WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          ),
+          textStyle: WidgetStatePropertyAll(
+            TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          minimumSize: WidgetStatePropertyAll(Size(0, 32)),
+        ),
+        segments: const [
+          ButtonSegment(
+            value: _PlotAnalysisMode.heatmap,
+            label: Text('Heat map', maxLines: 1, softWrap: false),
+            icon: Icon(Icons.local_fire_department_outlined, size: 14),
+          ),
+          ButtonSegment(
+            value: _PlotAnalysisMode.distribution,
+            label: Text('Distribution', maxLines: 1, softWrap: false),
+            icon: Icon(Icons.scatter_plot_outlined, size: 14),
+          ),
+          ButtonSegment(
+            value: _PlotAnalysisMode.progression,
+            label: Text('Profile', maxLines: 1, softWrap: false),
+            icon: Icon(Icons.timeline, size: 14),
+          ),
+        ],
+        selected: {_analysisMode},
+        onSelectionChanged: (val) => setState(() {
+          _analysisMode = val.first;
+        }),
+      ),
+    );
   }
 
   @override
@@ -5070,7 +5160,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                         ],
                       ),
                     ),
-                  _buildAddRepGuardsRow(context, ref, widget.trial),
+                  if (_layoutLayer != _LayoutLayer.ratings)
+                    _buildAddRepGuardsRow(context, ref, widget.trial),
                   Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -5078,19 +5169,27 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                       style: const ButtonStyle(
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
+                        padding: WidgetStatePropertyAll(
+                          EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        ),
+                        textStyle: WidgetStatePropertyAll(
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        ),
+                        minimumSize: WidgetStatePropertyAll(Size(0, 34)),
                       ),
                       segments: const [
                         ButtonSegment(
                             value: _LayoutLayer.treatments,
-                            label: Text('Treats'),
+                            label: Text('Treats', maxLines: 1, softWrap: false),
                             icon: Icon(Icons.science, size: 14)),
                         ButtonSegment(
                             value: _LayoutLayer.applications,
-                            label: Text('Apps'),
+                            label: Text('Apps', maxLines: 1, softWrap: false),
                             icon: Icon(Icons.water_drop, size: 14)),
                         ButtonSegment(
                             value: _LayoutLayer.ratings,
-                            label: Text('Ratings'),
+                            label:
+                                Text('Ratings', maxLines: 1, softWrap: false),
                             icon: Icon(Icons.bar_chart, size: 14)),
                       ],
                       selected: {_layoutLayer},
@@ -5102,6 +5201,8 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                       }),
                     ),
                   ),
+                  if (_layoutLayer == _LayoutLayer.ratings)
+                    _buildFullScreenAnalysisModeSwitcher(context),
                   if (_layoutLayer == _LayoutLayer.applications)
                     _buildAppEventSelector(context, ref),
                   if (_layoutLayer == _LayoutLayer.applications)
@@ -5125,19 +5226,30 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
                   ),
                   Expanded(
                     child: _layoutLayer == _LayoutLayer.ratings
-                        ? _buildRatingsOverlay(
-                            context: context,
-                            ref: ref,
-                            trial: widget.trial,
-                            plots: displayPlots,
-                            sessions: sessions,
-                            selectedRatingSession: _selectedRatingSession,
-                            onSessionChanged: (s) =>
-                                setState(() => _selectedRatingSession = s),
-                            heatMapEnabled: _heatMapEnabled,
-                            onHeatMapToggled: (v) =>
-                                setState(() => _heatMapEnabled = v),
-                          )
+                        ? _analysisMode == _PlotAnalysisMode.distribution
+                            ? DistributionView(
+                                trial: widget.trial,
+                                sessions: sessions,
+                              )
+                            : _analysisMode == _PlotAnalysisMode.progression
+                                ? ProgressionView(
+                                    trial: widget.trial,
+                                    sessions: sessions,
+                                  )
+                                : _buildRatingsOverlay(
+                                    context: context,
+                                    ref: ref,
+                                    trial: widget.trial,
+                                    plots: displayPlots,
+                                    sessions: sessions,
+                                    selectedRatingSession:
+                                        _selectedRatingSession,
+                                    onSessionChanged: (s) => setState(
+                                        () => _selectedRatingSession = s),
+                                    heatMapEnabled: _heatMapEnabled,
+                                    onHeatMapToggled: (v) =>
+                                        setState(() => _heatMapEnabled = v),
+                                  )
                         : LayoutBuilder(
                             builder: (context, constraints) {
                               if (!_gridCenterScheduled) {

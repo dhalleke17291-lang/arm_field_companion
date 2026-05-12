@@ -52,6 +52,282 @@ final notesForTrialProvider =
   return ref.watch(notesRepositoryProvider).watchNotesForTrial(trialId);
 });
 
+class ResearcherContextEntry {
+  const ResearcherContextEntry({
+    required this.contextType,
+    required this.title,
+    required this.text,
+    this.detail,
+    this.author,
+    this.occurredAt,
+  });
+
+  final String contextType;
+  final String title;
+  final String text;
+  final String? detail;
+  final String? author;
+  final DateTime? occurredAt;
+}
+
+/// Researcher-authored context that should be visible in-app and eventually
+/// exported as one complete defensibility bundle.
+// TODO: Add assessment notes once schema and rating-flow capture exist; do not
+// advertise them as Researcher Context until then.
+final researcherContextEntriesProvider = StreamProvider.autoDispose
+    .family<List<ResearcherContextEntry>, int>((ref, trialId) {
+  final db = ref.watch(databaseProvider);
+  return mergeTableWatchStreams([
+    (db.select(db.notes)..where((n) => n.trialId.equals(trialId))).watch(),
+    (db.select(db.plots)..where((p) => p.trialId.equals(trialId))).watch(),
+    (db.select(db.plotFlags)..where((f) => f.trialId.equals(trialId))).watch(),
+    (db.select(db.assignments)..where((a) => a.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.ratingRecords)..where((r) => r.trialId.equals(trialId)))
+        .watch(),
+    db.select(db.ratingCorrections).watch(),
+    (db.select(db.photos)..where((p) => p.trialId.equals(trialId))).watch(),
+    (db.select(db.intentRevelationEvents)
+          ..where((e) => e.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.evidenceAnchors)..where((e) => e.trialId.equals(trialId)))
+        .watch(),
+    (db.select(db.signals)..where((s) => s.trialId.equals(trialId))).watch(),
+    db.select(db.signalDecisionEvents).watch(),
+    (db.select(db.ctqFactorAcknowledgments)
+          ..where((a) => a.trialId.equals(trialId)))
+        .watch(),
+  ]).asyncMap((_) async => _loadResearcherContextEntries(ref, db, trialId));
+});
+
+Future<List<ResearcherContextEntry>> _loadResearcherContextEntries(
+  Ref ref,
+  AppDatabase db,
+  int trialId,
+) async {
+  final entries = <ResearcherContextEntry>[];
+
+  String? clean(String? value) {
+    final text = value?.trim();
+    return text == null || text.isEmpty ? null : text;
+  }
+
+  final plots = await (db.select(db.plots)
+        ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(false)))
+      .get();
+  final plotById = {for (final plot in plots) plot.id: plot};
+  String plotLabel(int? plotPk) {
+    final plot = plotPk == null ? null : plotById[plotPk];
+    return plot == null ? 'Plot ${plotPk ?? '-'}' : 'Plot ${plot.plotId}';
+  }
+
+  final sessions = await (db.select(db.sessions)
+        ..where((s) => s.trialId.equals(trialId) & s.isDeleted.equals(false)))
+      .get();
+  final sessionById = {for (final session in sessions) session.id: session};
+  String? sessionName(int? sessionId) => sessionById[sessionId]?.name;
+
+  final assessments = await (db.select(db.assessments)
+        ..where((a) => a.trialId.equals(trialId)))
+      .get();
+  final assessmentById = {
+    for (final assessment in assessments) assessment.id: assessment
+  };
+
+  for (final plot in plots) {
+    final note = clean(plot.plotNotes);
+    if (note == null) continue;
+    entries.add(ResearcherContextEntry(
+      contextType: 'Plot notes',
+      title: 'Plot ${plot.plotId}',
+      text: note,
+      detail: plot.rep == null ? null : 'Rep ${plot.rep}',
+    ));
+  }
+
+  final notes = await (db.select(db.notes)
+        ..where((n) => n.trialId.equals(trialId) & n.isDeleted.equals(false))
+        ..orderBy([(n) => drift.OrderingTerm.desc(n.createdAt)]))
+      .get();
+  for (final note in notes) {
+    final parts = [
+      if (note.sessionId != null) sessionName(note.sessionId),
+      if (note.plotPk != null) plotLabel(note.plotPk),
+    ].whereType<String>().toList();
+    entries.add(ResearcherContextEntry(
+      contextType: note.sessionId == null ? 'Field notes' : 'Session notes',
+      title: parts.isEmpty ? 'Field note' : parts.join(' · '),
+      text: note.content,
+      author: clean(note.raterName),
+      occurredAt: note.createdAt,
+    ));
+  }
+
+  final plotFlags = await (db.select(db.plotFlags)
+        ..where((f) => f.trialId.equals(trialId) & f.description.isNotNull())
+        ..orderBy([(f) => drift.OrderingTerm.desc(f.createdAt)]))
+      .get();
+  for (final flag in plotFlags) {
+    final description = clean(flag.description);
+    if (description == null) continue;
+    final details = [
+      sessionName(flag.sessionId),
+      if (flag.flagType != 'FIELD_OBSERVATION') flag.flagType,
+    ].whereType<String>().toList();
+    entries.add(ResearcherContextEntry(
+      contextType: 'Plot flags',
+      title: plotLabel(flag.plotPk),
+      text: description,
+      detail: details.isEmpty ? null : details.join(' · '),
+      author: clean(flag.raterName),
+      occurredAt: flag.createdAt,
+    ));
+  }
+
+  final trialRatings = await (db.select(db.ratingRecords)
+        ..where((r) => r.trialId.equals(trialId) & r.isDeleted.equals(false)))
+      .get();
+  final ratingById = {for (final rating in trialRatings) rating.id: rating};
+  for (final rating in trialRatings
+      .where((rating) => clean(rating.amendmentReason) != null)) {
+    final reason = clean(rating.amendmentReason);
+    if (reason == null) continue;
+    final assessment = assessmentById[rating.assessmentId]?.name ??
+        'Assessment ${rating.assessmentId}';
+    entries.add(ResearcherContextEntry(
+      contextType: 'Amendment reasons',
+      title: '$assessment · ${plotLabel(rating.plotPk)}',
+      text: reason,
+      detail: sessionName(rating.sessionId),
+      author: clean(rating.amendedBy),
+      occurredAt: rating.amendedAt,
+    ));
+  }
+
+  final sessionIds = sessions.map((s) => s.id).toList();
+  if (sessionIds.isNotEmpty) {
+    final corrections = await (db.select(db.ratingCorrections)
+          ..where((c) => c.sessionId.isIn(sessionIds)))
+        .get();
+    for (final correction in corrections) {
+      final reason = clean(correction.reason);
+      if (reason == null) continue;
+      final rating = ratingById[correction.ratingId];
+      final assessment = rating == null
+          ? 'Rating correction'
+          : assessmentById[rating.assessmentId]?.name ??
+              'Assessment ${rating.assessmentId}';
+      entries.add(ResearcherContextEntry(
+        contextType: 'Correction reasons',
+        title: '$assessment · ${plotLabel(correction.plotPk)}',
+        text: reason,
+        detail: sessionName(correction.sessionId),
+        occurredAt: correction.correctedAt,
+      ));
+    }
+  }
+
+  final photos = await (db.select(db.photos)
+        ..where((p) => p.trialId.equals(trialId) & p.isDeleted.equals(false)))
+      .get();
+  for (final photo in photos) {
+    final caption = clean(photo.caption);
+    if (caption == null) continue;
+    entries.add(ResearcherContextEntry(
+      contextType: 'Photo captions',
+      title: plotLabel(photo.plotPk),
+      text: caption,
+      detail: sessionName(photo.sessionId),
+      occurredAt: photo.createdAt,
+    ));
+  }
+
+  final assignments = await (db.select(db.assignments)
+        ..where((a) => a.trialId.equals(trialId) & a.notes.isNotNull()))
+      .get();
+  for (final assignment in assignments) {
+    // Dormant: Assignments.notes is always null until capture is wired at lib/data/repositories/assignment_repository.dart:73.
+    final note = clean(assignment.notes);
+    if (note == null) continue;
+    entries.add(ResearcherContextEntry(
+      contextType: 'Assignment notes',
+      title: plotLabel(assignment.plotId),
+      text: note,
+      occurredAt: assignment.updatedAt,
+    ));
+  }
+
+  final decisionSummary =
+      await ref.read(trialDecisionSummaryProvider(trialId).future);
+  for (final decision in decisionSummary.signalDecisions) {
+    final note = clean(decision.note);
+    if (note == null) continue;
+    entries.add(ResearcherContextEntry(
+      contextType: 'Signal decision notes',
+      title: 'Signal ${decision.signalId} · ${decision.eventType}',
+      text: note,
+      detail: decision.resultingStatus,
+      author: clean(decision.actorName),
+      occurredAt: DateTime.fromMillisecondsSinceEpoch(decision.occurredAt),
+    ));
+  }
+  for (final ack in decisionSummary.ctqAcknowledgments) {
+    entries.add(ResearcherContextEntry(
+      contextType: 'CTQ acknowledgment reasons',
+      title: ack.factorKey,
+      text: ack.reason,
+      detail: ack.factorStatusAtAcknowledgment,
+      author: clean(ack.actorName),
+      occurredAt: ack.acknowledgedAt,
+    ));
+  }
+
+  final intentAnswers = await (db.select(db.intentRevelationEvents)
+        ..where((e) =>
+            e.trialId.equals(trialId) &
+            e.answerValue.isNotNull() &
+            e.answerState.isNotIn(['unknown', 'skipped'])))
+      .get();
+  for (final answer in intentAnswers) {
+    final value = clean(answer.answerValue);
+    if (value == null) continue;
+    entries.add(ResearcherContextEntry(
+      contextType: 'Trial intent answers',
+      title: answer.questionText,
+      text: value,
+      detail: answer.answerState,
+      author: clean(answer.capturedBy),
+      occurredAt: answer.capturedAt,
+    ));
+  }
+
+  final anchors = await (db.select(db.evidenceAnchors)
+        ..where((e) => e.trialId.equals(trialId) & e.anchorReason.isNotNull()))
+      .get();
+  for (final anchor in anchors) {
+    // Dormant: EvidenceAnchors.anchorReason is always null until capture is wired at lib/domain/evidence/evidence_anchor_repository.dart:140.
+    final reason = clean(anchor.anchorReason);
+    if (reason == null) continue;
+    entries.add(ResearcherContextEntry(
+      contextType: 'Evidence anchor reasons',
+      title: '${anchor.evidenceType} → ${anchor.claimType}',
+      text: reason,
+      detail: 'Claim ${anchor.claimId}',
+      occurredAt: DateTime.fromMillisecondsSinceEpoch(anchor.anchoredAt),
+    ));
+  }
+
+  entries.sort((a, b) {
+    final at = a.occurredAt;
+    final bt = b.occurredAt;
+    if (at == null && bt == null) return a.contextType.compareTo(b.contextType);
+    if (at == null) return 1;
+    if (bt == null) return -1;
+    return bt.compareTo(at);
+  });
+  return entries;
+}
+
 final updatePlotDetailsUseCaseProvider =
     Provider<UpdatePlotDetailsUseCase>((ref) {
   return UpdatePlotDetailsUseCase(ref.watch(plotRepositoryProvider));
@@ -510,4 +786,3 @@ final weatherSnapshotsForTrialProvider = FutureProvider.autoDispose
       .watch(weatherSnapshotRepositoryProvider)
       .getWeatherSnapshotsForTrial(trialId);
 });
-
