@@ -341,8 +341,11 @@ void main() {
 
       expect(find.text('Researcher Context'), findsOneWidget);
       expect(find.text('1 note and reason captured'), findsOneWidget);
-      expect(find.text('Signal notes 1'), findsOneWidget);
-      expect(find.text('Signal decision · confirm'), findsOneWidget);
+      expect(find.text('Review notes 1'), findsOneWidget);
+      expect(find.text('Issue review · Confirmed'), findsOneWidget);
+      expect(find.text('Resolved · May 11'), findsOneWidget);
+      expect(find.text('Signal notes 1'), findsNothing);
+      expect(find.text('Signal decision · confirm'), findsNothing);
       expect(find.text('Signal decision notes 1'), findsNothing);
       expect(find.text('Trial intent answers 1'), findsNothing);
       expect(

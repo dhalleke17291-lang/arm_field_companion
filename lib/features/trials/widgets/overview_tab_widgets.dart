@@ -531,7 +531,7 @@ class ResearcherContextCard extends ConsumerWidget {
 
 String _researcherContextTypeLabel(String type) {
   return switch (type) {
-    'Signal decision notes' => 'Signal notes',
+    'Signal decision notes' => 'Review notes',
     _ => type,
   };
 }
@@ -540,8 +540,70 @@ String _researcherContextTitleLabel(ResearcherContextEntry entry) {
   if (entry.contextType != 'Signal decision notes') return entry.title;
   final signalMatch =
       RegExp(r'^Signal\s+\d+\s+·\s+(.+)$').firstMatch(entry.title.trim());
-  if (signalMatch == null) return 'Signal decision';
-  return 'Signal decision · ${signalMatch.group(1)}';
+  if (signalMatch == null) return 'Issue review';
+  return 'Issue review · ${_researcherContextActionLabel(signalMatch.group(1)!)}';
+}
+
+String _researcherContextActionLabel(String value) {
+  return switch (value.trim().toLowerCase()) {
+    'confirm' => 'Confirmed',
+    'investigate' => 'Needs follow-up',
+    'defer' => 'Review later',
+    'suppress' => 'Dismissed',
+    're_rate' || 'rerate' => 'Corrected rating',
+    _ => _researcherContextPlainLabel(value),
+  };
+}
+
+String _researcherContextStatusLabel(String value) {
+  return switch (value.trim().toLowerCase()) {
+    'resolved' => 'Resolved',
+    'open' => 'Needs review',
+    'investigating' => 'Under review',
+    'deferred' => 'Review later',
+    'suppressed' => 'Dismissed',
+    _ => _researcherContextPlainLabel(value),
+  };
+}
+
+String _researcherContextPlainLabel(String value) {
+  final words = value.trim().replaceAll('_', ' ').split(RegExp(r'\s+'));
+  return words
+      .where((word) => word.isNotEmpty)
+      .map((word) => '${word[0].toUpperCase()}${word.substring(1)}')
+      .join(' ');
+}
+
+String? _researcherContextSessionLabel(String? detail) {
+  if (detail == null) return null;
+  final trimmed = detail.trim();
+  if (trimmed.isEmpty) return null;
+  final sessionMatch =
+      RegExp(r'^\d{4}-\d{2}-\d{2}\s+(.+)$').firstMatch(trimmed);
+  return sessionMatch?.group(1) ?? trimmed;
+}
+
+String _researcherContextMetaLabel(ResearcherContextEntry entry, String? date) {
+  if (entry.contextType == 'Signal decision notes') {
+    return [
+      if (entry.detail != null) _researcherContextStatusLabel(entry.detail!),
+      if (date != null) date,
+    ].join(' · ');
+  }
+
+  if (entry.contextType == 'Amendment reasons') {
+    return [
+      'Amendment',
+      if (_researcherContextSessionLabel(entry.detail) != null)
+        _researcherContextSessionLabel(entry.detail)!,
+    ].join(' · ');
+  }
+
+  return [
+    _researcherContextTypeLabel(entry.contextType),
+    if (entry.detail != null) entry.detail!,
+    if (date != null) date,
+  ].join(' · ');
 }
 
 class _ResearcherContextPreviewRow extends StatelessWidget {
@@ -554,11 +616,7 @@ class _ResearcherContextPreviewRow extends StatelessWidget {
     final date = entry.occurredAt == null
         ? null
         : DateFormat('MMM d').format(entry.occurredAt!);
-    final meta = [
-      _researcherContextTypeLabel(entry.contextType),
-      if (entry.detail != null) entry.detail!,
-      if (date != null) date,
-    ].join(' · ');
+    final meta = _researcherContextMetaLabel(entry, date);
 
     return Container(
       width: double.infinity,
