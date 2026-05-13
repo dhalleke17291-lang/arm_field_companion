@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 320">
+  <defs>
+    <pattern id="standSoil" width="24" height="18" patternUnits="userSpaceOnUse">
+      <rect width="24" height="18" fill="#D6BE9B"/>
+      <circle cx="6" cy="6" r="0.8" fill="#927858" opacity="0.25"/>
+      <circle cx="18" cy="12" r="0.7" fill="#8A7154" opacity="0.22"/>
+    </pattern>
+    <linearGradient id="cropCanopy" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#9FB86D"/>
+      <stop offset="1" stop-color="#41683D"/>
+    </linearGradient>
+    <clipPath id="standPlotClip">
+      <rect x="-45" y="-52" width="90" height="104" rx="3"/>
+    </clipPath>
+  </defs>
+  <rect width="680" height="320" fill="#F6F2EA"/>
+  <text x="340" y="28" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="700" fill="#2D5A40">Crop Stand Coverage %</text>
+  <g fill="#FCFBF7" stroke="#D7D1C6" stroke-width="0.8">
+    <rect x="18" y="48" width="122" height="218" rx="5"/>
+    <rect x="151" y="48" width="122" height="218" rx="5"/>
+    <rect x="284" y="48" width="122" height="218" rx="5"/>
+    <rect x="417" y="48" width="122" height="218" rx="5"/>
+    <rect x="550" y="48" width="112" height="218" rx="5"/>
+  </g>
+
+  <g transform="translate(79 150)">
+    <rect x="-45" y="-52" width="90" height="104" rx="3" fill="url(#standSoil)" stroke="#2D5A40" stroke-width="1.2"/>
+    <g stroke="#B79A74" stroke-width="0.8" opacity="0.55">
+      <path d="M-29,-52 L-29,52"/>
+      <path d="M0,-52 L0,52"/>
+      <path d="M29,-52 L29,52"/>
+    </g>
+  </g>
+
+  <g transform="translate(212 150)">
+    <rect x="-45" y="-52" width="90" height="104" rx="3" fill="url(#standSoil)" stroke="#2D5A40" stroke-width="1.2"/>
+    <g stroke="#B79A74" stroke-width="0.8" opacity="0.5">
+      <path d="M-29,-52 L-29,52"/>
+      <path d="M0,-52 L0,52"/>
+      <path d="M29,-52 L29,52"/>
+    </g>
+    <g fill="url(#cropCanopy)">
+      <path d="M-36,-45 C-27,-53 -18,-44 -23,-34 C-30,-29 -39,-35 -36,-45 Z"/>
+      <path d="M-35,-11 C-25,-19 -15,-9 -22,1 C-30,5 -39,-2 -35,-11 Z"/>
+      <path d="M-6,-32 C4,-39 13,-29 7,-19 C-1,-15 -10,-22 -6,-32 Z"/>
+      <path d="M22,5 C33,-2 41,9 34,19 C26,23 17,15 22,5 Z"/>
+      <path d="M-5,29 C5,22 15,32 8,43 C0,47 -10,39 -5,29 Z"/>
+      <path d="M22,-39 C33,-47 41,-35 34,-25 C26,-21 17,-29 22,-39 Z"/>
+    </g>
+  </g>
+
+  <g transform="translate(345 150)">
+    <rect x="-45" y="-52" width="90" height="104" rx="3" fill="url(#standSoil)" stroke="#2D5A40" stroke-width="1.2"/>
+    <g clip-path="url(#standPlotClip)" fill="url(#cropCanopy)" opacity="0.96">
+      <path d="M-39,-54 C-24,-61 -11,-45 -19,-30 C-31,-24 -45,-36 -39,-54 Z"/>
+      <path d="M-40,-20 C-20,-31 -4,-12 -15,6 C-29,14 -48,0 -40,-20 Z"/>
+      <path d="M-38,15 C-20,4 -4,24 -15,43 C-31,50 -48,35 -38,15 Z"/>
+      <path d="M-10,-47 C8,-57 24,-39 13,-20 C-1,-13 -18,-28 -10,-47 Z"/>
+      <path d="M-10,-10 C8,-20 26,-1 14,18 C-1,25 -20,9 -10,-10 Z"/>
+      <path d="M-9,26 C9,16 25,36 13,54 C-3,61 -19,44 -9,26 Z"/>
+      <path d="M20,-42 C39,-52 53,-32 40,-13 C25,-6 12,-25 20,-42 Z"/>
+      <path d="M20,-2 C39,-14 54,8 40,28 C25,35 11,16 20,-2 Z"/>
+      <path d="M21,34 C37,24 52,42 42,57 C29,62 16,50 21,34 Z"/>
+    </g>
+    <path d="M-2,-29 C5,-35 16,-28 12,-17 C3,-13 -6,-19 -2,-29 Z" fill="url(#standSoil)"/>
+    <path d="M23,28 C31,22 39,31 34,42 C25,45 18,38 23,28 Z" fill="url(#standSoil)"/>
+  </g>
+
+  <g transform="translate(478 150)">
+    <rect x="-45" y="-52" width="90" height="104" rx="3" fill="url(#standSoil)" stroke="#2D5A40" stroke-width="1.2"/>
+    <g clip-path="url(#standPlotClip)" fill="url(#cropCanopy)" opacity="0.98">
+      <path d="M-46,-56 C-22,-69 4,-47 -11,-22 C-31,-11 -53,-31 -46,-56 Z"/>
+      <path d="M-45,-23 C-19,-42 8,-18 -8,12 C-31,25 -56,0 -45,-23 Z"/>
+      <path d="M-44,15 C-19,-2 9,25 -8,55 C-34,66 -57,42 -44,15 Z"/>
+      <path d="M-12,-52 C14,-68 40,-40 21,-13 C0,0 -22,-25 -12,-52 Z"/>
+      <path d="M-13,-13 C15,-32 42,-2 22,28 C0,42 -25,14 -13,-13 Z"/>
+      <path d="M-12,25 C13,9 39,34 22,61 C0,72 -25,49 -12,25 Z"/>
+      <path d="M22,-50 C49,-64 63,-34 43,-8 C27,2 13,-28 22,-50 Z"/>
+      <path d="M22,-10 C51,-29 65,5 43,34 C26,45 12,16 22,-10 Z"/>
+      <path d="M22,28 C47,15 63,41 47,62 C31,69 15,51 22,28 Z"/>
+    </g>
+    <path d="M-28,2 C-17,-7 -5,4 -12,18 C-24,23 -34,14 -28,2 Z" fill="url(#standSoil)"/>
+    <path d="M14,-35 C25,-42 34,-32 27,-20 C17,-16 9,-25 14,-35 Z" fill="url(#standSoil)"/>
+  </g>
+
+  <g transform="translate(606 150)">
+    <rect x="-45" y="-52" width="90" height="104" rx="3" fill="url(#standSoil)" stroke="#2D5A40" stroke-width="1.2"/>
+    <g clip-path="url(#standPlotClip)" fill="url(#cropCanopy)">
+      <path d="M-48,-58 C-22,-72 5,-48 -10,-19 C-33,-6 -56,-31 -48,-58 Z"/>
+      <path d="M-47,-21 C-19,-44 10,-18 -7,14 C-33,29 -59,1 -47,-21 Z"/>
+      <path d="M-47,17 C-17,-5 11,24 -8,57 C-36,70 -60,42 -47,17 Z"/>
+      <path d="M-12,-54 C15,-70 43,-39 22,-10 C0,4 -23,-26 -12,-54 Z"/>
+      <path d="M-13,-13 C16,-34 45,-2 23,31 C-1,46 -27,13 -13,-13 Z"/>
+      <path d="M-13,26 C15,6 43,35 23,63 C-1,76 -27,48 -13,26 Z"/>
+      <path d="M22,-52 C51,-68 66,-33 44,-5 C27,7 12,-29 22,-52 Z"/>
+      <path d="M22,-9 C53,-30 68,6 44,37 C25,50 12,17 22,-9 Z"/>
+      <path d="M22,28 C50,11 67,42 47,65 C30,75 13,52 22,28 Z"/>
+    </g>
+  </g>
+
+  <g font-family="sans-serif" text-anchor="middle" font-size="13" font-weight="700" fill="#1F2933">
+    <text x="79" y="286">0%</text>
+    <text x="212" y="286">25%</text>
+    <text x="345" y="286">50%</text>
+    <text x="478" y="286">75%</text>
+    <text x="606" y="286">100%</text>
+  </g>
+  <text x="340" y="306" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#6B7280">Overhead crop row canopy occupation, pending validation</text>
+</svg>

@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 320">
+  <defs>
+    <linearGradient id="healthyLeaf" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#C7D8A3"/>
+      <stop offset="0.55" stop-color="#DDE7B8"/>
+      <stop offset="1" stop-color="#B9CC93"/>
+    </linearGradient>
+    <linearGradient id="necroticLeaf" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#9B6A37"/>
+      <stop offset="0.55" stop-color="#B9823E"/>
+      <stop offset="1" stop-color="#7F562D"/>
+    </linearGradient>
+    <pattern id="fineSpeckle" width="18" height="18" patternUnits="userSpaceOnUse">
+      <circle cx="4" cy="5" r="0.7" fill="#6B4A2F" opacity="0.25"/>
+      <circle cx="13" cy="12" r="0.6" fill="#6B4A2F" opacity="0.2"/>
+    </pattern>
+  </defs>
+  <rect width="680" height="320" fill="#F6F2EA"/>
+  <text x="340" y="28" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="700" fill="#2D5A40">Wheat - Foliar Disease Severity</text>
+
+  <g fill="#FCFBF7" stroke="#D7D1C6" stroke-width="0.8">
+    <rect x="10" y="46" width="88" height="220" rx="5"/>
+    <rect x="106" y="46" width="88" height="220" rx="5"/>
+    <rect x="202" y="46" width="88" height="220" rx="5"/>
+    <rect x="298" y="46" width="88" height="220" rx="5"/>
+    <rect x="394" y="46" width="88" height="220" rx="5"/>
+    <rect x="490" y="46" width="88" height="220" rx="5"/>
+    <rect x="586" y="46" width="84" height="220" rx="5"/>
+  </g>
+
+  <g id="leaf0" transform="translate(54 150) rotate(-90)">
+    <path d="M-76,-10 C-48,-15 42,-15 75,-5 C81,-2 81,2 75,5 C42,15 -48,15 -76,10 C-82,6 -82,-6 -76,-10 Z" fill="url(#healthyLeaf)" stroke="#2D5A40" stroke-width="1.1"/>
+    <path d="M-73,0 C-35,-1 28,1 74,0" fill="none" stroke="#7F9967" stroke-width="0.8"/>
+  </g>
+
+  <g transform="translate(150 150) rotate(-90)">
+    <path d="M-76,-10 C-48,-15 42,-15 75,-5 C81,-2 81,2 75,5 C42,15 -48,15 -76,10 C-82,6 -82,-6 -76,-10 Z" fill="url(#healthyLeaf)" stroke="#2D5A40" stroke-width="1.1"/>
+    <path d="M-73,0 C-35,-1 28,1 74,0" fill="none" stroke="#7F9967" stroke-width="0.8"/>
+    <path d="M-45,-5 C-38,-9 -31,-5 -34,0 C-37,5 -46,3 -45,-5 Z" fill="#D1A85C" opacity="0.75"/>
+    <path d="M-42,-3 C-38,-5 -35,-3 -36,0 C-38,2 -43,1 -42,-3 Z" fill="#5F3A24"/>
+    <path d="M22,3 C26,0 32,1 32,5 C30,9 23,8 22,3 Z" fill="#6A3F27"/>
+  </g>
+
+  <g transform="translate(246 150) rotate(-90)">
+    <path d="M-76,-10 C-48,-15 42,-15 75,-5 C81,-2 81,2 75,5 C42,15 -48,15 -76,10 C-82,6 -82,-6 -76,-10 Z" fill="url(#healthyLeaf)" stroke="#2D5A40" stroke-width="1.1"/>
+    <path d="M-73,0 C-35,-1 28,1 74,0" fill="none" stroke="#7F9967" stroke-width="0.8"/>
+    <path d="M-58,2 C-52,-3 -43,-1 -44,5 C-48,11 -57,9 -58,2 Z" fill="#D3A85F" opacity="0.75"/>
+    <path d="M-54,3 C-50,0 -46,1 -47,5 C-50,8 -55,7 -54,3 Z" fill="#5E3923"/>
+    <path d="M-13,-7 C-7,-11 1,-8 0,-2 C-4,3 -13,0 -13,-7 Z" fill="#C99A4E" opacity="0.7"/>
+    <path d="M-10,-6 C-6,-8 -2,-6 -3,-3 C-5,-1 -10,-2 -10,-6 Z" fill="#654128"/>
+    <path d="M34,1 C40,-4 48,-1 47,6 C43,11 35,8 34,1 Z" fill="#6D4329"/>
+  </g>
+
+  <g transform="translate(342 150) rotate(-90)">
+    <path d="M-76,-10 C-48,-15 42,-15 75,-5 C81,-2 81,2 75,5 C42,15 -48,15 -76,10 C-82,6 -82,-6 -76,-10 Z" fill="url(#healthyLeaf)" stroke="#2D5A40" stroke-width="1.1"/>
+    <path d="M-73,0 C-35,-1 28,1 74,0" fill="none" stroke="#7F9967" stroke-width="0.8"/>
+    <path d="M-63,-7 C-50,-16 -30,-8 -34,6 C-42,16 -60,9 -63,-7 Z" fill="#D7B46C" opacity="0.82"/>
+    <path d="M-55,-5 C-45,-10 -36,-5 -39,4 C-45,10 -56,4 -55,-5 Z" fill="#66402A"/>
+    <path d="M-13,2 C-2,-7 12,-4 11,7 C5,16 -9,13 -13,2 Z" fill="#D1A45A" opacity="0.8"/>
+    <path d="M-7,2 C0,-2 6,1 5,6 C1,10 -7,8 -7,2 Z" fill="#5A3522"/>
+    <path d="M30,-8 C41,-13 55,-7 53,5 C48,14 32,9 30,-8 Z" fill="#B97839" opacity="0.8"/>
+    <path d="M36,-6 C43,-9 49,-5 47,2 C43,6 36,3 36,-6 Z" fill="#603A24"/>
+  </g>
+
+  <g transform="translate(438 150) rotate(-90)">
+    <path d="M-76,-10 C-48,-15 42,-15 75,-5 C81,-2 81,2 75,5 C42,15 -48,15 -76,10 C-82,6 -82,-6 -76,-10 Z" fill="url(#healthyLeaf)" stroke="#2D5A40" stroke-width="1.1"/>
+    <path d="M-70,-9 C-50,-18 -18,-16 -10,-6 C-3,3 -14,12 -32,11 C-53,11 -68,4 -70,-9 Z" fill="#D6B36A"/>
+    <path d="M-58,-6 C-43,-11 -22,-10 -18,-3 C-15,4 -28,8 -43,7 C-55,6 -62,1 -58,-6 Z" fill="#68412A"/>
+    <path d="M-4,-8 C15,-16 43,-12 50,-1 C57,11 39,15 17,12 C2,10 -11,2 -4,-8 Z" fill="#C58D45"/>
+    <path d="M5,-5 C21,-10 39,-7 42,1 C44,8 29,10 16,7 C6,5 0,0 5,-5 Z" fill="#5D3824"/>
+    <path d="M-73,0 C-35,-1 28,1 74,0" fill="none" stroke="#836943" stroke-width="0.8"/>
+    <path d="M54,4 C59,1 66,3 66,8 C63,12 56,10 54,4 Z" fill="#6A3F27"/>
+  </g>
+
+  <g transform="translate(534 150) rotate(-90)">
+    <path d="M-76,-10 C-48,-15 42,-15 75,-5 C81,-2 81,2 75,5 C42,15 -48,15 -76,10 C-82,6 -82,-6 -76,-10 Z" fill="url(#necroticLeaf)" stroke="#2D5A40" stroke-width="1.1"/>
+    <path d="M-57,-8 C-44,-15 -23,-13 -18,-3 C-13,7 -28,14 -46,10 C-56,8 -63,-1 -57,-8 Z" fill="#533321"/>
+    <path d="M-8,-10 C8,-16 33,-11 39,2 C45,13 25,17 5,13 C-8,10 -18,-3 -8,-10 Z" fill="#5B3722"/>
+    <path d="M42,-2 C51,-8 65,-5 68,4 C68,10 55,14 45,9 C39,6 37,2 42,-2 Z" fill="#B98A45"/>
+    <path d="M-64,3 C-51,9 -36,10 -25,4" fill="none" stroke="#DDE7B8" stroke-width="3" opacity="0.75"/>
+    <path d="M10,-4 C21,-2 29,0 38,-3" fill="none" stroke="#DDE7B8" stroke-width="2.4" opacity="0.7"/>
+    <path d="M-73,0 C-35,-1 28,1 74,0" fill="none" stroke="#5F4328" stroke-width="0.8"/>
+  </g>
+
+  <g transform="translate(628 150) rotate(-90)">
+    <path d="M-76,-10 C-48,-15 42,-15 75,-5 C81,-2 81,2 75,5 C42,15 -48,15 -76,10 C-82,6 -82,-6 -76,-10 Z" fill="url(#necroticLeaf)" stroke="#2D5A40" stroke-width="1.1"/>
+    <path d="M-76,-10 C-48,-15 42,-15 75,-5 C81,-2 81,2 75,5 C42,15 -48,15 -76,10 C-82,6 -82,-6 -76,-10 Z" fill="url(#fineSpeckle)"/>
+    <path d="M-73,0 C-35,-1 28,1 74,0" fill="none" stroke="#5E3F25" stroke-width="0.9"/>
+    <path d="M-46,-8 C-32,-13 -17,-9 -14,-1 C-12,7 -28,10 -43,6 C-50,4 -53,-4 -46,-8 Z" fill="#51321F" opacity="0.72"/>
+    <path d="M18,-7 C31,-12 50,-7 52,4 C48,13 29,12 17,6 C10,2 10,-4 18,-7 Z" fill="#543320" opacity="0.72"/>
+  </g>
+
+  <g font-family="sans-serif" text-anchor="middle" font-size="13" font-weight="700" fill="#1F2933">
+    <text x="54" y="286">0%</text>
+    <text x="150" y="286">5%</text>
+    <text x="246" y="286">10%</text>
+    <text x="342" y="286">25%</text>
+    <text x="438" y="286">50%</text>
+    <text x="534" y="286">75%</text>
+    <text x="628" y="286">100%</text>
+  </g>
+  <text x="340" y="306" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#6B7280">Original Agnexis SAD-style diagram, pending validation</text>
+</svg>

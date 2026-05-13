@@ -61,10 +61,14 @@
       "Bash(sqlite3 /Users/parminder/Library/Developer/CoreSimulator/Devices/F87B977D-F1E6-4E76-AEEB-E30FB92AC625/data/Containers/Data/Application/BB268CB7-C2D1-4E32-BA4F-D1052E22936F/Documents/field_companion.db 'SELECT id, status, confirmed_at FROM trial_purposes WHERE trial_id = '\\\\''bd8243f9-1a56-4d13-8547-0c94c93e788b'\\\\'' ORDER BY created_at;')",
       "Bash(sqlite3 /Users/parminder/Library/Developer/CoreSimulator/Devices/F87B977D-F1E6-4E76-AEEB-E30FB92AC625/data/Containers/Data/Application/BB268CB7-C2D1-4E32-BA4F-D1052E22936F/Documents/field_companion.db .tables)",
       "Bash(tee /tmp/test_run.txt)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(awk 'NR>=1966 && NR<=3091' /Users/parminder/Desktop/arm_field_companion/lib/features/ratings/rating_screen.dart)",
+      "Bash(grep -E \"\\\\.\\(dart|json|sql\\)$\")",
+      "Bash(rm /Users/parminder/Desktop/arm_field_companion/lib/features/assessments/assessment_library_system_map.dart && echo \"removed\")"
     ],
     "additionalDirectories": [
-      "/Users/parminder/Desktop/arm_field_companion/lib/features/arm_import/usecases"
+      "/Users/parminder/Desktop/arm_field_companion/lib/features/arm_import/usecases",
+      "/Users/parminder/Desktop/arm_field_companion/lib/features/assessments"
     ]
   }
 }

@@ -256,35 +256,43 @@ class _OverviewInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppDesignTokens.secondaryText,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final labelWidth =
+            (constraints.maxWidth * 0.34).clamp(108.0, 150.0);
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: labelWidth,
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppDesignTokens.secondaryText,
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: AppDesignTokens.spacing8),
-          Flexible(
-            flex: 2,
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppDesignTokens.primaryText,
+              const SizedBox(width: AppDesignTokens.spacing8),
+              Expanded(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.left,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.25,
+                    fontWeight: FontWeight.w600,
+                    color: AppDesignTokens.primaryText,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

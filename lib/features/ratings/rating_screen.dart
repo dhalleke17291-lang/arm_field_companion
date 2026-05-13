@@ -4741,7 +4741,14 @@ class _PhotoCaptionEditorScreenState extends State<_PhotoCaptionEditorScreen> {
         actions: [
           TextButton(
             onPressed: _done,
-            child: const Text('Done'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppDesignTokens.onPrimary,
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -4763,6 +4770,35 @@ class _PhotoCaptionEditorScreenState extends State<_PhotoCaptionEditorScreen> {
               hintText: 'Add caption — why this photo matters (optional)',
               alignLabelWithHint: true,
               border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppDesignTokens.spacing16,
+            AppDesignTokens.spacing8,
+            AppDesignTokens.spacing16,
+            AppDesignTokens.spacing16,
+          ),
+          child: FilledButton(
+            onPressed: _done,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppDesignTokens.primary,
+              foregroundColor: AppDesignTokens.onPrimary,
+              minimumSize: const Size.fromHeight(54),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Save caption',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),

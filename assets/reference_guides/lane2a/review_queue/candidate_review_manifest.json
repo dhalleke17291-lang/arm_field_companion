@@ -1,0 +1,13 @@
+{
+  "workflow": "lane2a_manual_candidate_review",
+  "sourceDataset": "Dryad Manitoba weed seedling dataset",
+  "sourceDoi": "10.5061/dryad.gtht76hhz",
+  "sourceUrl": "https://doi.org/10.5061/dryad.gtht76hhz",
+  "exactLicense": "CC0",
+  "licenseAppliesToImageFile": true,
+  "suggestedUse": "species_reference_photo",
+  "candidateTargetPerSpecies": 5,
+  "finalApprovalTargetPerSpecies": 3,
+  "approvalRule": "Only files moved to assets/reference_guides/lane2a/approved/ and listed in lane2a_approved_photo_manifest.dart are seeded.",
+  "candidates": []
+}

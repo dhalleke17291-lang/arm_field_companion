@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 320">
+  <defs>
+    <linearGradient id="healthyCrop" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#AFC57A"/>
+      <stop offset="1" stop-color="#527343"/>
+    </linearGradient>
+    <linearGradient id="chloroticCrop" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#E4D676"/>
+      <stop offset="1" stop-color="#7E914F"/>
+    </linearGradient>
+    <pattern id="necroticFlecks" width="16" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="5" cy="4" r="0.9" fill="#724222" opacity="0.75"/>
+      <circle cx="12" cy="10" r="0.7" fill="#724222" opacity="0.55"/>
+    </pattern>
+  </defs>
+  <rect width="680" height="320" fill="#F6F2EA"/>
+  <text x="340" y="28" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="700" fill="#2D5A40">Crop Injury - Categorical Score</text>
+  <g fill="#FCFBF7" stroke="#D7D1C6" stroke-width="0.8">
+    <rect x="18" y="48" width="122" height="218" rx="5"/>
+    <rect x="151" y="48" width="122" height="218" rx="5"/>
+    <rect x="284" y="48" width="122" height="218" rx="5"/>
+    <rect x="417" y="48" width="122" height="218" rx="5"/>
+    <rect x="550" y="48" width="112" height="218" rx="5"/>
+  </g>
+
+  <g transform="translate(79 178)">
+    <path d="M-3,54 C-4,20 -3,-40 0,-88 C4,-40 4,20 3,54 Z" fill="#6E8C50" stroke="#2D5A40" stroke-width="1.1"/>
+    <path d="M0,-58 C-31,-78 -48,-46 -21,-31 C-7,-24 0,-42 0,-58 Z" fill="url(#healthyCrop)" stroke="#2D5A40" stroke-width="0.9"/>
+    <path d="M2,-42 C36,-62 51,-27 21,-12 C8,-6 2,-25 2,-42 Z" fill="url(#healthyCrop)" stroke="#2D5A40" stroke-width="0.9"/>
+    <path d="M0,-81 C22,-107 45,-80 22,-59 C9,-49 0,-65 0,-81 Z" fill="url(#healthyCrop)" stroke="#2D5A40" stroke-width="0.9"/>
+    <path d="M-1,-18 C-35,-36 -42,2 -13,17 C-3,21 -1,-1 -1,-18 Z" fill="url(#healthyCrop)" stroke="#2D5A40" stroke-width="0.9"/>
+  </g>
+
+  <g transform="translate(212 184) scale(0.94)">
+    <path d="M-3,54 C-4,20 -3,-40 0,-88 C4,-40 4,20 3,54 Z" fill="#71834B" stroke="#2D5A40" stroke-width="1.1"/>
+    <path d="M0,-58 C-29,-76 -46,-45 -20,-31 C-7,-25 0,-42 0,-58 Z" fill="url(#healthyCrop)" stroke="#2D5A40" stroke-width="0.9"/>
+    <path d="M2,-42 C34,-60 49,-27 21,-12 C8,-7 2,-25 2,-42 Z" fill="url(#chloroticCrop)" stroke="#6B763A" stroke-width="0.9"/>
+    <path d="M0,-81 C20,-103 42,-79 21,-59 C9,-50 0,-65 0,-81 Z" fill="#D9D06E" stroke="#77783B" stroke-width="0.9"/>
+    <path d="M-1,-18 C-32,-34 -40,1 -13,16 C-3,20 -1,-1 -1,-18 Z" fill="url(#healthyCrop)" stroke="#2D5A40" stroke-width="0.9"/>
+  </g>
+
+  <g transform="translate(345 191) scale(0.84)">
+    <path d="M-3,54 C-4,20 -3,-40 0,-88 C4,-40 4,20 3,54 Z" fill="#7B7640" stroke="#5B5D32" stroke-width="1.1"/>
+    <path d="M0,-58 C-28,-72 -42,-42 -19,-27 C-7,-20 0,-42 0,-58 Z" fill="url(#chloroticCrop)" stroke="#77783B" stroke-width="0.9"/>
+    <path d="M2,-42 C31,-55 46,-23 18,-8 C6,-3 2,-25 2,-42 Z" fill="#D6C867" stroke="#786E36" stroke-width="0.9"/>
+    <path d="M0,-81 C17,-96 36,-76 18,-55 C7,-47 0,-65 0,-81 Z" fill="#C8BC62" stroke="#786E36" stroke-width="0.9"/>
+    <path d="M-1,-18 C-28,-29 -34,4 -10,17 C-1,20 -1,-1 -1,-18 Z" fill="#AAB15F" stroke="#697747" stroke-width="0.9"/>
+    <path d="M-27,-63 C-13,-70 -2,-60 -9,-45 C-19,-40 -31,-49 -27,-63 Z" fill="url(#necroticFlecks)" opacity="0.75"/>
+    <path d="M13,-42 C26,-48 36,-35 29,-23 C18,-18 8,-29 13,-42 Z" fill="url(#necroticFlecks)" opacity="0.8"/>
+  </g>
+
+  <g transform="translate(478 201) scale(0.72) rotate(11)">
+    <path d="M-3,54 C-5,20 -5,-40 0,-88 C5,-40 7,20 3,54 Z" fill="#7C5634" stroke="#583B25" stroke-width="1.3"/>
+    <path d="M0,-58 C-24,-65 -33,-35 -13,-22 C-3,-15 2,-39 0,-58 Z" fill="#C4A553" stroke="#74552C" stroke-width="1"/>
+    <path d="M2,-42 C28,-42 35,-10 10,-2 C1,0 0,-25 2,-42 Z" fill="#A66A36" stroke="#684025" stroke-width="1"/>
+    <path d="M0,-81 C12,-87 25,-69 11,-51 C3,-45 -1,-64 0,-81 Z" fill="#B98A45" stroke="#684025" stroke-width="1"/>
+    <path d="M-1,-18 C-22,-18 -22,11 -5,20 C2,20 -1,-1 -1,-18 Z" fill="#C6A252" stroke="#74552C" stroke-width="1"/>
+    <path d="M-24,-61 C-12,-64 -5,-53 -11,-41 C-20,-37 -29,-47 -24,-61 Z" fill="#653A22"/>
+    <path d="M9,-38 C21,-41 27,-28 20,-17 C11,-14 4,-26 9,-38 Z" fill="#653A22"/>
+  </g>
+
+  <g transform="translate(606 203) rotate(55)">
+    <path d="M-3,54 C-5,20 -5,-40 0,-88 C5,-40 7,20 3,54 Z" fill="#6B4526" stroke="#4B321F" stroke-width="1.3"/>
+    <path d="M-8,-55 C-23,-48 -21,-25 -6,-15 C1,-12 0,-39 -8,-55 Z" fill="#7E5430" stroke="#4B321F" stroke-width="1"/>
+    <path d="M1,-35 C18,-28 18,-6 3,0 C-3,1 -2,-22 1,-35 Z" fill="#7A4F2D" stroke="#4B321F" stroke-width="1"/>
+    <path d="M-5,-8 C-19,-3 -14,16 0,20 C5,17 -2,1 -5,-8 Z" fill="#6E482A" stroke="#4B321F" stroke-width="1"/>
+  </g>
+
+  <g font-family="sans-serif" text-anchor="middle" fill="#1F2933">
+    <text x="79" y="286" font-size="13" font-weight="700">0</text>
+    <text x="212" y="286" font-size="13" font-weight="700">1</text>
+    <text x="345" y="286" font-size="13" font-weight="700">2</text>
+    <text x="478" y="286" font-size="13" font-weight="700">3</text>
+    <text x="606" y="286" font-size="13" font-weight="700">4</text>
+    <text x="79" y="300" font-size="10" fill="#6B7280">None</text>
+    <text x="212" y="300" font-size="10" fill="#6B7280">Slight</text>
+    <text x="345" y="300" font-size="10" fill="#6B7280">Moderate</text>
+    <text x="478" y="300" font-size="10" fill="#6B7280">Severe</text>
+    <text x="606" y="300" font-size="10" fill="#6B7280">Plant death</text>
+  </g>
+  <text x="340" y="316" text-anchor="middle" font-family="sans-serif" font-size="9" fill="#6B7280">Original Agnexis phytotoxicity score reference, pending validation</text>
+</svg>
