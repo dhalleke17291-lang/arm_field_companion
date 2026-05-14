@@ -254,6 +254,39 @@ double plotLayoutContentWidthForTesting(
 ) =>
     _plotLayoutContentWidth(plots, viewportWidth);
 
+/// Computes the app bar title for the full-screen plots page.
+///
+/// [isLayoutView] — true when the grid (layout) view is shown; false for list.
+/// [inRatingsLayer] — true when the Ratings layer is active.
+/// [analysisModeName] — one of `'heatmap'`, `'distribution'`, `'progression'`.
+///
+/// Exposed for unit testing; callers inside the widget use [_plotsFullScreenTitle].
+@visibleForTesting
+String plotsFullScreenTitleForTesting({
+  required bool isLayoutView,
+  required bool inRatingsLayer,
+  required String analysisModeName,
+}) =>
+    _plotsFullScreenTitle(
+      isLayoutView: isLayoutView,
+      inRatingsLayer: inRatingsLayer,
+      analysisModeName: analysisModeName,
+    );
+
+String _plotsFullScreenTitle({
+  required bool isLayoutView,
+  required bool inRatingsLayer,
+  required String analysisModeName,
+}) {
+  if (!isLayoutView) return 'Plots — List';
+  if (!inRatingsLayer) return 'Plots — Layout';
+  return switch (analysisModeName) {
+    'distribution' => 'Plots — Distribution',
+    'progression' => 'Plots — Progression',
+    _ => 'Plots — Heat map',
+  };
+}
+
 /// Builds a treatment-level application state map from canonical event stream.
 ///
 /// Keys are treatment_id. Values: 'applied' if any event has status='applied',
@@ -5053,7 +5086,17 @@ class _PlotsFullScreenPageState extends ConsumerState<_PlotsFullScreenPage> {
         ref.watch(trialApplicationsForTrialProvider(trial.id));
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isLayoutView ? 'Plots — Layout' : 'Plots — List'),
+        title: Text(
+          _plotsFullScreenTitle(
+            isLayoutView: widget.isLayoutView,
+            inRatingsLayer: _layoutLayer == _LayoutLayer.ratings,
+            analysisModeName: switch (_analysisMode) {
+              _PlotAnalysisMode.distribution => 'distribution',
+              _PlotAnalysisMode.progression => 'progression',
+              _ => 'heatmap',
+            },
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),

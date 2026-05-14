@@ -185,6 +185,18 @@ class _ProgressionViewState extends ConsumerState<ProgressionView> {
           top: false,
           child: _buildLegend(series, colors),
         ),
+        // Caption
+        const Padding(
+          padding: EdgeInsets.fromLTRB(12, 0, 12, 8),
+          child: Text(
+            'Sessions shown on x-axis',
+            style: TextStyle(
+              fontSize: 10,
+              color: AppDesignTokens.secondaryText,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
       ],
     );
   }

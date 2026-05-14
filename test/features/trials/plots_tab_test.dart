@@ -113,6 +113,87 @@ void main() {
     });
   });
 
+  // ─── plotsFullScreenTitleForTesting ────────────────────────────────────────
+
+  group('plotsFullScreenTitleForTesting', () {
+    test('T-1: list view always returns "Plots — List"', () {
+      expect(
+        plotsFullScreenTitleForTesting(
+          isLayoutView: false,
+          inRatingsLayer: false,
+          analysisModeName: 'heatmap',
+        ),
+        'Plots — List',
+      );
+    });
+
+    test('T-2: list view ignores ratings layer and mode', () {
+      expect(
+        plotsFullScreenTitleForTesting(
+          isLayoutView: false,
+          inRatingsLayer: true,
+          analysisModeName: 'distribution',
+        ),
+        'Plots — List',
+      );
+    });
+
+    test('T-3: layout view outside ratings layer returns "Plots — Layout"', () {
+      expect(
+        plotsFullScreenTitleForTesting(
+          isLayoutView: true,
+          inRatingsLayer: false,
+          analysisModeName: 'heatmap',
+        ),
+        'Plots — Layout',
+      );
+    });
+
+    test('T-4: layout + ratings + heatmap → "Plots — Heat map"', () {
+      expect(
+        plotsFullScreenTitleForTesting(
+          isLayoutView: true,
+          inRatingsLayer: true,
+          analysisModeName: 'heatmap',
+        ),
+        'Plots — Heat map',
+      );
+    });
+
+    test('T-5: layout + ratings + distribution → "Plots — Distribution"', () {
+      expect(
+        plotsFullScreenTitleForTesting(
+          isLayoutView: true,
+          inRatingsLayer: true,
+          analysisModeName: 'distribution',
+        ),
+        'Plots — Distribution',
+      );
+    });
+
+    test('T-6: layout + ratings + progression → "Plots — Progression"', () {
+      expect(
+        plotsFullScreenTitleForTesting(
+          isLayoutView: true,
+          inRatingsLayer: true,
+          analysisModeName: 'progression',
+        ),
+        'Plots — Progression',
+      );
+    });
+
+    test('T-7: unknown analysisModeName defaults to "Plots — Heat map"', () {
+      expect(
+        plotsFullScreenTitleForTesting(
+          isLayoutView: true,
+          inRatingsLayer: true,
+          analysisModeName: 'unknown',
+        ),
+        'Plots — Heat map',
+      );
+    });
+  });
+
   group('shared plot layout geometry', () {
     test('uses treatment-layout width geometry for rep-based grids', () {
       final plots = [
