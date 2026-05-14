@@ -442,6 +442,24 @@ class SignalRepository {
         .firstOrNull;
   }
 
+  /// Used by [EmptyApplicationWriter] — finds an existing open/deferred/
+  /// investigating signal for the given trial + application event id
+  /// (matched by seType == applicationEventId in context).
+  Future<Signal?> findOpenEmptyApplicationSignalForEvent({
+    required int trialId,
+    required String applicationEventId,
+  }) async {
+    final rows = await (_db.select(_db.signals)
+          ..where((s) => s.trialId.equals(trialId))
+          ..where((s) =>
+              s.signalType.equals(SignalType.emptyApplication.dbValue))
+          ..where((s) => s.status.isIn(_openStatuses.toList())))
+        .get();
+    return rows
+        .where((s) => _ctxMatches(s, (ctx) => ctx.seType == applicationEventId))
+        .firstOrNull;
+  }
+
   /// Used by [RaterDriftWriter] — session-level attribution consistency;
   /// [SignalReferenceContext.seType] discriminator is `'session_attribution'`.
   Future<Signal?> findOpenRaterDriftSessionAttribution({

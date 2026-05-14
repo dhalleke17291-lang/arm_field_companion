@@ -16,6 +16,8 @@ enum SignalType {
   // high CV in untreated check baseline (session-level); distinct from
   // _factorUntreatedCheckPressure which is a trial-level risk factor
   checkBaselineVariability,
+  // specific phenomenon name matching enum convention (scaleViolation, replicationWarning, etc.); future application-level signals get their own specific values
+  emptyApplication,
 }
 
 extension SignalTypeDb on SignalType {
@@ -32,6 +34,7 @@ extension SignalTypeDb on SignalType {
         SignalType.exportPreflight => 'export_preflight',
         SignalType.deviationDeclaration => 'deviation_declaration',
         SignalType.checkBaselineVariability => 'check_baseline_variability',
+        SignalType.emptyApplication => 'empty_application',
       };
 }
 

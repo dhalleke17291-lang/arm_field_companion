@@ -5,6 +5,7 @@ import '../../core/providers.dart';
 import '../../domain/signals/signal_providers.dart';
 import '../../domain/signals/signal_writers/aov_error_variance_writer.dart';
 import '../../domain/signals/signal_writers/check_variability_writer.dart';
+import '../../domain/signals/signal_writers/empty_application_writer.dart';
 import '../../domain/signals/signal_writers/rater_drift_writer.dart';
 import '../../domain/signals/signal_writers/replication_warning_writer.dart';
 import '../../domain/signals/signal_writers/timing_window_violation_writer.dart';
@@ -65,6 +66,14 @@ Future<void> runSessionCloseSignalWriters(
     );
   } catch (e) {
     debugPrint('[session close writers] check variability: $e');
+  }
+
+  try {
+    await EmptyApplicationWriter(db, signalRepo).checkAndRaiseForTrial(
+      trialId: trialId,
+    );
+  } catch (e) {
+    debugPrint('[session close writers] empty application: $e');
   }
 
   ref.invalidate(openSignalsForSessionProvider(sessionId));
