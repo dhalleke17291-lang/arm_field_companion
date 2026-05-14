@@ -183,7 +183,11 @@ Widget _wrapSized({
 void _expectTextOrder(WidgetTester tester, List<String> labels) {
   var previousY = double.negativeInfinity;
   for (final label in labels) {
-    final y = tester.getTopLeft(find.text(label)).dy;
+    // findRichText: true ensures RichText nodes (not just Text widgets) are
+    // matched; .first handles cases where the same substring appears in both
+    // a parent label (e.g. "Add: Photo Evidence") and the block heading.
+    final finder = find.textContaining(label, findRichText: true).first;
+    final y = tester.getTopLeft(finder).dy;
     expect(y, greaterThan(previousY), reason: '$label should render in order.');
     previousY = y;
   }
@@ -230,7 +234,7 @@ void main() {
         'In progress — review before export',
         'Photo Evidence',
         'Data variability',
-        'Show all checks (1 satisfied, 1 pending)',
+        'Review pending checks',
       ]);
     });
 
