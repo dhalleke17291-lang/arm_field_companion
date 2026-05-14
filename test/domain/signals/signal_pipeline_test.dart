@@ -220,6 +220,8 @@ void main() {
           await (db.select(db.signals)..where((s) => s.id.equals(id!))).getSingle();
       expect(row.signalType, SignalType.scaleViolation.dbValue);
       expect(row.status, SignalStatus.open.dbValue);
+      final ctx = SignalReferenceContext.decodeJson(row.referenceContext);
+      expect(ctx.reliabilityTier, 'HIGH');
     });
 
     test(

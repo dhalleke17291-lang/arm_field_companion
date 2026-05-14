@@ -108,6 +108,9 @@ void main() {
       expect(signals.single.plotId, isNull);
       expect(signals.single.consequenceText, contains('Control'));
       expect(signals.single.consequenceText, contains('1'));
+      final ctx =
+          SignalReferenceContext.decodeJson(signals.single.referenceContext);
+      expect(ctx.reliabilityTier, 'HIGH');
     });
 
     test('2 — treatment with 2 rated plots → review signal raised', () async {

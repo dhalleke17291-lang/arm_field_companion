@@ -123,6 +123,9 @@ void main() {
       expect(signals.single.plotId, isNull);
       expect(signals.single.consequenceText, contains('Fungicide A'));
       expect(signals.single.consequenceText, contains('W003'));
+      final ctx =
+          SignalReferenceContext.decodeJson(signals.single.referenceContext);
+      expect(ctx.reliabilityTier, 'MEDIUM');
     });
 
     test('2 — different values in treatment group → no signal raised', () async {

@@ -43,6 +43,7 @@ class ScaleViolationWriter {
         enteredValue: enteredValue,
         scaleMin: scaleMin,
         scaleMax: scaleMax,
+        reliabilityTier: 'HIGH',
       ),
       consequenceText: consequenceText,
       raisedBy: raisedBy,

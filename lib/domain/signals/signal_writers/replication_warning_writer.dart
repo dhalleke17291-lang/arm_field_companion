@@ -96,6 +96,7 @@ class ReplicationWarningWriter {
         severity: severity,
         referenceContext: SignalReferenceContext(
           treatmentId: treatment.id,
+          reliabilityTier: 'HIGH',
         ),
         consequenceText:
             '${treatment.name} has only $count rated $plotWord this session. '

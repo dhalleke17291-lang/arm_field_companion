@@ -102,6 +102,7 @@ class AovErrorVarianceWriter {
             seType: seKey,
             neighborValues: values,
             treatmentId: tId,
+            reliabilityTier: 'MEDIUM',
           ),
           consequenceText:
               'All plots in $treatmentName have the same value for $seName. '
