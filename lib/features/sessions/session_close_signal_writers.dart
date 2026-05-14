@@ -22,9 +22,10 @@ Future<void> runSessionCloseSignalWriters(
   final signalRepo = ref.read(signalRepositoryProvider);
 
   try {
-    await AovErrorVarianceWriter(db, signalRepo).checkAndRaiseForSession(
+    await AovErrorVarianceWriter(db, signalRepo)
+        .checkAndRaiseForAllClosedSessionsAndCurrent(
       trialId: trialId,
-      sessionId: sessionId,
+      currentSessionId: sessionId,
     );
   } catch (e) {
     debugPrint('[session close writers] aov: $e');

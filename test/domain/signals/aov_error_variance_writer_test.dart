@@ -121,6 +121,9 @@ void main() {
       expect(signals.single.severity, SignalSeverity.critical.dbValue);
       expect(signals.single.moment, SignalMoment.three.dbValue);
       expect(signals.single.plotId, isNull);
+      // Consequence text includes session label, plot count, value, names.
+      expect(signals.single.consequenceText, contains('S1'));
+      expect(signals.single.consequenceText, contains('2026'));
       expect(signals.single.consequenceText, contains('Fungicide A'));
       expect(signals.single.consequenceText, contains('W003'));
       final ctx =
@@ -220,6 +223,71 @@ void main() {
       final allSignals = await db.select(db.signals).get();
       expect(allSignals, hasLength(1));
       expect(first, equals(second));
+    });
+
+    test(
+        '6 — retroactive scan: second session close raises signal for prior '
+        'closed session with uniform values', () async {
+      // Session 1 (already closed) had uniform values but no signal yet.
+      final trialId =
+          await db.into(db.trials).insert(TrialsCompanion.insert(name: 'RetroTest'));
+      final s1Id = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S1',
+              sessionDateLocal: '2026-04-01',
+              endedAt: Value(DateTime(2026, 4, 1, 17)),
+            ),
+          );
+      final s2Id = await db.into(db.sessions).insert(
+            SessionsCompanion.insert(
+              trialId: trialId,
+              name: 'S2',
+              sessionDateLocal: '2026-04-28',
+            ),
+          );
+      final aId = await db
+          .into(db.assessments)
+          .insert(AssessmentsCompanion.insert(trialId: trialId, name: 'WC'));
+      await db.into(db.sessionAssessments).insert(
+            SessionAssessmentsCompanion.insert(
+                sessionId: s1Id, assessmentId: aId),
+          );
+      final tId = await db.into(db.treatments).insert(
+            TreatmentsCompanion.insert(
+                trialId: trialId, code: 'T1', name: 'CHK'),
+          );
+      // S1: uniform values (both 50.0).
+      for (final pid in ['101', '102']) {
+        final pk = await db.into(db.plots).insert(PlotsCompanion.insert(
+              trialId: trialId,
+              plotId: pid,
+              treatmentId: Value(tId),
+            ));
+        await db.into(db.ratingRecords).insert(RatingRecordsCompanion.insert(
+              trialId: trialId,
+              plotPk: pk,
+              assessmentId: aId,
+              sessionId: s1Id,
+              numericValue: const Value(50.0),
+            ));
+      }
+
+      final repo = container.read(signalRepositoryProvider);
+      final writer = AovErrorVarianceWriter(db, repo);
+
+      // Closing S2 (no S2 ratings) — should retroactively flag S1.
+      final raised = await writer.checkAndRaiseForAllClosedSessionsAndCurrent(
+        trialId: trialId,
+        currentSessionId: s2Id,
+      );
+
+      expect(raised, hasLength(1));
+      final signals = await db.select(db.signals).get();
+      expect(signals, hasLength(1));
+      expect(signals.single.sessionId, s1Id);
+      expect(signals.single.consequenceText, contains('S1'));
+      expect(signals.single.consequenceText, contains('1 Apr 2026'));
     });
 
     test('5 — consequence text contains no ARM-specific language', () async {

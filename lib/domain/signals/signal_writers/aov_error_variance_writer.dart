@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 import '../../../core/database/app_database.dart';
 import '../signal_models.dart';
 import '../signal_repository.dart';
@@ -12,11 +14,47 @@ class AovErrorVarianceWriter {
   final AppDatabase _db;
   final SignalRepository _signals;
 
+  /// Scans all previously-closed sessions for [trialId] plus [currentSessionId]
+  /// (which may not yet be marked closed at the time this runs).
+  /// Dedup in [checkAndRaiseForSession] prevents duplicate signals when a
+  /// prior session-close already raised a signal for an older session.
+  Future<List<int>> checkAndRaiseForAllClosedSessionsAndCurrent({
+    required int trialId,
+    required int currentSessionId,
+    int? raisedBy,
+  }) async {
+    final closedSessions = await (_db.select(_db.sessions)
+          ..where((s) => s.trialId.equals(trialId))
+          ..where((s) => s.endedAt.isNotNull()))
+        .get();
+
+    final sessionIds = {
+      ...closedSessions.map((s) => s.id),
+      currentSessionId,
+    };
+
+    final raised = <int>[];
+    for (final sid in sessionIds) {
+      final ids = await checkAndRaiseForSession(
+        trialId: trialId,
+        sessionId: sid,
+        raisedBy: raisedBy,
+      );
+      raised.addAll(ids);
+    }
+    return raised;
+  }
+
   Future<List<int>> checkAndRaiseForSession({
     required int trialId,
     required int sessionId,
     int? raisedBy,
   }) async {
+    final session = await (_db.select(_db.sessions)
+          ..where((s) => s.id.equals(sessionId)))
+        .getSingleOrNull();
+    final sessionLabel = _formatSessionLabel(session);
+
     final sessionAssessments = await (_db.select(_db.sessionAssessments)
           ..where((sa) => sa.sessionId.equals(sessionId)))
         .get();
@@ -104,9 +142,10 @@ class AovErrorVarianceWriter {
             treatmentId: tId,
             reliabilityTier: 'MEDIUM',
           ),
-          consequenceText:
-              'All plots in $treatmentName have the same value for $seName. '
-              'Statistical comparison will not be possible for this column.',
+          consequenceText: 'In $sessionLabel, all ${values.length} '
+              'plot${values.length == 1 ? '' : 's'} in $treatmentName have '
+              'the same value (${_formatValue(values.first)}) for $seName. '
+              'Statistical comparison will not be possible for this session.',
           raisedBy: raisedBy,
         );
         raised.add(id);
@@ -115,4 +154,15 @@ class AovErrorVarianceWriter {
 
     return raised;
   }
+
+  String _formatSessionLabel(Session? session) {
+    if (session == null) return 'this session';
+    final parsed = DateTime.tryParse(session.sessionDateLocal);
+    final dateStr =
+        parsed != null ? DateFormat('d MMM yyyy').format(parsed) : session.sessionDateLocal;
+    return '${session.name} ($dateStr)';
+  }
+
+  String _formatValue(double v) =>
+      v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(2);
 }
