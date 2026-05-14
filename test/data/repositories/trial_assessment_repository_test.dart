@@ -223,4 +223,54 @@ void main() {
       expect(ids2, ids);
     });
   });
+
+  group('displayContextForLegacyAssessmentId', () {
+    test('returns ta and def when TrialAssessment is linked to legacy id',
+        () async {
+      final trialId = await createTrial();
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'DCL_TEST_STAND',
+              name: 'Stand coverage',
+              category: 'growth',
+            ),
+          );
+      final legacyId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(
+              trialId: trialId,
+              name: 'Stand coverage — TA3',
+            ),
+          );
+      final taId = await repo.addToTrial(
+        trialId: trialId,
+        assessmentDefinitionId: defId,
+        sortOrder: 0,
+      );
+      await repo.updateLegacyAssessmentId(taId, legacyId);
+
+      final ctx =
+          await repo.displayContextForLegacyAssessmentId(legacyId);
+
+      expect(ctx, isNotNull);
+      expect(ctx!.ta.id, taId);
+      expect(ctx.def.id, defId);
+      expect(ctx.def.name, 'Stand coverage');
+    });
+
+    test('returns null when no TrialAssessment links to the legacy id',
+        () async {
+      final trialId = await createTrial();
+      final legacyId = await db.into(db.assessments).insert(
+            AssessmentsCompanion.insert(
+              trialId: trialId,
+              name: 'Orphan assessment',
+            ),
+          );
+
+      final ctx =
+          await repo.displayContextForLegacyAssessmentId(legacyId);
+
+      expect(ctx, isNull);
+    });
+  });
 }

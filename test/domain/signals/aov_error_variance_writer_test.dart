@@ -290,6 +290,88 @@ void main() {
       expect(signals.single.consequenceText, contains('1 Apr 2026'));
     });
 
+    test(
+        '7 — TrialAssessment displayNameOverride used in consequenceText '
+        'when TA is linked to the legacy assessment', () async {
+      final seed = await _seedBasicTrial(db);
+      final defId = await db.into(db.assessmentDefinitions).insert(
+            AssessmentDefinitionsCompanion.insert(
+              code: 'AOV_TEST_STAND',
+              name: 'Stand coverage def',
+              category: 'growth',
+            ),
+          );
+      await db.into(db.trialAssessments).insert(
+            TrialAssessmentsCompanion.insert(
+              trialId: seed.trialId,
+              assessmentDefinitionId: defId,
+              displayNameOverride: const Value('Stand coverage'),
+              legacyAssessmentId: Value(seed.assessmentId),
+            ),
+          );
+      final tId = await db.into(db.treatments).insert(
+            TreatmentsCompanion.insert(
+                trialId: seed.trialId, code: 'T1', name: 'Fungicide A'),
+          );
+      final p1 = await _insertPlot(db,
+          trialId: seed.trialId, treatmentId: tId, plotId: '101');
+      final p2 = await _insertPlot(db,
+          trialId: seed.trialId, treatmentId: tId, plotId: '102');
+      await _insertRating(db,
+          trialId: seed.trialId,
+          sessionId: seed.sessionId,
+          plotPk: p1,
+          assessmentId: seed.assessmentId,
+          value: 75.0);
+      await _insertRating(db,
+          trialId: seed.trialId,
+          sessionId: seed.sessionId,
+          plotPk: p2,
+          assessmentId: seed.assessmentId,
+          value: 75.0);
+
+      final repo = container.read(signalRepositoryProvider);
+      await AovErrorVarianceWriter(db, repo).checkAndRaiseForSession(
+          trialId: seed.trialId, sessionId: seed.sessionId);
+
+      final signal = (await db.select(db.signals).get()).single;
+      expect(signal.consequenceText, contains('Stand coverage'));
+      expect(signal.consequenceText, isNot(contains('— TA')));
+    });
+
+    test(
+        '8 — falls back to legacy assessment name when no TrialAssessment '
+        'is linked to the legacy id', () async {
+      final seed = await _seedBasicTrial(db); // assessment name = 'W003'
+      final tId = await db.into(db.treatments).insert(
+            TreatmentsCompanion.insert(
+                trialId: seed.trialId, code: 'T1', name: 'Fungicide A'),
+          );
+      final p1 = await _insertPlot(db,
+          trialId: seed.trialId, treatmentId: tId, plotId: '101');
+      final p2 = await _insertPlot(db,
+          trialId: seed.trialId, treatmentId: tId, plotId: '102');
+      await _insertRating(db,
+          trialId: seed.trialId,
+          sessionId: seed.sessionId,
+          plotPk: p1,
+          assessmentId: seed.assessmentId,
+          value: 75.0);
+      await _insertRating(db,
+          trialId: seed.trialId,
+          sessionId: seed.sessionId,
+          plotPk: p2,
+          assessmentId: seed.assessmentId,
+          value: 75.0);
+
+      final repo = container.read(signalRepositoryProvider);
+      await AovErrorVarianceWriter(db, repo).checkAndRaiseForSession(
+          trialId: seed.trialId, sessionId: seed.sessionId);
+
+      final signal = (await db.select(db.signals).get()).single;
+      expect(signal.consequenceText, contains('W003'));
+    });
+
     test('5 — consequence text contains no ARM-specific language', () async {
       final seed = await _seedBasicTrial(db);
       final tId = await db.into(db.treatments).insert(

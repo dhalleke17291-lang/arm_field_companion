@@ -280,4 +280,22 @@ class TrialAssessmentRepository {
     }
     return result;
   }
+
+  /// Returns the [TrialAssessment] and its [AssessmentDefinition] for a given
+  /// legacy [Assessments] row ID, or null if no TrialAssessment is linked to
+  /// that row. Used by signal writers to resolve display names via
+  /// AssessmentDisplayHelper instead of reading the raw legacy name.
+  Future<({TrialAssessment ta, AssessmentDefinition def})?>
+      displayContextForLegacyAssessmentId(int legacyAssessmentId) async {
+    final ta = await (_db.select(_db.trialAssessments)
+          ..where((t) => t.legacyAssessmentId.equals(legacyAssessmentId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (ta == null) return null;
+    final def = await (_db.select(_db.assessmentDefinitions)
+          ..where((d) => d.id.equals(ta.assessmentDefinitionId)))
+        .getSingleOrNull();
+    if (def == null) return null;
+    return (ta: ta, def: def);
+  }
 }

@@ -1,6 +1,8 @@
 import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/ui/assessment_display_helper.dart';
+import '../../../data/repositories/trial_assessment_repository.dart';
 import '../signal_models.dart';
 import '../signal_repository.dart';
 
@@ -60,12 +62,21 @@ class AovErrorVarianceWriter {
         .get();
 
     final raised = <int>[];
+    final taRepo = TrialAssessmentRepository(_db);
 
     for (final sa in sessionAssessments) {
-      final assessment = await (_db.select(_db.assessments)
-            ..where((a) => a.id.equals(sa.assessmentId)))
-          .getSingleOrNull();
-      final seName = assessment?.name ?? 'Assessment ${sa.assessmentId}';
+      final displayCtx =
+          await taRepo.displayContextForLegacyAssessmentId(sa.assessmentId);
+      final String seName;
+      if (displayCtx != null) {
+        seName = AssessmentDisplayHelper.compactName(
+            displayCtx.ta, def: displayCtx.def);
+      } else {
+        final assessment = await (_db.select(_db.assessments)
+              ..where((a) => a.id.equals(sa.assessmentId)))
+            .getSingleOrNull();
+        seName = assessment?.name ?? 'Assessment ${sa.assessmentId}';
+      }
 
       // Get all current numeric ratings for this assessment in this session.
       final ratings = await (_db.select(_db.ratingRecords)
