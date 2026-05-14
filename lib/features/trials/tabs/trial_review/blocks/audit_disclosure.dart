@@ -69,12 +69,38 @@ class _AuditDisclosureBodyState extends State<AuditDisclosureBody> {
         _satisfiedCount;
   }
 
+  static const _headerStyle = TextStyle(
+    fontSize: 14,
+    color: AppDesignTokens.primary,
+    fontWeight: FontWeight.w600,
+  );
+
+  Widget _buildCollapsedHeader() {
+    if (_pendingCount == 0) {
+      final label = _satisfiedCount == 0
+          ? 'Show all checks (0 satisfied, 0 pending)'
+          : 'All $_satisfiedCount checks satisfied';
+      return Text(label, style: _headerStyle);
+    }
+
+    // Pending > 0: color just the pending count with the review-needed token.
+    return RichText(
+      text: TextSpan(
+        style: _headerStyle,
+        children: [
+          const TextSpan(text: 'Review pending checks — '),
+          TextSpan(
+            text: '$_pendingCount pending',
+            style: const TextStyle(color: AppDesignTokens.partialFg),
+          ),
+          TextSpan(text: ', $_satisfiedCount satisfied'),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final header = _expanded
-        ? 'Hide all checks'
-        : 'Show all checks ($_satisfiedCount satisfied, $_pendingCount pending)';
-
     return Column(
       key: const ValueKey('audit-disclosure'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,14 +112,9 @@ class _AuditDisclosureBodyState extends State<AuditDisclosureBody> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Flexible(
-                child: Text(
-                  header,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppDesignTokens.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: _expanded
+                    ? const Text('Hide all checks', style: _headerStyle)
+                    : _buildCollapsedHeader(),
               ),
               const SizedBox(width: 4),
               Icon(

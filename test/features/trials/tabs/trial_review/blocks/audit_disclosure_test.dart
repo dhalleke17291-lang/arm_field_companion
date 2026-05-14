@@ -106,7 +106,7 @@ Widget _wrapProvider({
 }
 
 Future<void> _expand(WidgetTester tester) async {
-  await tester.tap(find.textContaining('Show all checks'));
+  await tester.tap(find.byType(GestureDetector).first);
   await tester.pump();
 }
 
@@ -140,6 +140,83 @@ void main() {
       await _expand(tester);
 
       expect(find.text('No checks evaluated yet.'), findsOneWidget);
+    });
+
+    testWidgets(
+        'AD-1b: pending > 0 — collapsed header shows pending count with partialFg color',
+        (tester) async {
+      await tester.pumpWidget(_wrapBody(
+        ctqItems: [
+          _ctq(label: 'Satisfied CTQ', status: 'satisfied'),
+          _ctq(label: 'Missing CTQ', status: 'missing'),
+        ],
+        coherenceChecks: [
+          _check(label: 'Review Check', status: 'review_needed'),
+        ],
+      ));
+
+      // 1 satisfied, 2 pending → RichText emphasis format.
+      // Walk all RichText spans to find the pending count and verify its color.
+      String? pendingSpanText;
+      Color? pendingSpanColor;
+      bool hasReviewPrefix = false;
+
+      final richTexts = tester.widgetList<RichText>(find.byType(RichText));
+      for (final rt in richTexts) {
+        rt.text.visitChildren((span) {
+          if (span is TextSpan) {
+            if (span.text != null && span.text!.contains('pending')) {
+              pendingSpanText = span.text;
+              pendingSpanColor = span.style?.color;
+            }
+            if (span.text != null && span.text!.contains('Review pending checks')) {
+              hasReviewPrefix = true;
+            }
+          }
+          return true;
+        });
+      }
+
+      expect(pendingSpanText, '2 pending',
+          reason: 'pending span must contain the count');
+      expect(pendingSpanColor, AppDesignTokens.partialFg,
+          reason: 'pending count span must use partialFg color token');
+      expect(hasReviewPrefix, isTrue,
+          reason: 'header must start with "Review pending checks"');
+    });
+
+    testWidgets(
+        'AD-1c: pending == 0 — collapsed header shows all-satisfied text, no emphasis',
+        (tester) async {
+      await tester.pumpWidget(_wrapBody(
+        ctqItems: [
+          _ctq(label: 'Satisfied CTQ A', status: 'satisfied'),
+          _ctq(label: 'Satisfied CTQ B', status: 'satisfied'),
+        ],
+        coherenceChecks: [
+          _check(label: 'Aligned Check', status: 'aligned'),
+        ],
+      ));
+
+      // All-satisfied label rendered.
+      expect(find.text('All 3 checks satisfied'), findsOneWidget);
+
+      // No RichText with partialFg — no emphasis is applied.
+      final richTexts = tester.widgetList<RichText>(find.byType(RichText));
+      bool foundEmphasis = false;
+      for (final rt in richTexts) {
+        rt.text.visitChildren((span) {
+          if (span is TextSpan && span.style?.color == AppDesignTokens.partialFg) {
+            foundEmphasis = true;
+          }
+          return true;
+        });
+      }
+      expect(
+        foundEmphasis,
+        isFalse,
+        reason: 'all-satisfied state must not render partialFg emphasis',
+      );
     });
 
     testWidgets('AD-2: loading state renders overview loading', (tester) async {
@@ -178,10 +255,28 @@ void main() {
         ],
       ));
 
-      expect(
-        find.text('Show all checks (8 satisfied, 3 pending)'),
-        findsOneWidget,
-      );
+      // pending = 3 > 0 → new RichText emphasis format.
+      // Walk spans to verify counts are correct.
+      String? pendingSpanText;
+      String? satisfiedSpanText;
+
+      final richTexts = tester.widgetList<RichText>(find.byType(RichText));
+      for (final rt in richTexts) {
+        rt.text.visitChildren((span) {
+          if (span is TextSpan) {
+            if (span.text != null && span.text!.contains('pending') &&
+                !span.text!.contains('Review')) {
+              pendingSpanText = span.text;
+            }
+            if (span.text != null && span.text!.contains('satisfied')) {
+              satisfiedSpanText = span.text;
+            }
+          }
+          return true;
+        });
+      }
+      expect(pendingSpanText, '3 pending');
+      expect(satisfiedSpanText, ', 8 satisfied');
     });
 
     testWidgets('AD-5: list is collapsed by default', (tester) async {
@@ -190,7 +285,8 @@ void main() {
       ));
 
       expect(find.text('Plot Completeness'), findsNothing);
-      expect(find.textContaining('Show all checks'), findsOneWidget);
+      // all-satisfied (0 pending) renders the satisfied label collapsed
+      expect(find.text('All 1 checks satisfied'), findsOneWidget);
     });
 
     testWidgets('AD-6: tapping header expands the list', (tester) async {
@@ -215,7 +311,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('Plot Completeness'), findsNothing);
-      expect(find.textContaining('Show all checks'), findsOneWidget);
+      // all-satisfied label (1 satisfied, 0 pending)
+      expect(find.text('All 1 checks satisfied'), findsOneWidget);
     });
 
     testWidgets('AD-8: status pills render expected labels and colors',
