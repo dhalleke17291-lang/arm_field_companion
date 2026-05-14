@@ -3,6 +3,62 @@ import 'package:flutter/material.dart';
 import '../../../core/design/app_design_tokens.dart';
 import '../models/plot_analysis_models.dart';
 
+/// A pending label to paint after collision resolution.
+///
+/// Package-visible so that unit tests can exercise [resolveProgressionLabelCollisions]
+/// without golden-testing pixels.
+class ProgressionLabelLayout {
+  final String text;
+  final Color color;
+  final double left;
+  double top; // mutable for collision nudge
+
+  ProgressionLabelLayout({
+    required this.text,
+    required this.color,
+    required this.left,
+    required this.top,
+  });
+}
+
+/// Resolves vertical overlaps among [labels] in-place.
+///
+/// Labels are sorted by their top Y. For each adjacent pair where the gap
+/// is smaller than [minSpacing], the lower label is nudged down. If pushing
+/// down would exit [canvasHeight], the upper label is nudged up instead.
+///
+/// Package-visible for unit testing.
+void resolveProgressionLabelCollisions(
+  List<ProgressionLabelLayout> labels,
+  double minSpacing, {
+  required double canvasTop,
+  required double canvasBottom,
+}) {
+  labels.sort((a, b) => a.top.compareTo(b.top));
+
+  for (var i = 0; i < labels.length - 1; i++) {
+    final upper = labels[i];
+    final lower = labels[i + 1];
+    final gap = lower.top - (upper.top + minSpacing);
+    if (gap >= 0) continue; // already separated
+
+    final overlap = -gap;
+    final halfOverlap = overlap / 2;
+
+    // Prefer pushing lower down
+    final desiredLowerTop = lower.top + overlap;
+    if (desiredLowerTop + minSpacing <= canvasBottom) {
+      lower.top = desiredLowerTop;
+    } else {
+      // Not enough room below — push upper up instead
+      final desiredUpperTop = upper.top - halfOverlap;
+      upper.top = desiredUpperTop.clamp(canvasTop, upper.top);
+      lower.top =
+          (lower.top + halfOverlap).clamp(lower.top, canvasBottom - minSpacing);
+    }
+  }
+}
+
 class ProgressionPainter extends CustomPainter {
   const ProgressionPainter({
     required this.result,
@@ -149,7 +205,9 @@ class ProgressionPainter extends CustomPainter {
       );
     }
 
-    // Draw each series
+    // ── Phase 1: draw lines and dots; collect label layouts ──────────────────
+    final pendingLabels = <ProgressionLabelLayout>[];
+
     for (var si = 0; si < series.length; si++) {
       final s = series[si];
       final color = colors[si % colors.length];
@@ -213,22 +271,20 @@ class ProgressionPainter extends CustomPainter {
         }
       }
 
-      final terminalPoint = points.last;
-      final terminalValue = s.points.last.mean;
-      _paintTerminalLabel(
-        canvas: canvas,
+      // Collect terminal label layout (right of last point)
+      final terminalLayout = _layoutTerminalLabel(
         size: size,
         labelPainter: labelPaint,
-        dotCenter: terminalPoint,
-        value: terminalValue,
+        dotCenter: points.last,
+        value: s.points.last.mean,
         color: color,
         verticalOffset: s.isCheck ? -4.0 : 0.0,
       );
+      pendingLabels.add(terminalLayout);
 
-      // Leading label — first session, left of dot
+      // Collect leading label layout (left of first point)
       if (s.points.length > 1) {
-        _paintLeadingLabel(
-          canvas: canvas,
+        final leadingLayout = _layoutLeadingLabel(
           size: size,
           labelPainter: labelPaint,
           dotCenter: points.first,
@@ -236,12 +292,48 @@ class ProgressionPainter extends CustomPainter {
           color: color,
           verticalOffset: s.isCheck ? -4.0 : 0.0,
         );
+        pendingLabels.add(leadingLayout);
       }
+    }
+
+    // ── Phase 2: resolve Y-axis collisions ───────────────────────────────────
+    // Use the label text height as the minimum spacing threshold.
+    if (pendingLabels.isNotEmpty) {
+      labelPaint
+        ..textAlign = TextAlign.left
+        ..text = const TextSpan(
+          text: '0',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        )
+        ..layout();
+      final labelH = labelPaint.height;
+      resolveProgressionLabelCollisions(
+        pendingLabels,
+        labelH,
+        canvasTop: _paddingTop,
+        canvasBottom: size.height - _paddingBottom,
+      );
+    }
+
+    // ── Phase 3: paint all resolved labels ───────────────────────────────────
+    for (final lbl in pendingLabels) {
+      labelPaint
+        ..textAlign = TextAlign.left
+        ..text = TextSpan(
+          text: lbl.text,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: lbl.color,
+          ),
+        )
+        ..layout();
+      labelPaint.paint(canvas, Offset(lbl.left, lbl.top));
     }
   }
 
-  void _paintTerminalLabel({
-    required Canvas canvas,
+  /// Computes terminal label position (right of [dotCenter]) without painting.
+  ProgressionLabelLayout _layoutTerminalLabel({
     required Size size,
     required TextPainter labelPainter,
     required Offset dotCenter,
@@ -267,14 +359,18 @@ class ProgressionPainter extends CustomPainter {
       left = dotCenter.dx - gap - labelPainter.width;
     }
     left = left.clamp(0.0, size.width - labelPainter.width);
-    labelPainter.paint(
-      canvas,
-      Offset(left, dotCenter.dy - labelPainter.height / 2 + verticalOffset),
+    final top = dotCenter.dy - labelPainter.height / 2 + verticalOffset;
+
+    return ProgressionLabelLayout(
+      text: _formatValue(value),
+      color: color,
+      left: left,
+      top: top,
     );
   }
 
-  void _paintLeadingLabel({
-    required Canvas canvas,
+  /// Computes leading label position (left of [dotCenter]) without painting.
+  ProgressionLabelLayout _layoutLeadingLabel({
     required Size size,
     required TextPainter labelPainter,
     required Offset dotCenter,
@@ -298,9 +394,13 @@ class ProgressionPainter extends CustomPainter {
     var left = dotCenter.dx - gap - labelPainter.width;
     if (left < 0) left = dotCenter.dx + gap;
     left = left.clamp(0.0, size.width - labelPainter.width);
-    labelPainter.paint(
-      canvas,
-      Offset(left, dotCenter.dy - labelPainter.height / 2 + verticalOffset),
+    final top = dotCenter.dy - labelPainter.height / 2 + verticalOffset;
+
+    return ProgressionLabelLayout(
+      text: _formatValue(value),
+      color: color,
+      left: left,
+      top: top,
     );
   }
 
