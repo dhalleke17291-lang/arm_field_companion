@@ -82,10 +82,12 @@ class TreatmentDistribution {
 class DistributionResult {
   final List<TreatmentDistribution> treatments;
   final double? pooledCv;
+  final int? sessionId;
 
   const DistributionResult({
     required this.treatments,
     this.pooledCv,
+    this.sessionId,
   });
 }
 

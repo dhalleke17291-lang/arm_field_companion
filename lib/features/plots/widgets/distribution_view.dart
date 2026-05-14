@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/design/app_design_tokens.dart';
@@ -140,6 +141,19 @@ class _DistributionViewState extends ConsumerState<DistributionView> {
     );
   }
 
+  /// Returns "S1 (12 May 2026)" for the session identified by [sessionId],
+  /// or null if not found.
+  String? _sessionLabel(int? sessionId) {
+    if (sessionId == null) return null;
+    final session = widget.sessions.where((s) => s.id == sessionId).firstOrNull;
+    if (session == null) return null;
+    final parsed = DateTime.tryParse(session.sessionDateLocal);
+    final dateStr = parsed != null
+        ? DateFormat('d MMM yyyy').format(parsed)
+        : session.sessionDateLocal;
+    return '${session.name} ($dateStr)';
+  }
+
   Widget _buildBody(DistributionResult result) {
     if (result.treatments.isEmpty) {
       return const AppEmptyState(
@@ -160,6 +174,7 @@ class _DistributionViewState extends ConsumerState<DistributionView> {
     final pooledCv = result.pooledCv;
     final hasCv = pooledCv != null;
     final cvTier = hasCv ? getCVTier(pooledCv) : null;
+    final sessionLabel = _sessionLabel(result.sessionId);
     final zeroVar = detectZeroVariance(treatments.map((d) => d.sd).toList());
     final outlierCount = treatments.where((d) => d.hasOutliers).length;
 
@@ -171,7 +186,7 @@ class _DistributionViewState extends ConsumerState<DistributionView> {
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
             child: AnalysisBanner(
-              message: _cvMessage(pooledCv, cvTier),
+              message: _cvMessage(pooledCv, cvTier, sessionLabel),
               severity: switch (cvTier) {
                 CVTier.acceptable => AnalysisBannerSeverity.info,
                 CVTier.moderate => AnalysisBannerSeverity.warning,
@@ -305,15 +320,16 @@ class _DistributionViewState extends ConsumerState<DistributionView> {
     );
   }
 
-  String _cvMessage(double cv, CVTier tier) {
+  String _cvMessage(double cv, CVTier tier, String? sessionLabel) {
     final cvStr = cv.toStringAsFixed(1);
+    final prefix =
+        sessionLabel != null ? 'Pooled CV: $cvStr% in $sessionLabel' : 'Pooled CV: $cvStr%';
     return switch (tier) {
-      CVTier.acceptable =>
-        'Pooled CV: $cvStr% — within acceptable range (<15%).',
+      CVTier.acceptable => '$prefix — within acceptable range (<15%).',
       CVTier.moderate =>
-        'Pooled CV: $cvStr% — moderate field variability (15–25%). Review outliers.',
+        '$prefix — moderate field variability (15–25%). Review outliers.',
       CVTier.high =>
-        'Pooled CV: $cvStr% — high field variability (>25%). Results may be unreliable.',
+        '$prefix — high field variability (>25%). Results may be unreliable.',
     };
   }
 

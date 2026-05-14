@@ -102,7 +102,11 @@ final plotDistributionProvider = FutureProvider.autoDispose
           ns: dists.map((d) => d.n).toList(),
         );
 
-  return DistributionResult(treatments: dists, pooledCv: pooledCv);
+  return DistributionResult(
+    treatments: dists,
+    pooledCv: pooledCv,
+    sessionId: params.sessionId,
+  );
 });
 
 /// Cross-session mean progression per treatment for a selected assessment type.
