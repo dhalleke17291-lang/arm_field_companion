@@ -1,4 +1,5 @@
 import 'package:arm_field_companion/core/database/app_database.dart';
+import 'package:arm_field_companion/core/design/app_design_tokens.dart';
 import 'package:arm_field_companion/core/providers.dart';
 import 'package:arm_field_companion/domain/signals/signal_providers.dart';
 import 'package:arm_field_companion/domain/signals/signal_review_projection.dart';
@@ -142,6 +143,7 @@ SignalReviewProjection _projection({
   int signalId = 10,
   String title = 'Analysis pattern may need review',
   bool blocksExport = false,
+  String? reliabilityTier,
 }) =>
     SignalReviewProjection(
       signalId: signalId,
@@ -170,6 +172,7 @@ SignalReviewProjection _projection({
       blocksExportReason: blocksExport
           ? 'Export is blocked until this critical signal is reviewed.'
           : null,
+      reliabilityTier: reliabilityTier,
     );
 
 SignalReviewGroupProjection _group({
@@ -178,6 +181,7 @@ SignalReviewGroupProjection _group({
   List<int> assessmentIds = const [101],
   String groupingBasis = 'Grouped because raw seType 101 shares assessment.',
   String title = 'Analysis pattern may need review',
+  String? reliabilityTier,
 }) =>
     SignalReviewGroupProjection(
       groupId: 'group-$signalId',
@@ -204,7 +208,9 @@ SignalReviewGroupProjection _group({
       affectedAssessmentIds: assessmentIds,
       affectedPlotIds: const [],
       affectedSessionIds: [sessionId],
-      memberSignals: [_projection(signalId: signalId, title: title)],
+      memberSignals: [
+        _projection(signalId: signalId, title: title, reliabilityTier: reliabilityTier)
+      ],
     );
 
 Widget _wrapBody({
@@ -508,6 +514,55 @@ void main() {
         'Environmental evidence is estimated.',
         'Rater Consistency',
       ]);
+    });
+
+    testWidgets(
+        'CB-17: signal with reliabilityTier HIGH shows HIGH chip with warning color',
+        (tester) async {
+      await tester.pumpWidget(_wrapBody(
+        signalGroups: [_group(reliabilityTier: 'HIGH')],
+        rawSignals: [_signal()],
+        assessmentDefinitions: [_assessment(101, 'Disease Severity')],
+      ));
+
+      expect(find.text('HIGH'), findsOneWidget);
+      expect(find.text('Needs review'), findsNothing);
+
+      final chipContainer = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.text('HIGH'),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final decoration = chipContainer.decoration as BoxDecoration;
+      expect(decoration.color, AppDesignTokens.warningBg);
+    });
+
+    testWidgets(
+        'CB-18: signal with null reliabilityTier falls back to severity label',
+        (tester) async {
+      await tester.pumpWidget(_wrapBody(
+        signalGroups: [_group()],
+        rawSignals: [_signal()],
+        assessmentDefinitions: [_assessment(101, 'Disease Severity')],
+      ));
+
+      expect(find.text('Needs review'), findsOneWidget);
+      expect(find.text('HIGH'), findsNothing);
+      expect(find.text('MEDIUM'), findsNothing);
+
+      final chipContainer = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.text('Needs review'),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final decoration = chipContainer.decoration as BoxDecoration;
+      expect(decoration.color, AppDesignTokens.partialBg);
     });
   });
 }

@@ -341,7 +341,7 @@ class _CautionItem {
       kind: _CautionItemKind.signal,
       title: chips.length == 1 ? chips.single : group.displayTitle,
       reason: rawSignal?.consequenceText ?? group.shortSummary,
-      chipLabel: group.severityLabel,
+      chipLabel: _dominantTier(group) ?? group.severityLabel,
       chipTone: _signalTone(group),
       secondaryChips: chips.length > 1 ? chips : const [],
       signal: rawSignal,
@@ -363,7 +363,7 @@ class _CautionItem {
       kind: _CautionItemKind.signal,
       title: 'Untreated check reliability may need review',
       reason: rawSignal?.consequenceText ?? firstGroup.shortSummary,
-      chipLabel: firstGroup.severityLabel,
+      chipLabel: _dominantTier(firstGroup) ?? firstGroup.severityLabel,
       chipTone: _signalTone(firstGroup),
       secondaryChips: chips,
       signal: rawSignal,
@@ -416,7 +416,28 @@ List<String> _assessmentNames(
   ];
 }
 
+String? _dominantTier(SignalReviewGroupProjection group) {
+  for (final s in group.memberSignals) {
+    if (s.reliabilityTier == 'HIGH') return 'HIGH';
+  }
+  for (final s in group.memberSignals) {
+    if (s.reliabilityTier == 'MEDIUM') return 'MEDIUM';
+  }
+  for (final s in group.memberSignals) {
+    if (s.reliabilityTier == 'LOW') return 'LOW';
+  }
+  return null;
+}
+
 _ChipTone _signalTone(SignalReviewGroupProjection group) {
+  final tier = _dominantTier(group);
+  if (tier != null) {
+    return switch (tier) {
+      'HIGH' => _ChipTone.high,
+      'MEDIUM' => _ChipTone.moderate,
+      _ => _ChipTone.neutral,
+    };
+  }
   final hasHigh =
       group.memberSignals.any((signal) => signal.severity == 'critical');
   final hasModerate =

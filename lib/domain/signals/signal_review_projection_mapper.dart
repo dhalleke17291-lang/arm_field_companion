@@ -10,6 +10,7 @@ SignalReviewProjection projectSignalForReview(Signal signal) {
   final summary = signalShortSummary(signal.signalType);
   final requiresReadinessAction = signal.status == SignalStatus.open.dbValue;
   final blocksExport = signalBlocksExport(signal);
+  final refCtx = _decodeReferenceContext(signal.referenceContext);
 
   return SignalReviewProjection(
     signalId: signal.id,
@@ -34,6 +35,7 @@ SignalReviewProjection projectSignalForReview(Signal signal) {
         : null,
     blocksExport: blocksExport,
     blocksExportReason: signalBlocksExportReason(signal),
+    reliabilityTier: refCtx?.reliabilityTier,
   );
 }
 

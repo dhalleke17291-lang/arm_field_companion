@@ -35,6 +35,7 @@ class SignalReviewProjection {
     required this.readinessActionReason,
     required this.blocksExport,
     required this.blocksExportReason,
+    this.reliabilityTier,
   });
 
   final int signalId;
@@ -57,6 +58,7 @@ class SignalReviewProjection {
   final String? readinessActionReason;
   final bool blocksExport;
   final String? blocksExportReason;
+  final String? reliabilityTier;
 }
 
 class SignalReviewGroupProjection {
