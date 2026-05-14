@@ -192,7 +192,7 @@ final trialCoherenceProvider =
     (db.select(db.assignments)..where((a) => a.trialId.equals(trialId)))
         .watch(),
     (db.select(db.signals)..where((s) => s.trialId.equals(trialId))).watch(),
-    db.select(db.signalDecisionEvents).watch(),
+    signalRepo.watchDecisionEventsForTrial(trialId),
     db.select(db.users).watch(),
   ]).asyncMap((_) => computeTrialCoherenceDto(
         db: db,
@@ -227,7 +227,7 @@ final trialInterpretationRiskProvider = StreamProvider.autoDispose
     (db.select(db.ratingRecords)..where((r) => r.trialId.equals(trialId)))
         .watch(),
     (db.select(db.plots)..where((p) => p.trialId.equals(trialId))).watch(),
-    db.select(db.signalDecisionEvents).watch(),
+    signalRepo.watchDecisionEventsForTrial(trialId),
     db.select(db.users).watch(),
     (db.select(db.trialEnvironmentalRecords)
           ..where((r) => r.trialId.equals(trialId)))

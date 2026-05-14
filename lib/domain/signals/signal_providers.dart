@@ -6,6 +6,16 @@ import 'signal_repository.dart';
 import 'signal_review_projection.dart';
 import 'signal_review_projection_mapper.dart';
 
+/// Trial-scoped variant of the signalDecisionEvents watch.
+/// Only emits when a decision event for a signal belonging to [trialId] is
+/// written — prevents cross-trial spurious recomputes in cognition providers.
+final signalDecisionEventsForTrialProvider =
+    StreamProvider.family<List<SignalDecisionEvent>, int>((ref, trialId) {
+  return ref
+      .read(signalRepositoryProvider)
+      .watchDecisionEventsForTrial(trialId);
+});
+
 final signalRepositoryProvider = Provider<SignalRepository>((ref) {
   return SignalRepository(ref);
 });

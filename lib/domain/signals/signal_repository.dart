@@ -307,6 +307,37 @@ class SignalRepository {
     );
   }
 
+  /// Drift live query filtered to decision events belonging to [trialId].
+  ///
+  /// Joins [SignalDecisionEvents] → [Signals] on signalId so only events for
+  /// signals owned by this trial are returned. A closure-local ID-set guard
+  /// suppresses re-emissions when any other trial's decision event causes the
+  /// underlying SQLite table hook to fire but the filtered result hasn't changed
+  /// (Drift fires on every table write regardless of the WHERE clause).
+  Stream<List<SignalDecisionEvent>> watchDecisionEventsForTrial(int trialId) {
+    Set<int>? lastIds;
+    return (_db.select(_db.signalDecisionEvents).join([
+      innerJoin(
+        _db.signals,
+        _db.signals.id.equalsExp(_db.signalDecisionEvents.signalId),
+      ),
+    ])
+          ..where(_db.signals.trialId.equals(trialId)))
+        .watch()
+        .map((rows) =>
+            rows.map((r) => r.readTable(_db.signalDecisionEvents)).toList())
+        .where((items) {
+          final ids = items.map((e) => e.id).toSet();
+          if (lastIds != null &&
+              ids.length == lastIds!.length &&
+              ids.containsAll(lastIds!)) {
+            return false; // result unchanged — suppress the emit
+          }
+          lastIds = ids;
+          return true;
+        });
+  }
+
   Future<void> expireAllOpenSignalsForTrial(int trialId, {String? note}) async {
     final unresolved = await getUnresolvedSignalsBeforeExport(trialId);
     for (final s in unresolved) {

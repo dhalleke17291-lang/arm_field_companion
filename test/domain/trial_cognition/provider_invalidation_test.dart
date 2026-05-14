@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:arm_field_companion/core/database/app_database.dart';
 import 'package:arm_field_companion/core/providers.dart';
 import 'package:arm_field_companion/data/repositories/trial_purpose_repository.dart';
+import 'package:arm_field_companion/domain/signals/signal_models.dart';
 import 'package:arm_field_companion/domain/signals/signal_providers.dart';
+import 'package:arm_field_companion/domain/signals/signal_repository.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_coherence_dto.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_evidence_arc_dto.dart';
 import 'package:arm_field_companion/domain/trial_cognition/trial_interpretation_risk_dto.dart';
@@ -372,5 +374,149 @@ void main() {
       (f) => f.factorKey == 'application_timing_deviation',
     );
     expect(afterTiming.severity, 'moderate');
+  });
+
+  // ── INV-7 ─────────────────────────────────────────────────────────────────
+  //
+  // Tests watchDecisionEventsForTrial at the repository layer — the specific
+  // code changed in scope 1.  We write directly into signalDecisionEvents
+  // (bypassing recordDecisionEvent so the signals table is NOT touched) to
+  // isolate the signalDecisionEvents watch path.  Testing via the Riverpod
+  // provider is impractical here: autoDispose + the 10-stream initial burst
+  // from mergeTableWatchStreams makes emission counting unreliable.
+
+  test(
+      'INV-7: watchDecisionEventsForTrial does not emit for other-trial decision events',
+      () async {
+    final trialAId = await makeTrial();
+    final trialBId = await makeTrial();
+
+    // Signal belongs to trial A only.
+    final signalAId = await db.into(db.signals).insert(
+          SignalsCompanion.insert(
+            trialId: trialAId,
+            signalType: 'scale_violation',
+            moment: 1,
+            severity: 'warning',
+            raisedAt: 0,
+            referenceContext: '{}',
+            consequenceText: 'Test.',
+            status: const Value('open'),
+            createdAt: 0,
+          ),
+        );
+
+    final repo = SignalRepository.attach(db);
+
+    // Subscribe to trial B's scoped stream — capture every emission.
+    final trialBValues = <List<SignalDecisionEvent>>[];
+    final initB = Completer<void>();
+    final subB = repo.watchDecisionEventsForTrial(trialBId).listen((events) {
+      trialBValues.add(events);
+      if (!initB.isCompleted) initB.complete();
+    });
+    addTearDown(subB.cancel);
+
+    // Also subscribe to trial A — to confirm the write was processed.
+    final trialAReceived = Completer<List<SignalDecisionEvent>>();
+    final subA = repo.watchDecisionEventsForTrial(trialAId).listen((events) {
+      if (events.isNotEmpty && !trialAReceived.isCompleted) {
+        trialAReceived.complete(events);
+      }
+    });
+    addTearDown(subA.cancel);
+
+    // Wait for trial B's initial (empty) emission.
+    await initB.future.timeout(const Duration(seconds: 2));
+    final countBefore = trialBValues.length;
+
+    // Write decision event for trial A's signal — no signals table update.
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.into(db.signalDecisionEvents).insert(
+          SignalDecisionEventsCompanion.insert(
+            signalId: signalAId,
+            eventType: SignalDecisionEventType.defer.dbValue,
+            occurredAt: now,
+            resultingStatus: SignalStatus.deferred.dbValue,
+            createdAt: now,
+          ),
+        );
+
+    // Confirm trial A's stream saw the new event.
+    await trialAReceived.future.timeout(
+      const Duration(seconds: 2),
+      onTimeout: () => fail(
+          'watchDecisionEventsForTrial(A) did not emit after decision event insert'),
+    );
+
+    // Allow extra time for any spurious trial B emission.
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+
+    expect(
+      trialBValues.length,
+      countBefore,
+      reason:
+          'watchDecisionEventsForTrial(B) must not emit for a trial-A decision event',
+    );
+  });
+
+  // ── INV-8 ─────────────────────────────────────────────────────────────────
+
+  test(
+      'INV-8: watchDecisionEventsForTrial emits when same-trial decision event is written',
+      () async {
+    final trialId = await makeTrial();
+
+    final signalId = await db.into(db.signals).insert(
+          SignalsCompanion.insert(
+            trialId: trialId,
+            signalType: 'scale_violation',
+            moment: 1,
+            severity: 'warning',
+            raisedAt: 0,
+            referenceContext: '{}',
+            consequenceText: 'Test.',
+            status: const Value('open'),
+            createdAt: 0,
+          ),
+        );
+
+    final repo = SignalRepository.attach(db);
+
+    // Skip the first emission (initial empty list); wait for the non-empty one.
+    bool initialized = false;
+    final received = Completer<List<SignalDecisionEvent>>();
+    final sub = repo.watchDecisionEventsForTrial(trialId).listen((events) {
+      if (!initialized) {
+        initialized = true;
+        return;
+      }
+      if (events.isNotEmpty && !received.isCompleted) received.complete(events);
+    });
+    addTearDown(sub.cancel);
+
+    // Allow initial emission to settle.
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    // Write decision event for the same trial's signal.
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.into(db.signalDecisionEvents).insert(
+          SignalDecisionEventsCompanion.insert(
+            signalId: signalId,
+            eventType: SignalDecisionEventType.defer.dbValue,
+            occurredAt: now,
+            resultingStatus: SignalStatus.deferred.dbValue,
+            createdAt: now,
+          ),
+        );
+
+    final events = await received.future.timeout(
+      const Duration(seconds: 2),
+      onTimeout: () => fail(
+          'watchDecisionEventsForTrial did not emit after same-trial decision event'),
+    );
+
+    expect(events, hasLength(1));
+    expect(events.first.signalId, signalId);
   });
 }
