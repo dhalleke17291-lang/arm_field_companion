@@ -422,6 +422,26 @@ class SignalRepository {
         .firstOrNull;
   }
 
+  /// Used by [CheckVariabilityWriter] — finds an existing open/deferred/
+  /// investigating signal for the given session + assessment column
+  /// (matched by seType in context) + treatmentId.
+  Future<Signal?> findOpenCheckVariabilitySignalForSessionAssessmentTreatment({
+    required int sessionId,
+    required String seType,
+    required int treatmentId,
+  }) async {
+    final rows = await (_db.select(_db.signals)
+          ..where((s) => s.sessionId.equals(sessionId))
+          ..where((s) => s.signalType
+              .equals(SignalType.checkBaselineVariability.dbValue))
+          ..where((s) => s.status.isIn(_openStatuses.toList())))
+        .get();
+    return rows
+        .where((s) => _ctxMatches(
+            s, (ctx) => ctx.seType == seType && ctx.treatmentId == treatmentId))
+        .firstOrNull;
+  }
+
   /// Used by [RaterDriftWriter] — session-level attribution consistency;
   /// [SignalReferenceContext.seType] discriminator is `'session_attribution'`.
   Future<Signal?> findOpenRaterDriftSessionAttribution({
